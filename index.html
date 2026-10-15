@@ -216,6 +216,7 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
       <div class="who-row">
         <span class="sub live" id="live"><i></i><span id="liveText">Connexion…</span></span>
         <span class="sub" id="who"></span>
+        <span class="sub">v5</span>
         <button class="btn sm" id="logoutBtn">Se déconnecter</button>
       </div>
     </div>
@@ -713,14 +714,27 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     box.classList.toggle("hidden", state.tab !== "inventaire" || !db);
     var counts = {};
     items.forEach(function (it) { var c = it.category || "Sans domaine"; counts[c] = (counts[c] || 0) + 1; });
+    var unitsBy = {};
+    items.forEach(function (it) {
+      var c = it.category || "Sans domaine", u = (it.unit || "").trim() || "unité";
+      var o = unitsBy[c] || (unitsBy[c] = { sum: {}, n: 0 });
+      o.n++; o.sum[u] = (o.sum[u] || 0) + (Number(it.qty) || 0);
+    });
+    var chipText = function (c) {
+      var o = unitsBy[c];
+      if (!o) return "0";
+      var us = Object.keys(o.sum);
+      if (us.length === 1) return fmt(Math.round(o.sum[us[0]] * 100) / 100) + " (" + o.n + " réf.)";
+      return o.n + " réf.";
+    };
     var list = domainList();
     if (state.cat && list.indexOf(state.cat) === -1) state.cat = "";
     var mk = function (label, value, n) {
       box.append(h("button", { class: "dom", "aria-pressed": state.cat === value ? "true" : "false",
         onclick: function () { state.cat = value; render(); } }, label, h("small", { text: String(n) })));
     };
-    mk("Tous", "", items.size);
-    list.forEach(function (c) { mk(c, c, counts[c] || 0); });
+    mk("Tous", "", items.size + " réf.");
+    list.forEach(function (c) { mk(c, c, chipText(c)); });
     var totalEl = $("domainTotal");
     var inDom = Array.from(items.values()).filter(function (it) {
       return !state.cat || (it.category || "Sans domaine") === state.cat;
