@@ -10,13 +10,15 @@
 
 <script>
   // ============================================================
-  //  À MODIFIER UNE SEULE FOIS (voir le guide LISEZMOI.md)
-  //  Ces deux valeurs se trouvent dans Supabase :
+  //  À MODIFIER UNE SEULE FOIS PAR SITE
+  //  name : le nom affiché en haut du site (ex. "Stock Boissy")
+  //  Les deux autres valeurs se trouvent dans Supabase :
   //  Project Settings > API (ou "Data API")
   //  - url : "Project URL"
   //  - key : la clé "anon" / "public" (JAMAIS la clé "service_role")
   // ============================================================
   window.SIMSIM_CONFIG = {
+    name: "SimSimStock",
     url: "https://wcalquzjehvhcjevjwxe.supabase.co",
     key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYWxxdXpqZWh2aGNqZXZqd3hlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNzIxNzcsImV4cCI6MjEwNzY0ODE3N30.pCshhG1OXoSG3LYs-Z_wGOsu0lJV6pNzQAgy4B1Bcg8"
   };
@@ -125,7 +127,11 @@ button.item-name:hover { text-decoration:underline; }
 .crow.chg { background:var(--warn-bg); }
 .cin { width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); text-align:right; font-size:15px; }
 .countbar { display:flex; gap:10px; align-items:center; margin:0 0 10px; flex-wrap:wrap; }
-select.btn { max-width:230px; }
+.domains { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 12px; }
+.dom { border:1px solid var(--line); background:var(--surface); padding:6px 12px; border-radius:99px; font-weight:500; }
+.dom[aria-pressed="true"] { background:var(--brand); color:var(--brand-ink); border-color:var(--brand); }
+.dom small { margin-left:6px; opacity:.75; font-weight:600; }
+label.f select { padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); font-size:15px; }
 .more summary { cursor:pointer; color:var(--brand); font-weight:600; padding:4px 0; }
 .more .grid { margin-top:10px; }
 
@@ -188,7 +194,7 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
 
 <div id="login" class="hidden">
   <div class="login-card">
-    <h1>SimSimStock</h1>
+    <h1 id="loginTitle">SimSimStock</h1>
     <div class="sub" id="loginHint">Connectez-vous avec votre e-mail et votre mot de passe.</div>
     <label class="f">Adresse e-mail
       <input id="loginEmail" type="email" autocomplete="username" inputmode="email">
@@ -205,7 +211,7 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
 <div class="wrap hidden" id="app">
   <header class="top">
     <div class="title-row">
-      <h1>SimSimStock</h1>
+      <h1 id="appTitle">SimSimStock</h1>
       <div class="who-row">
         <span class="sub live" id="live"><i></i><span id="liveText">Connexion…</span></span>
         <span class="sub" id="who"></span>
@@ -226,12 +232,14 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
       <button class="tab" role="tab" data-tab="historique" aria-selected="false">Historique</button>
     </div>
     <input class="search" id="search" type="search" placeholder="Rechercher un article, une référence, un fournisseur" aria-label="Rechercher">
-    <select class="btn" id="catFilter" aria-label="Filtrer par catégorie"></select>
     <button class="btn primary" id="addBtn">Ajouter un article</button>
-    <button class="btn" id="importBtn">Importer un CSV</button>
+    <button class="btn" id="importBtn">Importer un Excel ou CSV</button>
+    <button class="btn" id="tplBtn">Modèle Excel</button>
     <button class="btn" id="exportBtn">Exporter en CSV</button>
-    <input type="file" id="importFile" accept=".csv,text/csv,text/plain" class="hidden">
+    <input type="file" id="importFile" accept=".xlsx,.xls,.csv,text/csv,text/plain" class="hidden">
   </div>
+
+  <div class="domains" id="domains"></div>
 
   <main id="content"></main>
 </div>
@@ -243,9 +251,8 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
       <label class="f full">Nom de l'article
         <input id="f_name" autocomplete="off" placeholder="Ex. Gants nitrile taille M">
       </label>
-      <label class="f full">Catégorie
-        <input id="f_category" list="dl_cat" autocomplete="off">
-        <datalist id="dl_cat"></datalist>
+      <label class="f full">Domaine
+        <select id="f_category"></select>
       </label>
       <label class="f">Quantité en stock
         <input id="f_qty" type="number" min="0" step="any" inputmode="decimal">
@@ -309,13 +316,18 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
   </div>
 </dialog>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function () {
   "use strict";
 
   // ---------- état ----------
   var cfg = window.SIMSIM_CONFIG || {};
+  var siteName = (cfg.name && String(cfg.name).indexOf("NOM_DU_CABINET") === -1) ? String(cfg.name) : "SimSimStock";
+  document.title = siteName;
+  $("loginTitle").textContent = siteName;
+  $("appTitle").textContent = siteName;
   var sb = null;          // client Supabase
   var db = null;          // = sb quand l'utilisateur est connecté, sinon null
   var myEmail = "";
@@ -494,7 +506,7 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     var q = norm(state.q);
     var arr = Array.from(items.values()).filter(function (it) {
       var s = statusOf(it);
-      if (state.cat && (it.category || "Sans catégorie") !== state.cat) return false;
+      if (state.cat && (it.category || "Sans domaine") !== state.cat) return false;
       if (state.filter === "low" && s !== "bas" && s !== "rupture") return false;
       if (state.filter === "rupt" && s !== "rupture") return false;
       if (state.filter === "exp" && s !== "perime" && s !== "peremption") return false;
@@ -552,10 +564,10 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     if (!items.size) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" },
         h("h2", { text: "Aucun article pour l'instant" }),
-        h("div", { text: "Ajoutez vos consommables un par un, ou importez votre tableau existant au format CSV." }),
+        h("div", { text: "Ajoutez vos consommables un par un, ou importez votre tableau existant au format Excel ou CSV." }),
         h("div", { class: "actions" },
           h("button", { class: "btn primary", disabled: readOnly, onclick: function () { openItem(null); }, text: "Ajouter un article" }),
-          h("button", { class: "btn", disabled: readOnly, onclick: function () { $("importFile").click(); }, text: "Importer un CSV" })))));
+          h("button", { class: "btn", disabled: readOnly, onclick: function () { $("importFile").click(); }, text: "Importer un Excel ou CSV" })))));
       return;
     }
     if (!list.length) {
@@ -569,10 +581,10 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
       h("div", { text: "Article" }), h("div", { text: "Fournisseur" }), h("div", { text: "Quantité" }),
       h("div", { text: "Emplacement" }), h("div", { text: "État" })));
     list.forEach(function (it) {
-      var cname = it.category || "Sans catégorie";
+      var cname = it.category || "Sans domaine";
       var prevIt = list[list.indexOf(it) - 1];
-      if (!prevIt || (prevIt.category || "Sans catégorie") !== cname) {
-        table.append(h("div", { class: "catrow", text: cname + " (" + list.filter(function (x) { return (x.category || "Sans catégorie") === cname; }).length + ")" }));
+      if (!prevIt || (prevIt.category || "Sans domaine") !== cname) {
+        table.append(h("div", { class: "catrow", text: cname + " (" + list.filter(function (x) { return (x.category || "Sans domaine") === cname; }).length + ")" }));
       }
       var unit = it.unit ? " " + it.unit : "";
       var meta = [];
@@ -674,19 +686,39 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     box.append(h("p", { class: "sub", text: "Les 300 derniers mouvements." }));
   }
 
-  function fillCatFilter() {
-    var sel = $("catFilter");
-    var cats = new Set();
-    items.forEach(function (it) { cats.add(it.category || "Sans catégorie"); });
-    var arr = Array.from(cats).sort(function (a, b) { return norm(a).localeCompare(norm(b)); });
-    if (state.cat && arr.indexOf(state.cat) === -1) state.cat = "";
-    sel.textContent = "";
-    sel.append(h("option", { value: "", text: "Toutes les catégories" }));
-    arr.forEach(function (c) {
-      var o = h("option", { value: c, text: c });
-      if (c === state.cat) o.selected = true;
-      sel.append(o);
+  var DOMAINS = ["Endodontie", "Chirurgie", "Implants", "Consommables"];
+  var EQUIP = "Équipement et instruments";
+  function normDomain(c) {
+    var n = norm(c);
+    if (!n.trim()) return "";
+    if (n.indexOf("endo") !== -1) return "Endodontie";
+    if (n.indexOf("chirurg") !== -1) return "Chirurgie";
+    if (n.indexOf("implant") !== -1) return "Implants";
+    if (n.indexOf("consommable") !== -1) return "Consommables";
+    return String(c).trim();
+  }
+  function domainList() {
+    var extra = new Set();
+    items.forEach(function (it) {
+      var c = it.category || "Sans domaine";
+      if (DOMAINS.indexOf(c) === -1) extra.add(c);
     });
+    return DOMAINS.concat(Array.from(extra).sort(function (a, b) { return norm(a).localeCompare(norm(b)); }));
+  }
+  function renderDomains() {
+    var box = $("domains");
+    box.textContent = "";
+    box.classList.toggle("hidden", state.tab !== "inventaire" || !db);
+    var counts = {};
+    items.forEach(function (it) { var c = it.category || "Sans domaine"; counts[c] = (counts[c] || 0) + 1; });
+    var list = domainList();
+    if (state.cat && list.indexOf(state.cat) === -1) state.cat = "";
+    var mk = function (label, value, n) {
+      box.append(h("button", { class: "dom", "aria-pressed": state.cat === value ? "true" : "false",
+        onclick: function () { state.cat = value; render(); } }, label, h("small", { text: String(n) })));
+    };
+    mk("Tous", "", items.size);
+    list.forEach(function (c) { mk(c, c, counts[c] || 0); });
   }
 
   var countDraft = {};
@@ -739,9 +771,9 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     var table = h("div", { class: "table" });
     table.append(h("div", { class: "crow head" }, h("div", { text: "Article" }), h("div", { text: "Compté" }), h("div", { text: "Seuil d'alerte" })));
     list.forEach(function (it, i) {
-      var cname = it.category || "Sans catégorie";
+      var cname = it.category || "Sans domaine";
       var prevIt = list[i - 1];
-      if (!prevIt || (prevIt.category || "Sans catégorie") !== cname) {
+      if (!prevIt || (prevIt.category || "Sans domaine") !== cname) {
         table.append(h("div", { class: "catrow", text: cname }));
       }
       var cur = countDraft[it.id] || { qty: Number(it.qty) || 0, min: Number(it.min) || 0 };
@@ -769,13 +801,12 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
 
   function render() {
     renderCounters();
-    fillCatFilter();
+    renderDomains();
     var box = $("content"); box.textContent = "";
     $("addBtn").disabled = readOnly || !db;
     $("importBtn").disabled = readOnly || !db;
     $("exportBtn").disabled = !items.size;
     $("search").classList.toggle("hidden", state.tab !== "inventaire");
-    $("catFilter").classList.toggle("hidden", state.tab !== "inventaire");
     if (state.tab === "inventaire") renderInventory(box);
     else if (state.tab === "commande") renderOrder(box);
     else if (state.tab === "comptage") renderCount(box);
@@ -789,21 +820,24 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
 
   // ---------- boîtes de dialogue ----------
   var FIELDS = ["name", "category", "location", "unit", "qty", "min", "target", "lot", "expiry", "price"];
-  function fillDatalists() {
-    var cats = new Set(["Consommables – Restauration", "Consommables – Endodontie", "Consommables – Prothèse et empreintes", "Consommables – Hygiène et désinfection", "Consommables – Chirurgie", "Consommables – Radiologie", "Consommables – Anesthésie", "Consommables – Divers", "Équipement et instruments"]);
-    items.forEach(function (it) { if (it.category) cats.add(it.category); });
-    var dl = $("dl_cat"); dl.textContent = "";
-    Array.from(cats).sort().forEach(function (v) { dl.append(h("option", { value: v })); });
+  function fillDomainSelect(current) {
+    var sel = $("f_category");
+    var list = DOMAINS.concat([EQUIP]);
+    domainList().forEach(function (c) { if (list.indexOf(c) === -1) list.push(c); });
+    if (current && list.indexOf(current) === -1) list.push(current);
+    sel.textContent = "";
+    list.forEach(function (c) { sel.append(h("option", { value: c, text: c })); });
   }
   function openItem(it) {
     state.editing = it; state.confirmDelete = false;
-    fillDatalists();
+    fillDomainSelect(it ? it.category : "");
     $("itemTitle").textContent = it ? "Modifier l'article" : "Nouvel article";
     document.querySelector("#itemDlg .more").open = !!it;
     FIELDS.forEach(function (f) {
       var el = $("f_" + f);
       var v = it && it[f] != null ? it[f] : "";
       if (!it && (f === "qty" || f === "min")) v = 0;
+      if (!it && f === "category") v = state.cat || "Consommables";
       el.value = v;
       el.disabled = readOnly;
     });
@@ -849,12 +883,12 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     return /[;"\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   }
   function exportCsv() {
-    var head = ["Article", "Catégorie", "Fournisseur", "Référence", "Emplacement", "Quantité", "Unité", "Seuil", "Cible", "Lot", "Péremption", "Prix HT"];
+    var head = ["Article", "Domaine", "Fournisseur", "Référence", "Emplacement", "Quantité", "Unité", "Seuil", "Cible", "Lot", "Péremption", "Prix HT"];
     var rows = Array.from(items.values()).sort(function (a, b) { return norm(a.name).localeCompare(norm(b.name)); }).map(function (it) {
       return [it.name, it.category, it.supplier, it.ref, it.location, it.qty, it.unit, it.min, it.target, it.lot, isoToFr(it.expiry), it.price].map(csvEscape).join(";");
     });
     var data = "\uFEFF" + [head.join(";")].concat(rows).join("\r\n");
-    var name = "stock-cabinet-" + new Date().toISOString().slice(0, 10) + ".csv";
+    var name = "stock-" + norm(siteName).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + new Date().toISOString().slice(0, 10) + ".csv";
     var blob = new Blob([data], { type: "text/csv;charset=utf-8" });
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
@@ -889,7 +923,7 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
   }
   var SYN = {
     name: ["article", "nom", "designation", "produit", "libelle"],
-    category: ["categorie", "famille", "type"],
+    category: ["domaine", "categorie", "famille", "type"],
     supplier: ["fournisseur"],
     ref: ["reference", "ref", "reference fournisseur"],
     location: ["emplacement", "lieu", "rangement"],
@@ -901,37 +935,95 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     expiry: ["peremption", "date de peremption", "expiration", "date d'expiration"],
     price: ["prix", "prix ht", "prix unitaire", "prix unitaire ht"]
   };
-  function importCsv(text) {
-    var rows = parseCsv(text);
-    if (rows.length < 2) { toast("Le fichier est vide ou sans en-têtes."); return; }
-    var heads = rows[0].map(norm).map(function (s) { return s.trim(); });
+  function cellText(v) {
+    if (v == null) return "";
+    if (v instanceof Date) {
+      var d = new Date(v.getTime() + 12 * 3600 * 1000);
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+    return String(v).trim();
+  }
+  function itemsFromRows(rows, defaultCat) {
+    if (!rows || rows.length < 2) return { ok: false, items: [] };
+    var heads = (rows[0] || []).map(function (c) { return norm(cellText(c)).trim(); });
     var map = {};
     Object.keys(SYN).forEach(function (f) {
       var idx = heads.findIndex(function (hd) { return SYN[f].indexOf(hd) !== -1; });
       if (idx !== -1) map[f] = idx;
     });
-    if (map.name == null) { toast("Colonne « Article » introuvable. Ajoutez-la en première ligne du fichier."); return; }
-    var data = rows.slice(1, 201).map(function (r) {
-      var get = function (f) { return map[f] != null ? (r[map[f]] || "").trim() : ""; };
+    if (map.name == null) return { ok: false, items: [] };
+    var out = rows.slice(1).map(function (r) {
+      var get = function (f) { return map[f] != null ? cellText(r[map[f]]) : ""; };
       var exp = get("expiry");
       var m = exp.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
       if (m) exp = m[3] + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0");
       if (!/^\d{4}-\d{2}-\d{2}$/.test(exp)) exp = "";
       return {
-        name: get("name"), category: get("category"), supplier: get("supplier"), ref: get("ref"),
+        name: get("name"), category: normDomain(get("category")) || defaultCat || "", supplier: get("supplier"), ref: get("ref"),
         location: get("location"), unit: get("unit"), qty: Math.max(0, num(get("qty"))), min: Math.max(0, num(get("min"))),
         target: Math.max(0, num(get("target"))), lot: get("lot"), expiry: exp, price: Math.max(0, num(get("price")))
       };
     }).filter(function (d) { return d.name; });
-    if (!data.length) { toast("Aucune ligne exploitable dans le fichier."); return; }
-    var skipped = rows.length - 1 > 200 ? " (200 premières lignes seulement)" : "";
-    enqueue(function () {
-      return sb.from("items").insert(data.map(toRow)).select().then(function (res) {
-        (check(res) || []).forEach(function (r) { items.set(r.id, fromRow(r)); });
-        render();
-        return appendLog({ type: "import", itemId: "", item: "Import CSV", delta: 0, qty: 0, note: data.length + " articles importés" });
-      }).then(function () { toast(data.length + " articles importés" + skipped + "."); });
+    return { ok: true, items: out };
+  }
+  function importSheets(sheets) {
+    var all = [], bad = 0;
+    sheets.forEach(function (sh) {
+      var def = normDomain(sh.name);
+      if (DOMAINS.indexOf(def) === -1) def = "";
+      var res = itemsFromRows(sh.rows, def);
+      if (!res.ok) { bad++; return; }
+      all = all.concat(res.items);
     });
+    if (!all.length) {
+      toast(bad ? "Colonne « Article » introuvable. Ajoutez-la en première ligne du fichier." : "Aucune ligne exploitable dans le fichier.");
+      return;
+    }
+    var have = new Set(Array.from(items.values()).map(function (it) { return norm(it.name).trim(); }));
+    var fresh = [], dup = 0;
+    all.forEach(function (d) {
+      var k = norm(d.name).trim();
+      if (have.has(k)) { dup++; return; }
+      have.add(k); fresh.push(d);
+    });
+    var capped = fresh.length > 500;
+    if (capped) fresh = fresh.slice(0, 500);
+    if (!fresh.length) { toast("Tous les articles du fichier existent déjà (" + dup + " ignorés)."); return; }
+    var chunks = [];
+    for (var i = 0; i < fresh.length; i += 100) chunks.push(fresh.slice(i, i + 100));
+    enqueue(function () {
+      return chunks.reduce(function (p, chunk) {
+        return p.then(function () {
+          return sb.from("items").insert(chunk.map(toRow)).select().then(function (res) {
+            (check(res) || []).forEach(function (r) { items.set(r.id, fromRow(r)); });
+          });
+        });
+      }, Promise.resolve()).then(function () {
+        render();
+        return appendLog({ type: "import", itemId: "", item: "Import de fichier", delta: 0, qty: 0, note: fresh.length + " articles importés" });
+      }).then(function () {
+        toast(fresh.length + " article" + (fresh.length > 1 ? "s" : "") + " ajouté" + (fresh.length > 1 ? "s" : "") +
+          (dup ? ", " + dup + " déjà présent" + (dup > 1 ? "s" : "") + " ignoré" + (dup > 1 ? "s" : "") : "") +
+          (capped ? " (500 premiers seulement)" : "") + ".");
+      });
+    });
+  }
+  function downloadTemplate() {
+    if (!window.XLSX) { toast("Le modèle Excel n'a pas pu être créé : vérifiez votre accès à internet."); return; }
+    var X = window.XLSX;
+    var wb = X.utils.book_new();
+    var head = ["Article", "Domaine", "Quantité", "Seuil", "Unité", "Emplacement", "Prix HT", "Lot", "Péremption", "Fournisseur", "Référence"];
+    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([head]), "Matériel");
+    var help = [
+      ["Comment remplir ce fichier"],
+      ["Seule la colonne « Article » est obligatoire. Toutes les autres sont facultatives."],
+      ["Domaine : Endodontie, Chirurgie, Implants ou Consommables."],
+      ["Vous pouvez aussi créer une feuille par domaine (nommée Endodontie, Chirurgie…), sans colonne Domaine."],
+      ["Un article dont le nom existe déjà dans l'appli est ignoré : l'import n'écrase rien."],
+      ["Péremption : jj/mm/aaaa. Supprimez cette feuille d'aide si vous voulez, elle est ignorée à l'import."]
+    ];
+    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(help), "Aide");
+    X.writeFile(wb, "modele-import-materiel.xlsx");
   }
 
   // ---------- événements ----------
@@ -943,7 +1035,6 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     });
   });
   $("search").addEventListener("input", function (e) { state.q = e.target.value; render(); });
-  $("catFilter").addEventListener("change", function (e) { state.cat = e.target.value; render(); });
   $("addBtn").addEventListener("click", function () { openItem(null); });
   $("importBtn").addEventListener("click", function () { $("importFile").click(); });
   $("exportBtn").addEventListener("click", exportCsv);
@@ -951,10 +1042,25 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     var f = e.target.files && e.target.files[0];
     if (!f) return;
     var r = new FileReader();
-    r.onload = function () { importCsv(String(r.result || "")); };
-    r.readAsText(f, "utf-8");
+    if (/\.xlsx?$/i.test(f.name)) {
+      if (!window.XLSX) { toast("Impossible de lire un fichier Excel : vérifiez votre accès à internet."); e.target.value = ""; return; }
+      r.onload = function () {
+        try {
+          var wb = window.XLSX.read(new Uint8Array(r.result), { type: "array", cellDates: true });
+          var sheets = wb.SheetNames.map(function (n) {
+            return { name: n, rows: window.XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: "" }) };
+          });
+          importSheets(sheets);
+        } catch (err) { toast("Ce fichier Excel n'a pas pu être lu."); }
+      };
+      r.readAsArrayBuffer(f);
+    } else {
+      r.onload = function () { importSheets([{ name: "", rows: parseCsv(String(r.result || "")) }]); };
+      r.readAsText(f, "utf-8");
+    }
     e.target.value = "";
   });
+  $("tplBtn").addEventListener("click", downloadTemplate);
   $("itemCancel").addEventListener("click", function () { $("itemDlg").close(); });
   $("itemSave").addEventListener("click", function () {
     var d = collectItem();
