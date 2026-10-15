@@ -131,6 +131,7 @@ button.item-name:hover { text-decoration:underline; }
 .dom { border:1px solid var(--line); background:var(--surface); padding:6px 12px; border-radius:99px; font-weight:500; }
 .dom[aria-pressed="true"] { background:var(--brand); color:var(--brand-ink); border-color:var(--brand); }
 .dom small { margin-left:6px; opacity:.75; font-weight:600; }
+.domtotal { margin:-4px 0 12px; font-size:14px; font-weight:600; }
 label.f select { padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); font-size:15px; }
 .more summary { cursor:pointer; color:var(--brand); font-weight:600; padding:4px 0; }
 .more .grid { margin-top:10px; }
@@ -240,6 +241,7 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
   </div>
 
   <div class="domains" id="domains"></div>
+  <div class="domtotal" id="domainTotal"></div>
 
   <main id="content"></main>
 </div>
@@ -719,6 +721,23 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     };
     mk("Tous", "", items.size);
     list.forEach(function (c) { mk(c, c, counts[c] || 0); });
+    var totalEl = $("domainTotal");
+    var inDom = Array.from(items.values()).filter(function (it) {
+      return !state.cat || (it.category || "Sans domaine") === state.cat;
+    });
+    var byUnit = {};
+    inDom.forEach(function (it) {
+      var u = (it.unit || "").trim() || "unité";
+      byUnit[u] = (byUnit[u] || 0) + (Number(it.qty) || 0);
+    });
+    var parts = Object.keys(byUnit).sort().map(function (u) {
+      var n = Math.round(byUnit[u] * 100) / 100;
+      return fmt(n) + " " + u + (n > 1 && !/s$/i.test(u) ? "s" : "");
+    });
+    totalEl.textContent = inDom.length
+      ? (state.cat || "Tous les domaines") + " : " + inDom.length + " référence" + (inDom.length > 1 ? "s" : "") + ", " + parts.join(" + ") + " en stock"
+      : "";
+    totalEl.classList.toggle("hidden", state.tab !== "inventaire" || !db || !inDom.length);
   }
 
   var countDraft = {};
