@@ -734,8 +734,10 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
       var n = Math.round(byUnit[u] * 100) / 100;
       return fmt(n) + " " + u + (n > 1 && !/s$/i.test(u) ? "s" : "");
     });
+    var DOM_OF = { "Endodontie": "d'endodontie", "Chirurgie": "de chirurgie", "Implants": "d'implant", "Consommables": "de consommables" };
+    var phrase = state.cat ? (DOM_OF[state.cat] || "") : "";
     totalEl.textContent = inDom.length
-      ? (state.cat || "Tous les domaines") + " : " + inDom.length + " référence" + (inDom.length > 1 ? "s" : "") + ", " + parts.join(" + ") + " en stock"
+      ? parts.join(" + ") + (phrase ? " " + phrase : "") + " (" + inDom.length + " réf.)"
       : "";
     totalEl.classList.toggle("hidden", state.tab !== "inventaire" || !db || !inDom.length);
   }
