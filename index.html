@@ -254,7 +254,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 .teamrow { display:grid; grid-template-columns:minmax(0,2fr) 200px auto auto; gap:8px; align-items:center; padding:8px 10px; border-top:1px solid var(--line); }
 .teamrow:first-child { border-top:0; }
 .chip.catalogue { background:var(--surface-2); color:var(--muted); }
-.row.untracked { opacity:.8; }
+.row.untracked .c-name { opacity:.5; }
+.row.untracked .item-name, .row.untracked .desc { color:var(--muted); font-weight:500; }
 .subrow { display:flex; justify-content:space-between; align-items:center; width:100%; text-align:left; padding:7px 14px 7px 22px; background:var(--bg); border:0; border-top:1px solid var(--line); font-weight:600; font-size:13.5px; color:var(--ink); }
 .subrow small { color:var(--muted); font-weight:600; }
 .star { background:none; border:0; padding:0 6px 0 0; font-size:18px; line-height:1; color:var(--muted); }
@@ -355,7 +356,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v24</div>
+            <div class="menu-who"><span id="who"></span> · v25</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -960,8 +961,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         big = fmt(n);
         label = us[0] + (n > 1 && !/s$/i.test(us[0]) ? "s" : "") + " · " + o.n + " réf.";
       } else { big = String(o.n); label = "références"; }
-      var shown = o.n ? "" : label;
-      if (o.cat) { label += " · " + o.cat + " au catalogue"; shown += (shown ? " · " : "") + o.cat + " au catalogue"; }
+      var shown = o.n ? "" : "aucun article";
+      if (o.cat) label += " · " + o.cat + " au catalogue";
       var alertTxt = o.rupt ? o.rupt + " en rupture" : (o.bas ? o.bas + " sous le seuil" : (o.exp ? o.exp + " à surveiller" : ""));
       var alertCls = o.rupt ? "t-bad" : (o.bas ? "t-warn" : "t-exp");
       grid.append(h("button", { class: "tile", "aria-label": c + " : " + big + " " + label,
@@ -1190,7 +1191,6 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       h("button", { class: "btn sm", onclick: function () { state.cat = ""; state.filter = "all"; state.q = ""; $("search").value = ""; render(); }, text: "← Domaines" }),
       h("h2", { class: "crumb-title", text: title }));
     if (nCat) {
-      sub += (sub ? " · " : "") + nCat + " au catalogue (non suivi" + (nCat > 1 ? "s" : "") + ")";
       box.append(h("button", { class: "btn sm", onclick: function () { state.hideCat = !state.hideCat; render(); }, text: state.hideCat ? "Afficher le catalogue" : "Masquer le catalogue" }));
     }
     if (sub) box.append(h("div", { class: "crumb-sub", text: sub }));
