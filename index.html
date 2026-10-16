@@ -105,7 +105,7 @@ h1 { font-size:28px; font-weight:700; }
 .btn:disabled { opacity:.45; cursor:not-allowed; }
 
 .table { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
-.row { display:grid; grid-template-columns:minmax(0,2.4fr) minmax(0,1.2fr) 150px minmax(0,1fr) 120px; gap:12px; align-items:center; padding:10px 14px; border-top:1px solid var(--line); }
+.row { display:grid; grid-template-columns:minmax(0,2.6fr) 150px 140px; gap:12px; align-items:center; padding:10px 14px; border-top:1px solid var(--line); }
 .row:first-child { border-top:0; }
 .row.head { background:var(--surface-2); color:var(--muted); font-size:12.5px; font-weight:600; padding-top:8px; padding-bottom:8px; }
 .item-name { font-weight:600; overflow-wrap:anywhere; background:none; border:0; padding:0; text-align:left; }
@@ -183,6 +183,38 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
 .login-card h1 { font-size:26px; }
 .login-err { color:var(--bad); font-size:14px; min-height:20px; }
 
+
+/* ---- v7 : écran simplifié, domaines en carrés ---- */
+header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-x:auto; }
+.menuwrap { position:relative; }
+.menu { position:absolute; right:0; top:calc(100% + 6px); min-width:230px; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.18); padding:6px; z-index:20; display:flex; flex-direction:column; }
+.menu-who { padding:8px 10px; color:var(--muted); font-size:12.5px; border-bottom:1px solid var(--line); margin-bottom:4px; overflow-wrap:anywhere; }
+.mi { text-align:left; background:none; border:0; padding:9px 10px; border-radius:8px; font-weight:500; }
+.mi:hover { background:var(--surface-2); }
+.mi:disabled { opacity:.45; cursor:not-allowed; }
+.bar { display:flex; gap:8px; margin:4px 0 14px; }
+.bar .search { flex:1; min-width:0; }
+.alerts { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 14px; }
+.alert { border:1px solid transparent; border-radius:99px; padding:6px 12px; font-weight:500; }
+.alert strong { font-weight:700; }
+.alert.a-rupt { background:var(--bad-bg); color:var(--bad); }
+.alert.a-bas { background:var(--warn-bg); color:var(--warn); }
+.alert.a-exp { background:var(--exp-bg); color:var(--exp); }
+.tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; }
+.tile { aspect-ratio:1 / 1; display:flex; flex-direction:column; align-items:flex-start; justify-content:space-between; text-align:left; padding:16px; background:var(--surface); border:1px solid var(--line); border-top:6px solid var(--tc, var(--brand)); border-radius:16px; box-shadow:var(--shadow); min-width:0; }
+.tile:hover { border-color:var(--tc, var(--brand)); }
+.tile-name { font-family:"Bricolage Grotesque","Instrument Sans",system-ui,sans-serif; font-weight:700; font-size:17px; overflow-wrap:anywhere; }
+.tile-num { font-family:"Bricolage Grotesque","Instrument Sans",system-ui,sans-serif; font-weight:700; font-size:44px; line-height:1; }
+.tile-unit { color:var(--muted); font-size:13px; margin-top:-8px; }
+.tile-alert { font-size:12.5px; font-weight:600; padding:3px 9px; border-radius:99px; }
+.t-bad { background:var(--bad-bg); color:var(--bad); }
+.t-warn { background:var(--warn-bg); color:var(--warn); }
+.t-exp { background:var(--exp-bg); color:var(--exp); }
+.crumb { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 12px; }
+.crumb-title { font-size:22px; }
+.crumb-sub { flex-basis:100%; color:var(--muted); font-size:14px; font-weight:600; }
+.foot { margin-top:18px; }
+
 @media (max-width: 760px) {
   .counters { grid-template-columns:repeat(2,1fr); }
   .row.head { display:none; }
@@ -225,36 +257,38 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
       <h1 id="appTitle">SimSimStock</h1>
       <div class="who-row">
         <span class="sub live" id="live"><i></i><span id="liveText">Connexion…</span></span>
-        <span class="sub" id="who"></span>
-        <span class="sub">v6</span>
-        <button class="btn sm" id="logoutBtn">Se déconnecter</button>
+        <div class="menuwrap">
+          <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
+          <div class="menu hidden" id="moreMenu">
+            <div class="menu-who"><span id="who"></span> · v8</div>
+            <button class="mi" id="importBtn">Importer un fichier</button>
+            <button class="mi" id="tplBtn">Modèle Excel</button>
+            <button class="mi" id="exportBtn">Exporter en CSV</button>
+            <button class="mi" id="logoutBtn">Se déconnecter</button>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="sub" id="stockValue"></div>
-    <div class="counters" id="counters"></div>
-  </header>
-
-  <div id="banner"></div>
-
-  <div class="toolbar">
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="inventaire" aria-selected="true">Inventaire</button>
+      <button class="tab" role="tab" data-tab="inventaire" aria-selected="true">Stock</button>
       <button class="tab" role="tab" data-tab="commande" aria-selected="false">À commander</button>
       <button class="tab" role="tab" data-tab="comptage" aria-selected="false">Comptage</button>
       <button class="tab" role="tab" data-tab="historique" aria-selected="false">Historique</button>
     </div>
-    <input class="search" id="search" type="search" placeholder="Rechercher un article, une référence, un fournisseur" aria-label="Rechercher">
-    <button class="btn primary" id="addBtn">Ajouter un article</button>
-    <button class="btn" id="importBtn">Importer un fichier</button>
-    <button class="btn" id="tplBtn">Modèle Excel</button>
-    <button class="btn" id="exportBtn">Exporter en CSV</button>
-    <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.pdf,application/pdf,text/csv,text/plain" class="hidden">
-  </div>
+  </header>
 
-  <div class="domains" id="domains"></div>
-  <div class="domtotal" id="domainTotal"></div>
+  <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.pdf,application/pdf,text/csv,text/plain" class="hidden">
+  <div id="banner"></div>
+
+  <div class="bar" id="bar">
+    <input class="search" id="search" type="search" placeholder="Rechercher un article" aria-label="Rechercher">
+    <button class="btn primary" id="addBtn">+ Ajouter</button>
+  </div>
+  <div class="alerts" id="alerts"></div>
+  <div class="crumb hidden" id="crumb"></div>
 
   <main id="content"></main>
+  <div class="sub foot" id="stockValue"></div>
 </div>
 
 <dialog id="itemDlg">
@@ -544,6 +578,7 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     var arr = Array.from(items.values()).filter(function (it) {
       var s = statusOf(it);
       if (state.cat && (it.category || "Sans domaine") !== state.cat) return false;
+      if (state.filter === "bas" && s !== "bas") return false;
       if (state.filter === "low" && s !== "bas" && s !== "rupture") return false;
       if (state.filter === "rupt" && s !== "rupture") return false;
       if (state.filter === "exp" && s !== "perime" && s !== "peremption") return false;
@@ -560,33 +595,31 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
   }
 
   // ---------- rendu ----------
-  function renderCounters() {
+  var FILTER_LABEL = { bas: "Sous le seuil", rupt: "En rupture", exp: "Péremption proche ou dépassée" };
+  function isHome() { return !state.cat && state.filter === "all" && !state.q; }
+
+  function renderAlerts() {
     var all = Array.from(items.values());
-    var low = 0, rupt = 0, exp = 0;
+    var bas = 0, rupt = 0, exp = 0, total = 0;
     all.forEach(function (it) {
       var s = statusOf(it);
-      if (s === "bas" || s === "rupture") low++;
       if (s === "rupture") rupt++;
+      else if (s === "bas") bas++;
       if (s === "perime" || s === "peremption") exp++;
+      if (norm(it.category).indexOf("equipement") !== 0) total += (Number(it.qty) || 0) * (Number(it.price) || 0);
     });
-    var defs = [
-      { k: "all",  c: "c-all",  n: all.length, l: "Articles" },
-      { k: "low",  c: "c-low",  n: low,        l: "Sous le seuil" },
-      { k: "rupt", c: "c-rupt", n: rupt,       l: "En rupture" },
-      { k: "exp",  c: "c-exp",  n: exp,        l: "Péremption ≤ " + EXP_DAYS + " j" }
-    ];
-    var total = 0;
-    all.forEach(function (it) {
-      if (norm(it.category).indexOf("equipement") === 0) return;
-      total += (Number(it.qty) || 0) * (Number(it.price) || 0);
-    });
-    $("stockValue").textContent = all.length ? "Valeur du stock (hors équipement) : " + money(total) + " HT, d'après les quantités et les prix unitaires nets" : "";
-    var box = $("counters"); box.textContent = "";
-    defs.forEach(function (d) {
-      box.append(h("button", { class: "counter " + d.c, "aria-pressed": state.filter === d.k ? "true" : "false",
-        onclick: function () { state.filter = d.k; state.tab = "inventaire"; syncTabs(); render(); } },
-        h("span", { class: "n", text: String(d.n) }), h("span", { class: "l", text: d.l })));
-    });
+    var home = state.tab === "inventaire" && isHome();
+    $("stockValue").textContent = (home && all.length) ? "Valeur du stock (hors équipement) : " + money(total) + " HT" : "";
+    var box = $("alerts"); box.textContent = "";
+    box.classList.toggle("hidden", !home || (!bas && !rupt && !exp));
+    var mk = function (n, label, filter, cls) {
+      if (!n) return;
+      box.append(h("button", { class: "alert " + cls, onclick: function () { state.filter = filter; state.cat = ""; render(); } },
+        h("strong", { text: String(n) }), " " + label));
+    };
+    mk(rupt, "en rupture", "rupt", "a-rupt");
+    mk(bas, "sous le seuil", "bas", "a-bas");
+    mk(exp, "péremption à surveiller", "exp", "a-exp");
   }
 
   function chipFor(it) {
@@ -596,8 +629,43 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     return h("span", { class: "chip " + s, text: label });
   }
 
+  var DOM_COLOR = { "Endodontie": "#0f766e", "Chirurgie": "#b3261e", "Implants": "#5b3fa0", "Anesthésie": "#c2410c", "Consommables": "#2563a8" };
+  function domainStats() {
+    var st = {};
+    items.forEach(function (it) {
+      var c = it.category || "Sans domaine", u = (it.unit || "").trim() || "unité", s = statusOf(it);
+      var o = st[c] || (st[c] = { n: 0, sum: {}, bas: 0, rupt: 0, exp: 0 });
+      o.n++; o.sum[u] = (o.sum[u] || 0) + (Number(it.qty) || 0);
+      if (s === "rupture") o.rupt++; else if (s === "bas") o.bas++;
+      if (s === "perime" || s === "peremption") o.exp++;
+    });
+    return st;
+  }
+  function renderTiles(box) {
+    var stats = domainStats();
+    var grid = h("div", { class: "tiles" });
+    domainList().forEach(function (c) {
+      var o = stats[c] || { n: 0, sum: {}, bas: 0, rupt: 0, exp: 0 };
+      var us = Object.keys(o.sum), big, label;
+      if (!o.n) { big = "0"; label = "aucun article"; }
+      else if (us.length === 1) {
+        var n = Math.round(o.sum[us[0]] * 100) / 100;
+        big = fmt(n);
+        label = us[0] + (n > 1 && !/s$/i.test(us[0]) ? "s" : "") + " · " + o.n + " réf.";
+      } else { big = String(o.n); label = "références"; }
+      var alertTxt = o.rupt ? o.rupt + " en rupture" : (o.bas ? o.bas + " sous le seuil" : (o.exp ? o.exp + " à surveiller" : ""));
+      var alertCls = o.rupt ? "t-bad" : (o.bas ? "t-warn" : "t-exp");
+      grid.append(h("button", { class: "tile", style: "--tc:" + (DOM_COLOR[c] || (c === EQUIP ? "#8a5700" : "#5c6f70")), "aria-label": c + " : " + big + " " + label,
+        onclick: function () { state.cat = c; render(); } },
+        h("span", { class: "tile-name", text: c }),
+        h("span", { class: "tile-num", text: big }),
+        h("span", { class: "tile-unit", text: label }),
+        alertTxt ? h("span", { class: "tile-alert " + alertCls, text: alertTxt }) : null));
+    });
+    box.append(grid);
+  }
+
   function renderInventory(box) {
-    var list = visibleItems();
     if (!items.size) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" },
         h("h2", { text: "Aucun article pour l'instant" }),
@@ -607,6 +675,8 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
           h("button", { class: "btn", disabled: readOnly, onclick: function () { $("importFile").click(); }, text: "Importer un fichier" })))));
       return;
     }
+    if (isHome()) { renderTiles(box); return; }
+    var list = visibleItems();
     if (!list.length) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" },
         h("h2", { text: "Aucun résultat" }),
@@ -614,17 +684,16 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
       return;
     }
     var table = h("div", { class: "table" });
-    table.append(h("div", { class: "row head" },
-      h("div", { text: "Article" }), h("div", { text: "Fournisseur" }), h("div", { text: "Quantité" }),
-      h("div", { text: "Emplacement" }), h("div", { text: "État" })));
-    list.forEach(function (it) {
+    table.append(h("div", { class: "row head" }, h("div", { text: "Article" }), h("div", { text: "Quantité" }), h("div", { text: "État" })));
+    list.forEach(function (it, i) {
       var cname = it.category || "Sans domaine";
-      var prevIt = list[list.indexOf(it) - 1];
-      if (!prevIt || (prevIt.category || "Sans domaine") !== cname) {
-        table.append(h("div", { class: "catrow", text: cname + " (" + list.filter(function (x) { return (x.category || "Sans domaine") === cname; }).length + ")" }));
+      var prevIt = list[i - 1];
+      if (!state.cat && (!prevIt || (prevIt.category || "Sans domaine") !== cname)) {
+        table.append(h("div", { class: "catrow", text: cname }));
       }
       var unit = it.unit ? " " + it.unit : "";
       var meta = [];
+      if (it.location) meta.push(it.location);
       if (it.ref) meta.push("réf. " + it.ref);
       if (it.lot) meta.push("lot " + it.lot);
       if (it.expiry) meta.push("exp. " + isoToFr(it.expiry));
@@ -634,12 +703,10 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
         h("div", { class: "c-name" },
           h("button", { class: "item-name", onclick: function () { openItem(it); }, text: it.name || "(sans nom)" }),
           h("div", { class: "meta c-meta", text: meta.join(" · ") })),
-        h("div", { class: "c-sup meta", text: it.supplier || "—" }),
         h("div", { class: "c-qty qty" },
           h("button", { class: "step", "aria-label": "Retirer 1 " + it.name, disabled: readOnly || (it.qty || 0) <= 0, onclick: function () { adjustQty(it, -1, "Sortie rapide"); }, text: "−" }),
           h("button", { class: "v", title: "Saisir une entrée ou une sortie", disabled: readOnly, onclick: function () { openAdjust(it); } }, fmt(it.qty), h("small", { text: unit })),
           h("button", { class: "step", "aria-label": "Ajouter 1 " + it.name, disabled: readOnly, onclick: function () { adjustQty(it, 1, "Entrée rapide"); }, text: "+" })),
-        h("div", { class: "c-loc meta", text: it.location || "—" }),
         h("div", { class: "c-status" }, chipFor(it))));
     });
     box.append(table);
@@ -724,7 +791,7 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     box.append(h("p", { class: "sub", text: "Les 300 derniers mouvements." }));
   }
 
-  var DOMAINS = ["Endodontie", "Chirurgie", "Implants", "Consommables"];
+  var DOMAINS = ["Endodontie", "Chirurgie", "Implants", "Anesthésie", "Consommables"];
   var EQUIP = "Équipement et instruments";
   function normDomain(c) {
     var n = norm(c);
@@ -732,6 +799,7 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     if (n.indexOf("endo") !== -1) return "Endodontie";
     if (n.indexOf("chirurg") !== -1) return "Chirurgie";
     if (n.indexOf("implant") !== -1) return "Implants";
+    if (n.indexOf("anesth") !== -1) return "Anesthésie";
     if (n.indexOf("consommable") !== -1) return "Consommables";
     return String(c).trim();
   }
@@ -743,52 +811,31 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     });
     return DOMAINS.concat(Array.from(extra).sort(function (a, b) { return norm(a).localeCompare(norm(b)); }));
   }
-  function renderDomains() {
-    var box = $("domains");
-    box.textContent = "";
-    box.classList.toggle("hidden", state.tab !== "inventaire" || !db);
-    var counts = {};
-    items.forEach(function (it) { var c = it.category || "Sans domaine"; counts[c] = (counts[c] || 0) + 1; });
-    var unitsBy = {};
-    items.forEach(function (it) {
-      var c = it.category || "Sans domaine", u = (it.unit || "").trim() || "unité";
-      var o = unitsBy[c] || (unitsBy[c] = { sum: {}, n: 0 });
-      o.n++; o.sum[u] = (o.sum[u] || 0) + (Number(it.qty) || 0);
-    });
-    var chipText = function (c) {
-      var o = unitsBy[c];
-      if (!o) return "0";
-      var us = Object.keys(o.sum);
-      if (us.length === 1) return fmt(Math.round(o.sum[us[0]] * 100) / 100) + " (" + o.n + " réf.)";
-      return o.n + " réf.";
-    };
-    var list = domainList();
-    if (state.cat && list.indexOf(state.cat) === -1) state.cat = "";
-    var mk = function (label, value, n) {
-      box.append(h("button", { class: "dom", "aria-pressed": state.cat === value ? "true" : "false",
-        onclick: function () { state.cat = value; render(); } }, label, h("small", { text: String(n) })));
-    };
-    mk("Tous", "", items.size + " réf.");
-    list.forEach(function (c) { mk(c, c, chipText(c)); });
-    var totalEl = $("domainTotal");
-    var inDom = Array.from(items.values()).filter(function (it) {
-      return !state.cat || (it.category || "Sans domaine") === state.cat;
-    });
-    var byUnit = {};
-    inDom.forEach(function (it) {
-      var u = (it.unit || "").trim() || "unité";
-      byUnit[u] = (byUnit[u] || 0) + (Number(it.qty) || 0);
-    });
-    var parts = Object.keys(byUnit).sort().map(function (u) {
-      var n = Math.round(byUnit[u] * 100) / 100;
-      return fmt(n) + " " + u + (n > 1 && !/s$/i.test(u) ? "s" : "");
-    });
-    var DOM_OF = { "Endodontie": "d'endodontie", "Chirurgie": "de chirurgie", "Implants": "d'implant", "Consommables": "de consommables" };
-    var phrase = state.cat ? (DOM_OF[state.cat] || "") : "";
-    totalEl.textContent = inDom.length
-      ? parts.join(" + ") + (phrase ? " " + phrase : "") + " (" + inDom.length + " réf.)"
-      : "";
-    totalEl.classList.toggle("hidden", state.tab !== "inventaire" || !db || !inDom.length);
+  function renderCrumb() {
+    var box = $("crumb"); box.textContent = "";
+    var hide = state.tab !== "inventaire" || isHome() || !items.size;
+    box.classList.toggle("hidden", hide);
+    if (hide) return;
+    var title = state.cat || FILTER_LABEL[state.filter] || "Résultats de la recherche";
+    var sub = "";
+    if (state.cat) {
+      var inDom = Array.from(items.values()).filter(function (it) { return (it.category || "Sans domaine") === state.cat; });
+      var byUnit = {};
+      inDom.forEach(function (it) {
+        var u = (it.unit || "").trim() || "unité";
+        byUnit[u] = (byUnit[u] || 0) + (Number(it.qty) || 0);
+      });
+      var parts = Object.keys(byUnit).sort().map(function (u) {
+        var n = Math.round(byUnit[u] * 100) / 100;
+        return fmt(n) + " " + u + (n > 1 && !/s$/i.test(u) ? "s" : "");
+      });
+      var DOM_OF = { "Endodontie": "d'endodontie", "Chirurgie": "de chirurgie", "Implants": "d'implant", "Anesthésie": "d'anesthésie", "Consommables": "de consommables" };
+      if (inDom.length) sub = parts.join(" + ") + (DOM_OF[state.cat] ? " " + DOM_OF[state.cat] : "") + " (" + inDom.length + " réf.)";
+    }
+    box.append(
+      h("button", { class: "btn sm", onclick: function () { state.cat = ""; state.filter = "all"; state.q = ""; $("search").value = ""; render(); }, text: "← Domaines" }),
+      h("h2", { class: "crumb-title", text: title }));
+    if (sub) box.append(h("div", { class: "crumb-sub", text: sub }));
   }
 
   var countDraft = {};
@@ -870,13 +917,14 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
   }
 
   function render() {
-    renderCounters();
-    renderDomains();
+    if (state.cat && domainList().indexOf(state.cat) === -1) state.cat = "";
+    renderAlerts();
+    renderCrumb();
     var box = $("content"); box.textContent = "";
     $("addBtn").disabled = readOnly || !db;
     $("importBtn").disabled = readOnly || !db;
     $("exportBtn").disabled = !items.size;
-    $("search").classList.toggle("hidden", state.tab !== "inventaire");
+    $("bar").classList.toggle("hidden", state.tab !== "inventaire");
     if (state.tab === "inventaire") renderInventory(box);
     else if (state.tab === "commande") renderOrder(box);
     else if (state.tab === "comptage") renderCount(box);
@@ -1088,7 +1136,7 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     var help = [
       ["Comment remplir ce fichier"],
       ["Seule la colonne « Article » est obligatoire. Toutes les autres sont facultatives."],
-      ["Domaine : Endodontie, Chirurgie, Implants ou Consommables."],
+      ["Domaine : Endodontie, Chirurgie, Implants, Anesthésie ou Consommables."],
       ["Vous pouvez aussi créer une feuille par domaine (nommée Endodontie, Chirurgie…), sans colonne Domaine."],
       ["Un article dont le nom existe déjà dans l'appli est ignoré : l'import n'écrase rien."],
       ["Péremption : jj/mm/aaaa. Supprimez cette feuille d'aide si vous voulez, elle est ignorée à l'import."]
@@ -1152,6 +1200,7 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
     var n = norm(name);
     if (/gutta|lime k|reverso|endo|obtur|canal/.test(n)) return "Endodontie";
     if (/implant|cicatrisation|pilier/.test(n)) return "Implants";
+    if (/anesth|articaine|lidocaine|mepivacaine|septocaine|carpule/.test(n)) return "Anesthésie";
     if (/suture|novosyn|bistouri|chirurg|membrane|greffe/.test(n)) return "Chirurgie";
     return "Consommables";
   }
@@ -1353,8 +1402,10 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
   // ---------- événements ----------
   document.querySelectorAll(".tab").forEach(function (t) {
     t.addEventListener("click", function () {
-      state.tab = t.getAttribute("data-tab");
-      if (state.tab !== "inventaire") state.filter = "all";
+      var target = t.getAttribute("data-tab");
+      if (target === "inventaire" && state.tab === "inventaire") { state.cat = ""; state.q = ""; $("search").value = ""; }
+      state.tab = target;
+      state.filter = "all";
       syncTabs(); render();
     });
   });
@@ -1447,6 +1498,15 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
   $("loginPw").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
   $("loginEmail").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
   $("logoutBtn").addEventListener("click", function () { if (sb) sb.auth.signOut(); });
+  function closeMenu() { $("moreMenu").classList.add("hidden"); $("moreBtn").setAttribute("aria-expanded", "false"); }
+  $("moreBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    var hidden = $("moreMenu").classList.toggle("hidden");
+    $("moreBtn").setAttribute("aria-expanded", hidden ? "false" : "true");
+  });
+  $("moreMenu").addEventListener("click", function (e) { if (e.target.closest && e.target.closest("button")) closeMenu(); });
+  document.addEventListener("click", function (e) { if (!(e.target.closest && e.target.closest(".menuwrap"))) closeMenu(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeMenu(); });
 
   // ---------- données en direct ----------
   function startData() {
