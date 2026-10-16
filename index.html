@@ -258,6 +258,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 .row.untracked .item-name, .row.untracked .desc { color:var(--muted); font-weight:500; }
 .subrow { display:flex; justify-content:space-between; align-items:center; width:100%; text-align:left; padding:7px 14px 7px 22px; background:var(--bg); border:0; border-top:1px solid var(--line); font-weight:600; font-size:13.5px; color:var(--ink); }
 .subrow small { color:var(--muted); font-weight:600; }
+.tilebar { display:flex; justify-content:flex-end; align-items:center; gap:8px; margin:0 0 10px; color:var(--muted); font-size:13px; }
+.tilebar select { padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink); }
 .star { background:none; border:0; padding:0 6px 0 0; font-size:18px; line-height:1; color:var(--muted); }
 .star.on { color:#f59e0b; }
 .btn.big { padding:12px 18px; font-size:18px; font-weight:700; min-width:72px; }
@@ -356,7 +358,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v26</div>
+            <div class="menu-who"><span id="who"></span> · v27</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -600,7 +602,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
-  var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, collapsed: {}, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
+  var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, collapsed: {}, tileSort: "usuel", editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
   var chain = Promise.resolve();
 
@@ -951,8 +953,29 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   }
   function renderTiles(box) {
     var stats = domainStats();
+    var order = domainList();
+    function numOf(c) {
+      var o = stats[c]; if (!o || !o.n) return 0;
+      var us = Object.keys(o.sum);
+      return us.length === 1 ? Math.round(o.sum[us[0]] * 100) / 100 : o.n;
+    }
+    var byName = function (a, b) { return norm(a).localeCompare(norm(b)); };
+    if (state.tileSort === "az") order.sort(byName);
+    else if (state.tileSort === "za") order.sort(function (a, b) { return byName(b, a); });
+    else if (state.tileSort === "plus") order.sort(function (a, b) { return numOf(b) - numOf(a) || byName(a, b); });
+    else if (state.tileSort === "moins") order.sort(function (a, b) { return numOf(a) - numOf(b) || byName(a, b); });
+    var sel = h("select", { id: "tileSort", "aria-label": "Trier les domaines" });
+    [["usuel", "Ordre habituel"], ["az", "A → Z"], ["za", "Z → A"], ["plus", "Du plus rempli au moins rempli"], ["moins", "Du moins rempli au plus rempli"]].forEach(function (o) {
+      sel.append(h("option", { value: o[0], text: o[1], selected: state.tileSort === o[0] }));
+    });
+    sel.addEventListener("change", function () {
+      state.tileSort = sel.value;
+      try { localStorage.setItem("simsim_tilesort", sel.value); } catch (e) {}
+      render();
+    });
+    box.append(h("div", { class: "tilebar" }, h("label", { for: "tileSort", text: "Trier les domaines :" }), sel));
     var grid = h("div", { class: "tiles" });
-    domainList().forEach(function (c) {
+    order.forEach(function (c) {
       var o = stats[c] || { n: 0, sum: {}, bas: 0, rupt: 0, exp: 0, cat: 0 };
       var us = Object.keys(o.sum), big, label;
       if (!o.n) { big = "0"; label = o.cat ? "aucun article suivi" : "aucun article"; }
@@ -2455,6 +2478,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     });
   });
   (function () { var t = "blanc"; try { t = localStorage.getItem("simsim_theme") || "blanc"; } catch (e) {} applyTheme(t); })();
+  try { var ts = localStorage.getItem("simsim_tilesort"); if (ts) state.tileSort = ts; } catch (e) {}
   function closeMenu() { $("moreMenu").classList.add("hidden"); $("moreBtn").setAttribute("aria-expanded", "false"); }
   $("moreBtn").addEventListener("click", function (e) {
     e.stopPropagation();
