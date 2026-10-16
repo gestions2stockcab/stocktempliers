@@ -19,6 +19,7 @@
   // ============================================================
   window.SIMSIM_CONFIG = {
     name: "SimSimStock",
+    tva: 20,   // taux de TVA utilisé pour la valeur du stock TTC
     url: "https://wcalquzjehvhcjevjwxe.supabase.co",
     key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYWxxdXpqZWh2aGNqZXZqd3hlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNzIxNzcsImV4cCI6MjEwNzY0ODE3N30.pCshhG1OXoSG3LYs-Z_wGOsu0lJV6pNzQAgy4B1Bcg8"
   };
@@ -279,7 +280,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v11</div>
+            <div class="menu-who"><span id="who"></span> · v12</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -432,6 +433,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 
   // ---------- état ----------
   var cfg = window.SIMSIM_CONFIG || {};
+  var TVA = (cfg.tva != null && isFinite(Number(cfg.tva))) ? Number(cfg.tva) : 20;
   var siteName = (cfg.name && String(cfg.name).indexOf("NOM_DU_CABINET") === -1) ? String(cfg.name) : "SimSimStock";
   document.title = siteName;
   $("loginTitle").textContent = siteName;
@@ -659,7 +661,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       if (norm(it.category).indexOf("equipement") !== 0) total += (Number(it.qty) || 0) * (Number(it.price) || 0);
     });
     var home = state.tab === "inventaire" && isHome();
-    $("stockValue").textContent = (home && all.length) ? "Valeur du stock (hors équipement) : " + money(total) + " HT" : "";
+    $("stockValue").textContent = (home && all.length) ? "Valeur du stock (hors équipement) : " + money(total) + " HT · " + money(total * (1 + TVA / 100)) + " TTC (TVA " + TVA + " %)" : "";
     var box = $("alerts"); box.textContent = "";
     box.classList.toggle("hidden", !home || (!bas && !rupt && !exp));
     var mk = function (n, label, filter, cls) {
@@ -882,7 +884,12 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         return fmt(n) + " " + u + (n > 1 && !/s$/i.test(u) ? "s" : "");
       });
       var DOM_OF = { "Endodontie": "d'endodontie", "Chirurgie": "de chirurgie", "Implants": "d'implant", "Anesthésie": "d'anesthésie", "Consommables": "de consommables" };
-      if (inDom.length) sub = parts.join(" + ") + (DOM_OF[state.cat] ? " " + DOM_OF[state.cat] : "") + " (" + inDom.length + " réf.)";
+      var valHt = 0;
+      inDom.forEach(function (it) { valHt += (Number(it.qty) || 0) * (Number(it.price) || 0); });
+      if (inDom.length) {
+        sub = parts.join(" + ") + (DOM_OF[state.cat] ? " " + DOM_OF[state.cat] : "") + " (" + inDom.length + " réf.)";
+        if (valHt > 0) sub += " · valeur " + money(valHt) + " HT / " + money(valHt * (1 + TVA / 100)) + " TTC";
+      }
     }
     box.append(
       h("button", { class: "btn sm", onclick: function () { state.cat = ""; state.filter = "all"; state.q = ""; $("search").value = ""; render(); }, text: "← Domaines" }),
