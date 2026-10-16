@@ -214,6 +214,14 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 .crumb-title { font-size:22px; }
 .crumb-sub { flex-basis:100%; color:var(--muted); font-size:14px; font-weight:600; }
 .foot { margin-top:18px; }
+#pick { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+.pick-card { width:min(560px,100%); }
+.pick-card .tiles { grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); }
+.scanbox { width:100%; max-width:420px; margin:0 auto; border-radius:12px; overflow:hidden; background:#000; min-height:60px; }
+.scanitem { display:flex; flex-direction:column; gap:10px; }
+.scanres { display:flex; flex-direction:column; gap:6px; max-height:180px; overflow:auto; }
+.scanres .btn { text-align:left; }
+.chk { display:flex; gap:8px; align-items:flex-start; font-size:14px; }
 
 @media (max-width: 760px) {
   .counters { grid-template-columns:repeat(2,1fr); }
@@ -251,6 +259,15 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   </div>
 </div>
 
+<div id="pick" class="hidden">
+  <div class="login-card pick-card">
+    <h1 id="pickTitle">Choisissez un cabinet</h1>
+    <div class="sub" id="pickHint"></div>
+    <div class="tiles" id="pickTiles"></div>
+    <button class="btn" id="pickLogout">Se déconnecter</button>
+  </div>
+</div>
+
 <div class="wrap hidden" id="app">
   <header class="top">
     <div class="title-row">
@@ -260,10 +277,11 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v8</div>
+            <div class="menu-who"><span id="who"></span> · v10</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
+            <button class="mi hidden" id="switchBtn">Changer de cabinet</button>
             <button class="mi" id="logoutBtn">Se déconnecter</button>
           </div>
         </div>
@@ -282,6 +300,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 
   <div class="bar" id="bar">
     <input class="search" id="search" type="search" placeholder="Rechercher un article" aria-label="Rechercher">
+    <button class="btn" id="scanBtn">Scanner</button>
     <button class="btn primary" id="addBtn">+ Ajouter</button>
   </div>
   <div class="alerts" id="alerts"></div>
@@ -328,6 +347,10 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
           <label class="f">Date de péremption
             <input id="f_expiry" type="date">
           </label>
+          <label class="f full">Code-barres (facultatif)
+            <input id="f_barcode" autocomplete="off">
+          </label>
+          <div class="full"><button class="btn sm" id="barScan">Scanner le code-barres de l'article</button></div>
         </div>
       </details>
       <div class="full" id="docsBox">
@@ -346,6 +369,16 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       <button class="btn" id="itemCancel">Annuler</button>
       <button class="btn primary" id="itemSave">Enregistrer</button>
     </div>
+  </div>
+</dialog>
+
+<dialog id="scanDlg">
+  <div class="dlg">
+    <h2 id="scanTitle">Scanner un article</h2>
+    <div id="scanReader" class="scanbox"></div>
+    <div class="sub" id="scanStatus"></div>
+    <div id="scanPanel"></div>
+    <div class="dlg-actions"><button class="btn" id="scanClose">Fermer</button></div>
   </div>
 </dialog>
 
@@ -387,6 +420,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 (function () {
   "use strict";
@@ -407,6 +441,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var channels = [];
   var docCounts = {};
   var docsOk = false;
+  var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
+  var barcodeOk = false;
   var started = false;
   var state = { tab: "inventaire", filter: "all", q: "", cat: "", editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
@@ -470,16 +506,20 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     return {
       id: r.id, name: r.name || "", category: r.category || "", supplier: r.supplier || "", ref: r.ref || "",
       location: r.location || "", unit: r.unit || "", qty: Number(r.qty) || 0, min: Number(r.min) || 0,
-      target: Number(r.target) || 0, lot: r.lot || "", expiry: r.expiry || "", price: Number(r.price) || 0
+      target: Number(r.target) || 0, lot: r.lot || "", expiry: r.expiry || "", price: Number(r.price) || 0,
+      barcode: r.barcode || ""
     };
   }
   function toRow(d) {
-    return {
+    var row = {
+      cabinet_id: cabinetId,
       name: d.name, category: d.category || "", supplier: d.supplier || "", ref: d.ref || "",
       location: d.location || "", unit: d.unit || "", qty: d.qty, min: d.min, target: d.target || 0,
       lot: d.lot || "", expiry: d.expiry || null, price: d.price || 0,
       updated_at: new Date().toISOString()
     };
+    if (d._barcodeKey) row.barcode = d.barcode || null;
+    return row;
   }
   function check(res) {
     if (res && res.error) throw res.error;
@@ -526,7 +566,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   }
   function appendLog(entry) {
     return sb.from("movements").insert({
-      user_email: myEmail, item_id: entry.itemId || null, item: entry.item || "", type: entry.type || "",
+      cabinet_id: cabinetId, user_email: myEmail, item_id: entry.itemId || null, item: entry.item || "", type: entry.type || "",
       delta: entry.delta || 0, qty: entry.qty || 0, note: entry.note || ""
     }).select().single().then(function (res) { addLogRow(check(res)); });
   }
@@ -547,6 +587,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   }
   function saveItem(data, existing) {
     if (!db || readOnly) return;
+    if (data.barcode && !barcodeOk) { toast("Lancez d'abord le script SQL « ajout-codebarres » dans Supabase."); return; }
+    data._barcodeKey = !!(data.barcode || (existing && existing.barcode));
     enqueue(function () {
       var before = existing ? Number(existing.qty) || 0 : 0;
       var req = existing
@@ -922,6 +964,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     renderCrumb();
     var box = $("content"); box.textContent = "";
     $("addBtn").disabled = readOnly || !db;
+    $("scanBtn").disabled = !db;
     $("importBtn").disabled = readOnly || !db;
     $("exportBtn").disabled = !items.size;
     $("bar").classList.toggle("hidden", state.tab !== "inventaire");
@@ -937,7 +980,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   }
 
   // ---------- boîtes de dialogue ----------
-  var FIELDS = ["name", "category", "location", "unit", "qty", "min", "target", "lot", "expiry", "price"];
+  var FIELDS = ["name", "category", "location", "unit", "qty", "min", "target", "lot", "expiry", "price", "barcode"];
   function fillDomainSelect(current) {
     var sel = $("f_category");
     var list = DOMAINS.concat([EQUIP]);
@@ -979,7 +1022,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       target: Math.max(0, num($("f_target").value)),
       lot: $("f_lot").value.trim(),
       expiry: $("f_expiry").value,
-      price: Math.max(0, num($("f_price").value))
+      price: Math.max(0, num($("f_price").value)),
+      barcode: $("f_barcode").value.trim()
     };
   }
   function openAdjust(it) {
@@ -1360,12 +1404,12 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (!okType) { toast("Seuls les PDF et les photos sont acceptés."); return; }
     if (file.size > 10 * 1024 * 1024) { toast("Ce fichier dépasse 10 Mo."); return; }
     var safe = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9._-]+/g, "_");
-    var path = it.id + "/" + Date.now() + "-" + safe;
+    var path = cabinetId + "/" + it.id + "/" + Date.now() + "-" + safe;
     toast("Envoi du document…");
     enqueue(function () {
       return sb.storage.from("docs").upload(path, file, { contentType: file.type, upsert: false }).then(function (up) {
         if (up.error) throw up.error;
-        return sb.from("documents").insert({ item_id: it.id, name: file.name, path: path, size: file.size, mime: file.type, user_email: myEmail });
+        return sb.from("documents").insert({ cabinet_id: cabinetId, item_id: it.id, name: file.name, path: path, size: file.size, mime: file.type, user_email: myEmail });
       }).then(function (res) {
         check(res);
         docCounts[it.id] = (docCounts[it.id] || 0) + 1;
@@ -1397,6 +1441,199 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         return sb.from("documents").delete().eq("item_id", itemId);
       }).then(function () { delete docCounts[itemId]; });
     }).catch(function () {});
+  }
+
+  // ---------- scan de codes-barres et de QR codes ----------
+  var scanner = null, scanMode = "stock", scanBusy = false, lastCode = "", lastAt = 0;
+  function parseGs1(raw) {
+    var s = String(raw || "").replace(/^\][A-Za-z]\d/, "");
+    var out = {}, m;
+    if (s.indexOf("(") !== -1) {
+      var re = /\((\d{2,4})\)([^(]*)/g;
+      while ((m = re.exec(s))) out[m[1]] = m[2].trim();
+    } else {
+      var i = 0;
+      while (i < s.length) {
+        var ai = s.substr(i, 2);
+        if (ai === "01") { out["01"] = s.substr(i + 2, 14); i += 16; }
+        else if (ai === "17" || ai === "15" || ai === "11") { out[ai] = s.substr(i + 2, 6); i += 8; }
+        else if (ai === "10" || ai === "21") {
+          var k = s.indexOf("\u001d", i + 2);
+          if (k === -1) k = s.length;
+          out[ai] = s.slice(i + 2, k); i = k + 1;
+        } else break;
+      }
+    }
+    return out["01"] && /^\d{14}$/.test(out["01"]) ? out : null;
+  }
+  function gs1Date(v) {
+    if (!/^\d{6}$/.test(v || "")) return "";
+    var year = 2000 + parseInt(v.slice(0, 2), 10), mm = parseInt(v.slice(2, 4), 10), dd = parseInt(v.slice(4, 6), 10);
+    if (mm < 1 || mm > 12) return "";
+    if (dd === 0) dd = new Date(year, mm, 0).getDate();
+    return year + "-" + String(mm).padStart(2, "0") + "-" + String(dd).padStart(2, "0");
+  }
+  function scanKey(text) {
+    var g = parseGs1(text);
+    return g ? "gtin:" + g["01"] : String(text).trim();
+  }
+  function stopScanner() {
+    var sc = scanner; scanner = null;
+    if (!sc) return Promise.resolve();
+    return Promise.resolve().then(function () { return sc.stop(); }).catch(function () {}).then(function () { try { sc.clear(); } catch (e) {} });
+  }
+  function startScanner() {
+    return stopScanner().then(function () {
+      var F = window.Html5QrcodeSupportedFormats;
+      scanner = new window.Html5Qrcode("scanReader", {
+        formatsToSupport: [F.QR_CODE, F.EAN_13, F.EAN_8, F.CODE_128, F.CODE_39, F.UPC_A, F.UPC_E, F.DATA_MATRIX, F.ITF],
+        experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+        verbose: false
+      });
+      return scanner.start({ facingMode: "environment" }, {
+        fps: 10,
+        qrbox: function (w, h2) { return { width: Math.floor(w * 0.85), height: Math.floor(Math.min(h2, w) * 0.55) }; }
+      }, onScan, function () {});
+    }).catch(function () {
+      $("scanStatus").textContent = "La caméra n'a pas pu démarrer. Autorisez l'accès à la caméra dans votre navigateur, puis réessayez.";
+    });
+  }
+  function openScan(mode) {
+    if (!window.Html5Qrcode) { toast("Le scanner n'a pas pu être chargé : vérifiez votre accès à internet."); return; }
+    if (mode === "stock" && !barcodeOk) { toast("Lancez d'abord le script SQL « ajout-codebarres » dans Supabase."); return; }
+    scanMode = mode; scanBusy = false; lastCode = "";
+    $("scanTitle").textContent = mode === "capture" ? "Scanner le code de l'article" : "Scanner un article";
+    $("scanPanel").textContent = "";
+    $("scanStatus").textContent = "Placez le code devant la caméra.";
+    $("scanDlg").showModal();
+    startScanner();
+  }
+  function closeScan() {
+    return stopScanner().then(function () { scanBusy = false; if ($("scanDlg").open) $("scanDlg").close(); });
+  }
+  function resetScan() {
+    scanBusy = false; lastCode = "";
+    $("scanPanel").textContent = "";
+    $("scanStatus").textContent = "Placez le code devant la caméra.";
+    startScanner();
+  }
+  function onScan(text) {
+    var now = Date.now();
+    if (scanBusy || (text === lastCode && now - lastAt < 2500)) return;
+    lastCode = text; lastAt = now;
+    var info = parseGs1(text), key = scanKey(text);
+    if (scanMode === "capture") {
+      $("f_barcode").value = key;
+      if (info) {
+        if (info["10"]) $("f_lot").value = info["10"];
+        var d = gs1Date(info["17"]) || gs1Date(info["15"]);
+        if (d) $("f_expiry").value = d;
+      }
+      closeScan();
+      toast("Code lu : cliquez sur Enregistrer pour le garder dans la fiche.");
+      return;
+    }
+    scanBusy = true;
+    var it = Array.from(items.values()).find(function (x) { return x.barcode && x.barcode === key; });
+    stopScanner();
+    $("scanStatus").textContent = "";
+    if (it) showScanItem(it, info); else showScanUnknown(key, info);
+  }
+  function setLotExpiry(it, info) {
+    var exp = gs1Date(info["17"]) || gs1Date(info["15"]), lot = info["10"] || "";
+    if (!lot && !exp) return;
+    enqueue(function () {
+      var patch = { updated_at: new Date().toISOString() };
+      if (lot) patch.lot = lot;
+      if (exp) patch.expiry = exp;
+      return sb.from("items").update(patch).eq("id", it.id).then(function (res) {
+        check(res);
+        var cur = items.get(it.id);
+        if (cur) { items.set(it.id, Object.assign({}, cur, { lot: lot || cur.lot, expiry: exp || cur.expiry })); render(); }
+      });
+    });
+  }
+  function showScanItem(it, info) {
+    var panel = $("scanPanel"); panel.textContent = "";
+    var sign = 1;
+    var inB = h("button", { "aria-pressed": "true", text: "Entrée" });
+    var outB = h("button", { "aria-pressed": "false", text: "Sortie" });
+    var sync = function () {
+      inB.setAttribute("aria-pressed", sign > 0 ? "true" : "false");
+      outB.setAttribute("aria-pressed", sign < 0 ? "true" : "false");
+    };
+    inB.addEventListener("click", function () { sign = 1; sync(); });
+    outB.addEventListener("click", function () { sign = -1; sync(); });
+    var q = h("input", { type: "number", min: "0", step: "any", inputmode: "decimal", value: "1", "aria-label": "Quantité" });
+    var lotTxt = info ? [info["10"] ? "lot " + info["10"] : "",
+      (gs1Date(info["17"]) || gs1Date(info["15"])) ? "péremption " + isoToFr(gs1Date(info["17"]) || gs1Date(info["15"])) : ""].filter(Boolean).join(" · ") : "";
+    var chk = lotTxt ? h("input", { type: "checkbox", checked: true }) : null;
+    var ok = h("button", { class: "btn primary", text: "Valider" });
+    ok.addEventListener("click", function () {
+      var n = Math.abs(num(q.value));
+      if (n <= 0) { toast("Indiquez une quantité supérieure à zéro."); return; }
+      adjustQty(it, sign * n, "Scan");
+      if (chk && chk.checked && sign > 0) setLotExpiry(it, info);
+      toast((sign > 0 ? "Entrée" : "Sortie") + " de " + fmt(n) + " : " + it.name);
+      resetScan();
+    });
+    var other = h("button", { class: "btn", text: "Scanner un autre", onclick: resetScan });
+    panel.append(h("div", { class: "scanitem" },
+      h("div", { class: "item-name", text: it.name }),
+      h("div", { class: "meta", text: "En stock : " + fmt(it.qty) + (it.unit ? " " + it.unit : "") + (it.category ? " · " + it.category : "") }),
+      h("div", { class: "seg" }, inB, outB),
+      h("label", { class: "f" }, "Quantité", q),
+      chk ? h("label", { class: "chk" }, chk, "Enregistrer " + lotTxt + " sur l'article (entrée uniquement)") : null,
+      h("div", { class: "dlg-actions" }, other, ok)));
+    setTimeout(function () { q.focus(); q.select(); }, 0);
+  }
+  function associateBarcode(x, key, info) {
+    enqueue(function () {
+      return sb.from("items").update({ barcode: key, updated_at: new Date().toISOString() }).eq("id", x.id).then(function (res) {
+        check(res);
+        var nx = Object.assign({}, items.get(x.id) || x, { barcode: key });
+        items.set(x.id, nx); render();
+        showScanItem(nx, info);
+        return appendLog({ type: "edit", itemId: x.id, item: x.name, delta: 0, qty: nx.qty, note: "Code-barres associé" });
+      });
+    });
+  }
+  function showScanUnknown(key, info) {
+    var panel = $("scanPanel"); panel.textContent = "";
+    var search = h("input", { type: "search", placeholder: "Rechercher l'article à associer", autocomplete: "off", "aria-label": "Rechercher un article" });
+    var results = h("div", { class: "scanres" });
+    var fill = function () {
+      results.textContent = "";
+      var qn = norm(search.value);
+      Array.from(items.values())
+        .filter(function (x) { return !qn || norm(x.name).indexOf(qn) !== -1; })
+        .sort(function (a, b) { return norm(a.name).localeCompare(norm(b.name)); })
+        .slice(0, 8)
+        .forEach(function (x) {
+          results.append(h("button", { class: "btn sm", onclick: function () { associateBarcode(x, key, info); },
+            text: x.name + (x.barcode ? " (a déjà un code)" : "") }));
+        });
+    };
+    search.addEventListener("input", fill); fill();
+    var create = h("button", { class: "btn primary", text: "Créer un nouvel article avec ce code", onclick: function () {
+      closeScan().then(function () {
+        openItem(null);
+        $("f_barcode").value = key;
+        if (info) {
+          if (info["10"]) $("f_lot").value = info["10"];
+          var d = gs1Date(info["17"]) || gs1Date(info["15"]);
+          if (d) $("f_expiry").value = d;
+        }
+        document.querySelector("#itemDlg .more").open = true;
+      });
+    } });
+    panel.append(h("div", { class: "scanitem" },
+      h("div", { class: "item-name", text: "Code inconnu" }),
+      h("div", { class: "meta", text: key.slice(0, 60) }),
+      h("div", { class: "sub", text: "Associez ce code à un article existant, ou créez un nouvel article." }),
+      h("label", { class: "f" }, "Article", search),
+      results, create,
+      h("div", { class: "dlg-actions" }, h("button", { class: "btn", text: "Scanner un autre", onclick: resetScan }))));
   }
 
   // ---------- événements ----------
@@ -1438,6 +1675,10 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   });
   $("tplBtn").addEventListener("click", downloadTemplate);
   $("pdfCancel").addEventListener("click", function () { $("pdfDlg").close(); });
+  $("scanBtn").addEventListener("click", function () { openScan("stock"); });
+  $("barScan").addEventListener("click", function () { openScan("capture"); });
+  $("scanClose").addEventListener("click", function () { closeScan(); });
+  $("scanDlg").addEventListener("close", function () { stopScanner(); scanBusy = false; });
   $("docAdd").addEventListener("click", function () { $("docFile").click(); });
   $("docFile").addEventListener("change", function (e) {
     var f = e.target.files && e.target.files[0];
@@ -1512,30 +1753,38 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   function startData() {
     if (started) return;
     started = true;
-    sb.from("items").select("*").limit(5000).then(function (res) {
+    var cid = cabinetId;
+    sb.from("items").select("*").eq("cabinet_id", cid).limit(5000).then(function (res) {
+      if (cid !== cabinetId) return;
       var m = new Map();
       (check(res) || []).forEach(function (r) { m.set(r.id, fromRow(r)); });
       items = m; render();
     }).catch(function (e) { onWriteError(e); });
-    sb.from("movements").select("*").order("created_at", { ascending: false }).limit(300).then(function (res) {
+    sb.from("movements").select("*").eq("cabinet_id", cid).order("created_at", { ascending: false }).limit(300).then(function (res) {
+      if (cid !== cabinetId) return;
       var rows = (check(res) || []).slice().reverse();
       logEntries = []; logIds = new Set();
       rows.forEach(addLogRow);
       render();
     }).catch(function () {});
-    sb.from("documents").select("item_id").limit(10000).then(function (res) {
+    sb.from("documents").select("item_id").eq("cabinet_id", cid).limit(10000).then(function (res) {
+      if (cid !== cabinetId) return;
       if (res.error) { docsOk = false; return; }
       docsOk = true; docCounts = {};
       (res.data || []).forEach(function (d) { docCounts[d.item_id] = (docCounts[d.item_id] || 0) + 1; });
       render();
     }).catch(function () { docsOk = false; });
-    var ch = sb.channel("simsimstock")
+    sb.from("items").select("barcode").eq("cabinet_id", cid).limit(1).then(function (res) {
+      if (cid === cabinetId) barcodeOk = !res.error;
+    }).catch(function () { barcodeOk = false; });
+    var ch = sb.channel("simsimstock-" + cid)
       .on("postgres_changes", { event: "*", schema: "public", table: "items" }, function (p) {
         if (p.eventType === "DELETE") items.delete(p.old.id);
-        else items.set(p.new.id, fromRow(p.new));
+        else if (p.new && p.new.cabinet_id === cabinetId) items.set(p.new.id, fromRow(p.new));
+        else return;
         render();
       })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "movements" }, function (p) { addLogRow(p.new); })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "movements" }, function (p) { if (p.new && p.new.cabinet_id === cabinetId) addLogRow(p.new); })
       .subscribe(function (status) {
         if (status === "SUBSCRIBED") setLive(true, "Partagé en direct");
         else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") setLive(false, "Connexion perdue");
@@ -1545,24 +1794,64 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   function stopData() {
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     channels = []; started = false;
-    items = new Map(); logEntries = []; logIds = new Set(); countDraft = {};
+    items = new Map(); logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false;
+  }
+  function showScreen(which) {
+    $("login").classList.toggle("hidden", which !== "login");
+    $("pick").classList.toggle("hidden", which !== "pick");
+    $("app").classList.toggle("hidden", which !== "app");
+  }
+  function showPick(none, loading) {
+    showScreen("pick");
+    $("pickTitle").textContent = loading ? "Chargement…" : (none ? "Aucun cabinet" : "Choisissez un cabinet");
+    $("pickHint").textContent = loading ? "" : (none
+      ? "Votre compte n'est rattaché à aucun cabinet. Demandez à la personne qui gère l'outil de vous y rattacher."
+      : "Connecté en tant que " + myEmail);
+    var box = $("pickTiles"); box.textContent = "";
+    if (!none && !loading) cabinets.forEach(function (c) {
+      box.append(h("button", { class: "tile", onclick: function () { enterCabinet(c); } },
+        h("span", { class: "tile-name", text: c.name })));
+    });
+  }
+  function enterCabinet(c) {
+    stopData();
+    cabinetId = c.id; cabinetName = c.name;
+    try { localStorage.setItem("simsim_cabinet_" + (sessionUser || ""), c.id); } catch (e) {}
+    $("appTitle").textContent = c.name;
+    document.title = siteName + " – " + c.name;
+    $("switchBtn").classList.toggle("hidden", cabinets.length < 2);
+    state.tab = "inventaire"; state.filter = "all"; state.cat = ""; state.q = ""; $("search").value = "";
+    syncTabs(); showScreen("app"); startData(); render();
+  }
+  function loadCabinets() {
+    return sb.from("cabinets").select("id,name").order("name").then(function (res) {
+      cabinets = check(res) || [];
+      if (!cabinets.length) { showPick(true); return; }
+      var saved = "";
+      try { saved = localStorage.getItem("simsim_cabinet_" + (sessionUser || "")) || ""; } catch (e) {}
+      var pre = cabinets.find(function (c) { return c.id === saved; }) || (cabinets.length === 1 ? cabinets[0] : null);
+      if (pre) enterCabinet(pre); else showPick(false);
+    }).catch(function (e) { onWriteError(e); showPick(true); });
   }
   function setSession(s) {
     if (s && s.user) {
+      if (sessionUser === s.user.id) return;   // simple renouvellement du jeton : rien à refaire
+      sessionUser = s.user.id;
       myEmail = s.user.email || "";
       db = sb;
-      $("login").classList.add("hidden");
-      $("app").classList.remove("hidden");
       $("who").textContent = myEmail;
-      startData();
+      showPick(false, true);
+      loadCabinets();
     } else {
-      db = null; myEmail = "";
+      sessionUser = null; db = null; myEmail = "";
+      cabinetId = null; cabinetName = ""; cabinets = [];
       stopData();
-      $("app").classList.add("hidden");
-      $("login").classList.remove("hidden");
+      showScreen("login");
+      render();
     }
-    render();
   }
+  $("switchBtn").addEventListener("click", function () { stopData(); cabinetId = null; showPick(false); });
+  $("pickLogout").addEventListener("click", function () { if (sb) sb.auth.signOut(); });
 
   // ---------- démarrage ----------
   if (window.pdfjsLib) window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
