@@ -35,6 +35,7 @@
   --brand:#2563eb; --brand-ink:#ffffff;
   --ok:#15803d; --ok-bg:#dcfce7; --warn:#92400e; --warn-bg:#fef3c7; --bad:#be123c; --bad-bg:#ffe4e6; --exp:#6d28d9; --exp-bg:#ede9fe;
   --shadow:0 1px 3px rgba(15,23,42,.08);
+  --q-high:#15803d; --q-mid:#a85a00; --q-low:#962f0a; --q-zero:#c81e1e;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
@@ -70,6 +71,7 @@
   --brand:#38bdf8; --brand-ink:#082f49;
   --ok:#4ade80; --ok-bg:#14532d; --warn:#fbbf24; --warn-bg:#422006; --bad:#fb7185; --bad-bg:#4c0519; --exp:#c4b5fd; --exp-bg:#2e1065;
   --shadow:none;
+  --q-high:#4ade80; --q-mid:#fbbf24; --q-low:#fb923c; --q-zero:#f87171;
 }
 html { scroll-padding-top:env(safe-area-inset-top,0px); }
 *, *::before, *::after { box-sizing:inherit; }
@@ -125,6 +127,11 @@ button.item-name:hover { text-decoration:underline; }
 .qty { display:flex; align-items:center; gap:6px; }
 .qty .v { min-width:46px; text-align:center; font-weight:600; font-variant-numeric:tabular-nums; background:none; border:0; border-bottom:1px dashed var(--line); padding:2px 0; }
 .qty .v small { font-weight:400; color:var(--muted); }
+.qty .v.q-high, .fav-num.q-high { color:var(--q-high); }
+.qty .v.q-mid, .fav-num.q-mid { color:var(--q-mid); }
+.qty .v.q-low, .fav-num.q-low { color:var(--q-low); }
+.qty .v.q-zero, .fav-num.q-zero { color:var(--q-zero); }
+.qty .v { font-weight:700; }
 .step { width:30px; height:30px; border-radius:8px; border:1px solid var(--line); background:var(--surface); font-weight:700; line-height:1; }
 .chip { display:inline-block; padding:3px 9px; border-radius:99px; font-size:12px; font-weight:600; }
 .chip.ok { background:var(--ok-bg); color:var(--ok); }
@@ -218,14 +225,10 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 .alert.a-bas { background:var(--warn-bg); color:var(--warn); }
 .alert.a-exp { background:var(--exp-bg); color:var(--exp); }
 .tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; }
-.tile { aspect-ratio:1 / 1; display:flex; flex-direction:column; align-items:flex-start; justify-content:space-between; text-align:left; padding:16px; background:var(--surface); border:1px solid var(--line); border-top:6px solid var(--tc, var(--brand)); border-radius:16px; box-shadow:var(--shadow); min-width:0; }
-.tile:hover { border-color:var(--tc, var(--brand)); }
+.tile { aspect-ratio:1 / 1; display:flex; flex-direction:column; align-items:flex-start; justify-content:space-between; text-align:left; padding:16px; background:var(--surface); border:1px solid var(--line); border-top:4px solid var(--brand); border-radius:16px; box-shadow:var(--shadow); min-width:0; }
+.tile:hover { border-color:var(--brand); }
 .tile-name { font-family:"Bricolage Grotesque","Instrument Sans",system-ui,sans-serif; font-weight:700; font-size:17px; overflow-wrap:anywhere; }
 .tile-num { font-family:"Bricolage Grotesque","Instrument Sans",system-ui,sans-serif; font-weight:700; font-size:44px; line-height:1; }
-@supports (background: color-mix(in srgb, red 10%, white)) {
-  .tile { background:color-mix(in srgb, var(--tc, var(--brand)) 9%, var(--surface)); }
-  .tile-num { color:color-mix(in srgb, var(--tc, var(--brand)) 82%, var(--ink)); }
-}
 .tile-unit { color:var(--muted); font-size:13px; margin-top:-8px; }
 .tile-alert { font-size:12.5px; font-weight:600; padding:3px 9px; border-radius:99px; }
 .t-bad { background:var(--bad-bg); color:var(--bad); }
@@ -258,7 +261,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 .star.on { color:#f59e0b; }
 .btn.big { padding:12px 18px; font-size:18px; font-weight:700; min-width:72px; }
 .favgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }
-.favcard { background:var(--surface); border:1px solid var(--line); border-top:6px solid var(--tc, var(--brand)); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:10px; box-shadow:var(--shadow); min-width:0; }
+.favcard { background:var(--surface); border:1px solid var(--line); border-top:4px solid var(--brand); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:10px; box-shadow:var(--shadow); min-width:0; }
 .fav-name { font-weight:700; overflow-wrap:anywhere; }
 .fav-qty { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
 .fav-num { font-family:"Bricolage Grotesque","Instrument Sans",system-ui,sans-serif; font-weight:700; font-size:34px; line-height:1; }
@@ -352,7 +355,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v21</div>
+            <div class="menu-who"><span id="who"></span> · v24</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -919,8 +922,14 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     mk(exp, "péremption à surveiller", "exp", "a-exp");
   }
 
+  // Couleur du chiffre : plus de 30 vert, de 10 à 30 orange, sous 10 orange foncé, 0 rouge
+  function qtyClass(q) {
+    q = Number(q) || 0;
+    return q <= 0 ? "q-zero" : q < 10 ? "q-low" : q <= 30 ? "q-mid" : "q-high";
+  }
   function chipFor(it) {
     var s = statusOf(it);
+    if (s === "ok") return null;
     var label = STATUS[s].label;
     if (s === "peremption") { var d = daysUntil(it.expiry); label = "Expire dans " + d + " j"; }
     return h("span", { class: "chip " + s, text: label });
@@ -951,14 +960,15 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         big = fmt(n);
         label = us[0] + (n > 1 && !/s$/i.test(us[0]) ? "s" : "") + " · " + o.n + " réf.";
       } else { big = String(o.n); label = "références"; }
-      if (o.cat) label += " · " + o.cat + " au catalogue";
+      var shown = o.n ? "" : label;
+      if (o.cat) { label += " · " + o.cat + " au catalogue"; shown += (shown ? " · " : "") + o.cat + " au catalogue"; }
       var alertTxt = o.rupt ? o.rupt + " en rupture" : (o.bas ? o.bas + " sous le seuil" : (o.exp ? o.exp + " à surveiller" : ""));
       var alertCls = o.rupt ? "t-bad" : (o.bas ? "t-warn" : "t-exp");
-      grid.append(h("button", { class: "tile", style: "--tc:" + (DOM_COLOR[c] || (c === EQUIP ? "#8a5700" : "#5c6f70")), "aria-label": c + " : " + big + " " + label,
+      grid.append(h("button", { class: "tile", "aria-label": c + " : " + big + " " + label,
         onclick: function () { state.cat = c; render(); } },
         h("span", { class: "tile-name", text: c }),
         h("span", { class: "tile-num", text: big }),
-        h("span", { class: "tile-unit", text: label }),
+        shown ? h("span", { class: "tile-unit", text: shown }) : null,
         alertTxt ? h("span", { class: "tile-alert " + alertCls, text: alertTxt }) : null));
     });
     box.append(grid);
@@ -976,7 +986,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     }
     return h("div", { class: "c-qty qty" },
       h("button", { class: "step", "aria-label": "Retirer 1 " + it.name, disabled: readOnly || (it.qty || 0) <= 0, onclick: function () { adjustQty(it, -1, "Sortie rapide"); }, text: "−" }),
-      h("button", { class: "v", title: "Saisir une entrée ou une sortie", disabled: readOnly, onclick: function () { openAdjust(it); } }, fmt(it.qty), h("small", { text: unit })),
+      h("button", { class: "v " + qtyClass(it.qty), title: "Saisir une entrée ou une sortie" + (unit ? " (" + unit.trim() + ")" : ""), disabled: readOnly, onclick: function () { openAdjust(it); } }, fmt(it.qty)),
       h("button", { class: "step", "aria-label": "Ajouter 1 " + it.name, disabled: readOnly, onclick: function () { if (hasLots(it)) openAdjust(it); else adjustQty(it, 1, "Entrée rapide"); }, text: "+" }));
   }
   function renderInventory(box) {
@@ -1407,14 +1417,12 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var grid = h("div", { class: "favgrid" });
     favs.forEach(function (it) {
       var unit = it.unit ? " " + it.unit : "";
-      var color = DOM_COLOR[it.category] || (it.category === EQUIP ? "#8a5700" : "#64748b");
-      grid.append(h("div", { class: "favcard", style: "--tc:" + color },
+      grid.append(h("div", { class: "favcard" },
         h("div", null,
           h("div", { class: "fav-name", text: it.name }),
           it.description ? h("div", { class: "desc", text: "(" + it.description + ")" }) : null),
         h("div", { class: "fav-qty" },
-          h("span", { class: "fav-num", text: fmt(it.qty) }),
-          h("span", { class: "meta", text: unit.trim() || "unité" }),
+          h("span", { class: "fav-num " + qtyClass(it.qty), text: fmt(it.qty) }),
           chipFor(it)),
         h("div", { class: "fav-actions" },
           h("button", { class: "btn big", disabled: readOnly || (it.qty || 0) <= 0, "aria-label": "Retirer 1 " + it.name, onclick: function () { adjustQty(it, -1, "Sortie rapide (favoris)"); }, text: "− 1" }),
