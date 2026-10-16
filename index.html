@@ -254,6 +254,23 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 .row.untracked { opacity:.8; }
 .subrow { display:flex; justify-content:space-between; align-items:center; width:100%; text-align:left; padding:7px 14px 7px 22px; background:var(--bg); border:0; border-top:1px solid var(--line); font-weight:600; font-size:13.5px; color:var(--ink); }
 .subrow small { color:var(--muted); font-weight:600; }
+.star { background:none; border:0; padding:0 6px 0 0; font-size:18px; line-height:1; color:var(--muted); }
+.star.on { color:#f59e0b; }
+.btn.big { padding:12px 18px; font-size:18px; font-weight:700; min-width:72px; }
+.favgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }
+.favcard { background:var(--surface); border:1px solid var(--line); border-top:6px solid var(--tc, var(--brand)); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:10px; box-shadow:var(--shadow); min-width:0; }
+.fav-name { font-weight:700; overflow-wrap:anywhere; }
+.fav-qty { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.fav-num { font-family:"Bricolage Grotesque","Instrument Sans",system-ui,sans-serif; font-weight:700; font-size:34px; line-height:1; }
+.fav-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+#lotsBox summary, #histBox summary { cursor:pointer; color:var(--brand); font-weight:600; padding:4px 0; }
+.lotrow { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) 90px auto; gap:6px; margin:6px 0; }
+.lotrow input { padding:7px 9px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); font-size:14px; min-width:0; }
+.hl { display:grid; grid-template-columns:116px minmax(0,1fr) 64px; gap:8px; padding:5px 0; border-top:1px solid var(--line); font-size:13px; }
+.hbars { display:flex; gap:10px; align-items:flex-end; height:84px; margin:8px 0 10px; }
+.hcol { display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:2px; flex:1; height:100%; }
+.hbar { width:100%; max-width:34px; background:var(--brand); border-radius:4px 4px 0 0; min-height:2px; }
+.hcol small { color:var(--muted); font-size:11px; }
 
 @media (max-width: 760px) {
   .counters { grid-template-columns:repeat(2,1fr); }
@@ -335,7 +352,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v20</div>
+            <div class="menu-who"><span id="who"></span> · v21</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -349,6 +366,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     </div>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="inventaire" aria-selected="true">Stock</button>
+      <button class="tab" role="tab" data-tab="favoris" aria-selected="false">Favoris</button>
       <button class="tab" role="tab" data-tab="commande" aria-selected="false">À commander</button>
       <button class="tab" role="tab" data-tab="comptage" aria-selected="false">Comptage</button>
       <button class="tab" role="tab" data-tab="historique" aria-selected="false">Historique</button>
@@ -395,6 +413,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <input id="f_min" type="number" min="0" step="any" inputmode="decimal">
       </label>
       <label class="chk full"><input id="f_tracked" type="checkbox" checked> Suivre ce produit en stock (alertes de stock bas et liste de commande)</label>
+      <label class="chk full"><input id="f_fav" type="checkbox"> ★ Favori : afficher dans l'onglet Favoris (sorties rapides)</label>
+      <details class="full" id="lotsBox">
+        <summary id="lotsSummary">Lots et péremptions</summary>
+        <div id="lotsRows"></div>
+        <button class="btn sm" id="lotAddRow" type="button">+ Ajouter un lot</button>
+        <div class="sub" id="lotsHint"></div>
+      </details>
       <details class="full more">
         <summary>Plus de détails (facultatif)</summary>
         <div class="grid">
@@ -431,6 +456,10 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div id="docList"></div>
         <div class="sub" id="docHint"></div>
       </div>
+      <details class="full" id="histBox">
+        <summary>Historique de cet article</summary>
+        <div id="histBody"></div>
+      </details>
     </div>
     <div class="dlg-actions">
       <button class="btn danger" id="itemDelete">Supprimer</button>
@@ -517,10 +546,19 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       <label class="f">Quantité
         <input id="adjQty" type="number" min="0" step="any" inputmode="decimal">
       </label>
-      <label class="f">Note (commande, lot…)
+      <label class="f">Note (commande…)
         <input id="adjNote" autocomplete="off">
       </label>
     </div>
+    <div class="grid" id="adjLotBox">
+      <label class="f">N° de lot (facultatif)
+        <input id="adjLot" autocomplete="off">
+      </label>
+      <label class="f">Péremption (facultatif)
+        <input id="adjExp" type="date">
+      </label>
+    </div>
+    <div class="sub" id="adjLots"></div>
     <div class="dlg-actions">
       <button class="btn" id="adjCancel">Annuler</button>
       <button class="btn primary" id="adjSave">Valider</button>
@@ -554,7 +592,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var docCounts = {};
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
-  var barcodeOk = false, descOk = false, trackedOk = false, subOk = false;
+  var barcodeOk = false, descOk = false, trackedOk = false, subOk = false, favOk = false, lotsOk = false, lotsByItem = {};
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
@@ -622,7 +660,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       id: r.id, name: r.name || "", category: r.category || "", supplier: r.supplier || "", ref: r.ref || "",
       location: r.location || "", unit: r.unit || "", qty: Number(r.qty) || 0, min: Number(r.min) || 0,
       target: Number(r.target) || 0, lot: r.lot || "", expiry: r.expiry || "", price: Number(r.price) || 0,
-      barcode: r.barcode || "", description: r.description || "", tracked: r.tracked !== false, subcategory: r.subcategory || ""
+      barcode: r.barcode || "", description: r.description || "", tracked: r.tracked !== false, subcategory: r.subcategory || "", favorite: r.favorite === true
     };
   }
   function toRow(d) {
@@ -637,6 +675,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (descOk) row.description = d.description || null;
     if (trackedOk) row.tracked = d.tracked !== false;
     if (subOk) row.subcategory = d.subcategory || null;
+    if (favOk) row.favorite = !!d.favorite;
     return row;
   }
   function check(res) {
@@ -690,8 +729,88 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       delta: entry.delta || 0, qty: entry.qty || 0, note: entry.note || ""
     }).select().single().then(function (res) { addLogRow(check(res)); });
   }
-  function adjustQty(it, delta, note) {
+  // ---------- lots et péremptions ----------
+  function r2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
+  function byExpiry(a, b) {
+    var ea = a.expiry || "9999-12-31", eb = b.expiry || "9999-12-31";
+    return ea !== eb ? (ea < eb ? -1 : 1) : String(a.lot || "").localeCompare(String(b.lot || ""));
+  }
+  function lotsOf(id) { return (lotsByItem[id] || []).slice().sort(byExpiry); }
+  function hasLots(it) { return lotsOk && (lotsByItem[it.id] || []).length > 0; }
+  function deriveFromLots(arr) {
+    var live = arr.filter(function (l) { return Number(l.qty) > 0; });
+    var exps = live.map(function (l) { return l.expiry; }).filter(Boolean).sort();
+    var names = live.map(function (l) { return l.lot; }).filter(Boolean).slice(0, 3).join(" / ");
+    return { qty: r2(live.reduce(function (a, l) { return a + (Number(l.qty) || 0); }, 0)), expiry: exps[0] || "", lot: names };
+  }
+  // Remplace les lots d'un article par la liste voulue, puis recalcule quantité, péremption la plus proche et lots de l'article.
+  function persistLots(it, desired, extra) {
+    var cur = lotsByItem[it.id] || [];
+    var curById = {}; cur.forEach(function (c) { curById[c.id] = c; });
+    var final = [], chain = Promise.resolve();
+    desired.forEach(function (d) {
+      var qty = r2(d.qty), lot = String(d.lot || "").trim(), exp = d.expiry || null;
+      if (d.id && curById[d.id]) {
+        delete curById[d.id];
+        if (qty <= 0) { chain = chain.then(function () { return sb.from("lots").delete().eq("id", d.id).then(check); }); return; }
+        final.push({ id: d.id, cabinet_id: cabinetId, item_id: it.id, lot: lot, expiry: exp, qty: qty });
+        chain = chain.then(function () { return sb.from("lots").update({ lot: lot, expiry: exp, qty: qty }).eq("id", d.id).then(check); });
+      } else if (qty > 0) {
+        chain = chain.then(function () {
+          return sb.from("lots").insert({ cabinet_id: cabinetId, item_id: it.id, lot: lot, expiry: exp, qty: qty }).select().single().then(function (res) { final.push(check(res)); });
+        });
+      }
+    });
+    Object.keys(curById).forEach(function (id) { chain = chain.then(function () { return sb.from("lots").delete().eq("id", id).then(check); }); });
+    return chain.then(function () {
+      final.sort(byExpiry);
+      lotsByItem[it.id] = final;
+      var dv = deriveFromLots(final);
+      var patch = { qty: dv.qty, expiry: dv.expiry || null, lot: dv.lot, updated_at: new Date().toISOString() };
+      if (extra) Object.assign(patch, extra);
+      return sb.from("items").update(patch).eq("id", it.id).then(function (res) {
+        check(res);
+        var curIt = items.get(it.id);
+        if (curIt) items.set(it.id, Object.assign({}, curIt, { qty: patch.qty, expiry: patch.expiry || "", lot: patch.lot || "" }, extra && extra.tracked ? { tracked: true } : {}));
+        render();
+        return { qty: patch.qty, expiry: patch.expiry || "", lot: patch.lot || "" };
+      });
+    });
+  }
+  // Mouvement sur un article qui a des lots : les sorties prennent d'abord le lot qui périme en premier.
+  function adjustWithLots(it, delta, note, lotInfo) {
+    var desired = lotsOf(it.id).map(function (l) { return { id: l.id, lot: l.lot, expiry: l.expiry || null, qty: Number(l.qty) || 0 }; });
+    var before = desired.length ? r2(desired.reduce(function (a, l) { return a + l.qty; }, 0)) : (Number(it.qty) || 0);
+    var tag = "";
+    if (delta < 0) {
+      var remaining = -delta, used = [];
+      desired.forEach(function (l) {
+        if (remaining <= 0 || l.qty <= 0) return;
+        var take = Math.min(l.qty, remaining);
+        l.qty = r2(l.qty - take); remaining = r2(remaining - take);
+        used.push((l.lot || "sans lot") + " ×" + fmt(take));
+      });
+      tag = used.length ? " · " + used.join(", ") : "";
+    } else {
+      if (!desired.length && before > 0) desired.push({ lot: "", expiry: null, qty: before });
+      var info = lotInfo || {}, lot = String(info.lot || "").trim(), exp = info.expiry || null;
+      var m = desired.find(function (l) { return (l.lot || "") === lot && (l.expiry || null) === exp; });
+      if (m) m.qty = r2(m.qty + delta); else desired.push({ lot: lot, expiry: exp, qty: delta });
+      tag = (lot || exp) ? " · lot " + (lot || "sans numéro") + (exp ? " exp. " + isoToFr(exp) : "") : "";
+    }
+    var after = r2(desired.reduce(function (a, l) { return a + l.qty; }, 0));
+    var real = r2(after - before);
+    if (real === 0) return;
+    enqueue(function () {
+      var extra = (it.tracked === false && trackedOk && real > 0) ? { tracked: true } : null;
+      return persistLots(it, desired, extra).then(function (dv) {
+        return appendLog({ type: "move", itemId: it.id, item: it.name, delta: real, qty: dv.qty, note: (note || "") + tag });
+      });
+    });
+  }
+  function adjustQty(it, delta, note, lotInfo) {
     if (!db || readOnly) return;
+    if (lotsOk && ((lotsByItem[it.id] || []).length || (delta > 0 && lotInfo && (lotInfo.lot || lotInfo.expiry)))) { adjustWithLots(it, delta, note, lotInfo); return; }
     var before = Number(it.qty) || 0;
     var after = Math.max(0, Math.round((before + delta) * 100) / 100);
     var real = Math.round((after - before) * 100) / 100;
@@ -714,6 +833,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     data._barcodeKey = !!(data.barcode || (existing && existing.barcode));
     if (data.tracked === false && !trackedOk) { toast("Lancez d'abord le script SQL « ajout-catalogue » dans Supabase."); return; }
     if (data.subcategory && !subOk) { toast("Lancez d'abord le script SQL « ajout-sous-categories » dans Supabase."); return; }
+    if (data.favorite && !favOk) { toast("Lancez d'abord le script SQL « ajout-lots-favoris » dans Supabase."); return; }
     if (data.description && !descOk) { toast("Lancez d'abord le script SQL « ajout-description » dans Supabase."); return; }
     enqueue(function () {
       var before = existing ? Number(existing.qty) || 0 : 0;
@@ -724,8 +844,14 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         var row = fromRow(check(res));
         items.set(row.id, row); render();
         var delta = Math.round((data.qty - before) * 100) / 100;
-        if (!existing) return appendLog({ type: "create", itemId: row.id, item: data.name, delta: data.qty, qty: data.qty, note: "Article créé" });
-        if (delta !== 0) return appendLog({ type: "edit", itemId: row.id, item: data.name, delta: delta, qty: data.qty, note: "Quantité corrigée" });
+        var lotChain = Promise.resolve();
+        if (lotsOk && ((data.lots || []).length || (lotsByItem[row.id] || []).length)) {
+          lotChain = persistLots(row, data.lots || [], (data.lots || []).length ? null : { qty: data.qty, expiry: data.expiry || null, lot: data.lot || "" });
+        }
+        return lotChain.then(function () {
+          if (!existing) return appendLog({ type: "create", itemId: row.id, item: data.name, delta: data.qty, qty: data.qty, note: "Article créé" });
+          if (delta !== 0) return appendLog({ type: "edit", itemId: row.id, item: data.name, delta: delta, qty: data.qty, note: "Quantité corrigée" });
+        });
       });
     });
   }
@@ -851,7 +977,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     return h("div", { class: "c-qty qty" },
       h("button", { class: "step", "aria-label": "Retirer 1 " + it.name, disabled: readOnly || (it.qty || 0) <= 0, onclick: function () { adjustQty(it, -1, "Sortie rapide"); }, text: "−" }),
       h("button", { class: "v", title: "Saisir une entrée ou une sortie", disabled: readOnly, onclick: function () { openAdjust(it); } }, fmt(it.qty), h("small", { text: unit })),
-      h("button", { class: "step", "aria-label": "Ajouter 1 " + it.name, disabled: readOnly, onclick: function () { adjustQty(it, 1, "Entrée rapide"); }, text: "+" }));
+      h("button", { class: "step", "aria-label": "Ajouter 1 " + it.name, disabled: readOnly, onclick: function () { if (hasLots(it)) openAdjust(it); else adjustQty(it, 1, "Entrée rapide"); }, text: "+" }));
   }
   function renderInventory(box) {
     if (!items.size) {
@@ -900,10 +1026,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       if (it.expiry) meta.push("exp. " + isoToFr(it.expiry));
       if (it.tracked !== false) meta.push("seuil " + fmt(it.min || 0));
       else if (it.price > 0) meta.push("dernier prix " + money(it.price) + " HT");
+      var nLots = (lotsByItem[it.id] || []).length;
+      if (nLots) meta.push(nLots + " lot" + (nLots > 1 ? "s" : ""));
       if (docCounts[it.id]) meta.push(docCounts[it.id] + " doc" + (docCounts[it.id] > 1 ? "s" : ""));
       table.append(h("div", { class: "row" + (it.tracked === false ? " untracked" : "") },
         h("div", { class: "c-name" },
           h("div", { class: "nameline" },
+            h("button", { class: "star" + (it.favorite ? " on" : ""), title: it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", "aria-label": it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", onclick: function () { toggleFav(it); }, text: it.favorite ? "★" : "☆" }),
             h("button", { class: "item-name", onclick: function () { openItem(it); }, text: it.name || "(sans nom)" }),
             it.description ? h("span", { class: "desc", text: "(" + it.description + ")" }) : null),
           h("div", { class: "meta c-meta", text: meta.join(" · ") })),
@@ -1115,7 +1244,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         table.append(h("div", { class: "catrow", text: cname }));
       }
       var cur = countDraft[it.id] || { qty: Number(it.qty) || 0, min: Number(it.min) || 0 };
-      var q = h("input", { class: "cin", type: "number", min: "0", step: "any", inputmode: "decimal", "aria-label": "Quantité comptée : " + it.name, value: String(cur.qty), disabled: readOnly });
+      var q = h("input", { class: "cin", type: "number", min: "0", step: "any", inputmode: "decimal", "aria-label": "Quantité comptée : " + it.name, value: String(cur.qty), disabled: readOnly || hasLots(it), title: hasLots(it) ? "Stock détaillé par lots : modifiez-le dans la fiche de l'article" : "" });
       var m = h("input", { class: "cin", type: "number", min: "0", step: "any", inputmode: "decimal", "aria-label": "Seuil d'alerte : " + it.name, value: String(cur.min), disabled: readOnly });
       var meta = [];
       if (it.subcategory) meta.push(it.subcategory);
@@ -1151,6 +1280,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     $("exportBtn").disabled = !items.size;
     $("bar").classList.toggle("hidden", state.tab !== "inventaire");
     if (state.tab === "inventaire") renderInventory(box);
+    else if (state.tab === "favoris") renderFavorites(box);
     else if (state.tab === "commande") renderOrder(box);
     else if (state.tab === "comptage") renderCount(box);
     else renderHistory(box);
@@ -1180,6 +1310,119 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     items.forEach(function (x) { if (x.subcategory && (!dom || (x.category || "Sans domaine") === dom)) set.add(x.subcategory); });
     Array.from(set).sort(function (a, b) { return norm(a).localeCompare(norm(b)); }).forEach(function (v) { dl.append(h("option", { value: v })); });
   }
+  var lotsDraft = [];
+  function lotsTotal() { return r2(lotsDraft.reduce(function (a, l) { return a + (Number(l.qty) || 0); }, 0)); }
+  function syncLotsTotal() {
+    var has = lotsDraft.length > 0;
+    $("lotsSummary").textContent = "Lots et péremptions" + (has ? " (" + lotsDraft.length + ")" : "");
+    $("lotsHint").textContent = has
+      ? "Total des lots : " + fmt(lotsTotal()) + ". Cette quantité remplace la quantité en stock. Une sortie prend d'abord le lot qui périme en premier."
+      : "Aucun lot : la quantité en stock se saisit directement. Ajoutez un lot pour suivre les péremptions lot par lot.";
+    $("f_qty").disabled = readOnly || has;
+    $("f_lot").disabled = readOnly || has; $("f_expiry").disabled = readOnly || has;
+    if (has) $("f_qty").value = lotsTotal();
+  }
+  function renderLotsDraft() {
+    var rows = $("lotsRows"); rows.textContent = "";
+    lotsDraft.forEach(function (l, i) {
+      var inLot = h("input", { type: "text", value: l.lot || "", placeholder: "N° de lot", autocomplete: "off", disabled: readOnly, "aria-label": "Numéro de lot" });
+      var inExp = h("input", { type: "date", value: l.expiry || "", disabled: readOnly, "aria-label": "Date de péremption" });
+      var inQty = h("input", { type: "number", min: "0", step: "any", inputmode: "decimal", value: String(l.qty), disabled: readOnly, "aria-label": "Quantité du lot" });
+      inLot.addEventListener("input", function () { l.lot = inLot.value; });
+      inExp.addEventListener("input", function () { l.expiry = inExp.value || null; });
+      inQty.addEventListener("input", function () { l.qty = Math.max(0, num(inQty.value)); syncLotsTotal(); });
+      rows.append(h("div", { class: "lotrow" }, inLot, inExp, inQty,
+        readOnly ? h("span") : h("button", { class: "btn sm danger", type: "button", "aria-label": "Retirer ce lot", onclick: function () { lotsDraft.splice(i, 1); renderLotsDraft(); }, text: "×" })));
+    });
+    syncLotsTotal();
+  }
+  function initLotsBox(it) {
+    var box = $("lotsBox");
+    box.classList.toggle("hidden", !lotsOk);
+    lotsDraft = (lotsOk && it) ? lotsOf(it.id).map(function (l) { return { id: l.id, lot: l.lot, expiry: l.expiry || null, qty: Number(l.qty) || 0 }; }) : [];
+    box.open = lotsDraft.length > 0;
+    $("lotAddRow").disabled = readOnly;
+    renderLotsDraft();
+  }
+  function loadItemHistory(it) {
+    var body = $("histBody"); body.textContent = "Chargement…";
+    sb.from("movements").select("*").eq("cabinet_id", cabinetId).eq("item_id", it.id).order("created_at", { ascending: false }).limit(300).then(function (res) {
+      if (!state.editing || state.editing.id !== it.id) return;
+      renderItemHistory(body, check(res) || []);
+    }).catch(function () { body.textContent = "L'historique n'a pas pu être chargé."; });
+  }
+  function renderItemHistory(body, rows) {
+    body.textContent = "";
+    if (!rows.length) { body.append(h("div", { class: "meta", text: "Aucun mouvement enregistré pour cet article." })); return; }
+    var now = Date.now(), d30 = 0, d90 = 0, months = {};
+    rows.forEach(function (r) {
+      var delta = Number(r.delta) || 0;
+      if (r.type !== "move" || delta >= 0) return;
+      var t = Date.parse(r.created_at) || 0, age = (now - t) / 86400000, out = -delta;
+      if (age <= 30) d30 += out;
+      if (age <= 90) d90 += out;
+      var dt = new Date(t), key = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0");
+      months[key] = (months[key] || 0) + out;
+    });
+    body.append(h("div", { class: "sub", text: "Sorties : " + fmt(r2(d30)) + " sur 30 jours · " + fmt(r2(d90)) + " sur 90 jours" }));
+    var cols = [], max = 0, base = new Date();
+    for (var i = 5; i >= 0; i--) {
+      var dm = new Date(base.getFullYear(), base.getMonth() - i, 1);
+      var key = dm.getFullYear() + "-" + String(dm.getMonth() + 1).padStart(2, "0");
+      var v = r2(months[key] || 0); max = Math.max(max, v);
+      cols.push({ label: dm.toLocaleDateString("fr-FR", { month: "short" }), v: v });
+    }
+    var bars = h("div", { class: "hbars", role: "img", "aria-label": "Sorties par mois sur 6 mois" });
+    cols.forEach(function (c) {
+      bars.append(h("div", { class: "hcol", title: c.label + " : " + fmt(c.v) + " sorti" + (c.v > 1 ? "s" : "") },
+        h("small", { text: c.v ? fmt(c.v) : "" }),
+        h("div", { class: "hbar", style: "height:" + (max ? Math.max(2, Math.round(c.v / max * 52)) : 2) + "px" }),
+        h("small", { text: c.label })));
+    });
+    body.append(bars);
+    rows.slice(0, 15).forEach(function (r) {
+      var d = new Date(r.created_at), delta = Number(r.delta) || 0;
+      body.append(h("div", { class: "hl" },
+        h("span", { class: "meta", text: d.toLocaleDateString("fr-FR") + " " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) }),
+        h("span", { text: [(r.user_email || "").split("@")[0], r.note].filter(Boolean).join(" · ") }),
+        h("span", { class: "delta " + (delta > 0 ? "pos" : delta < 0 ? "neg" : ""), text: (delta > 0 ? "+" : "") + (delta === 0 ? "—" : fmt(delta)) + " → " + fmt(r.qty) })));
+    });
+  }
+  function toggleFav(it) {
+    if (!db || readOnly) return;
+    if (!favOk) { toast("Lancez d'abord le script SQL « ajout-lots-favoris » dans Supabase."); return; }
+    var v = !it.favorite;
+    items.set(it.id, Object.assign({}, it, { favorite: v })); render();
+    enqueue(function () { return sb.from("items").update({ favorite: v, updated_at: new Date().toISOString() }).eq("id", it.id).then(check); });
+  }
+  function renderFavorites(box) {
+    var favs = Array.from(items.values()).filter(function (it) { return it.favorite && it.tracked !== false; })
+      .sort(function (a, b) { return norm(a.name).localeCompare(norm(b.name)); });
+    if (!favs.length) {
+      box.append(h("div", { class: "table" }, h("div", { class: "empty" },
+        h("h2", { text: "Aucun favori" }),
+        h("div", { text: "Cliquez sur l'étoile ☆ à côté d'un article (dans l'onglet Stock) pour le retrouver ici, avec de gros boutons pour les sorties rapides." }))));
+      return;
+    }
+    var grid = h("div", { class: "favgrid" });
+    favs.forEach(function (it) {
+      var unit = it.unit ? " " + it.unit : "";
+      var color = DOM_COLOR[it.category] || (it.category === EQUIP ? "#8a5700" : "#64748b");
+      grid.append(h("div", { class: "favcard", style: "--tc:" + color },
+        h("div", null,
+          h("div", { class: "fav-name", text: it.name }),
+          it.description ? h("div", { class: "desc", text: "(" + it.description + ")" }) : null),
+        h("div", { class: "fav-qty" },
+          h("span", { class: "fav-num", text: fmt(it.qty) }),
+          h("span", { class: "meta", text: unit.trim() || "unité" }),
+          chipFor(it)),
+        h("div", { class: "fav-actions" },
+          h("button", { class: "btn big", disabled: readOnly || (it.qty || 0) <= 0, "aria-label": "Retirer 1 " + it.name, onclick: function () { adjustQty(it, -1, "Sortie rapide (favoris)"); }, text: "− 1" }),
+          h("button", { class: "btn big primary", disabled: readOnly, "aria-label": "Ajouter 1 " + it.name, onclick: function () { if (hasLots(it)) openAdjust(it); else adjustQty(it, 1, "Entrée rapide (favoris)"); }, text: "+ 1" }),
+          h("button", { class: "btn sm", disabled: readOnly, onclick: function () { openAdjust(it); }, text: "Autre quantité" }))));
+    });
+    box.append(grid);
+  }
   function openItem(it) {
     state.editing = it; state.confirmDelete = false;
     fillDomainSelect(it ? it.category : "");
@@ -1197,6 +1440,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       el.disabled = readOnly;
     });
     fillSubList();
+    $("f_fav").checked = !!(it && it.favorite); $("f_fav").disabled = readOnly;
+    initLotsBox(it);
+    $("histBox").classList.toggle("hidden", !it); $("histBox").open = false; $("histBody").textContent = "";
     $("itemDelete").classList.toggle("hidden", !it || readOnly);
     $("itemDelete").textContent = "Supprimer";
     $("itemSave").disabled = readOnly;
@@ -1220,14 +1466,18 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       barcode: $("f_barcode").value.trim(),
       description: $("f_description").value.trim(),
       tracked: $("f_tracked").checked,
-      subcategory: $("f_subcategory").value.trim()
+      subcategory: $("f_subcategory").value.trim(),
+      favorite: $("f_fav").checked
     };
   }
   function openAdjust(it) {
     state.adjusting = it; state.adjSign = 1;
     $("adjTitle").textContent = labelOf(it);
     $("adjCurrent").textContent = "En stock : " + fmt(it.qty) + (it.unit ? " " + it.unit : "");
-    $("adjQty").value = ""; $("adjNote").value = "";
+    $("adjQty").value = ""; $("adjNote").value = ""; $("adjLot").value = ""; $("adjExp").value = "";
+    $("adjLots").textContent = (lotsOk && hasLots(it))
+      ? "Lots en stock : " + lotsOf(it.id).map(function (l) { return (l.lot || "sans lot") + " " + fmt(l.qty) + (l.expiry ? " (exp. " + isoToFr(l.expiry) + ")" : ""); }).join(" · ") + ". Une sortie prend d'abord le lot qui périme en premier."
+      : "";
     syncSeg();
     $("adjDlg").showModal();
     setTimeout(function () { $("adjQty").focus(); }, 0);
@@ -1235,6 +1485,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   function syncSeg() {
     $("adjIn").setAttribute("aria-pressed", state.adjSign > 0 ? "true" : "false");
     $("adjOut").setAttribute("aria-pressed", state.adjSign < 0 ? "true" : "false");
+    $("adjLotBox").classList.toggle("hidden", !(lotsOk && state.adjSign > 0));
   }
 
   // ---------- CSV ----------
@@ -1619,15 +1870,24 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       $("pdfDlg").close();
       var nEntries = Object.keys(entries).length, list = Object.keys(fresh).map(function (k) { return fresh[k]; });
       Object.keys(entries).forEach(function (id) {
-        adjustQty(entries[id].it, entries[id].qty, "Entrée PDF " + fileName);
-        if (updLot && updLot.checked) applyLotExpiry(entries[id].it, entries[id].lot, entries[id].expiry);
+        adjustQty(entries[id].it, entries[id].qty, "Entrée PDF " + fileName, lotsOk ? { lot: entries[id].lot, expiry: entries[id].expiry } : null);
+        if (!lotsOk && updLot && updLot.checked) applyLotExpiry(entries[id].it, entries[id].lot, entries[id].expiry);
       });
       if (list.length) {
         enqueue(function () {
           return sb.from("items").insert(list.map(toRow)).select().then(function (res) {
-            (check(res) || []).forEach(function (row) { items.set(row.id, fromRow(row)); });
+            var rowsIns = check(res) || [];
+            rowsIns.forEach(function (row) { items.set(row.id, fromRow(row)); });
             render();
-            return appendLog({ type: "import", itemId: "", item: "Import PDF", delta: 0, qty: 0, note: list.length + " nouveaux articles" });
+            var lotRows = [];
+            if (lotsOk) rowsIns.forEach(function (row, i) {
+              var src = list[i];
+              if (src && (src.lot || src.expiry) && src.qty > 0 && src.tracked !== false) lotRows.push({ cabinet_id: cabinetId, item_id: row.id, lot: src.lot || "", expiry: src.expiry || null, qty: src.qty });
+            });
+            var lp = lotRows.length
+              ? sb.from("lots").insert(lotRows).select().then(function (r3) { (check(r3) || []).forEach(function (l) { (lotsByItem[l.item_id] = lotsByItem[l.item_id] || []).push(l); }); render(); })
+              : Promise.resolve();
+            return lp.then(function () { return appendLog({ type: "import", itemId: "", item: "Import PDF", delta: 0, qty: 0, note: list.length + " nouveaux articles" }); });
           });
         });
       }
@@ -1842,8 +2102,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     ok.addEventListener("click", function () {
       var n = Math.abs(num(q.value));
       if (n <= 0) { toast("Indiquez une quantité supérieure à zéro."); return; }
-      adjustQty(it, sign * n, "Scan");
-      if (chk && chk.checked && sign > 0) setLotExpiry(it, info);
+      var lotInfo = (chk && chk.checked && sign > 0) ? { lot: info["10"] || "", expiry: gs1Date(info["17"]) || gs1Date(info["15"]) } : null;
+      adjustQty(it, sign * n, "Scan", lotInfo);
+      if (lotInfo && !lotsOk) setLotExpiry(it, info);
       toast((sign > 0 ? "Entrée" : "Sortie") + " de " + fmt(n) + " : " + it.name);
       resetScan();
     });
@@ -1956,6 +2217,11 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (f) uploadDoc(f);
   });
   $("itemCancel").addEventListener("click", function () { $("itemDlg").close(); });
+  $("lotAddRow").addEventListener("click", function () {
+    lotsDraft.push({ lot: "", expiry: null, qty: lotsDraft.length ? 0 : num($("f_qty").value) });
+    renderLotsDraft();
+  });
+  $("histBox").addEventListener("toggle", function () { if ($("histBox").open && state.editing) loadItemHistory(state.editing); });
   $("f_category").addEventListener("change", function () {
     var isNew = $("f_category").value === "__new__";
     $("f_category_new").classList.toggle("hidden", !isNew);
@@ -1964,6 +2230,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   });
   $("itemSave").addEventListener("click", function () {
     var d = collectItem();
+    d.lots = lotsDraft.filter(function (l) { return Number(l.qty) > 0; }).map(function (l) { return { id: l.id, lot: l.lot || "", expiry: l.expiry || null, qty: r2(l.qty) }; });
+    if (lotsOk && d.lots.length) { var dvl = deriveFromLots(d.lots); d.qty = dvl.qty; d.expiry = dvl.expiry; d.lot = dvl.lot; }
     if (!d.name) { toast("Indiquez le nom de l'article."); $("f_name").focus(); return; }
     if ($("f_category").value === "__new__" && !d.category) { toast("Indiquez le nom du nouveau domaine."); $("f_category_new").focus(); return; }
     saveItem(d, state.editing);
@@ -1987,7 +2255,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   $("adjSave").addEventListener("click", function () {
     var q = num($("adjQty").value);
     if (q <= 0) { toast("Indiquez une quantité supérieure à zéro."); $("adjQty").focus(); return; }
-    adjustQty(state.adjusting, state.adjSign * q, $("adjNote").value.trim() || (state.adjSign > 0 ? "Entrée" : "Sortie"));
+    adjustQty(state.adjusting, state.adjSign * q, $("adjNote").value.trim() || (state.adjSign > 0 ? "Entrée" : "Sortie"),
+      state.adjSign > 0 ? { lot: $("adjLot").value, expiry: $("adjExp").value } : null);
     $("adjDlg").close();
   });
   $("adjDlg").addEventListener("keydown", function (e) {
@@ -2224,6 +2493,16 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     sb.from("items").select("subcategory").eq("cabinet_id", cid).limit(1).then(function (res) {
       if (cid === cabinetId) subOk = !res.error;
     }).catch(function () { subOk = false; });
+    sb.from("items").select("favorite").eq("cabinet_id", cid).limit(1).then(function (res) {
+      if (cid === cabinetId) favOk = !res.error;
+    }).catch(function () { favOk = false; });
+    sb.from("lots").select("*").eq("cabinet_id", cid).limit(10000).then(function (res) {
+      if (cid !== cabinetId) return;
+      if (res.error) { lotsOk = false; return; }
+      lotsOk = true; lotsByItem = {};
+      (res.data || []).forEach(function (l) { (lotsByItem[l.item_id] = lotsByItem[l.item_id] || []).push(l); });
+      render();
+    }).catch(function () { lotsOk = false; });
     var ch = sb.channel("simsimstock-" + cid)
       .on("postgres_changes", { event: "*", schema: "public", table: "items" }, function (p) {
         if (p.eventType === "DELETE") items.delete(p.old.id);
@@ -2232,6 +2511,15 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         render();
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "movements" }, function (p) { if (p.new && p.new.cabinet_id === cabinetId) addLogRow(p.new); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "lots" }, function (p) {
+        if (p.eventType === "DELETE") {
+          Object.keys(lotsByItem).forEach(function (k) { lotsByItem[k] = lotsByItem[k].filter(function (l) { return l.id !== p.old.id; }); });
+        } else if (p.new && p.new.cabinet_id === cabinetId) {
+          var arr = (lotsByItem[p.new.item_id] || []).filter(function (l) { return l.id !== p.new.id; });
+          arr.push(p.new); lotsByItem[p.new.item_id] = arr;
+        } else return;
+        render();
+      })
       .subscribe(function (status) {
         if (status === "SUBSCRIBED") setLive(true, "Partagé en direct");
         else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") setLive(false, "Connexion perdue");
@@ -2241,7 +2529,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   function stopData() {
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     channels = []; started = false;
-    items = new Map(); logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false;
+    items = new Map(); logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {};
   }
   function showScreen(which) {
     $("login").classList.toggle("hidden", which !== "login");
