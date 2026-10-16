@@ -39,16 +39,6 @@
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
-/* Automatique : suit le mode sombre de l'appareil quand aucun thème n'est choisi */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
-  color-scheme: dark;
-  --bg:#0f172a; --surface:#1e293b; --surface-2:#273449; --ink:#e2e8f0; --muted:#94a3b8; --line:#334155;
-  --brand:#38bdf8; --brand-ink:#082f49;
-  --ok:#4ade80; --ok-bg:#14532d; --warn:#fbbf24; --warn-bg:#422006; --bad:#fb7185; --bad-bg:#4c0519; --exp:#c4b5fd; --exp-bg:#2e1065;
-  --shadow:none;
-  }
-}
 :root[data-theme="blanc"] { color-scheme:light; }
 /* Gris */
 :root[data-theme="gris"] {
@@ -209,10 +199,10 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
 header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-x:auto; }
 .menuwrap { position:relative; }
 .menu { position:absolute; right:0; top:calc(100% + 6px); min-width:230px; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.18); padding:6px; z-index:20; display:flex; flex-direction:column; }
-.menu-theme { padding:8px 10px 10px; border-bottom:1px solid var(--line); margin-bottom:4px; }
-.menu-theme > span { display:block; color:var(--muted); font-size:12.5px; margin-bottom:6px; }
+.head-sw { margin-right:4px; }
+.login-sw { margin:-4px 0 2px; }
 .swatches { display:flex; gap:8px; flex-wrap:wrap; }
-.sw { width:28px; height:28px; border-radius:50%; border:2px solid var(--line); padding:0; font-size:11px; font-weight:700; color:var(--ink); background:var(--surface); }
+.sw { width:24px; height:24px; border-radius:50%; border:2px solid var(--line); padding:0; font-size:11px; font-weight:700; color:var(--ink); background:var(--surface); }
 .sw[aria-pressed="true"] { outline:3px solid var(--brand); outline-offset:2px; }
 .sw-blanc { background:#ffffff; } .sw-gris { background:#d1d5db; } .sw-rose { background:#f9a8d4; } .sw-mauve { background:#c4b5fd; } .sw-sombre { background:#0f172a; }
 .menu-who { padding:8px 10px; color:var(--muted); font-size:12.5px; border-bottom:1px solid var(--line); margin-bottom:4px; overflow-wrap:anywhere; }
@@ -334,22 +324,18 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     <div class="title-row">
       <h1 id="appTitle">SimSimStock</h1>
       <div class="who-row">
+        <div class="swatches head-sw" role="group" aria-label="Couleur de fond">
+          <button class="sw sw-blanc" data-theme="blanc" title="Fond blanc" aria-label="Fond blanc"></button>
+          <button class="sw sw-gris" data-theme="gris" title="Fond gris" aria-label="Fond gris"></button>
+          <button class="sw sw-rose" data-theme="rose" title="Fond rose" aria-label="Fond rose"></button>
+          <button class="sw sw-mauve" data-theme="mauve" title="Fond mauve" aria-label="Fond mauve"></button>
+          <button class="sw sw-sombre" data-theme="sombre" title="Fond sombre" aria-label="Fond sombre"></button>
+        </div>
         <span class="sub live" id="live"><i></i><span id="liveText">Connexion…</span></span>
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v18</div>
-            <div class="menu-theme" role="group" aria-label="Apparence">
-              <span>Apparence</span>
-              <div class="swatches">
-                <button class="sw" data-theme="auto" title="Automatique" aria-label="Apparence automatique">A</button>
-                <button class="sw sw-blanc" data-theme="blanc" title="Blanc" aria-label="Fond blanc"></button>
-                <button class="sw sw-gris" data-theme="gris" title="Gris" aria-label="Fond gris"></button>
-                <button class="sw sw-rose" data-theme="rose" title="Rose" aria-label="Fond rose"></button>
-                <button class="sw sw-mauve" data-theme="mauve" title="Mauve" aria-label="Fond mauve"></button>
-                <button class="sw sw-sombre" data-theme="sombre" title="Sombre" aria-label="Fond sombre"></button>
-              </div>
-            </div>
+            <div class="menu-who"><span id="who"></span> · v20</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -569,7 +555,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
   var barcodeOk = false, descOk = false, trackedOk = false, subOk = false;
-  var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null;
+  var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
   var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, collapsed: {}, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
@@ -2161,18 +2147,36 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   $("loginPw").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
   $("loginEmail").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
   $("logoutBtn").addEventListener("click", function () { if (sb) sb.auth.signOut(); });
-  var THEMES = ["auto", "blanc", "gris", "rose", "mauve", "sombre"];
+  var THEMES = ["blanc", "gris", "rose", "mauve", "sombre"];
   function applyTheme(t) {
-    if (THEMES.indexOf(t) === -1) t = "auto";
-    if (t === "auto") document.documentElement.removeAttribute("data-theme");
-    else document.documentElement.setAttribute("data-theme", t);
+    if (THEMES.indexOf(t) === -1) t = "blanc";
+    document.documentElement.setAttribute("data-theme", t);
     document.querySelectorAll(".sw").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-theme") === t ? "true" : "false"); });
     try { localStorage.setItem("simsim_theme", t); } catch (e) {}
   }
+  function loadPrefs() {
+    var uid = sessionUser;
+    sb.from("user_prefs").select("theme").eq("user_id", uid).maybeSingle().then(function (res) {
+      if (uid !== sessionUser) return;
+      if (res.error) { prefsOk = false; return; }
+      prefsOk = true;
+      if (res.data && THEMES.indexOf(res.data.theme) !== -1) applyTheme(res.data.theme);
+    }).catch(function () { prefsOk = false; });
+  }
+  function saveThemePref(t) {
+    if (!db || !prefsOk || !sessionUser) return;
+    sb.from("user_prefs").upsert({ user_id: sessionUser, theme: t, updated_at: new Date().toISOString() }).then(function (res) {
+      if (res.error) prefsOk = false;
+    }).catch(function () { prefsOk = false; });
+  }
   document.querySelectorAll(".sw").forEach(function (b) {
-    b.addEventListener("click", function (e) { e.stopPropagation(); applyTheme(b.getAttribute("data-theme")); });
+    b.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var t = b.getAttribute("data-theme");
+      applyTheme(t); saveThemePref(t);
+    });
   });
-  (function () { var t = "auto"; try { t = localStorage.getItem("simsim_theme") || "auto"; } catch (e) {} applyTheme(t); })();
+  (function () { var t = "blanc"; try { t = localStorage.getItem("simsim_theme") || "blanc"; } catch (e) {} applyTheme(t); })();
   function closeMenu() { $("moreMenu").classList.add("hidden"); $("moreBtn").setAttribute("aria-expanded", "false"); }
   $("moreBtn").addEventListener("click", function (e) {
     e.stopPropagation();
@@ -2294,10 +2298,11 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       $("who").textContent = myEmail;
       showPick(false, true);
       loadCabinets();
+      loadPrefs();
     } else {
       sessionUser = null; db = null; myEmail = "";
       cabinetId = null; cabinetName = ""; cabinets = [];
-      readOnly = false; isAdmin = false; roles = {};
+      readOnly = false; isAdmin = false; roles = {}; prefsOk = false;
       stopData();
       showScreen("login");
       render();
