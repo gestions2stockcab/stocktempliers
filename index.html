@@ -127,10 +127,10 @@ button.item-name:hover { text-decoration:underline; }
 .qty { display:flex; align-items:center; gap:6px; }
 .qty .v { min-width:46px; text-align:center; font-weight:600; font-variant-numeric:tabular-nums; background:none; border:0; border-bottom:1px dashed var(--line); padding:2px 0; }
 .qty .v small { font-weight:400; color:var(--muted); }
-.qty .v.q-high, .fav-num.q-high { color:var(--q-high); }
-.qty .v.q-mid, .fav-num.q-mid { color:var(--q-mid); }
-.qty .v.q-low, .fav-num.q-low { color:var(--q-low); }
-.qty .v.q-zero, .fav-num.q-zero { color:var(--q-zero); }
+.qty .v.q-high, .fav-num.q-high, .tile-num.q-high { color:var(--q-high); }
+.qty .v.q-mid, .fav-num.q-mid, .tile-num.q-mid { color:var(--q-mid); }
+.qty .v.q-low, .fav-num.q-low, .tile-num.q-low { color:var(--q-low); }
+.qty .v.q-zero, .fav-num.q-zero, .tile-num.q-zero { color:var(--q-zero); }
 .qty .v { font-weight:700; }
 .step { width:30px; height:30px; border-radius:8px; border:1px solid var(--line); background:var(--surface); font-weight:700; line-height:1; }
 .chip { display:inline-block; padding:3px 9px; border-radius:99px; font-size:12px; font-weight:600; }
@@ -356,7 +356,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v25</div>
+            <div class="menu-who"><span id="who"></span> · v26</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -961,6 +961,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         big = fmt(n);
         label = us[0] + (n > 1 && !/s$/i.test(us[0]) ? "s" : "") + " · " + o.n + " réf.";
       } else { big = String(o.n); label = "références"; }
+      var bigNum = !o.n ? 0 : (us.length === 1 ? Math.round(o.sum[us[0]] * 100) / 100 : o.n);
       var shown = o.n ? "" : "aucun article";
       if (o.cat) label += " · " + o.cat + " au catalogue";
       var alertTxt = o.rupt ? o.rupt + " en rupture" : (o.bas ? o.bas + " sous le seuil" : (o.exp ? o.exp + " à surveiller" : ""));
@@ -968,7 +969,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       grid.append(h("button", { class: "tile", "aria-label": c + " : " + big + " " + label,
         onclick: function () { state.cat = c; render(); } },
         h("span", { class: "tile-name", text: c }),
-        h("span", { class: "tile-num", text: big }),
+        h("span", { class: "tile-num " + qtyClass(bigNum), text: big }),
         shown ? h("span", { class: "tile-unit", text: shown }) : null,
         alertTxt ? h("span", { class: "tile-alert " + alertCls, text: alertTxt }) : null));
     });
