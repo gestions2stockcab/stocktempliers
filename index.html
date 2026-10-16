@@ -260,6 +260,23 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 .subrow small { color:var(--muted); font-weight:600; }
 .tilebar { display:flex; justify-content:flex-end; align-items:center; gap:8px; margin:0 0 10px; color:var(--muted); font-size:13px; }
 .tilebar select { padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink); }
+.filters { margin:-6px 0 12px; }
+.filters .ftop { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.fpanel { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-top:8px; padding:12px; background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+.fpanel label { display:flex; flex-direction:column; gap:3px; font-size:12.5px; color:var(--muted); font-weight:600; }
+.fpanel select { padding:7px 9px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); font-size:14px; font-weight:400; }
+.fpanel .fclear { align-self:end; }
+.thumb { width:44px; height:44px; border-radius:8px; object-fit:cover; border:1px solid var(--line); cursor:pointer; grid-row:1 / span 2; background:var(--surface-2); }
+.c-name.has-photo { display:grid; grid-template-columns:44px minmax(0,1fr); column-gap:10px; align-items:center; }
+.fav-top { display:flex; gap:10px; align-items:center; }
+.fav-top .thumb { grid-row:auto; flex:none; }
+.photobox { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.photoimg { width:64px; height:64px; border-radius:10px; object-fit:cover; border:1px solid var(--line); }
+.prow-lot { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:0 14px 8px 42px; }
+.prow-lot .cin { width:150px; }
+.oline { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; padding:9px 14px; border-top:1px solid var(--line); }
+.oline .obody { flex:1 1 220px; min-width:0; }
+.oline .late { color:var(--warn); font-weight:600; }
 .star { background:none; border:0; padding:0 6px 0 0; font-size:18px; line-height:1; color:var(--muted); }
 .star.on { color:#f59e0b; }
 .btn.big { padding:12px 18px; font-size:18px; font-weight:700; min-width:72px; }
@@ -358,7 +375,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v27</div>
+            <div class="menu-who"><span id="who"></span> · v28</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -387,6 +404,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     <button class="btn" id="scanBtn">Scanner</button>
     <button class="btn primary" id="addBtn">+ Ajouter</button>
   </div>
+  <div class="filters hidden" id="filters">
+    <div class="ftop">
+      <button class="btn sm" id="filtersToggle" aria-expanded="false">Filtres</button>
+      <span class="sub" id="filtersSummary"></span>
+    </div>
+    <div class="fpanel hidden" id="fpanel"></div>
+  </div>
   <div class="alerts" id="alerts"></div>
   <div class="crumb hidden" id="crumb"></div>
 
@@ -401,6 +425,15 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       <label class="f full">Nom de l'article
         <input id="f_name" autocomplete="off" placeholder="Ex. Gants nitrile taille M">
       </label>
+      <div class="full photobox" id="photoBox">
+        <img id="photoImg" class="photoimg hidden" alt="Photo du produit">
+        <div class="photo-actions">
+          <button class="btn sm" id="photoAdd" type="button">Ajouter une photo</button>
+          <button class="btn sm danger hidden" id="photoDel" type="button">Retirer la photo</button>
+          <input type="file" id="photoFile" accept="image/*" class="hidden">
+        </div>
+        <div class="sub" id="photoHint"></div>
+      </div>
       <label class="f full">Description courte (facultatif)
         <input id="f_description" autocomplete="off" placeholder="Ex. composite, putty, lime rotative">
       </label>
@@ -540,6 +573,20 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   </div>
 </dialog>
 
+<dialog id="ordDlg">
+  <div class="dlg">
+    <h2 id="ordTitle">Marquer comme commandé</h2>
+    <div class="sub" id="ordInfo"></div>
+    <label class="f">Quantité commandée
+      <input id="ordQty" type="number" min="0" step="any" inputmode="decimal">
+    </label>
+    <div class="dlg-actions">
+      <button class="btn" id="ordCancel">Annuler</button>
+      <button class="btn primary" id="ordSave">Valider</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="adjDlg">
   <div class="dlg">
     <h2 id="adjTitle">Mouvement de stock</h2>
@@ -598,11 +645,11 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var docCounts = {};
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
-  var barcodeOk = false, descOk = false, trackedOk = false, subOk = false, favOk = false, lotsOk = false, lotsByItem = {};
+  var barcodeOk = false, descOk = false, trackedOk = false, subOk = false, favOk = false, lotsOk = false, lotsByItem = {}, ordOk = false, photoOk = false;
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
-  var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, collapsed: {}, tileSort: "usuel", editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
+  var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, collapsed: {}, tileSort: "usuel", fOpen: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
   var chain = Promise.resolve();
 
@@ -666,7 +713,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       id: r.id, name: r.name || "", category: r.category || "", supplier: r.supplier || "", ref: r.ref || "",
       location: r.location || "", unit: r.unit || "", qty: Number(r.qty) || 0, min: Number(r.min) || 0,
       target: Number(r.target) || 0, lot: r.lot || "", expiry: r.expiry || "", price: Number(r.price) || 0,
-      barcode: r.barcode || "", description: r.description || "", tracked: r.tracked !== false, subcategory: r.subcategory || "", favorite: r.favorite === true
+      barcode: r.barcode || "", description: r.description || "", tracked: r.tracked !== false, subcategory: r.subcategory || "", favorite: r.favorite === true,
+      ordered_qty: Number(r.ordered_qty) || 0, ordered_at: r.ordered_at || "", photo: r.photo || ""
     };
   }
   function toRow(d) {
@@ -682,6 +730,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (trackedOk) row.tracked = d.tracked !== false;
     if (subOk) row.subcategory = d.subcategory || null;
     if (favOk) row.favorite = !!d.favorite;
+    if (photoOk) row.photo = d.photo || null;
     return row;
   }
   function check(res) {
@@ -777,10 +826,48 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       return sb.from("items").update(patch).eq("id", it.id).then(function (res) {
         check(res);
         var curIt = items.get(it.id);
-        if (curIt) items.set(it.id, Object.assign({}, curIt, { qty: patch.qty, expiry: patch.expiry || "", lot: patch.lot || "" }, extra && extra.tracked ? { tracked: true } : {}));
+        if (curIt) items.set(it.id, Object.assign({}, curIt, { qty: patch.qty, expiry: patch.expiry || "", lot: patch.lot || "" }, localFields(extra)));
         render();
         return { qty: patch.qty, expiry: patch.expiry || "", lot: patch.lot || "" };
       });
+    });
+  }
+  function localFields(p) {
+    var o = {};
+    if (!p) return o;
+    if (p.tracked === true) o.tracked = true;
+    if ("ordered_qty" in p) o.ordered_qty = Number(p.ordered_qty) || 0;
+    if ("ordered_at" in p) o.ordered_at = p.ordered_at || "";
+    return o;
+  }
+  // Une entrée de stock diminue d'autant la quantité « déjà commandée ».
+  function orderedPatch(cur, delta) {
+    if (!ordOk || !(cur.ordered_qty > 0) || !(delta > 0)) return null;
+    var left = r2(cur.ordered_qty - delta);
+    return left > 0 ? { ordered_qty: left } : { ordered_qty: 0, ordered_at: null };
+  }
+  function adjustQty(it, delta, note, lotInfo) {
+    if (!db || readOnly) return;
+    enqueue(function () { return doAdjust(it.id, delta, note, lotInfo); });
+  }
+  function doAdjust(id, delta, note, lotInfo) {
+    var cur = items.get(id);
+    if (!cur) return Promise.resolve();
+    var lots = lotsOk ? (lotsByItem[id] || []) : [];
+    if (lotsOk && (lots.length || (delta > 0 && lotInfo && (lotInfo.lot || lotInfo.expiry)))) return adjustWithLots(cur, delta, note, lotInfo);
+    var before = Number(cur.qty) || 0;
+    var after = Math.max(0, r2(before + delta));
+    var real = r2(after - before);
+    if (real === 0) return Promise.resolve();
+    var patch = { qty: after, updated_at: new Date().toISOString() };
+    if (cur.tracked === false && trackedOk && real > 0) patch.tracked = true;
+    var op = orderedPatch(cur, real);
+    if (op) Object.assign(patch, op);
+    return sb.from("items").update(patch).eq("id", id).then(function (res) {
+      check(res);
+      var c2 = items.get(id);
+      if (c2) { items.set(id, Object.assign({}, c2, { qty: after }, localFields(patch))); render(); }
+      return appendLog({ type: "move", itemId: id, item: cur.name, delta: real, qty: after, note: note || "" });
     });
   }
   // Mouvement sur un article qui a des lots : les sorties prennent d'abord le lot qui périme en premier.
@@ -806,31 +893,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     }
     var after = r2(desired.reduce(function (a, l) { return a + l.qty; }, 0));
     var real = r2(after - before);
-    if (real === 0) return;
-    enqueue(function () {
-      var extra = (it.tracked === false && trackedOk && real > 0) ? { tracked: true } : null;
-      return persistLots(it, desired, extra).then(function (dv) {
-        return appendLog({ type: "move", itemId: it.id, item: it.name, delta: real, qty: dv.qty, note: (note || "") + tag });
-      });
-    });
-  }
-  function adjustQty(it, delta, note, lotInfo) {
-    if (!db || readOnly) return;
-    if (lotsOk && ((lotsByItem[it.id] || []).length || (delta > 0 && lotInfo && (lotInfo.lot || lotInfo.expiry)))) { adjustWithLots(it, delta, note, lotInfo); return; }
-    var before = Number(it.qty) || 0;
-    var after = Math.max(0, Math.round((before + delta) * 100) / 100);
-    var real = Math.round((after - before) * 100) / 100;
-    if (real === 0) return;
-    enqueue(function () {
-      var autoTrack = it.tracked === false && trackedOk && real > 0;
-      var patch = { qty: after, updated_at: new Date().toISOString() };
-      if (autoTrack) patch.tracked = true;
-      return sb.from("items").update(patch).eq("id", it.id).then(function (res) {
-        check(res);
-        var cur = items.get(it.id);
-        if (cur) { items.set(it.id, Object.assign({}, cur, { qty: after }, autoTrack ? { tracked: true } : {})); render(); }
-        return appendLog({ type: "move", itemId: it.id, item: it.name, delta: real, qty: after, note: note || "" });
-      });
+    if (real === 0) return Promise.resolve();
+    var extra = {};
+    if (it.tracked === false && trackedOk && real > 0) extra.tracked = true;
+    var op = orderedPatch(it, real);
+    if (op) Object.assign(extra, op);
+    return persistLots(it, desired, Object.keys(extra).length ? extra : null).then(function (dv) {
+      return appendLog({ type: "move", itemId: it.id, item: it.name, delta: real, qty: dv.qty, note: (note || "") + tag });
     });
   }
   function saveItem(data, existing) {
@@ -839,6 +908,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     data._barcodeKey = !!(data.barcode || (existing && existing.barcode));
     if (data.tracked === false && !trackedOk) { toast("Lancez d'abord le script SQL « ajout-catalogue » dans Supabase."); return; }
     if (data.subcategory && !subOk) { toast("Lancez d'abord le script SQL « ajout-sous-categories » dans Supabase."); return; }
+    if (data.photo && !photoOk) { toast("Lancez d'abord le script SQL « ajout-commandes-photos » dans Supabase."); return; }
     if (data.favorite && !favOk) { toast("Lancez d'abord le script SQL « ajout-lots-favoris » dans Supabase."); return; }
     if (data.description && !descOk) { toast("Lancez d'abord le script SQL « ajout-description » dans Supabase."); return; }
     enqueue(function () {
@@ -879,6 +949,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       var s = statusOf(it);
       if (state.cat && (it.category || "Sans domaine") !== state.cat) return false;
       if (state.hideCat && it.tracked === false) return false;
+      if (!matchFilters(it)) return false;
       if (state.filter === "bas" && s !== "bas") return false;
       if (state.filter === "low" && s !== "bas" && s !== "rupture") return false;
       if (state.filter === "rupt" && s !== "rupture") return false;
@@ -886,6 +957,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       if (!q) return true;
       return norm([it.name, it.description, it.ref, it.supplier, it.category, it.subcategory, it.location, it.lot, it.barcode].join(" ")).indexOf(q) !== -1;
     });
+    if (state.f.sort) { arr.sort(cmpBy(state.f.sort)); return arr; }
     arr.sort(function (a, b) {
       var ca = norm(a.category || "zz"), cb = norm(b.category || "zz");
       if (ca !== cb) return ca.localeCompare(cb);
@@ -899,7 +971,70 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 
   // ---------- rendu ----------
   var FILTER_LABEL = { bas: "Sous le seuil", rupt: "En rupture", exp: "Péremption proche ou dépassée" };
-  function isHome() { return !state.cat && state.filter === "all" && !state.q; }
+  function filtersActive() { var f = state.f; return !!(f.supplier || f.status || f.qty || f.location || f.sub || f.sort); }
+  function activeFilterCount() { var f = state.f, n = 0; ["supplier", "status", "qty", "location", "sub", "sort"].forEach(function (k) { if (f[k]) n++; }); return n; }
+  function clearFilters() { state.f = { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }; }
+  function matchFilters(it) {
+    var f = state.f;
+    if (f.supplier) { var sp = (it.supplier || "").trim(); if (f.supplier === "__none__" ? !!sp : sp !== f.supplier) return false; }
+    if (f.location && (it.location || "").trim() !== f.location) return false;
+    if (f.sub && (it.subcategory || "") !== f.sub) return false;
+    if (f.qty && (it.tracked === false || qtyClass(it.qty) !== "q-" + f.qty)) return false;
+    if (f.status) {
+      var st = statusOf(it);
+      if (f.status === "rupt" && st !== "rupture") return false;
+      if (f.status === "bas" && st !== "bas") return false;
+      if (f.status === "exp" && st !== "perime" && st !== "peremption") return false;
+      if (f.status === "cat" && it.tracked !== false) return false;
+      if (f.status === "fav" && !it.favorite) return false;
+      if (f.status === "cmd" && !(it.ordered_qty > 0)) return false;
+    }
+    return true;
+  }
+  function cmpBy(sort) {
+    var nm = function (a, b) { return norm(a.name).localeCompare(norm(b.name)); };
+    var num2 = function (k) { return function (a, b) { return (Number(a[k]) || 0) - (Number(b[k]) || 0); }; };
+    if (sort === "nom") return nm;
+    if (sort === "nom-desc") return function (a, b) { return nm(b, a); };
+    if (sort === "qty-asc") return function (a, b) { return num2("qty")(a, b) || nm(a, b); };
+    if (sort === "qty-desc") return function (a, b) { return num2("qty")(b, a) || nm(a, b); };
+    if (sort === "prix-asc") return function (a, b) { return num2("price")(a, b) || nm(a, b); };
+    if (sort === "prix-desc") return function (a, b) { return num2("price")(b, a) || nm(a, b); };
+    if (sort === "exp") return function (a, b) { var ea = a.expiry || "9999-12-31", eb = b.expiry || "9999-12-31"; return ea < eb ? -1 : ea > eb ? 1 : nm(a, b); };
+    return nm;
+  }
+  function renderFilters() {
+    var wrap = $("filters");
+    var show = state.tab === "inventaire" && items.size > 0;
+    wrap.classList.toggle("hidden", !show);
+    if (!show) return;
+    var n = activeFilterCount();
+    $("filtersToggle").textContent = "Filtres" + (n ? " (" + n + ")" : "");
+    $("filtersToggle").setAttribute("aria-expanded", state.fOpen ? "true" : "false");
+    $("filtersSummary").textContent = n ? "" : "";
+    var panel = $("fpanel"); panel.textContent = "";
+    panel.classList.toggle("hidden", !state.fOpen);
+    if (!state.fOpen) return;
+    var scope = Array.from(items.values()).filter(function (it) { return !state.cat || (it.category || "Sans domaine") === state.cat; });
+    var uniq = function (get) { var set = new Set(); scope.forEach(function (it) { var v = (get(it) || "").trim(); if (v) set.add(v); }); return Array.from(set).sort(function (a, b) { return norm(a).localeCompare(norm(b)); }); };
+    var field = function (label, key, options) {
+      var sel = h("select", { "aria-label": label });
+      options.forEach(function (o) { sel.append(h("option", { value: o[0], text: o[1], selected: state.f[key] === o[0] })); });
+      sel.addEventListener("change", function () { state.f[key] = sel.value; render(); });
+      return h("label", null, label, sel);
+    };
+    var sup = uniq(function (it) { return it.supplier; }).map(function (v) { return [v, v]; });
+    panel.append(field("Fournisseur", "supplier", [["", "Tous"]].concat(sup, [["__none__", "Sans fournisseur"]])));
+    var subs = uniq(function (it) { return it.subcategory; }).map(function (v) { return [v, v]; });
+    if (subs.length) panel.append(field("Sous-catégorie", "sub", [["", "Toutes"]].concat(subs)));
+    panel.append(field("État", "status", [["", "Tous"], ["rupt", "En rupture"], ["bas", "Stock bas"], ["exp", "Péremption proche"], ["cmd", "Déjà commandé"], ["fav", "Favoris"], ["cat", "Catalogue seulement"]]));
+    panel.append(field("Quantité", "qty", [["", "Toutes"], ["zero", "0 (rouge)"], ["low", "1 à 9"], ["mid", "10 à 30"], ["high", "Plus de 30"]]));
+    var locs = uniq(function (it) { return it.location; }).map(function (v) { return [v, v]; });
+    if (locs.length) panel.append(field("Emplacement", "location", [["", "Tous"]].concat(locs)));
+    panel.append(field("Trier par", "sort", [["", "Ordre habituel"], ["nom", "Nom A → Z"], ["nom-desc", "Nom Z → A"], ["qty-asc", "Quantité croissante"], ["qty-desc", "Quantité décroissante"], ["prix-asc", "Prix croissant"], ["prix-desc", "Prix décroissant"], ["exp", "Péremption la plus proche"]]));
+    panel.append(h("button", { class: "btn sm fclear", disabled: !n, onclick: function () { clearFilters(); render(); }, text: "Tout effacer" }));
+  }
+  function isHome() { return !state.cat && state.filter === "all" && !state.q && !filtersActive(); }
 
   function renderAlerts() {
     var all = Array.from(items.values());
@@ -1034,11 +1169,12 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     }
     var table = h("div", { class: "table" });
     table.append(h("div", { class: "row head" }, h("div", { text: "Article" }), h("div", { text: "Quantité" }), h("div", { text: "État" })));
-    var hasSubs = list.some(function (x) { return x.subcategory; });
+    var grouped = !state.f.sort;
+    var hasSubs = grouped && list.some(function (x) { return x.subcategory; });
     list.forEach(function (it, i) {
       var cname = it.category || "Sans domaine";
       var prevIt = list[i - 1];
-      if (!state.cat && (!prevIt || (prevIt.category || "Sans domaine") !== cname)) {
+      if (grouped && !state.cat && (!prevIt || (prevIt.category || "Sans domaine") !== cname)) {
         table.append(h("div", { class: "catrow", text: cname }));
       }
       if (state.cat && hasSubs) {
@@ -1059,13 +1195,15 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       if (it.ref) meta.push("réf. " + it.ref);
       if (it.lot) meta.push("lot " + it.lot);
       if (it.expiry) meta.push("exp. " + isoToFr(it.expiry));
+      if (it.ordered_qty > 0) meta.push("commandé ×" + fmt(it.ordered_qty) + (it.ordered_at ? " le " + new Date(it.ordered_at).toLocaleDateString("fr-FR") : ""));
       if (it.tracked !== false) meta.push("seuil " + fmt(it.min || 0));
       else if (it.price > 0) meta.push("dernier prix " + money(it.price) + " HT");
       var nLots = (lotsByItem[it.id] || []).length;
       if (nLots) meta.push(nLots + " lot" + (nLots > 1 ? "s" : ""));
       if (docCounts[it.id]) meta.push(docCounts[it.id] + " doc" + (docCounts[it.id] > 1 ? "s" : ""));
       table.append(h("div", { class: "row" + (it.tracked === false ? " untracked" : "") },
-        h("div", { class: "c-name" },
+        h("div", { class: "c-name" + (it.photo ? " has-photo" : "") },
+          it.photo ? h("img", { class: "thumb", src: it.photo, alt: "", loading: "lazy", onclick: function () { openItem(it); } }) : null,
           h("div", { class: "nameline" },
             h("button", { class: "star" + (it.favorite ? " on" : ""), title: it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", "aria-label": it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", onclick: function () { toggleFav(it); }, text: it.favorite ? "★" : "☆" }),
             h("button", { class: "item-name", onclick: function () { openItem(it); }, text: it.name || "(sans nom)" }),
@@ -1081,13 +1219,39 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var target = it.target > 0 ? it.target : Math.max((it.min || 0) * 2, 1);
     return Math.max(1, Math.ceil(target - (it.qty || 0)));
   }
+  function setOrdered(it, qty) {
+    if (!db || readOnly) return;
+    if (!ordOk) { toast("Lancez d'abord le script SQL « ajout-commandes-photos » dans Supabase."); return; }
+    var patch = qty > 0 ? { ordered_qty: r2(qty), ordered_at: new Date().toISOString() } : { ordered_qty: 0, ordered_at: null };
+    var cur = items.get(it.id) || it;
+    items.set(it.id, Object.assign({}, cur, localFields(patch))); render();
+    enqueue(function () {
+      return sb.from("items").update(patch).eq("id", it.id).then(check).then(function () {
+        return appendLog({ type: "order", itemId: it.id, item: it.name, delta: 0, qty: Number(cur.qty) || 0, note: qty > 0 ? "Commandé ×" + fmt(qty) : "Commande annulée" });
+      });
+    });
+  }
+  function openOrdDlg(it) {
+    if (!ordOk) { toast("Lancez d'abord le script SQL « ajout-commandes-photos » dans Supabase."); return; }
+    state.ordering = it;
+    $("ordTitle").textContent = labelOf(it);
+    $("ordInfo").textContent = "En stock : " + fmt(it.qty) + (it.unit ? " " + it.unit : "") + ". Le produit passera dans « Déjà commandés » et ne sera plus proposé à la commande.";
+    $("ordQty").value = String(suggestedQty(it));
+    $("ordDlg").showModal();
+    setTimeout(function () { $("ordQty").focus(); $("ordQty").select(); }, 0);
+  }
   function renderOrder(box) {
-    var need = Array.from(items.values()).filter(function (it) { return it.tracked !== false && (it.qty || 0) <= (it.min || 0); });
-    if (!need.length) {
+    var all = Array.from(items.values());
+    var need = all.filter(function (it) { return it.tracked !== false && !(it.ordered_qty > 0) && (it.qty || 0) <= (it.min || 0); });
+    var ordered = all.filter(function (it) { return it.ordered_qty > 0; }).sort(function (a, b) { return String(a.ordered_at).localeCompare(String(b.ordered_at)); });
+    if (!need.length && !ordered.length) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" },
         h("h2", { text: "Rien à commander" }),
         h("div", { text: "Tous les articles sont au-dessus de leur seuil d'alerte." }))));
       return;
+    }
+    if (!need.length) {
+      box.append(h("p", { class: "sub", text: "Rien de nouveau à commander : tout ce qui manquait a déjà été commandé." }));
     }
     var groups = {};
     need.forEach(function (it) { var k = it.supplier || "Sans fournisseur"; (groups[k] = groups[k] || []).push(it); });
@@ -1102,7 +1266,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         var amount = it.price > 0 ? q * it.price : null;
         if (amount !== null) { total += amount; hasPrice = true; }
         lines.append(h("div", { class: "line" },
-          h("div", null, h("div", { text: labelOf(it) }), h("div", { class: "meta", text: it.ref ? "réf. " + it.ref : "" })),
+          h("div", null, h("div", { text: labelOf(it) }), h("div", { class: "meta", text: it.ref ? "réf. " + it.ref : "" }),
+            readOnly ? null : h("button", { class: "btn sm", onclick: function () { openOrdDlg(it); }, text: "Marquer comme commandé" })),
           h("div", { class: "num", text: fmt(it.qty) }),
           h("div", { class: "num", text: fmt(q) + (it.unit ? " " + it.unit : "") }),
           h("div", { class: "num", text: amount !== null ? money(amount) : "—" })));
@@ -1115,10 +1280,30 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
           h("h3", { text: sup + " (" + arr.length + ")" }),
           h("div", { class: "qty" },
             hasPrice ? h("span", { class: "meta", text: "Total estimé " + money(total) }) : null,
-            h("button", { class: "btn sm", onclick: function () { copyText(text); }, text: "Copier la commande" }))),
+            h("button", { class: "btn sm", onclick: function () { copyText(text); }, text: "Copier la commande" }),
+            readOnly ? null : h("button", { class: "btn sm", onclick: function () {
+              if (!ordOk) { toast("Lancez d'abord le script SQL « ajout-commandes-photos » dans Supabase."); return; }
+              arr.forEach(function (it) { setOrdered(it, suggestedQty(it)); });
+              toast(arr.length + " produit" + (arr.length > 1 ? "s" : "") + " marqué" + (arr.length > 1 ? "s" : "") + " comme commandé" + (arr.length > 1 ? "s" : "") + ".");
+            }, text: "Tout marquer comme commandé" }))),
         lines);
       box.append(card);
     });
+    if (ordered.length) {
+      var sec = h("section", { class: "supplier" });
+      sec.append(h("header", null, h("h3", { text: "Déjà commandés, en attente de livraison (" + ordered.length + ")" })));
+      ordered.forEach(function (it) {
+        var t = Date.parse(it.ordered_at) || Date.now();
+        var days = Math.floor((Date.now() - t) / 86400000);
+        var late = days >= 7;
+        sec.append(h("div", { class: "oline" },
+          h("div", { class: "obody" }, h("div", { text: labelOf(it) }),
+            h("div", { class: "meta" + (late ? " late" : ""), text: "commandé ×" + fmt(it.ordered_qty) + " le " + new Date(t).toLocaleDateString("fr-FR") + (days > 0 ? " · il y a " + days + " j" : " · aujourd'hui") + (late ? " · à relancer" : "") })),
+          readOnly ? null : h("button", { class: "btn sm primary", onclick: function () { openAdjust(it); $("adjQty").value = String(it.ordered_qty); }, text: "Reçu" }),
+          readOnly ? null : h("button", { class: "btn sm", onclick: function () { setOrdered(it, 0); }, text: "Annuler" })));
+      });
+      box.append(sec);
+    }
   }
   function copyText(text) {
     var done = function () { toast("Commande copiée dans le presse-papiers."); };
@@ -1188,7 +1373,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var hide = state.tab !== "inventaire" || isHome() || !items.size;
     box.classList.toggle("hidden", hide);
     if (hide) return;
-    var title = state.cat || FILTER_LABEL[state.filter] || "Résultats de la recherche";
+    var title = state.cat || FILTER_LABEL[state.filter] || "Résultats";
     var sub = "", nCat = 0;
     if (state.cat) {
       var allDom = Array.from(items.values()).filter(function (it) { return (it.category || "Sans domaine") === state.cat; });
@@ -1212,7 +1397,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       }
     }
     box.append(
-      h("button", { class: "btn sm", onclick: function () { state.cat = ""; state.filter = "all"; state.q = ""; $("search").value = ""; render(); }, text: "← Domaines" }),
+      h("button", { class: "btn sm", onclick: function () { state.cat = ""; state.filter = "all"; state.q = ""; clearFilters(); $("search").value = ""; render(); }, text: "← Domaines" }),
       h("h2", { class: "crumb-title", text: title }));
     if (nCat) {
       box.append(h("button", { class: "btn sm", onclick: function () { state.hideCat = !state.hideCat; render(); }, text: state.hideCat ? "Afficher le catalogue" : "Masquer le catalogue" }));
@@ -1305,6 +1490,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (state.cat && domainList().indexOf(state.cat) === -1) state.cat = "";
     renderAlerts();
     renderCrumb();
+    renderFilters();
     var bn = $("banner"); bn.textContent = "";
     if (db && readOnly) bn.append(h("div", { class: "banner", text: "Accès en lecture seule : vous pouvez consulter le stock, mais pas le modifier." }));
     var box = $("content"); box.textContent = "";
@@ -1343,6 +1529,30 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var set = new Set();
     items.forEach(function (x) { if (x.subcategory && (!dom || (x.category || "Sans domaine") === dom)) set.add(x.subcategory); });
     Array.from(set).sort(function (a, b) { return norm(a).localeCompare(norm(b)); }).forEach(function (v) { dl.append(h("option", { value: v })); });
+  }
+  var photoDraft = "";
+  function renderPhotoBox() {
+    var has = !!photoDraft;
+    $("photoImg").classList.toggle("hidden", !has);
+    if (has) $("photoImg").src = photoDraft;
+    $("photoDel").classList.toggle("hidden", !has || readOnly);
+    $("photoAdd").textContent = has ? "Changer la photo" : "Ajouter une photo";
+    $("photoAdd").disabled = readOnly || !photoOk;
+    $("photoHint").textContent = photoOk ? "" : "Pour les photos, lancez d'abord le script SQL « ajout-commandes-photos » dans Supabase.";
+  }
+  function makeThumb(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var S = 160, c = document.createElement("canvas"); c.width = S; c.height = S;
+        var side = Math.min(img.width, img.height), sx = (img.width - side) / 2, sy = (img.height - side) / 2;
+        c.getContext("2d").drawImage(img, sx, sy, side, side, 0, 0, S, S);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", 0.72));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("image")); };
+      img.src = url;
+    });
   }
   var lotsDraft = [];
   function lotsTotal() { return r2(lotsDraft.reduce(function (a, l) { return a + (Number(l.qty) || 0); }, 0)); }
@@ -1442,9 +1652,11 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     favs.forEach(function (it) {
       var unit = it.unit ? " " + it.unit : "";
       grid.append(h("div", { class: "favcard" },
-        h("div", null,
-          h("div", { class: "fav-name", text: it.name }),
-          it.description ? h("div", { class: "desc", text: "(" + it.description + ")" }) : null),
+        h("div", { class: "fav-top" },
+          it.photo ? h("img", { class: "thumb", src: it.photo, alt: "", loading: "lazy", onclick: function () { openItem(it); } }) : null,
+          h("div", null,
+            h("div", { class: "fav-name", text: it.name }),
+            it.description ? h("div", { class: "desc", text: "(" + it.description + ")" }) : null)),
         h("div", { class: "fav-qty" },
           h("span", { class: "fav-num " + qtyClass(it.qty), text: fmt(it.qty) }),
           chipFor(it)),
@@ -1474,6 +1686,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     fillSubList();
     $("f_fav").checked = !!(it && it.favorite); $("f_fav").disabled = readOnly;
     initLotsBox(it);
+    photoDraft = it && it.photo ? it.photo : ""; renderPhotoBox();
     $("histBox").classList.toggle("hidden", !it); $("histBox").open = false; $("histBody").textContent = "";
     $("itemDelete").classList.toggle("hidden", !it || readOnly);
     $("itemDelete").textContent = "Supprimer";
@@ -1499,7 +1712,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       description: $("f_description").value.trim(),
       tracked: $("f_tracked").checked,
       subcategory: $("f_subcategory").value.trim(),
-      favorite: $("f_fav").checked
+      favorite: $("f_fav").checked,
+      photo: photoDraft
     };
   }
   function openAdjust(it) {
@@ -1630,32 +1844,75 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       toast(bad ? "Colonne « Article » introuvable. Ajoutez-la en première ligne du fichier." : "Aucune ligne exploitable dans le fichier.");
       return;
     }
-    var have = new Set(Array.from(items.values()).map(function (it) { return norm(it.name).trim(); }));
-    var fresh = [], dup = 0;
+    var have = new Map();
+    items.forEach(function (it) { have.set(norm(it.name).trim(), it); });
+    var groups = new Map(), order = [];
     all.forEach(function (d) {
       var k = norm(d.name).trim();
-      if (have.has(k)) { dup++; return; }
-      have.add(k); fresh.push(d);
+      if (!groups.has(k)) { groups.set(k, []); order.push(k); }
+      groups.get(k).push(d);
+    });
+    // Plusieurs lignes pour le même article = plusieurs lots (une ligne par lot : Lot, Péremption, Quantité).
+    var fresh = [], upd = [], dup = 0, nLots = 0;
+    order.forEach(function (k) {
+      var g = groups.get(k), exist = have.get(k);
+      var lots = [];
+      if (lotsOk && g.some(function (d) { return d.lot || d.expiry; })) {
+        g.forEach(function (d) {
+          if (!(d.qty > 0)) return;
+          var m = lots.find(function (l) { return (l.lot || "") === (d.lot || "") && (l.expiry || "") === (d.expiry || ""); });
+          if (m) m.qty = r2(m.qty + d.qty); else lots.push({ lot: d.lot || "", expiry: d.expiry || null, qty: d.qty });
+        });
+      }
+      if (exist) {
+        if (lots.length) upd.push({ it: exist, lots: lots }); else dup++;
+        return;
+      }
+      var base = Object.assign({}, g[0]);
+      if (lots.length) {
+        var dv = deriveFromLots(lots);
+        base.qty = dv.qty; base.expiry = dv.expiry; base.lot = dv.lot; base._lots = lots; nLots += lots.length;
+      } else if (g.length > 1) dup += g.length - 1;
+      fresh.push(base);
     });
     if (!trackedOk && fresh.some(function (d) { return d.tracked === false; })) { toast("Lancez d'abord le script SQL « ajout-catalogue » dans Supabase."); return; }
     if (!subOk && fresh.some(function (d) { return d.subcategory; })) { toast("Lancez d'abord le script SQL « ajout-sous-categories » dans Supabase."); return; }
     var capped = fresh.length > 500;
     if (capped) fresh = fresh.slice(0, 500);
-    if (!fresh.length) { toast("Tous les articles du fichier existent déjà (" + dup + " ignorés)."); return; }
+    var doUpd = false;
+    if (upd.length) {
+      doUpd = window.confirm(upd.length + " article" + (upd.length > 1 ? "s" : "") + " déjà présent" + (upd.length > 1 ? "s" : "") + " ont des lots dans ce fichier.\n\nOK : remplacer leurs lots et leur quantité par ceux du fichier.\nAnnuler : les laisser tels quels.");
+      if (!doUpd) dup += upd.length;
+    }
+    if (!fresh.length && !doUpd) { toast("Tous les articles du fichier existent déjà (" + dup + " ignorés)."); return; }
     var chunks = [];
     for (var i = 0; i < fresh.length; i += 100) chunks.push(fresh.slice(i, i + 100));
     enqueue(function () {
       return chunks.reduce(function (p, chunk) {
         return p.then(function () {
           return sb.from("items").insert(chunk.map(toRow)).select().then(function (res) {
-            (check(res) || []).forEach(function (r) { items.set(r.id, fromRow(r)); });
+            var rowsIns = check(res) || [], lotRows = [];
+            rowsIns.forEach(function (r, i2) {
+              items.set(r.id, fromRow(r));
+              var src = chunk[i2];
+              if (src && src._lots) src._lots.forEach(function (l) { lotRows.push({ cabinet_id: cabinetId, item_id: r.id, lot: l.lot, expiry: l.expiry || null, qty: l.qty }); });
+            });
+            if (!lotRows.length) return null;
+            return sb.from("lots").insert(lotRows).select().then(function (r3) {
+              (check(r3) || []).forEach(function (l) { (lotsByItem[l.item_id] = lotsByItem[l.item_id] || []).push(l); });
+            });
           });
         });
       }, Promise.resolve()).then(function () {
+        if (!doUpd) return null;
+        return upd.reduce(function (p, u) { return p.then(function () { return persistLots(u.it, u.lots); }); }, Promise.resolve());
+      }).then(function () {
         render();
-        return appendLog({ type: "import", itemId: "", item: "Import de fichier", delta: 0, qty: 0, note: fresh.length + " articles importés" });
+        return appendLog({ type: "import", itemId: "", item: "Import de fichier", delta: 0, qty: 0, note: fresh.length + " articles importés" + (nLots ? ", " + nLots + " lots" : "") + (doUpd ? ", lots de " + upd.length + " articles mis à jour" : "") });
       }).then(function () {
         toast(fresh.length + " article" + (fresh.length > 1 ? "s" : "") + " ajouté" + (fresh.length > 1 ? "s" : "") +
+          (nLots ? " (" + nLots + " lots)" : "") +
+          (doUpd ? ", " + upd.length + " mis à jour avec leurs lots" : "") +
           (dup ? ", " + dup + " déjà présent" + (dup > 1 ? "s" : "") + " ignoré" + (dup > 1 ? "s" : "") : "") +
           (capped ? " (500 premiers seulement)" : "") + ".");
       });
@@ -1674,6 +1931,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       ["Vous pouvez aussi créer une feuille par domaine (nommée Endodontie, Chirurgie…), sans colonne Domaine."],
       ["Un article dont le nom existe déjà dans l'appli est ignoré : l'import n'écrase rien."],
       ["Suivi : « oui » par défaut. Mettez « non » pour un simple catalogue de produits, sans alertes ni stock."],
+      ["Lots : une ligne par lot pour un même article (colonnes Lot, Péremption et Quantité). Pour un article déjà présent, le fichier remplace ses lots et sa quantité après confirmation."],
       ["Péremption : jj/mm/aaaa. Supprimez cette feuille d'aide si vous voulez, elle est ignorée à l'import."]
     ];
     X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(help), "Aide");
@@ -1876,7 +2134,14 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         domCell = h("div", { class: "pc-dom" }, sel);
       }
       table.append(h("div", { class: "prow" }, chk, nameCell, q, domCell,
-        h("div", { class: "pc-st meta", text: (r.match ? "Entrée de stock" : "Nouvel article") + (r.lot ? " · lot " + r.lot : "") + (r.expiry ? " · exp. " + isoToFr(r.expiry) : "") })));
+        h("div", { class: "pc-st meta", text: (r.match ? "Entrée de stock" : "Nouvel article") })));
+      if (lotsOk) {
+        var inLot = h("input", { class: "cin left", type: "text", value: r.lot || "", placeholder: "N° de lot", autocomplete: "off", "aria-label": "Numéro de lot : " + r.name });
+        var inExp = h("input", { class: "cin left", type: "date", value: r.expiry || "", "aria-label": "Péremption : " + r.name });
+        inLot.addEventListener("input", function () { r.lot = inLot.value.trim(); });
+        inExp.addEventListener("input", function () { r.expiry = inExp.value; });
+        table.append(h("div", { class: "prow-lot" }, h("span", { class: "meta", text: "Lot et péremption (facultatif)" }), inLot, inExp));
+      }
     });
     box.append(table);
     refresh();
@@ -1884,26 +2149,32 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       var chosen = rows.filter(function (r) { return r.on && r.qty > 0; });
       if (!chosen.length) return;
       var supplier = supplierInput.value.trim();
-      var entries = {}, fresh = {};
+      var moves = [], fresh = {};
       if (catOnly.checked && !trackedOk) { toast("Lancez d'abord le script SQL « ajout-catalogue » dans Supabase."); return; }
       chosen.forEach(function (r) {
         if (r.match) {
           if (catOnly.checked) return;
-          var e = entries[r.match.id] || (entries[r.match.id] = { it: r.match, qty: 0, lot: "", expiry: "" });
-          e.qty += r.qty;
-          if (r.lot) e.lot = r.lot;
-          if (r.expiry) e.expiry = r.expiry;
+          var mk = r.match.id + "|" + (r.lot || "") + "|" + (r.expiry || "");
+          var mv = moves.find(function (x) { return x.key === mk; });
+          if (mv) mv.qty += r.qty; else moves.push({ key: mk, it: r.match, qty: r.qty, lot: r.lot || "", expiry: r.expiry || "" });
         } else if (r.name.trim()) {
           var k = norm(r.name).trim();
-          if (fresh[k]) fresh[k].qty += r.qty;
-          else fresh[k] = { name: r.name.trim(), category: r.domain, supplier: supplier, ref: r.ref, description: "", location: "", unit: /bo[iî]tes?\b/i.test(r.name) ? "boîte" : "", qty: catOnly.checked ? 0 : r.qty, min: 0, target: 0, lot: r.lot || "", expiry: r.expiry || "", price: r.price || 0, tracked: !catOnly.checked };
+          if (!fresh[k]) fresh[k] = { name: r.name.trim(), category: r.domain, supplier: supplier, ref: r.ref, description: "", location: "", unit: /bo[iî]tes?\b/i.test(r.name) ? "boîte" : "", qty: 0, min: 0, target: 0, lot: "", expiry: "", price: r.price || 0, tracked: !catOnly.checked, _lots: [] };
+          var fr = fresh[k];
+          if (!catOnly.checked) { fr.qty += r.qty; fr._lots.push({ lot: r.lot || "", expiry: r.expiry || "", qty: r.qty }); }
+          if (r.lot) fr.lot = r.lot;
+          if (r.expiry) fr.expiry = r.expiry;
         }
       });
+      Object.keys(fresh).forEach(function (k) {
+        var fr = fresh[k];
+        if (lotsOk && fr._lots.some(function (l) { return l.lot || l.expiry; })) { var dv = deriveFromLots(fr._lots); fr.expiry = dv.expiry; fr.lot = dv.lot; }
+      });
       $("pdfDlg").close();
-      var nEntries = Object.keys(entries).length, list = Object.keys(fresh).map(function (k) { return fresh[k]; });
-      Object.keys(entries).forEach(function (id) {
-        adjustQty(entries[id].it, entries[id].qty, "Entrée PDF " + fileName, lotsOk ? { lot: entries[id].lot, expiry: entries[id].expiry } : null);
-        if (!lotsOk && updLot && updLot.checked) applyLotExpiry(entries[id].it, entries[id].lot, entries[id].expiry);
+      var nEntries = new Set(moves.map(function (m) { return m.it.id; })).size, list = Object.keys(fresh).map(function (k) { return fresh[k]; });
+      moves.forEach(function (m) {
+        adjustQty(m.it, m.qty, "Entrée PDF " + fileName, lotsOk ? { lot: m.lot, expiry: m.expiry } : null);
+        if (!lotsOk && updLot && updLot.checked) applyLotExpiry(m.it, m.lot, m.expiry);
       });
       if (list.length) {
         enqueue(function () {
@@ -1914,7 +2185,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
             var lotRows = [];
             if (lotsOk) rowsIns.forEach(function (row, i) {
               var src = list[i];
-              if (src && (src.lot || src.expiry) && src.qty > 0 && src.tracked !== false) lotRows.push({ cabinet_id: cabinetId, item_id: row.id, lot: src.lot || "", expiry: src.expiry || null, qty: src.qty });
+              if (!src || src.tracked === false || !src._lots.some(function (l) { return l.lot || l.expiry; })) return;
+              var merged = [];
+              src._lots.forEach(function (l) {
+                var m = merged.find(function (x) { return x.lot === (l.lot || "") && x.expiry === (l.expiry || null); });
+                if (m) m.qty = r2(m.qty + l.qty); else merged.push({ cabinet_id: cabinetId, item_id: row.id, lot: l.lot || "", expiry: l.expiry || null, qty: l.qty });
+              });
+              merged.forEach(function (m) { lotRows.push(m); });
             });
             var lp = lotRows.length
               ? sb.from("lots").insert(lotRows).select().then(function (r3) { (check(r3) || []).forEach(function (l) { (lotsByItem[l.item_id] = lotsByItem[l.item_id] || []).push(l); }); render(); })
@@ -2249,6 +2526,22 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (f) uploadDoc(f);
   });
   $("itemCancel").addEventListener("click", function () { $("itemDlg").close(); });
+  $("photoAdd").addEventListener("click", function () { $("photoFile").click(); });
+  $("photoFile").addEventListener("change", function (e) {
+    var f = e.target.files && e.target.files[0]; e.target.value = "";
+    if (!f) return;
+    makeThumb(f).then(function (d) { photoDraft = d; renderPhotoBox(); }, function () { toast("Cette image n'a pas pu être lue."); });
+  });
+  $("photoDel").addEventListener("click", function () { photoDraft = ""; renderPhotoBox(); });
+  $("ordCancel").addEventListener("click", function () { $("ordDlg").close(); });
+  $("ordSave").addEventListener("click", function () {
+    var q = num($("ordQty").value);
+    if (q <= 0) { toast("Indiquez une quantité supérieure à zéro."); $("ordQty").focus(); return; }
+    setOrdered(state.ordering, q);
+    $("ordDlg").close();
+  });
+  $("ordDlg").addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); $("ordSave").click(); } });
+  $("filtersToggle").addEventListener("click", function () { state.fOpen = !state.fOpen; render(); });
   $("lotAddRow").addEventListener("click", function () {
     lotsDraft.push({ lot: "", expiry: null, qty: lotsDraft.length ? 0 : num($("f_qty").value) });
     renderLotsDraft();
@@ -2529,6 +2822,12 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     sb.from("items").select("favorite").eq("cabinet_id", cid).limit(1).then(function (res) {
       if (cid === cabinetId) favOk = !res.error;
     }).catch(function () { favOk = false; });
+    sb.from("items").select("ordered_qty").eq("cabinet_id", cid).limit(1).then(function (res) {
+      if (cid === cabinetId) ordOk = !res.error;
+    }).catch(function () { ordOk = false; });
+    sb.from("items").select("photo").eq("cabinet_id", cid).limit(1).then(function (res) {
+      if (cid === cabinetId) photoOk = !res.error;
+    }).catch(function () { photoOk = false; });
     sb.from("lots").select("*").eq("cabinet_id", cid).limit(10000).then(function (res) {
       if (cid !== cabinetId) return;
       if (res.error) { lotsOk = false; return; }
@@ -2562,7 +2861,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   function stopData() {
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     channels = []; started = false;
-    items = new Map(); logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {};
+    items = new Map(); logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false;
   }
   function showScreen(which) {
     $("login").classList.toggle("hidden", which !== "login");
