@@ -304,7 +304,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v14</div>
+            <div class="menu-who"><span id="who"></span> · v15</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -351,6 +351,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       </label>
       <label class="f full">Domaine
         <select id="f_category"></select>
+        <input id="f_category_new" class="hidden" autocomplete="off" placeholder="Nom du nouveau domaine">
       </label>
       <label class="f">Quantité en stock
         <input id="f_qty" type="number" min="0" step="any" inputmode="decimal">
@@ -751,7 +752,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     return h("span", { class: "chip " + s, text: label });
   }
 
-  var DOM_COLOR = { "Endodontie": "#0f766e", "Chirurgie": "#b3261e", "Implants": "#5b3fa0", "Anesthésie": "#c2410c", "Consommables": "#2563a8" };
+  var DOM_COLOR = { "Endodontie": "#0f766e", "Chirurgie": "#b3261e", "Implants": "#5b3fa0", "Anesthésie": "#c2410c", "Composites": "#2563a8", "Colles et adhésifs": "#0891b2", "Scellement et ciments": "#4d7c0f", "Prothèse et empreintes": "#be185d", "Gants et protection": "#15803d", "Désinfection et hygiène": "#0369a1", "Radiologie": "#475569", "Consommables": "#64748b" };
   function domainStats() {
     var st = {};
     items.forEach(function (it) {
@@ -915,7 +916,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     box.append(h("p", { class: "sub", text: "Les 300 derniers mouvements." }));
   }
 
-  var DOMAINS = ["Endodontie", "Chirurgie", "Implants", "Anesthésie", "Consommables"];
+  var DOMAINS = ["Endodontie", "Chirurgie", "Implants", "Anesthésie", "Composites", "Colles et adhésifs", "Scellement et ciments", "Prothèse et empreintes", "Gants et protection", "Désinfection et hygiène", "Radiologie", "Consommables"];
   var EQUIP = "Équipement et instruments";
   function normDomain(c) {
     var n = norm(c);
@@ -924,6 +925,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (n.indexOf("chirurg") !== -1) return "Chirurgie";
     if (n.indexOf("implant") !== -1) return "Implants";
     if (n.indexOf("anesth") !== -1) return "Anesthésie";
+    if (n.indexOf("composite") !== -1) return "Composites";
+    if (/adhesif|colle|mordan|silane|bonding/.test(n)) return "Colles et adhésifs";
+    if (/ciment|scellement/.test(n)) return "Scellement et ciments";
+    if (/prothese|empreinte|provisoire/.test(n)) return "Prothèse et empreintes";
+    if (/gant|protection/.test(n)) return "Gants et protection";
+    if (/desinfect|hygiene|sterilis/.test(n)) return "Désinfection et hygiène";
+    if (n.indexOf("radio") !== -1) return "Radiologie";
     if (n.indexOf("consommable") !== -1) return "Consommables";
     return String(c).trim();
   }
@@ -953,7 +961,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         var n = Math.round(byUnit[u] * 100) / 100;
         return fmt(n) + " " + u + (n > 1 && !/s$/i.test(u) ? "s" : "");
       });
-      var DOM_OF = { "Endodontie": "d'endodontie", "Chirurgie": "de chirurgie", "Implants": "d'implant", "Anesthésie": "d'anesthésie", "Consommables": "de consommables" };
+      var DOM_OF = { "Endodontie": "d'endodontie", "Chirurgie": "de chirurgie", "Implants": "d'implant", "Anesthésie": "d'anesthésie", "Composites": "de composite", "Colles et adhésifs": "de colles et adhésifs", "Scellement et ciments": "de ciments et scellement", "Prothèse et empreintes": "de prothèse et empreintes", "Gants et protection": "de gants et protection", "Désinfection et hygiène": "de désinfection et hygiène", "Radiologie": "de radiologie", "Consommables": "de consommables" };
       var valHt = 0;
       inDom.forEach(function (it) { valHt += (Number(it.qty) || 0) * (Number(it.price) || 0); });
       if (inDom.length) {
@@ -1077,6 +1085,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (current && list.indexOf(current) === -1) list.push(current);
     sel.textContent = "";
     list.forEach(function (c) { sel.append(h("option", { value: c, text: c })); });
+    sel.append(h("option", { value: "__new__", text: "+ Nouveau domaine…" }));
+    $("f_category_new").value = ""; $("f_category_new").classList.add("hidden");
   }
   function openItem(it) {
     state.editing = it; state.confirmDelete = false;
@@ -1101,7 +1111,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   function collectItem() {
     return {
       name: $("f_name").value.trim(),
-      category: $("f_category").value.trim(),
+      category: ($("f_category").value === "__new__" ? $("f_category_new").value : $("f_category").value).trim(),
       supplier: state.editing ? (state.editing.supplier || "") : "",
       ref: state.editing ? (state.editing.ref || "") : "",
       location: $("f_location").value.trim(),
@@ -1271,7 +1281,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var help = [
       ["Comment remplir ce fichier"],
       ["Seule la colonne « Article » est obligatoire. Toutes les autres sont facultatives."],
-      ["Domaine : Endodontie, Chirurgie, Implants, Anesthésie ou Consommables."],
+      ["Domaine : Endodontie, Chirurgie, Implants, Anesthésie, Composites, Colles et adhésifs, Scellement et ciments, Prothèse et empreintes, Gants et protection, Désinfection et hygiène, Radiologie ou Consommables."],
       ["Vous pouvez aussi créer une feuille par domaine (nommée Endodontie, Chirurgie…), sans colonne Domaine."],
       ["Un article dont le nom existe déjà dans l'appli est ignoré : l'import n'écrase rien."],
       ["Péremption : jj/mm/aaaa. Supprimez cette feuille d'aide si vous voulez, elle est ignorée à l'import."]
@@ -1390,6 +1400,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (/implant|cicatrisation|pilier/.test(n)) return "Implants";
     if (/anesth|articain|lidocain|mepivacain|prilocain|septocaine|septanest|scandonest|ultracain|xylocain|citanest|carpule/.test(n)) return "Anesthésie";
     if (/suture|novosyn|bistouri|chirurg|membrane|greffe/.test(n)) return "Chirurgie";
+    if (/composite|g-aenial|tetric|filtek/.test(n)) return "Composites";
+    if (/adhes|bonding|etch|silane|vivapen|primer|mordan/.test(n)) return "Colles et adhésifs";
+    if (/ciment|cement|nx3|fuji|panavia|scellement/.test(n)) return "Scellement et ciments";
+    if (/empreinte|putty|turboflex|dentotemp|provisoire|tenon|dentoclic/.test(n)) return "Prothèse et empreintes";
+    if (/gant/.test(n)) return "Gants et protection";
+    if (/lingette|desinfect|viractis|orotol|instrugerm|steril/.test(n)) return "Désinfection et hygiène";
+    if (/capteur|radio|gaine/.test(n)) return "Radiologie";
     return "Consommables";
   }
   function importPdf(file) {
@@ -1828,9 +1845,15 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (f) uploadDoc(f);
   });
   $("itemCancel").addEventListener("click", function () { $("itemDlg").close(); });
+  $("f_category").addEventListener("change", function () {
+    var isNew = $("f_category").value === "__new__";
+    $("f_category_new").classList.toggle("hidden", !isNew);
+    if (isNew) $("f_category_new").focus();
+  });
   $("itemSave").addEventListener("click", function () {
     var d = collectItem();
     if (!d.name) { toast("Indiquez le nom de l'article."); $("f_name").focus(); return; }
+    if ($("f_category").value === "__new__" && !d.category) { toast("Indiquez le nom du nouveau domaine."); $("f_category_new").focus(); return; }
     saveItem(d, state.editing);
     $("itemDlg").close();
   });
