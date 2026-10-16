@@ -232,6 +232,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 .teamrow:first-child { border-top:0; }
 .chip.catalogue { background:var(--surface-2); color:var(--muted); }
 .row.untracked { opacity:.8; }
+.subrow { display:flex; justify-content:space-between; align-items:center; width:100%; text-align:left; padding:7px 14px 7px 22px; background:var(--bg); border:0; border-top:1px solid var(--line); font-weight:600; font-size:13.5px; color:var(--ink); }
+.subrow small { color:var(--muted); font-weight:600; }
 
 @media (max-width: 760px) {
   .counters { grid-template-columns:repeat(2,1fr); }
@@ -306,7 +308,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v16</div>
+            <div class="menu-who"><span id="who"></span> · v17</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -354,6 +356,10 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       <label class="f full">Domaine
         <select id="f_category"></select>
         <input id="f_category_new" class="hidden" autocomplete="off" placeholder="Nom du nouveau domaine">
+      </label>
+      <label class="f full">Sous-catégorie (facultatif)
+        <input id="f_subcategory" list="dl_sub" autocomplete="off" placeholder="Ex. Gants, Fils de suture">
+        <datalist id="dl_sub"></datalist>
       </label>
       <label class="f">Quantité en stock
         <input id="f_qty" type="number" min="0" step="any" inputmode="decimal">
@@ -521,11 +527,11 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var docCounts = {};
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
-  var barcodeOk = false, descOk = false, trackedOk = false;
+  var barcodeOk = false, descOk = false, trackedOk = false, subOk = false;
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
-  var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
+  var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, collapsed: {}, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
   var chain = Promise.resolve();
 
@@ -589,7 +595,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       id: r.id, name: r.name || "", category: r.category || "", supplier: r.supplier || "", ref: r.ref || "",
       location: r.location || "", unit: r.unit || "", qty: Number(r.qty) || 0, min: Number(r.min) || 0,
       target: Number(r.target) || 0, lot: r.lot || "", expiry: r.expiry || "", price: Number(r.price) || 0,
-      barcode: r.barcode || "", description: r.description || "", tracked: r.tracked !== false
+      barcode: r.barcode || "", description: r.description || "", tracked: r.tracked !== false, subcategory: r.subcategory || ""
     };
   }
   function toRow(d) {
@@ -603,6 +609,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (d._barcodeKey) row.barcode = d.barcode || null;
     if (descOk) row.description = d.description || null;
     if (trackedOk) row.tracked = d.tracked !== false;
+    if (subOk) row.subcategory = d.subcategory || null;
     return row;
   }
   function check(res) {
@@ -679,6 +686,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (data.barcode && !barcodeOk) { toast("Lancez d'abord le script SQL « ajout-codebarres » dans Supabase."); return; }
     data._barcodeKey = !!(data.barcode || (existing && existing.barcode));
     if (data.tracked === false && !trackedOk) { toast("Lancez d'abord le script SQL « ajout-catalogue » dans Supabase."); return; }
+    if (data.subcategory && !subOk) { toast("Lancez d'abord le script SQL « ajout-sous-categories » dans Supabase."); return; }
     if (data.description && !descOk) { toast("Lancez d'abord le script SQL « ajout-description » dans Supabase."); return; }
     enqueue(function () {
       var before = existing ? Number(existing.qty) || 0 : 0;
@@ -717,11 +725,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       if (state.filter === "rupt" && s !== "rupture") return false;
       if (state.filter === "exp" && s !== "perime" && s !== "peremption") return false;
       if (!q) return true;
-      return norm([it.name, it.description, it.ref, it.supplier, it.category, it.location, it.lot, it.barcode].join(" ")).indexOf(q) !== -1;
+      return norm([it.name, it.description, it.ref, it.supplier, it.category, it.subcategory, it.location, it.lot, it.barcode].join(" ")).indexOf(q) !== -1;
     });
     arr.sort(function (a, b) {
       var ca = norm(a.category || "zz"), cb = norm(b.category || "zz");
       if (ca !== cb) return ca.localeCompare(cb);
+      var sa = norm(a.subcategory || "zz"), sb2 = norm(b.subcategory || "zz");
+      if (sa !== sb2) return sa.localeCompare(sb2);
       var d = STATUS[statusOf(a)].rank - STATUS[statusOf(b)].rank;
       return d !== 0 ? d : norm(a.name).localeCompare(norm(b.name));
     });
@@ -836,14 +846,27 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     }
     var table = h("div", { class: "table" });
     table.append(h("div", { class: "row head" }, h("div", { text: "Article" }), h("div", { text: "Quantité" }), h("div", { text: "État" })));
+    var hasSubs = list.some(function (x) { return x.subcategory; });
     list.forEach(function (it, i) {
       var cname = it.category || "Sans domaine";
       var prevIt = list[i - 1];
       if (!state.cat && (!prevIt || (prevIt.category || "Sans domaine") !== cname)) {
         table.append(h("div", { class: "catrow", text: cname }));
       }
+      if (state.cat && hasSubs) {
+        var sname = it.subcategory || "Sans sous-catégorie";
+        var skey = state.cat + "|" + sname;
+        if (!prevIt || (prevIt.subcategory || "Sans sous-catégorie") !== sname) {
+          var cnt = list.filter(function (x) { return (x.subcategory || "Sans sous-catégorie") === sname; }).length;
+          table.append(h("button", { class: "subrow", "aria-expanded": state.collapsed[skey] ? "false" : "true",
+            onclick: function () { state.collapsed[skey] = !state.collapsed[skey]; render(); } },
+            h("span", { text: (state.collapsed[skey] ? "▸ " : "▾ ") + sname }), h("small", { text: String(cnt) })));
+        }
+        if (state.collapsed[skey]) return;
+      }
       var unit = it.unit ? " " + it.unit : "";
       var meta = [];
+      if (it.subcategory && !state.cat) meta.push(it.subcategory);
       if (it.location) meta.push(it.location);
       if (it.ref) meta.push("réf. " + it.ref);
       if (it.lot) meta.push("lot " + it.lot);
@@ -1017,7 +1040,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     }
     var list = Array.from(items.values()).filter(function (it) { return it.tracked !== false; }).sort(function (a, b) {
       var ca = norm(a.category || "zz"), cb = norm(b.category || "zz");
-      return ca !== cb ? ca.localeCompare(cb) : norm(a.name).localeCompare(norm(b.name));
+      if (ca !== cb) return ca.localeCompare(cb);
+      var sa = norm(a.subcategory || "zz"), sb2 = norm(b.subcategory || "zz");
+      return sa !== sb2 ? sa.localeCompare(sb2) : norm(a.name).localeCompare(norm(b.name));
     });
     var changedList = function () {
       return list.filter(function (it) {
@@ -1066,6 +1091,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       var q = h("input", { class: "cin", type: "number", min: "0", step: "any", inputmode: "decimal", "aria-label": "Quantité comptée : " + it.name, value: String(cur.qty), disabled: readOnly });
       var m = h("input", { class: "cin", type: "number", min: "0", step: "any", inputmode: "decimal", "aria-label": "Seuil d'alerte : " + it.name, value: String(cur.min), disabled: readOnly });
       var meta = [];
+      if (it.subcategory) meta.push(it.subcategory);
       if (it.ref) meta.push("réf. " + it.ref);
       meta.push("stock actuel " + fmt(it.qty) + (it.unit ? " " + it.unit : ""));
       var row = h("div", { class: "crow" + ((cur.qty !== (Number(it.qty) || 0) || cur.min !== (Number(it.min) || 0)) ? " chg" : "") },
@@ -1109,7 +1135,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   }
 
   // ---------- boîtes de dialogue ----------
-  var FIELDS = ["name", "category", "location", "unit", "qty", "min", "target", "lot", "expiry", "price", "barcode", "description"];
+  var FIELDS = ["name", "category", "location", "unit", "qty", "min", "target", "lot", "expiry", "price", "barcode", "description", "subcategory"];
   function fillDomainSelect(current) {
     var sel = $("f_category");
     var list = DOMAINS.concat([EQUIP]);
@@ -1119,6 +1145,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     list.forEach(function (c) { sel.append(h("option", { value: c, text: c })); });
     sel.append(h("option", { value: "__new__", text: "+ Nouveau domaine…" }));
     $("f_category_new").value = ""; $("f_category_new").classList.add("hidden");
+  }
+  function fillSubList() {
+    var dl = $("dl_sub"); dl.textContent = "";
+    var dom = $("f_category").value === "__new__" ? "" : $("f_category").value;
+    var set = new Set();
+    items.forEach(function (x) { if (x.subcategory && (!dom || (x.category || "Sans domaine") === dom)) set.add(x.subcategory); });
+    Array.from(set).sort(function (a, b) { return norm(a).localeCompare(norm(b)); }).forEach(function (v) { dl.append(h("option", { value: v })); });
   }
   function openItem(it) {
     state.editing = it; state.confirmDelete = false;
@@ -1136,6 +1169,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       el.value = v;
       el.disabled = readOnly;
     });
+    fillSubList();
     $("itemDelete").classList.toggle("hidden", !it || readOnly);
     $("itemDelete").textContent = "Supprimer";
     $("itemSave").disabled = readOnly;
@@ -1158,7 +1192,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       price: Math.max(0, num($("f_price").value)),
       barcode: $("f_barcode").value.trim(),
       description: $("f_description").value.trim(),
-      tracked: $("f_tracked").checked
+      tracked: $("f_tracked").checked,
+      subcategory: $("f_subcategory").value.trim()
     };
   }
   function openAdjust(it) {
@@ -1181,9 +1216,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     return /[;"\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   }
   function exportCsv() {
-    var head = ["Article", "Description", "Domaine", "Fournisseur", "Référence", "Emplacement", "Quantité", "Unité", "Seuil", "Cible", "Lot", "Péremption", "Prix HT", "Suivi"];
+    var head = ["Article", "Description", "Domaine", "Sous-catégorie", "Fournisseur", "Référence", "Emplacement", "Quantité", "Unité", "Seuil", "Cible", "Lot", "Péremption", "Prix HT", "Suivi"];
     var rows = Array.from(items.values()).sort(function (a, b) { return norm(a.name).localeCompare(norm(b.name)); }).map(function (it) {
-      return [it.name, it.description, it.category, it.supplier, it.ref, it.location, it.qty, it.unit, it.min, it.target, it.lot, isoToFr(it.expiry), it.price, it.tracked === false ? "non" : "oui"].map(csvEscape).join(";");
+      return [it.name, it.description, it.category, it.subcategory, it.supplier, it.ref, it.location, it.qty, it.unit, it.min, it.target, it.lot, isoToFr(it.expiry), it.price, it.tracked === false ? "non" : "oui"].map(csvEscape).join(";");
     });
     var data = "\uFEFF" + [head.join(";")].concat(rows).join("\r\n");
     var name = "stock-" + norm(siteName).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + new Date().toISOString().slice(0, 10) + ".csv";
@@ -1222,6 +1257,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var SYN = {
     name: ["article", "nom", "designation", "produit", "libelle"],
     tracked: ["suivi", "suivi en stock", "stock suivi"],
+    subcategory: ["sous-categorie", "sous categorie", "sous-domaine", "sous domaine"],
     description: ["description", "precision", "details", "detail", "type de produit"],
     category: ["domaine", "categorie", "famille", "type"],
     supplier: ["fournisseur"],
@@ -1266,7 +1302,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         name: get("name"), description: get("description"), category: normDomain(get("category")) || defaultCat || "", supplier: get("supplier"), ref: get("ref"),
         location: get("location"), unit: get("unit"), qty: Math.max(0, num(get("qty"))), min: Math.max(0, num(get("min"))),
         target: Math.max(0, num(get("target"))), lot: get("lot"), expiry: exp, price: Math.max(0, num(get("price"))),
-        tracked: parseTracked(get("tracked"))
+        tracked: parseTracked(get("tracked")), subcategory: get("subcategory")
       };
     }).filter(function (d) { return d.name; });
     return { ok: true, items: out };
@@ -1292,6 +1328,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       have.add(k); fresh.push(d);
     });
     if (!trackedOk && fresh.some(function (d) { return d.tracked === false; })) { toast("Lancez d'abord le script SQL « ajout-catalogue » dans Supabase."); return; }
+    if (!subOk && fresh.some(function (d) { return d.subcategory; })) { toast("Lancez d'abord le script SQL « ajout-sous-categories » dans Supabase."); return; }
     var capped = fresh.length > 500;
     if (capped) fresh = fresh.slice(0, 500);
     if (!fresh.length) { toast("Tous les articles du fichier existent déjà (" + dup + " ignorés)."); return; }
@@ -1318,7 +1355,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (!window.XLSX) { toast("Le modèle Excel n'a pas pu être créé : vérifiez votre accès à internet."); return; }
     var X = window.XLSX;
     var wb = X.utils.book_new();
-    var head = ["Article", "Description", "Domaine", "Quantité", "Seuil", "Unité", "Emplacement", "Prix HT", "Lot", "Péremption", "Fournisseur", "Référence", "Suivi"];
+    var head = ["Article", "Description", "Domaine", "Sous-catégorie", "Quantité", "Seuil", "Unité", "Emplacement", "Prix HT", "Lot", "Péremption", "Fournisseur", "Référence", "Suivi"];
     X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([head]), "Matériel");
     var help = [
       ["Comment remplir ce fichier"],
@@ -1896,6 +1933,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var isNew = $("f_category").value === "__new__";
     $("f_category_new").classList.toggle("hidden", !isNew);
     if (isNew) $("f_category_new").focus();
+    fillSubList();
   });
   $("itemSave").addEventListener("click", function () {
     var d = collectItem();
@@ -2126,6 +2164,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     sb.from("items").select("tracked").eq("cabinet_id", cid).limit(1).then(function (res) {
       if (cid === cabinetId) trackedOk = !res.error;
     }).catch(function () { trackedOk = false; });
+    sb.from("items").select("subcategory").eq("cabinet_id", cid).limit(1).then(function (res) {
+      if (cid === cabinetId) subOk = !res.error;
+    }).catch(function () { subOk = false; });
     var ch = sb.channel("simsimstock-" + cid)
       .on("postgres_changes", { event: "*", schema: "public", table: "items" }, function (p) {
         if (p.eventType === "DELETE") items.delete(p.old.id);
@@ -2143,7 +2184,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   function stopData() {
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     channels = []; started = false;
-    items = new Map(); logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false;
+    items = new Map(); logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false;
   }
   function showScreen(which) {
     $("login").classList.toggle("hidden", which !== "login");
