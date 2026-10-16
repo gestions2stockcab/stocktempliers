@@ -277,6 +277,15 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 .oline { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; padding:9px 14px; border-top:1px solid var(--line); }
 .oline .obody { flex:1 1 220px; min-width:0; }
 .oline .late { color:var(--warn); font-weight:600; }
+.banner.bad { background:var(--bad-bg); color:var(--bad); }
+.dupgrp { border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin:10px 0; background:var(--surface); }
+.dupgrp h3 { font-size:15px; margin:0 0 6px; }
+.duprow { display:flex; gap:10px; align-items:flex-start; padding:6px 0; border-top:1px solid var(--line); }
+.duprow:first-of-type { border-top:0; }
+.duprow .dbody { flex:1; min-width:0; overflow-wrap:anywhere; }
+.jrow { display:grid; grid-template-columns:96px 120px minmax(0,1fr) 90px auto; gap:8px; align-items:center; padding:7px 0; border-top:1px solid var(--line); font-size:13.5px; }
+.jrow.head { color:var(--muted); font-weight:600; font-size:12.5px; border-top:0; }
+@media (max-width: 760px) { .jrow { grid-template-columns:1fr auto; } .jrow.head { display:none; } }
 .star { background:none; border:0; padding:0 6px 0 0; font-size:18px; line-height:1; color:var(--muted); }
 .star.on { color:#f59e0b; }
 .btn.big { padding:12px 18px; font-size:18px; font-weight:700; min-width:72px; }
@@ -375,10 +384,12 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v28</div>
+            <div class="menu-who"><span id="who"></span> · v29</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
+            <button class="mi" id="jrnBtn">Factures importées</button>
+            <button class="mi" id="dupBtn">Doublons possibles</button>
             <button class="mi" id="pwBtn">Changer mon mot de passe</button>
             <button class="mi hidden" id="teamBtn">Gérer l'équipe</button>
             <button class="mi hidden" id="switchBtn">Changer de cabinet</button>
@@ -573,6 +584,24 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   </div>
 </dialog>
 
+<dialog id="jrnDlg" class="wide">
+  <div class="dlg">
+    <h2>Factures importées</h2>
+    <div class="sub" id="jrnInfo"></div>
+    <div id="jrnList"></div>
+    <div class="dlg-actions"><button class="btn" id="jrnClose">Fermer</button></div>
+  </div>
+</dialog>
+
+<dialog id="dupDlg" class="wide">
+  <div class="dlg">
+    <h2>Doublons possibles</h2>
+    <div class="sub">Articles qui ont la même référence fournisseur. Choisissez celui à garder : les quantités et les lots des autres lui sont ajoutés, puis les autres sont supprimés.</div>
+    <div id="dupList"></div>
+    <div class="dlg-actions"><button class="btn" id="dupClose">Fermer</button></div>
+  </div>
+</dialog>
+
 <dialog id="ordDlg">
   <div class="dlg">
     <h2 id="ordTitle">Marquer comme commandé</h2>
@@ -645,7 +674,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var docCounts = {};
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
-  var barcodeOk = false, descOk = false, trackedOk = false, subOk = false, favOk = false, lotsOk = false, lotsByItem = {}, ordOk = false, photoOk = false;
+  var barcodeOk = false, descOk = false, trackedOk = false, subOk = false, favOk = false, lotsOk = false, lotsByItem = {}, ordOk = false, photoOk = false, jrnOk = false, consoOk = false, jrnByNumber = {}, conso = {}, consoDebut = 0, consoAt = 0;
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
@@ -971,6 +1000,39 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 
   // ---------- rendu ----------
   var FILTER_LABEL = { bas: "Sous le seuil", rupt: "En rupture", exp: "Péremption proche ou dépassée" };
+  // ---------- durée de stock restante ----------
+  function loadConso() {
+    if (!sb || !cabinetId) return;
+    var cid = cabinetId;
+    sb.rpc("conso_stats", { p_cabinet: cid, p_days: 90 }).then(function (res) {
+      if (cid !== cabinetId) return;
+      if (res.error) { consoOk = false; return; }
+      consoOk = true; conso = {}; var debut = 0;
+      (res.data || []).forEach(function (r) { conso[r.item_id] = { out: Number(r.sorti) || 0 }; debut = Date.parse(r.debut) || debut; });
+      consoDebut = debut; consoAt = Date.now();
+      render();
+    }).catch(function () { consoOk = false; });
+  }
+  // Nombre de jours observés (90 au maximum) ; sous 14 jours de recul, on ne s'avance pas.
+  function consoWindow() {
+    if (!consoDebut) return 0;
+    var days = Math.min(90, (Date.now() - consoDebut) / 86400000);
+    return days >= 14 ? days : 0;
+  }
+  function daysLeft(it) {
+    if (!consoOk || it.tracked === false) return null;
+    var c = conso[it.id], w = consoWindow();
+    if (!c || !w || !(c.out > 0)) return null;
+    var q = Number(it.qty) || 0;
+    return q <= 0 ? 0 : q / (c.out / w);
+  }
+  function fmtDays(d) {
+    if (d < 1) return "moins d'1 jour";
+    if (d < 14) return Math.round(d) + " j";
+    if (d < 60) return Math.round(d / 7) + " sem.";
+    return Math.round(d / 30) + " mois";
+  }
+  function isSoon(it) { var d = daysLeft(it); return d !== null && d > 0 && d < 15; }
   function filtersActive() { var f = state.f; return !!(f.supplier || f.status || f.qty || f.location || f.sub || f.sort); }
   function activeFilterCount() { var f = state.f, n = 0; ["supplier", "status", "qty", "location", "sub", "sort"].forEach(function (k) { if (f[k]) n++; }); return n; }
   function clearFilters() { state.f = { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }; }
@@ -988,6 +1050,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       if (f.status === "cat" && it.tracked !== false) return false;
       if (f.status === "fav" && !it.favorite) return false;
       if (f.status === "cmd" && !(it.ordered_qty > 0)) return false;
+      if (f.status === "soon" && !isSoon(it)) return false;
     }
     return true;
   }
@@ -1000,6 +1063,11 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (sort === "qty-desc") return function (a, b) { return num2("qty")(b, a) || nm(a, b); };
     if (sort === "prix-asc") return function (a, b) { return num2("price")(a, b) || nm(a, b); };
     if (sort === "prix-desc") return function (a, b) { return num2("price")(b, a) || nm(a, b); };
+    if (sort === "autonomie") return function (a, b) {
+      var da = daysLeft(a), db2 = daysLeft(b);
+      da = da === null ? 1e9 : da; db2 = db2 === null ? 1e9 : db2;
+      return da - db2 || nm(a, b);
+    };
     if (sort === "exp") return function (a, b) { var ea = a.expiry || "9999-12-31", eb = b.expiry || "9999-12-31"; return ea < eb ? -1 : ea > eb ? 1 : nm(a, b); };
     return nm;
   }
@@ -1027,20 +1095,21 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     panel.append(field("Fournisseur", "supplier", [["", "Tous"]].concat(sup, [["__none__", "Sans fournisseur"]])));
     var subs = uniq(function (it) { return it.subcategory; }).map(function (v) { return [v, v]; });
     if (subs.length) panel.append(field("Sous-catégorie", "sub", [["", "Toutes"]].concat(subs)));
-    panel.append(field("État", "status", [["", "Tous"], ["rupt", "En rupture"], ["bas", "Stock bas"], ["exp", "Péremption proche"], ["cmd", "Déjà commandé"], ["fav", "Favoris"], ["cat", "Catalogue seulement"]]));
+    panel.append(field("État", "status", [["", "Tous"], ["rupt", "En rupture"], ["bas", "Stock bas"], ["exp", "Péremption proche"], ["soon", "Stock pour moins de 15 jours"], ["cmd", "Déjà commandé"], ["fav", "Favoris"], ["cat", "Catalogue seulement"]]));
     panel.append(field("Quantité", "qty", [["", "Toutes"], ["zero", "0 (rouge)"], ["low", "1 à 9"], ["mid", "10 à 30"], ["high", "Plus de 30"]]));
     var locs = uniq(function (it) { return it.location; }).map(function (v) { return [v, v]; });
     if (locs.length) panel.append(field("Emplacement", "location", [["", "Tous"]].concat(locs)));
-    panel.append(field("Trier par", "sort", [["", "Ordre habituel"], ["nom", "Nom A → Z"], ["nom-desc", "Nom Z → A"], ["qty-asc", "Quantité croissante"], ["qty-desc", "Quantité décroissante"], ["prix-asc", "Prix croissant"], ["prix-desc", "Prix décroissant"], ["exp", "Péremption la plus proche"]]));
+    panel.append(field("Trier par", "sort", [["", "Ordre habituel"], ["nom", "Nom A → Z"], ["nom-desc", "Nom Z → A"], ["qty-asc", "Quantité croissante"], ["qty-desc", "Quantité décroissante"], ["prix-asc", "Prix croissant"], ["prix-desc", "Prix décroissant"], ["exp", "Péremption la plus proche"], ["autonomie", "Durée de stock restante"]]));
     panel.append(h("button", { class: "btn sm fclear", disabled: !n, onclick: function () { clearFilters(); render(); }, text: "Tout effacer" }));
   }
   function isHome() { return !state.cat && state.filter === "all" && !state.q && !filtersActive(); }
 
   function renderAlerts() {
     var all = Array.from(items.values());
-    var bas = 0, rupt = 0, exp = 0, total = 0;
+    var bas = 0, rupt = 0, exp = 0, total = 0, soon = 0;
     all.forEach(function (it) {
       var s = statusOf(it);
+      if (s === "ok" && isSoon(it)) soon++;
       if (s === "rupture") rupt++;
       else if (s === "bas") bas++;
       if (s === "perime" || s === "peremption") exp++;
@@ -1049,7 +1118,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var home = state.tab === "inventaire" && isHome();
     $("stockValue").textContent = (home && all.length) ? "Valeur du stock (hors équipement) : " + money(total) + " HT · " + money(total * (1 + TVA / 100)) + " TTC (TVA " + TVA + " %)" : "";
     var box = $("alerts"); box.textContent = "";
-    box.classList.toggle("hidden", !home || (!bas && !rupt && !exp));
+    box.classList.toggle("hidden", !home || (!bas && !rupt && !exp && !soon));
     var mk = function (n, label, filter, cls) {
       if (!n) return;
       box.append(h("button", { class: "alert " + cls, onclick: function () { state.filter = filter; state.cat = ""; render(); } },
@@ -1058,6 +1127,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     mk(rupt, "en rupture", "rupt", "a-rupt");
     mk(bas, "sous le seuil", "bas", "a-bas");
     mk(exp, "péremption à surveiller", "exp", "a-exp");
+    if (soon) box.append(h("button", { class: "alert a-bas", onclick: function () { state.filter = "all"; state.cat = ""; state.f.status = "soon"; state.f.sort = "autonomie"; render(); } },
+      h("strong", { text: String(soon) }), " bientôt en rupture (moins de 15 jours de stock)"));
   }
 
   // Couleur du chiffre : plus de 30 vert, de 10 à 30 orange, sous 10 orange foncé, 0 rouge
@@ -1196,6 +1267,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       if (it.lot) meta.push("lot " + it.lot);
       if (it.expiry) meta.push("exp. " + isoToFr(it.expiry));
       if (it.ordered_qty > 0) meta.push("commandé ×" + fmt(it.ordered_qty) + (it.ordered_at ? " le " + new Date(it.ordered_at).toLocaleDateString("fr-FR") : ""));
+      var dl = daysLeft(it);
+      if (dl !== null && dl > 0) meta.push("≈ " + fmtDays(dl) + " de stock");
       if (it.tracked !== false) meta.push("seuil " + fmt(it.min || 0));
       else if (it.price > 0) meta.push("dernier prix " + money(it.price) + " HT");
       var nLots = (lotsByItem[it.id] || []).length;
@@ -1265,8 +1338,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         var q = suggestedQty(it);
         var amount = it.price > 0 ? q * it.price : null;
         if (amount !== null) { total += amount; hasPrice = true; }
+        var dlo = daysLeft(it);
         lines.append(h("div", { class: "line" },
-          h("div", null, h("div", { text: labelOf(it) }), h("div", { class: "meta", text: it.ref ? "réf. " + it.ref : "" }),
+          h("div", null, h("div", { text: labelOf(it) }), h("div", { class: "meta", text: [it.ref ? "réf. " + it.ref : "", dlo !== null && dlo > 0 ? "≈ " + fmtDays(dlo) + " de stock" : ""].filter(Boolean).join(" · ") }),
             readOnly ? null : h("button", { class: "btn sm", onclick: function () { openOrdDlg(it); }, text: "Marquer comme commandé" })),
           h("div", { class: "num", text: fmt(it.qty) }),
           h("div", { class: "num", text: fmt(q) + (it.unit ? " " + it.unit : "") }),
@@ -1491,6 +1565,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     renderAlerts();
     renderCrumb();
     renderFilters();
+    var nd = dupGroups().length;
+    $("dupBtn").textContent = "Doublons possibles" + (nd ? " (" + nd + ")" : "");
     var bn = $("banner"); bn.textContent = "";
     if (db && readOnly) bn.append(h("div", { class: "banner", text: "Accès en lecture seule : vous pouvez consulter le stock, mais pas le modifier." }));
     var box = $("content"); box.textContent = "";
@@ -1632,6 +1708,89 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         h("span", { class: "delta " + (delta > 0 ? "pos" : delta < 0 ? "neg" : ""), text: (delta > 0 ? "+" : "") + (delta === 0 ? "—" : fmt(delta)) + " → " + fmt(r.qty) })));
     });
   }
+  function dupGroups() {
+    var by = {};
+    items.forEach(function (it) { var k = norm(it.ref || "").trim(); if (k) (by[k] = by[k] || []).push(it); });
+    return Object.keys(by).filter(function (k) { return by[k].length > 1; }).map(function (k) { return by[k]; });
+  }
+  function mergeItems(keepId, otherIds) {
+    var keep = items.get(keepId);
+    var others = otherIds.map(function (id) { return items.get(id); }).filter(Boolean);
+    if (!db || readOnly || !keep || !others.length) return;
+    enqueue(function () {
+      var all = [keep].concat(others);
+      var anyLots = lotsOk && all.some(function (x) { return (lotsByItem[x.id] || []).length > 0; });
+      var total = r2(all.reduce(function (a, x) { return a + (Number(x.qty) || 0); }, 0));
+      var desired = [];
+      if (anyLots) {
+        all.forEach(function (x) {
+          var ls = lotsOf(x.id);
+          if (ls.length) ls.forEach(function (l) { desired.push({ id: x.id === keepId ? l.id : undefined, lot: l.lot, expiry: l.expiry || null, qty: Number(l.qty) || 0 }); });
+          else if ((Number(x.qty) || 0) > 0) desired.push({ lot: "", expiry: null, qty: Number(x.qty) });
+        });
+      }
+      var patch = { updated_at: new Date().toISOString() }, local = {};
+      var setBoth = function (k, v) { patch[k] = v; local[k] = v; };
+      if (favOk && all.some(function (x) { return x.favorite; }) && !keep.favorite) setBoth("favorite", true);
+      if (ordOk) {
+        var oq = r2(all.reduce(function (a, x) { return a + (Number(x.ordered_qty) || 0); }, 0));
+        if (oq !== (Number(keep.ordered_qty) || 0)) { patch.ordered_qty = oq; patch.ordered_at = oq > 0 ? (all.map(function (x) { return x.ordered_at; }).filter(Boolean).sort()[0] || null) : null; local.ordered_qty = oq; local.ordered_at = patch.ordered_at || ""; }
+      }
+      if (photoOk && !keep.photo) { var ph = others.map(function (o) { return o.photo; }).find(Boolean); if (ph) setBoth("photo", ph); }
+      if (!(keep.price > 0)) { var pr = others.map(function (o) { return o.price; }).find(function (v) { return v > 0; }); if (pr) setBoth("price", pr); }
+      if (keep.tracked === false && trackedOk && all.some(function (x) { return x.tracked !== false; })) setBoth("tracked", true);
+      var guarded = { description: descOk, subcategory: subOk, barcode: barcodeOk, supplier: true, location: true, unit: true };
+      Object.keys(guarded).forEach(function (f) {
+        if (!guarded[f] || keep[f]) return;
+        var v = others.map(function (o) { return o[f]; }).find(Boolean);
+        if (v) setBoth(f, v);
+      });
+      if (!anyLots) { patch.qty = total; local.qty = total; }
+      var chain = Promise.resolve();
+      others.forEach(function (o) {
+        if (!docsOk) return;
+        chain = chain.then(function () { return sb.from("documents").update({ item_id: keepId }).eq("item_id", o.id).then(check); })
+          .then(function () { return sb.from("documents").select("id").eq("item_id", o.id).then(function (res) { if ((check(res) || []).length) throw new Error("Les documents de « " + o.name + " » n'ont pas pu être transférés : fusion annulée."); }); });
+      });
+      chain = chain.then(function () { return anyLots ? persistLots(keep, desired, patch) : sb.from("items").update(patch).eq("id", keepId).then(check); });
+      others.forEach(function (o) { chain = chain.then(function () { return sb.from("items").delete().eq("id", o.id).then(check); }); });
+      return chain.then(function () {
+        others.forEach(function (o) { items.delete(o.id); delete lotsByItem[o.id]; });
+        var k2 = items.get(keepId) || keep;
+        items.set(keepId, Object.assign({}, k2, local));
+        render();
+        return appendLog({ type: "merge", itemId: keepId, item: keep.name, delta: 0, qty: Number((items.get(keepId) || {}).qty) || 0, note: "Fusion de " + others.length + " doublon" + (others.length > 1 ? "s" : "") + " : " + others.map(function (o) { return o.name; }).join(" ; ") });
+      });
+    });
+  }
+  function openDup() {
+    var groups = dupGroups();
+    var list = $("dupList"); list.textContent = "";
+    if (!groups.length) list.append(h("div", { class: "meta", text: "Aucun doublon repéré : chaque référence fournisseur n'apparaît qu'une fois." }));
+    groups.forEach(function (g) {
+      var score = function (x) { return ((lotsByItem[x.id] || []).length ? 3 : 0) + (docCounts[x.id] ? 2 : 0) + (x.description ? 1 : 0) + ((Number(x.qty) || 0) > 0 ? 1 : 0) + Math.min(1, String(x.name).length / 200); };
+      var best = g.slice().sort(function (a, b) { return score(b) - score(a); })[0];
+      var chosen = best.id, card = h("section", { class: "dupgrp" });
+      card.append(h("h3", { text: "Référence " + (g[0].ref || "") + " · " + g.length + " articles" }));
+      g.forEach(function (x) {
+        var radio = h("input", { type: "radio", name: "dup-" + g[0].id, checked: x.id === best.id, "aria-label": "Garder " + x.name });
+        radio.addEventListener("change", function () { chosen = x.id; });
+        card.append(h("label", { class: "duprow" }, radio,
+          h("div", { class: "dbody" }, h("div", { class: "item-name", text: x.name }),
+            h("div", { class: "meta", text: [x.category || "Sans domaine", "stock " + fmt(x.qty), (lotsByItem[x.id] || []).length ? (lotsByItem[x.id].length + " lots") : "", docCounts[x.id] ? docCounts[x.id] + " doc" : "", x.tracked === false ? "catalogue" : ""].filter(Boolean).join(" · ") }))));
+      });
+      card.append(h("div", { class: "dlg-actions" },
+        h("button", { class: "btn primary sm", disabled: readOnly, onclick: function () {
+          var keepItem = items.get(chosen), others = g.filter(function (x) { return x.id !== chosen; }).map(function (x) { return x.id; });
+          if (!window.confirm("Fusionner " + g.length + " articles en « " + keepItem.name + " » ?\n\nLes quantités et les lots sont additionnés, les autres articles sont supprimés. Le journal des mouvements est conservé.")) return;
+          mergeItems(chosen, others);
+          card.remove();
+          toast("Fusion en cours…");
+        }, text: "Fusionner en gardant l'article sélectionné" })));
+      list.append(card);
+    });
+    $("dupDlg").showModal();
+  }
   function toggleFav(it) {
     if (!db || readOnly) return;
     if (!favOk) { toast("Lancez d'abord le script SQL « ajout-lots-favoris » dans Supabase."); return; }
@@ -1659,7 +1818,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
             it.description ? h("div", { class: "desc", text: "(" + it.description + ")" }) : null)),
         h("div", { class: "fav-qty" },
           h("span", { class: "fav-num " + qtyClass(it.qty), text: fmt(it.qty) }),
-          chipFor(it)),
+          chipFor(it),
+          (daysLeft(it) > 0) ? h("span", { class: "meta", text: "≈ " + fmtDays(daysLeft(it)) }) : null),
         h("div", { class: "fav-actions" },
           h("button", { class: "btn big", disabled: readOnly || (it.qty || 0) <= 0, "aria-label": "Retirer 1 " + it.name, onclick: function () { adjustQty(it, -1, "Sortie rapide (favoris)"); }, text: "− 1" }),
           h("button", { class: "btn big primary", disabled: readOnly, "aria-label": "Ajouter 1 " + it.name, onclick: function () { if (hasLots(it)) openAdjust(it); else adjustQty(it, 1, "Entrée rapide (favoris)"); }, text: "+ 1" }),
@@ -2076,6 +2236,52 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     };
     r.readAsArrayBuffer(file);
   }
+  function docMeta(lines) {
+    var t = lines.slice(0, 160).join(" ");
+    var out = { number: "", type: "", date: "", total: null, annul: [], refact: [] };
+    var m = /\b(Ma facture|Mon avoir|Facture|Avoir)\s+(?:n[°o]\s*)?(\d{6,12})\s+du\s+(\d{2})[./](\d{2})[./](\d{4})/i.exec(t);
+    if (m) { out.number = m[2]; out.type = /avoir/i.test(m[1]) ? "avoir" : "facture"; out.date = m[5] + "-" + m[4] + "-" + m[3]; }
+    else {
+      var g = /\b(facture|avoir)\s*(?:n[°o]|num[ée]ro)\s*:?\s*([A-Z0-9][A-Z0-9-]{4,19})/i.exec(t);
+      if (g) { out.number = g[2]; out.type = /avoir/i.test(g[1]) ? "avoir" : "facture"; }
+    }
+    var ht = /Montant total HT\s+(\d[\d. ]*,\d{2})/i.exec(t);
+    if (ht) out.total = parseFloat(ht[1].replace(/[. ]/g, "").replace(",", "."));
+    var re = /(ANNULATION|REFACTURATION)\s+FT\s+(\d{6,})/gi, x;
+    while ((x = re.exec(t))) { (/^A/i.test(x[1]) ? out.annul : out.refact).push(x[2]); }
+    return out;
+  }
+  function frDate(iso) { var t = Date.parse(iso); return t ? new Date(t).toLocaleDateString("fr-FR") : ""; }
+  function jrnRecord(dm, fileName, nbLines, supplier) {
+    if (!jrnOk || !dm.number) return;
+    jrnByNumber[dm.number] = { doc_number: dm.number, doc_type: dm.type, user_email: myEmail, created_at: new Date().toISOString() };
+    enqueue(function () {
+      return sb.from("imported_docs").insert({ cabinet_id: cabinetId, doc_number: dm.number, doc_type: dm.type || "facture", doc_date: dm.date || null, supplier: supplier || "", total_ht: dm.total, file_name: fileName, nb_lines: nbLines, user_email: myEmail })
+        .then(function (res) { if (res.error && !/duplicate|unique/i.test(res.error.message || "")) throw res.error; });
+    });
+  }
+  function openJrn() {
+    $("jrnInfo").textContent = jrnOk ? "Chargement…" : "Cette fonction n'est pas encore activée : lancez le script SQL « ajout-factures-conso » dans Supabase.";
+    $("jrnList").textContent = "";
+    $("jrnDlg").showModal();
+    if (!jrnOk) return;
+    sb.from("imported_docs").select("*").eq("cabinet_id", cabinetId).order("created_at", { ascending: false }).limit(300).then(function (res) {
+      var rows = check(res) || [];
+      $("jrnInfo").textContent = rows.length ? rows.length + " document" + (rows.length > 1 ? "s" : "") + " importé" + (rows.length > 1 ? "s" : "") + ". L'appli vous prévient si vous en importez une deuxième fois." : "Aucune facture importée depuis l'activation du journal.";
+      var list = $("jrnList"); list.textContent = "";
+      if (rows.length) list.append(h("div", { class: "jrow head" }, h("div", { text: "Date" }), h("div", { text: "N°" }), h("div", { text: "Fournisseur · importé par" }), h("div", { text: "Total HT" }), h("div")));
+      rows.forEach(function (d) {
+        list.append(h("div", { class: "jrow" },
+          h("div", { text: d.doc_date ? frDate(d.doc_date) : frDate(d.created_at) }),
+          h("div", { text: (d.doc_type === "avoir" ? "Avoir " : "") + d.doc_number }),
+          h("div", { class: "meta", text: [d.supplier, (d.user_email || "").split("@")[0] + " le " + frDate(d.created_at), d.nb_lines + " ligne" + (d.nb_lines > 1 ? "s" : "")].filter(Boolean).join(" · ") }),
+          h("div", { text: d.total_ht != null ? money(Number(d.total_ht)) : "—" }),
+          isAdmin ? h("button", { class: "btn sm", title: "Retirer du journal pour pouvoir la réimporter", onclick: function () {
+            enqueue(function () { return sb.from("imported_docs").delete().eq("id", d.id).then(check).then(function () { delete jrnByNumber[d.doc_number]; openJrn(); }); });
+          }, text: "Retirer" }) : h("span")));
+      });
+    }).catch(function () { $("jrnInfo").textContent = "Le journal n'a pas pu être chargé."; });
+  }
   function showPdfPreview(fileName, lines) {
     var rows = parseDocLines(lines);
     if (!rows.length) rows = parseLinesB(lines);
@@ -2085,16 +2291,22 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     }
     var head = lines.slice(0, 80).join(" ");
     var isCredit = /\bavoir\b/i.test(lines.slice(0, 60).join(" "));
+    var dm = docMeta(lines), warns = [], seenBefore = false;
+    var already = dm.number && jrnByNumber[dm.number];
+    if (already) { seenBefore = true; warns.push("Cette " + (dm.type === "avoir" ? "avoir" : "facture") + " (n° " + dm.number + ") a déjà été importée le " + frDate(already.created_at) + (already.user_email ? " par " + already.user_email.split("@")[0] : "") + ". Les lignes sont décochées pour éviter une double entrée de stock."); }
+    dm.refact.forEach(function (n) { var j = jrnByNumber[n]; if (j) { seenBefore = true; warns.push("Cette facture remplace la n° " + n + ", déjà importée le " + frDate(j.created_at) + ". Les mêmes produits seraient ajoutés une deuxième fois : importez-la seulement si la précédente n'avait pas été importée."); } });
+    dm.annul.forEach(function (n) { var j = jrnByNumber[n]; if (j) warns.push("Cet avoir annule la facture n° " + n + ", importée le " + frDate(j.created_at) + " : ses quantités ont déjà été ajoutées au stock. Corrigez-les si la marchandise n'a pas été livrée."); });
     var byRef = {}, byName = {};
     items.forEach(function (it) { if (it.ref) byRef[norm(it.ref).trim()] = it; byName[norm(it.name).trim()] = it; });
     rows.forEach(function (r) {
       r.match = byRef[norm(r.ref).trim()] || byName[norm(r.name).trim()] || null;
-      r.on = !isCredit;
+      r.on = !isCredit && !seenBefore;
       r.domain = r.match ? (r.match.category || "") : guessDomain(r.name);
     });
     var info = $("pdfInfo"), box = $("pdfTable"), okBtn = $("pdfOk");
     info.textContent = ""; box.textContent = "";
     info.append(h("div", { class: "sub", text: rows.length + " ligne" + (rows.length > 1 ? "s" : "") + " reconnue" + (rows.length > 1 ? "s" : "") + " dans « " + fileName + " ». Vérifiez et corrigez si besoin. Les articles déjà présents reçoivent une entrée de stock, les autres sont créés." }));
+    warns.forEach(function (t) { info.append(h("div", { class: "banner bad", text: t })); });
     if (isCredit) info.append(h("div", { class: "banner", text: "Ce document est un avoir (annulation ou retour) : les lignes sont décochées. Ne les importez pas comme une livraison." }));
     var supplierInput = h("input", { type: "text", value: guessSupplier(head), autocomplete: "off" });
     info.append(h("label", { class: "f" }, "Fournisseur des nouveaux articles (facultatif)", supplierInput));
@@ -2148,6 +2360,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     okBtn.onclick = function () {
       var chosen = rows.filter(function (r) { return r.on && r.qty > 0; });
       if (!chosen.length) return;
+      if (seenBefore && !catOnly.checked && !window.confirm("Ce document semble déjà avoir été importé. Si vous continuez, ses quantités seront ajoutées une deuxième fois au stock.\n\nImporter quand même ?")) return;
       var supplier = supplierInput.value.trim();
       var moves = [], fresh = {};
       if (catOnly.checked && !trackedOk) { toast("Lancez d'abord le script SQL « ajout-catalogue » dans Supabase."); return; }
@@ -2200,6 +2413,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
           });
         });
       }
+      if (!catOnly.checked) jrnRecord(dm, fileName, chosen.length, supplier);
       toast(list.length + " nouvel" + (list.length > 1 ? "s" : "") + " article" + (list.length > 1 ? "s" : "") + ", " + nEntries + " entrée" + (nEntries > 1 ? "s" : "") + " de stock.");
     };
     $("pdfDlg").showModal();
@@ -2533,6 +2747,10 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     makeThumb(f).then(function (d) { photoDraft = d; renderPhotoBox(); }, function () { toast("Cette image n'a pas pu être lue."); });
   });
   $("photoDel").addEventListener("click", function () { photoDraft = ""; renderPhotoBox(); });
+  $("jrnBtn").addEventListener("click", openJrn);
+  $("jrnClose").addEventListener("click", function () { $("jrnDlg").close(); });
+  $("dupBtn").addEventListener("click", openDup);
+  $("dupClose").addEventListener("click", function () { $("dupDlg").close(); });
   $("ordCancel").addEventListener("click", function () { $("ordDlg").close(); });
   $("ordSave").addEventListener("click", function () {
     var q = num($("ordQty").value);
@@ -2541,6 +2759,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     $("ordDlg").close();
   });
   $("ordDlg").addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); $("ordSave").click(); } });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && db && Date.now() - consoAt > 300000) loadConso(); });
+  setInterval(function () { if (db && !document.hidden && Date.now() - consoAt > 900000) loadConso(); }, 60000);
   $("filtersToggle").addEventListener("click", function () { state.fOpen = !state.fOpen; render(); });
   $("lotAddRow").addEventListener("click", function () {
     lotsDraft.push({ lot: "", expiry: null, qty: lotsDraft.length ? 0 : num($("f_qty").value) });
@@ -2828,6 +3048,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     sb.from("items").select("photo").eq("cabinet_id", cid).limit(1).then(function (res) {
       if (cid === cabinetId) photoOk = !res.error;
     }).catch(function () { photoOk = false; });
+    sb.from("imported_docs").select("doc_number,doc_type,doc_date,user_email,created_at").eq("cabinet_id", cid).limit(5000).then(function (res) {
+      if (cid !== cabinetId) return;
+      if (res.error) { jrnOk = false; return; }
+      jrnOk = true; jrnByNumber = {};
+      (res.data || []).forEach(function (d) { jrnByNumber[d.doc_number] = d; });
+    }).catch(function () { jrnOk = false; });
+    loadConso();
     sb.from("lots").select("*").eq("cabinet_id", cid).limit(10000).then(function (res) {
       if (cid !== cabinetId) return;
       if (res.error) { lotsOk = false; return; }
@@ -2861,7 +3088,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   function stopData() {
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     channels = []; started = false;
-    items = new Map(); logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false;
+    items = new Map(); logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0;
   }
   function showScreen(which) {
     $("login").classList.toggle("hidden", which !== "login");
