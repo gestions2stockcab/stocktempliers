@@ -222,6 +222,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 .scanres { display:flex; flex-direction:column; gap:6px; max-height:180px; overflow:auto; }
 .scanres .btn { text-align:left; }
 .chk { display:flex; gap:8px; align-items:flex-start; font-size:14px; }
+.nameline { display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 8px; }
+.desc { color:var(--muted); font-weight:500; overflow-wrap:anywhere; }
 
 @media (max-width: 760px) {
   .counters { grid-template-columns:repeat(2,1fr); }
@@ -277,7 +279,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v10</div>
+            <div class="menu-who"><span id="who"></span> · v11</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -316,6 +318,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     <div class="grid">
       <label class="f full">Nom de l'article
         <input id="f_name" autocomplete="off" placeholder="Ex. Gants nitrile taille M">
+      </label>
+      <label class="f full">Description courte (facultatif)
+        <input id="f_description" autocomplete="off" placeholder="Ex. composite, putty, lime rotative">
       </label>
       <label class="f full">Domaine
         <select id="f_category"></select>
@@ -442,7 +447,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var docCounts = {};
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
-  var barcodeOk = false;
+  var barcodeOk = false, descOk = false;
   var started = false;
   var state = { tab: "inventaire", filter: "all", q: "", cat: "", editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
@@ -499,6 +504,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var n = parseFloat(String(v).replace(",", "."));
     return isFinite(n) ? n : 0;
   }
+  function labelOf(it) { return (it.name || "") + (it.description ? " (" + it.description + ")" : ""); }
   function norm(s) { return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
 
   // ---------- correspondance base de données ----------
@@ -507,7 +513,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       id: r.id, name: r.name || "", category: r.category || "", supplier: r.supplier || "", ref: r.ref || "",
       location: r.location || "", unit: r.unit || "", qty: Number(r.qty) || 0, min: Number(r.min) || 0,
       target: Number(r.target) || 0, lot: r.lot || "", expiry: r.expiry || "", price: Number(r.price) || 0,
-      barcode: r.barcode || ""
+      barcode: r.barcode || "", description: r.description || ""
     };
   }
   function toRow(d) {
@@ -519,6 +525,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       updated_at: new Date().toISOString()
     };
     if (d._barcodeKey) row.barcode = d.barcode || null;
+    if (descOk) row.description = d.description || null;
     return row;
   }
   function check(res) {
@@ -589,6 +596,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (!db || readOnly) return;
     if (data.barcode && !barcodeOk) { toast("Lancez d'abord le script SQL « ajout-codebarres » dans Supabase."); return; }
     data._barcodeKey = !!(data.barcode || (existing && existing.barcode));
+    if (data.description && !descOk) { toast("Lancez d'abord le script SQL « ajout-description » dans Supabase."); return; }
     enqueue(function () {
       var before = existing ? Number(existing.qty) || 0 : 0;
       var req = existing
@@ -625,7 +633,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       if (state.filter === "rupt" && s !== "rupture") return false;
       if (state.filter === "exp" && s !== "perime" && s !== "peremption") return false;
       if (!q) return true;
-      return norm([it.name, it.ref, it.supplier, it.category, it.location, it.lot].join(" ")).indexOf(q) !== -1;
+      return norm([it.name, it.description, it.ref, it.supplier, it.category, it.location, it.lot, it.barcode].join(" ")).indexOf(q) !== -1;
     });
     arr.sort(function (a, b) {
       var ca = norm(a.category || "zz"), cb = norm(b.category || "zz");
@@ -743,7 +751,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       if (docCounts[it.id]) meta.push(docCounts[it.id] + " doc" + (docCounts[it.id] > 1 ? "s" : ""));
       table.append(h("div", { class: "row" },
         h("div", { class: "c-name" },
-          h("button", { class: "item-name", onclick: function () { openItem(it); }, text: it.name || "(sans nom)" }),
+          h("div", { class: "nameline" },
+            h("button", { class: "item-name", onclick: function () { openItem(it); }, text: it.name || "(sans nom)" }),
+            it.description ? h("span", { class: "desc", text: "(" + it.description + ")" }) : null),
           h("div", { class: "meta c-meta", text: meta.join(" · ") })),
         h("div", { class: "c-qty qty" },
           h("button", { class: "step", "aria-label": "Retirer 1 " + it.name, disabled: readOnly || (it.qty || 0) <= 0, onclick: function () { adjustQty(it, -1, "Sortie rapide"); }, text: "−" }),
@@ -779,13 +789,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         var amount = it.price > 0 ? q * it.price : null;
         if (amount !== null) { total += amount; hasPrice = true; }
         lines.append(h("div", { class: "line" },
-          h("div", null, h("div", { text: it.name }), h("div", { class: "meta", text: it.ref ? "réf. " + it.ref : "" })),
+          h("div", null, h("div", { text: labelOf(it) }), h("div", { class: "meta", text: it.ref ? "réf. " + it.ref : "" })),
           h("div", { class: "num", text: fmt(it.qty) }),
           h("div", { class: "num", text: fmt(q) + (it.unit ? " " + it.unit : "") }),
           h("div", { class: "num", text: amount !== null ? money(amount) : "—" })));
       });
       var text = "Commande " + sup + "\n" + arr.map(function (it) {
-        return "- " + suggestedQty(it) + (it.unit ? " " + it.unit : "") + " × " + it.name + (it.ref ? " (réf. " + it.ref + ")" : "");
+        return "- " + suggestedQty(it) + (it.unit ? " " + it.unit : "") + " × " + labelOf(it) + (it.ref ? " (réf. " + it.ref + ")" : "");
       }).join("\n");
       card.append(
         h("header", null,
@@ -942,7 +952,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       if (it.ref) meta.push("réf. " + it.ref);
       meta.push("stock actuel " + fmt(it.qty) + (it.unit ? " " + it.unit : ""));
       var row = h("div", { class: "crow" + ((cur.qty !== (Number(it.qty) || 0) || cur.min !== (Number(it.min) || 0)) ? " chg" : "") },
-        h("div", null, h("div", { class: "item-name", text: it.name || "(sans nom)" }), h("div", { class: "meta", text: meta.join(" · ") })),
+        h("div", null, h("div", { class: "item-name", text: labelOf(it) || "(sans nom)" }), h("div", { class: "meta", text: meta.join(" · ") })),
         q, m);
       var onChange = function () {
         var d = { qty: Math.max(0, num(q.value)), min: Math.max(0, num(m.value)) };
@@ -980,7 +990,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   }
 
   // ---------- boîtes de dialogue ----------
-  var FIELDS = ["name", "category", "location", "unit", "qty", "min", "target", "lot", "expiry", "price", "barcode"];
+  var FIELDS = ["name", "category", "location", "unit", "qty", "min", "target", "lot", "expiry", "price", "barcode", "description"];
   function fillDomainSelect(current) {
     var sel = $("f_category");
     var list = DOMAINS.concat([EQUIP]);
@@ -1023,12 +1033,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       lot: $("f_lot").value.trim(),
       expiry: $("f_expiry").value,
       price: Math.max(0, num($("f_price").value)),
-      barcode: $("f_barcode").value.trim()
+      barcode: $("f_barcode").value.trim(),
+      description: $("f_description").value.trim()
     };
   }
   function openAdjust(it) {
     state.adjusting = it; state.adjSign = 1;
-    $("adjTitle").textContent = it.name;
+    $("adjTitle").textContent = labelOf(it);
     $("adjCurrent").textContent = "En stock : " + fmt(it.qty) + (it.unit ? " " + it.unit : "");
     $("adjQty").value = ""; $("adjNote").value = "";
     syncSeg();
@@ -1046,9 +1057,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     return /[;"\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   }
   function exportCsv() {
-    var head = ["Article", "Domaine", "Fournisseur", "Référence", "Emplacement", "Quantité", "Unité", "Seuil", "Cible", "Lot", "Péremption", "Prix HT"];
+    var head = ["Article", "Description", "Domaine", "Fournisseur", "Référence", "Emplacement", "Quantité", "Unité", "Seuil", "Cible", "Lot", "Péremption", "Prix HT"];
     var rows = Array.from(items.values()).sort(function (a, b) { return norm(a.name).localeCompare(norm(b.name)); }).map(function (it) {
-      return [it.name, it.category, it.supplier, it.ref, it.location, it.qty, it.unit, it.min, it.target, it.lot, isoToFr(it.expiry), it.price].map(csvEscape).join(";");
+      return [it.name, it.description, it.category, it.supplier, it.ref, it.location, it.qty, it.unit, it.min, it.target, it.lot, isoToFr(it.expiry), it.price].map(csvEscape).join(";");
     });
     var data = "\uFEFF" + [head.join(";")].concat(rows).join("\r\n");
     var name = "stock-" + norm(siteName).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + new Date().toISOString().slice(0, 10) + ".csv";
@@ -1086,6 +1097,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   }
   var SYN = {
     name: ["article", "nom", "designation", "produit", "libelle"],
+    description: ["description", "precision", "details", "detail", "type de produit"],
     category: ["domaine", "categorie", "famille", "type"],
     supplier: ["fournisseur"],
     ref: ["reference", "ref", "reference fournisseur"],
@@ -1122,7 +1134,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       if (m) exp = m[3] + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0");
       if (!/^\d{4}-\d{2}-\d{2}$/.test(exp)) exp = "";
       return {
-        name: get("name"), category: normDomain(get("category")) || defaultCat || "", supplier: get("supplier"), ref: get("ref"),
+        name: get("name"), description: get("description"), category: normDomain(get("category")) || defaultCat || "", supplier: get("supplier"), ref: get("ref"),
         location: get("location"), unit: get("unit"), qty: Math.max(0, num(get("qty"))), min: Math.max(0, num(get("min"))),
         target: Math.max(0, num(get("target"))), lot: get("lot"), expiry: exp, price: Math.max(0, num(get("price")))
       };
@@ -1175,7 +1187,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (!window.XLSX) { toast("Le modèle Excel n'a pas pu être créé : vérifiez votre accès à internet."); return; }
     var X = window.XLSX;
     var wb = X.utils.book_new();
-    var head = ["Article", "Domaine", "Quantité", "Seuil", "Unité", "Emplacement", "Prix HT", "Lot", "Péremption", "Fournisseur", "Référence"];
+    var head = ["Article", "Description", "Domaine", "Quantité", "Seuil", "Unité", "Emplacement", "Prix HT", "Lot", "Péremption", "Fournisseur", "Référence"];
     X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([head]), "Matériel");
     var help = [
       ["Comment remplir ce fichier"],
@@ -1335,7 +1347,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         } else if (r.name.trim()) {
           var k = norm(r.name).trim();
           if (fresh[k]) fresh[k].qty += r.qty;
-          else fresh[k] = { name: r.name.trim(), category: r.domain, supplier: supplier, ref: r.ref, location: "", unit: "", qty: r.qty, min: 0, target: 0, lot: "", expiry: "", price: r.price || 0 };
+          else fresh[k] = { name: r.name.trim(), category: r.domain, supplier: supplier, ref: r.ref, description: "", location: "", unit: "", qty: r.qty, min: 0, target: 0, lot: "", expiry: "", price: r.price || 0 };
         }
       });
       $("pdfDlg").close();
@@ -1579,7 +1591,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     });
     var other = h("button", { class: "btn", text: "Scanner un autre", onclick: resetScan });
     panel.append(h("div", { class: "scanitem" },
-      h("div", { class: "item-name", text: it.name }),
+      h("div", { class: "item-name", text: labelOf(it) }),
       h("div", { class: "meta", text: "En stock : " + fmt(it.qty) + (it.unit ? " " + it.unit : "") + (it.category ? " · " + it.category : "") }),
       h("div", { class: "seg" }, inB, outB),
       h("label", { class: "f" }, "Quantité", q),
@@ -1777,6 +1789,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     sb.from("items").select("barcode").eq("cabinet_id", cid).limit(1).then(function (res) {
       if (cid === cabinetId) barcodeOk = !res.error;
     }).catch(function () { barcodeOk = false; });
+    sb.from("items").select("description").eq("cabinet_id", cid).limit(1).then(function (res) {
+      if (cid === cabinetId) descOk = !res.error;
+    }).catch(function () { descOk = false; });
     var ch = sb.channel("simsimstock-" + cid)
       .on("postgres_changes", { event: "*", schema: "public", table: "items" }, function (p) {
         if (p.eventType === "DELETE") items.delete(p.old.id);
@@ -1794,7 +1809,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   function stopData() {
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     channels = []; started = false;
-    items = new Map(); logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false;
+    items = new Map(); logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false;
   }
   function showScreen(which) {
     $("login").classList.toggle("hidden", which !== "login");
