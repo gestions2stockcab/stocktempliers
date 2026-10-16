@@ -225,6 +225,11 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 .chk { display:flex; gap:8px; align-items:flex-start; font-size:14px; }
 .nameline { display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 8px; }
 .desc { color:var(--muted); font-weight:500; overflow-wrap:anywhere; }
+.login-ok { color:var(--ok); font-size:14px; min-height:0; }
+.linkbtn { background:none; border:0; color:var(--brand); font-weight:600; padding:4px 0; text-align:left; }
+.linkbtn:hover { text-decoration:underline; }
+.teamrow { display:grid; grid-template-columns:minmax(0,2fr) 200px auto auto; gap:8px; align-items:center; padding:8px 10px; border-top:1px solid var(--line); }
+.teamrow:first-child { border-top:0; }
 
 @media (max-width: 760px) {
   .counters { grid-template-columns:repeat(2,1fr); }
@@ -237,6 +242,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   .crow { grid-template-columns:minmax(0,1fr) 80px 80px; }
   .prow { grid-template-columns:28px minmax(0,1fr) 70px; }
   .prow .pc-dom, .prow .pc-st { grid-column:2 / -1; }
+  .teamrow { grid-template-columns:1fr 1fr; }
+  .teamrow .item-name { grid-column:1 / -1; }
   .log-row { grid-template-columns:1fr 60px; grid-template-areas:"what delta" "who date"; }
   .log-row .c-date { grid-area:date; } .log-row .c-who { grid-area:who; } .log-row .c-what { grid-area:what; } .log-row .c-delta { grid-area:delta; text-align:right; }
   .log-row .c-qtyafter { display:none; }
@@ -253,12 +260,29 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     <label class="f">Adresse e-mail
       <input id="loginEmail" type="email" autocomplete="username" inputmode="email">
     </label>
-    <label class="f">Mot de passe
+    <label class="f" id="pwLabel">Mot de passe
       <input id="loginPw" type="password" autocomplete="current-password">
     </label>
     <div class="login-err" id="loginErr" role="alert"></div>
+    <div class="login-ok" id="loginOk" role="status"></div>
     <button class="btn primary" id="loginBtn">Se connecter</button>
+    <button class="linkbtn" id="loginAlt">Mot de passe oublié ?</button>
     <div class="sub">Accès réservé à l'équipe. Pour obtenir un compte, contactez la personne qui gère l'outil.</div>
+  </div>
+</div>
+
+<div id="recover" class="hidden">
+  <div class="login-card">
+    <h1>Nouveau mot de passe</h1>
+    <div class="sub">Choisissez un nouveau mot de passe (8 caractères minimum).</div>
+    <label class="f">Nouveau mot de passe
+      <input id="rec1" type="password" autocomplete="new-password">
+    </label>
+    <label class="f">Confirmer le mot de passe
+      <input id="rec2" type="password" autocomplete="new-password">
+    </label>
+    <div class="login-err" id="recErr" role="alert"></div>
+    <button class="btn primary" id="recBtn">Enregistrer</button>
   </div>
 </div>
 
@@ -280,10 +304,12 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v12</div>
+            <div class="menu-who"><span id="who"></span> · v14</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
+            <button class="mi" id="pwBtn">Changer mon mot de passe</button>
+            <button class="mi hidden" id="teamBtn">Gérer l'équipe</button>
             <button class="mi hidden" id="switchBtn">Changer de cabinet</button>
             <button class="mi" id="logoutBtn">Se déconnecter</button>
           </div>
@@ -378,6 +404,48 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   </div>
 </dialog>
 
+<dialog id="pwDlg">
+  <div class="dlg">
+    <h2 id="pwTitle">Changer mon mot de passe</h2>
+    <div class="sub" id="pwHint"></div>
+    <label class="f">Nouveau mot de passe
+      <input id="pw1" type="password" autocomplete="new-password">
+    </label>
+    <label class="f">Confirmer le mot de passe
+      <input id="pw2" type="password" autocomplete="new-password">
+    </label>
+    <div class="login-err" id="pwErr" role="alert"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="pwCancel">Annuler</button>
+      <button class="btn primary" id="pwSave">Enregistrer</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="teamDlg" class="wide">
+  <div class="dlg">
+    <h2 id="teamTitle">Équipe</h2>
+    <div class="sub">Administrateur : gère l'équipe et le stock. Membre : modifie le stock. Lecture seule : consulte sans rien modifier.</div>
+    <div id="teamList" class="pdfscroll"></div>
+    <div class="grid">
+      <label class="f">Ajouter une personne (adresse e-mail de son compte)
+        <input id="teamEmail" type="email" autocomplete="off" inputmode="email">
+      </label>
+      <label class="f">Rôle
+        <select id="teamRole" class="cin left">
+          <option value="member">Membre (modifie le stock)</option>
+          <option value="viewer">Lecture seule</option>
+          <option value="admin">Administrateur</option>
+        </select>
+      </label>
+    </div>
+    <button class="btn primary" id="teamAdd">Ajouter à ce cabinet</button>
+    <div class="login-err" id="teamErr" role="alert"></div>
+    <div class="sub">Le compte doit d'abord exister : créez-le dans Supabase (Authentication, puis Users, puis Add user), puis ajoutez-le ici.</div>
+    <div class="dlg-actions"><button class="btn" id="teamClose">Fermer</button></div>
+  </div>
+</dialog>
+
 <dialog id="scanDlg">
   <div class="dlg">
     <h2 id="scanTitle">Scanner un article</h2>
@@ -450,6 +518,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
   var barcodeOk = false, descOk = false;
+  var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null;
+  var recovering = /type=recovery/.test(location.hash);
   var started = false;
   var state = { tab: "inventaire", filter: "all", q: "", cat: "", editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
@@ -979,6 +1049,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (state.cat && domainList().indexOf(state.cat) === -1) state.cat = "";
     renderAlerts();
     renderCrumb();
+    var bn = $("banner"); bn.textContent = "";
+    if (db && readOnly) bn.append(h("div", { class: "banner", text: "Accès en lecture seule : vous pouvez consulter le stock, mais pas le modifier." }));
     var box = $("content"); box.textContent = "";
     $("addBtn").disabled = readOnly || !db;
     $("scanBtn").disabled = !db;
@@ -1212,6 +1284,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var MONEY = "(?:\\d{1,3}(?: \\d{3})*|\\d+),\\d{2}";
   var RE_A = new RegExp("^(\\S+)\\s+(.+?)\\s+(\\d+)\\s+(" + MONEY + ")\\s+(" + MONEY + ")\\s*%\\s+(" + MONEY + ")\\s+(" + MONEY + ")\\s+(" + MONEY + ")\\s+\\d+,\\d{2}$");
   var RE_C = new RegExp("^(\\S+)\\s+(.+?)\\s+(\\d+)\\s+(" + MONEY + ")\\s+(" + MONEY + ")$");
+  var RE_B = new RegExp("^(\\S{3,15})\\s+(.+?)\\s+(\\d+)\\s+(" + MONEY + ")\\s+EUR\\s*\\/+\\s*(?:\\S+\\s+)?(" + MONEY + ")\\s+EUR\\s+\\d+[.,]\\d+\\s*%$");
+  var RE_LOT = /^(\d+)\s+Lot\s+(\S+)\s+date d.expiration\s*(\d{2})\.(\d{4})$/i;
   var REF_START = /^[A-Z0-9]+-[A-Z0-9]+\s+\S/;
   function moneyNum(t) { return parseFloat(String(t).replace(/ /g, "").replace(",", ".")); }
   function isContinuation(l) {
@@ -1259,11 +1333,62 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     });
     return merged;
   }
+  function parseLinesB(lines) {
+    var out = [], cur = null;
+    var finish = function () {
+      if (!cur) return;
+      if (cur.lots.length) {
+        cur.lots.sort(function (a, b) { return a.expiry < b.expiry ? -1 : 1; });
+        cur.expiry = cur.lots[0].expiry;
+        cur.lot = cur.lots.map(function (x) { return x.lot; }).join(" / ").slice(0, 60);
+      }
+      out.push(cur); cur = null;
+    };
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i], m = RE_B.exec(l);
+      if (m) {
+        finish();
+        var qty = parseInt(m[3], 10), amount = moneyNum(m[5]);
+        cur = { ref: m[1], name: m[2].trim(), qty: qty, price: qty > 0 ? Math.round(amount / qty * 100) / 100 : moneyNum(m[4]), lot: "", expiry: "", lots: [] };
+        continue;
+      }
+      if (!cur) continue;
+      var lm = RE_LOT.exec(l);
+      if (lm) {
+        var y = parseInt(lm[4], 10), mo = parseInt(lm[3], 10);
+        var last = new Date(y, mo, 0).getDate();
+        cur.lots.push({ lot: lm[2], expiry: y + "-" + String(mo).padStart(2, "0") + "-" + String(last).padStart(2, "0") });
+        continue;
+      }
+      if (/total|tva|montant|banque|conditions|important|il vous reste/i.test(l)) { finish(); continue; }
+      if (!cur.lots.length && l.length <= 60) cur.name += " " + l.replace(/\s+PC$/i, "").trim();
+    }
+    finish();
+    return out.map(function (r) { delete r.lots; return r; });
+  }
+  function guessSupplier(text) {
+    var known = ["GACD", "Septodont", "Henry Schein", "Dentsply", "Straumann", "Nobel Biocare", "Zimmer", "Biotech Dental", "Pierre Fabre", "Ivoclar", "Kerr"];
+    for (var i = 0; i < known.length; i++) if (new RegExp(known[i], "i").test(text || "")) return known[i];
+    return "";
+  }
+  function applyLotExpiry(it, lot, exp) {
+    if (!lot && !exp) return;
+    enqueue(function () {
+      var patch = { updated_at: new Date().toISOString() };
+      if (lot) patch.lot = lot;
+      if (exp) patch.expiry = exp;
+      return sb.from("items").update(patch).eq("id", it.id).then(function (res) {
+        check(res);
+        var cur = items.get(it.id);
+        if (cur) { items.set(it.id, Object.assign({}, cur, { lot: lot || cur.lot, expiry: exp || cur.expiry })); render(); }
+      });
+    });
+  }
   function guessDomain(name) {
     var n = norm(name);
     if (/gutta|lime k|reverso|endo|obtur|canal/.test(n)) return "Endodontie";
     if (/implant|cicatrisation|pilier/.test(n)) return "Implants";
-    if (/anesth|articaine|lidocaine|mepivacaine|septocaine|carpule/.test(n)) return "Anesthésie";
+    if (/anesth|articain|lidocain|mepivacain|prilocain|septocaine|septanest|scandonest|ultracain|xylocain|citanest|carpule/.test(n)) return "Anesthésie";
     if (/suture|novosyn|bistouri|chirurg|membrane|greffe/.test(n)) return "Chirurgie";
     return "Consommables";
   }
@@ -1288,6 +1413,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   }
   function showPdfPreview(fileName, lines) {
     var rows = parseDocLines(lines);
+    if (!rows.length) rows = parseLinesB(lines);
     if (!rows.length) {
       toast("Aucune ligne d'article reconnue : mise en page non prise en charge, ou PDF scanné. Utilisez plutôt un fichier Excel.");
       return;
@@ -1305,8 +1431,11 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     info.textContent = ""; box.textContent = "";
     info.append(h("div", { class: "sub", text: rows.length + " ligne" + (rows.length > 1 ? "s" : "") + " reconnue" + (rows.length > 1 ? "s" : "") + " dans « " + fileName + " ». Vérifiez et corrigez si besoin. Les articles déjà présents reçoivent une entrée de stock, les autres sont créés." }));
     if (isCredit) info.append(h("div", { class: "banner", text: "Ce document est un avoir (annulation ou retour) : les lignes sont décochées. Ne les importez pas comme une livraison." }));
-    var supplierInput = h("input", { type: "text", value: /GACD/i.test(head) ? "GACD" : "", autocomplete: "off" });
+    var supplierInput = h("input", { type: "text", value: guessSupplier(head), autocomplete: "off" });
     info.append(h("label", { class: "f" }, "Fournisseur des nouveaux articles (facultatif)", supplierInput));
+    var anyLot = rows.some(function (r) { return r.match && (r.lot || r.expiry); });
+    var updLot = anyLot ? h("input", { type: "checkbox" }) : null;
+    if (updLot) info.append(h("label", { class: "chk" }, updLot, "Mettre à jour le lot et la péremption des articles déjà présents (remplace l'ancien lot)"));
     var refresh = function () {
       var n = rows.filter(function (r) { return r.on && r.qty > 0; }).length;
       okBtn.textContent = "Importer (" + n + ")";
@@ -1338,7 +1467,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         domCell = h("div", { class: "pc-dom" }, sel);
       }
       table.append(h("div", { class: "prow" }, chk, nameCell, q, domCell,
-        h("div", { class: "pc-st meta", text: r.match ? "Entrée de stock" : "Nouvel article" })));
+        h("div", { class: "pc-st meta", text: (r.match ? "Entrée de stock" : "Nouvel article") + (r.lot ? " · lot " + r.lot : "") + (r.expiry ? " · exp. " + isoToFr(r.expiry) : "") })));
     });
     box.append(table);
     refresh();
@@ -1349,17 +1478,22 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       var entries = {}, fresh = {};
       chosen.forEach(function (r) {
         if (r.match) {
-          var e = entries[r.match.id] || (entries[r.match.id] = { it: r.match, qty: 0 });
+          var e = entries[r.match.id] || (entries[r.match.id] = { it: r.match, qty: 0, lot: "", expiry: "" });
           e.qty += r.qty;
+          if (r.lot) e.lot = r.lot;
+          if (r.expiry) e.expiry = r.expiry;
         } else if (r.name.trim()) {
           var k = norm(r.name).trim();
           if (fresh[k]) fresh[k].qty += r.qty;
-          else fresh[k] = { name: r.name.trim(), category: r.domain, supplier: supplier, ref: r.ref, description: "", location: "", unit: "", qty: r.qty, min: 0, target: 0, lot: "", expiry: "", price: r.price || 0 };
+          else fresh[k] = { name: r.name.trim(), category: r.domain, supplier: supplier, ref: r.ref, description: "", location: "", unit: /bo[iî]tes?\b/i.test(r.name) ? "boîte" : "", qty: r.qty, min: 0, target: 0, lot: r.lot || "", expiry: r.expiry || "", price: r.price || 0 };
         }
       });
       $("pdfDlg").close();
       var nEntries = Object.keys(entries).length, list = Object.keys(fresh).map(function (k) { return fresh[k]; });
-      Object.keys(entries).forEach(function (id) { adjustQty(entries[id].it, entries[id].qty, "Entrée PDF " + fileName); });
+      Object.keys(entries).forEach(function (id) {
+        adjustQty(entries[id].it, entries[id].qty, "Entrée PDF " + fileName);
+        if (updLot && updLot.checked) applyLotExpiry(entries[id].it, entries[id].lot, entries[id].expiry);
+      });
       if (list.length) {
         enqueue(function () {
           return sb.from("items").insert(list.map(toRow)).select().then(function (res) {
@@ -1559,18 +1693,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (it) showScanItem(it, info); else showScanUnknown(key, info);
   }
   function setLotExpiry(it, info) {
-    var exp = gs1Date(info["17"]) || gs1Date(info["15"]), lot = info["10"] || "";
-    if (!lot && !exp) return;
-    enqueue(function () {
-      var patch = { updated_at: new Date().toISOString() };
-      if (lot) patch.lot = lot;
-      if (exp) patch.expiry = exp;
-      return sb.from("items").update(patch).eq("id", it.id).then(function (res) {
-        check(res);
-        var cur = items.get(it.id);
-        if (cur) { items.set(it.id, Object.assign({}, cur, { lot: lot || cur.lot, expiry: exp || cur.expiry })); render(); }
-      });
-    });
+    applyLotExpiry(it, info["10"] || "", gs1Date(info["17"]) || gs1Date(info["15"]));
   }
   function showScanItem(it, info) {
     var panel = $("scanPanel"); panel.textContent = "";
@@ -1742,6 +1865,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     $("liveText").textContent = text;
   }
   function doLogin() {
+    if (loginMode === "forgot") { doForgot(); return; }
     var email = $("loginEmail").value.trim(), pw = $("loginPw").value;
     if (!email || !pw) { $("loginErr").textContent = "Saisissez votre e-mail et votre mot de passe."; return; }
     $("loginBtn").disabled = true; $("loginErr").textContent = "";
@@ -1754,6 +1878,136 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       $("loginErr").textContent = "Connexion impossible. Vérifiez votre accès à internet.";
     });
   }
+  // ---------- mot de passe oublié, changement de mot de passe, équipe ----------
+  function setLoginMode(m) {
+    loginMode = m;
+    $("loginErr").textContent = ""; $("loginOk").textContent = "";
+    var forgot = m === "forgot";
+    $("pwLabel").classList.toggle("hidden", forgot);
+    $("loginBtn").textContent = forgot ? "Envoyer le lien" : "Se connecter";
+    $("loginAlt").textContent = forgot ? "Retour à la connexion" : "Mot de passe oublié ?";
+    $("loginHint").textContent = forgot
+      ? "Saisissez votre adresse e-mail : vous recevrez un lien pour choisir un nouveau mot de passe."
+      : "Connectez-vous avec votre e-mail et votre mot de passe.";
+  }
+  function doForgot() {
+    var email = $("loginEmail").value.trim();
+    if (!email) { $("loginErr").textContent = "Saisissez votre adresse e-mail."; return; }
+    $("loginBtn").disabled = true; $("loginErr").textContent = ""; $("loginOk").textContent = "";
+    sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname }).then(function (res) {
+      $("loginBtn").disabled = false;
+      if (res.error) {
+        var m = res.error.message || "";
+        $("loginErr").textContent = /not authorized|rate limit|too many|smtp|limit/i.test(m)
+          ? "L'envoi d'e-mails n'est pas encore activé, ou la limite est atteinte. Demandez à l'administrateur de votre cabinet de définir un nouveau mot de passe pour vous."
+          : "Le lien n'a pas pu être envoyé. Réessayez dans quelques minutes.";
+        return;
+      }
+      $("loginOk").textContent = "Si cette adresse a un compte, un lien vient d'être envoyé. Regardez aussi dans les courriers indésirables.";
+    }, function () {
+      $("loginBtn").disabled = false;
+      $("loginErr").textContent = "Connexion impossible. Vérifiez votre accès à internet.";
+    });
+  }
+  function doRecover() {
+    var a = $("rec1").value, b = $("rec2").value;
+    if (a.length < 8) { $("recErr").textContent = "8 caractères minimum."; return; }
+    if (a !== b) { $("recErr").textContent = "Les deux mots de passe sont différents."; return; }
+    $("recBtn").disabled = true; $("recErr").textContent = "";
+    sb.auth.updateUser({ password: a }).then(function (res) {
+      $("recBtn").disabled = false;
+      if (res.error) { $("recErr").textContent = "Le mot de passe n'a pas pu être changé : " + (res.error.message || ""); return; }
+      recovering = false; $("rec1").value = ""; $("rec2").value = "";
+      try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+      toast("Mot de passe modifié.");
+      sb.auth.getSession().then(function (r) { setSession(r && r.data ? r.data.session : null); });
+    });
+  }
+  function openPw(target) {
+    pwTarget = target;
+    $("pwTitle").textContent = target ? "Mot de passe de " + target.email : "Changer mon mot de passe";
+    $("pwHint").textContent = target
+      ? "Définissez un mot de passe provisoire et transmettez-le à la personne : elle pourra le changer ensuite depuis le menu Plus."
+      : "Choisissez un nouveau mot de passe (8 caractères minimum).";
+    $("pw1").value = ""; $("pw2").value = ""; $("pwErr").textContent = "";
+    $("pwDlg").showModal();
+    setTimeout(function () { $("pw1").focus(); }, 0);
+  }
+  function savePw() {
+    var a = $("pw1").value, b = $("pw2").value;
+    if (a.length < 8) { $("pwErr").textContent = "8 caractères minimum."; return; }
+    if (a !== b) { $("pwErr").textContent = "Les deux mots de passe sont différents."; return; }
+    $("pwSave").disabled = true; $("pwErr").textContent = "";
+    var req = pwTarget
+      ? sb.rpc("team_reset_password", { c: cabinetId, p_user: pwTarget.user_id, p_password: a })
+      : sb.auth.updateUser({ password: a });
+    req.then(function (res) {
+      $("pwSave").disabled = false;
+      if (res.error) {
+        $("pwErr").textContent = pwTarget ? teamMsg(res.error) : "Le mot de passe n'a pas pu être changé : " + (res.error.message || "");
+        return;
+      }
+      $("pwDlg").close();
+      toast("Mot de passe modifié.");
+    });
+  }
+  var ROLE_LABEL = { admin: "Administrateur", member: "Membre (modifie le stock)", viewer: "Lecture seule" };
+  function teamMsg(err) {
+    var m = (err && err.message) || "";
+    if (/forbidden/.test(m)) return "Action réservée aux administrateurs de ce cabinet.";
+    if (/last_admin/.test(m)) return "Impossible : il doit rester au moins un administrateur dans ce cabinet.";
+    if (/multi_cabinet/.test(m)) return "Cette personne a accès à plusieurs cabinets : son mot de passe ne peut être changé que depuis Supabase.";
+    if (/short_password/.test(m)) return "Le mot de passe doit faire 8 caractères au minimum.";
+    if (/invalid_role/.test(m)) return "Rôle non valide.";
+    return "Opération impossible : " + m;
+  }
+  function openTeam() {
+    $("teamTitle").textContent = "Équipe : " + cabinetName;
+    $("teamErr").textContent = ""; $("teamEmail").value = "";
+    $("teamDlg").showModal();
+    loadTeam();
+  }
+  function loadTeam() {
+    sb.rpc("team_list", { c: cabinetId }).then(function (res) {
+      if (res.error) { $("teamErr").textContent = teamMsg(res.error); return; }
+      renderTeam(res.data || []);
+    });
+  }
+  function renderTeam(rows) {
+    var box = $("teamList"); box.textContent = "";
+    rows.forEach(function (m) {
+      var me = m.user_id === sessionUser;
+      var sel = h("select", { class: "cin left", "aria-label": "Rôle de " + m.email, disabled: me });
+      ["admin", "member", "viewer"].forEach(function (r) {
+        var o = h("option", { value: r, text: ROLE_LABEL[r] });
+        if (r === m.role) o.selected = true;
+        sel.append(o);
+      });
+      sel.addEventListener("change", function () {
+        sb.rpc("team_set_role", { c: cabinetId, p_user: m.user_id, p_role: sel.value }).then(function (res) {
+          if (res.error) $("teamErr").textContent = teamMsg(res.error);
+          else { $("teamErr").textContent = ""; toast("Rôle modifié."); }
+          loadTeam();
+        });
+      });
+      var rm = h("button", { class: "btn sm danger", text: "Retirer" });
+      var armed = false;
+      rm.addEventListener("click", function () {
+        if (!armed) { armed = true; rm.textContent = "Confirmer"; return; }
+        sb.rpc("team_remove", { c: cabinetId, p_user: m.user_id }).then(function (res) {
+          if (res.error) $("teamErr").textContent = teamMsg(res.error);
+          else { $("teamErr").textContent = ""; toast("Personne retirée de ce cabinet."); }
+          loadTeam();
+        });
+      });
+      box.append(h("div", { class: "teamrow" },
+        h("div", { class: "item-name", text: m.email + (me ? " (vous)" : "") }),
+        sel,
+        me ? h("span") : h("button", { class: "btn sm", onclick: function () { openPw(m); }, text: "Mot de passe" }),
+        me ? h("span") : rm));
+    });
+  }
+
   $("loginBtn").addEventListener("click", doLogin);
   $("loginPw").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
   $("loginEmail").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
@@ -1822,6 +2076,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     $("login").classList.toggle("hidden", which !== "login");
     $("pick").classList.toggle("hidden", which !== "pick");
     $("app").classList.toggle("hidden", which !== "app");
+    $("recover").classList.toggle("hidden", which !== "recover");
   }
   function showPick(none, loading) {
     showScreen("pick");
@@ -1842,20 +2097,28 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     $("appTitle").textContent = c.name;
     document.title = siteName + " – " + c.name;
     $("switchBtn").classList.toggle("hidden", cabinets.length < 2);
+    var role = roles[c.id] || "member";
+    readOnly = role === "viewer"; isAdmin = role === "admin";
+    $("teamBtn").classList.toggle("hidden", !isAdmin);
     state.tab = "inventaire"; state.filter = "all"; state.cat = ""; state.q = ""; $("search").value = "";
     syncTabs(); showScreen("app"); startData(); render();
   }
   function loadCabinets() {
     return sb.from("cabinets").select("id,name").order("name").then(function (res) {
       cabinets = check(res) || [];
-      if (!cabinets.length) { showPick(true); return; }
-      var saved = "";
-      try { saved = localStorage.getItem("simsim_cabinet_" + (sessionUser || "")) || ""; } catch (e) {}
-      var pre = cabinets.find(function (c) { return c.id === saved; }) || (cabinets.length === 1 ? cabinets[0] : null);
-      if (pre) enterCabinet(pre); else showPick(false);
+      if (!cabinets.length) { showPick(true); return null; }
+      return sb.from("members").select("cabinet_id,role").then(function (r2) {
+        roles = {};
+        (r2.data || []).forEach(function (m) { roles[m.cabinet_id] = m.role; });
+        var saved = "";
+        try { saved = localStorage.getItem("simsim_cabinet_" + (sessionUser || "")) || ""; } catch (e) {}
+        var pre = cabinets.find(function (c) { return c.id === saved; }) || (cabinets.length === 1 ? cabinets[0] : null);
+        if (pre) enterCabinet(pre); else showPick(false);
+      });
     }).catch(function (e) { onWriteError(e); showPick(true); });
   }
   function setSession(s) {
+    if (recovering) return;
     if (s && s.user) {
       if (sessionUser === s.user.id) return;   // simple renouvellement du jeton : rien à refaire
       sessionUser = s.user.id;
@@ -1867,6 +2130,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     } else {
       sessionUser = null; db = null; myEmail = "";
       cabinetId = null; cabinetName = ""; cabinets = [];
+      readOnly = false; isAdmin = false; roles = {};
       stopData();
       showScreen("login");
       render();
@@ -1874,6 +2138,29 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   }
   $("switchBtn").addEventListener("click", function () { stopData(); cabinetId = null; showPick(false); });
   $("pickLogout").addEventListener("click", function () { if (sb) sb.auth.signOut(); });
+  $("loginAlt").addEventListener("click", function () { setLoginMode(loginMode === "forgot" ? "in" : "forgot"); });
+  $("recBtn").addEventListener("click", doRecover);
+  $("rec2").addEventListener("keydown", function (e) { if (e.key === "Enter") doRecover(); });
+  $("pwBtn").addEventListener("click", function () { openPw(null); });
+  $("pwCancel").addEventListener("click", function () { $("pwDlg").close(); });
+  $("pwSave").addEventListener("click", savePw);
+  $("pw2").addEventListener("keydown", function (e) { if (e.key === "Enter") savePw(); });
+  $("teamBtn").addEventListener("click", openTeam);
+  $("teamClose").addEventListener("click", function () { $("teamDlg").close(); });
+  $("teamAdd").addEventListener("click", function () {
+    var email = $("teamEmail").value.trim();
+    if (!email) { $("teamErr").textContent = "Saisissez l'adresse e-mail de la personne."; return; }
+    sb.rpc("team_add", { c: cabinetId, p_email: email, p_role: $("teamRole").value }).then(function (res) {
+      if (res.error) { $("teamErr").textContent = teamMsg(res.error); return; }
+      if (res.data === "no_account") {
+        $("teamErr").textContent = "Cette adresse n'a pas encore de compte. Créez-la dans Supabase (Authentication, puis Users, puis Add user), puis ajoutez-la ici.";
+        return;
+      }
+      $("teamEmail").value = ""; $("teamErr").textContent = "";
+      toast("Personne ajoutée à ce cabinet.");
+      loadTeam();
+    });
+  });
 
   // ---------- démarrage ----------
   if (window.pdfjsLib) window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -1889,10 +2176,24 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   }
   sb = window.supabase.createClient(cfg.url, cfg.key);
   syncTabs();
-  sb.auth.onAuthStateChange(function (_event, session) { setSession(session); });
+  if (recovering) showScreen("recover");
+  else {
+    var em = /error_description=([^&]+)/.exec(location.hash);
+    if (em) {
+      var txt = decodeURIComponent(em[1].replace(/\+/g, " "));
+      $("loginErr").textContent = /expired|invalid/i.test(txt)
+        ? "Ce lien a expiré ou n'est plus valide. Demandez-en un nouveau avec « Mot de passe oublié »."
+        : "Le lien n'a pas pu être utilisé : " + txt;
+      try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    }
+  }
+  sb.auth.onAuthStateChange(function (event, session) {
+    if (event === "PASSWORD_RECOVERY") { recovering = true; showScreen("recover"); return; }
+    setSession(session);
+  });
   sb.auth.getSession().then(function (r) {
     var s = r && r.data ? r.data.session : null;
-    if (!s) setSession(null);
+    if (!s && !recovering) setSession(null);
   });
 })();
 </script>
