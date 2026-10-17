@@ -380,6 +380,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     <div class="title-row">
       <h1 id="appTitle">SimSimStock</h1>
       <div class="who-row">
+        <button class="btn sm hidden" id="undoBtn" type="button">↶ Annuler</button>
         <div class="swatches head-sw" role="group" aria-label="Couleur de fond">
           <button class="sw sw-blanc" data-theme="blanc" title="Fond blanc" aria-label="Fond blanc"></button>
           <button class="sw sw-gris" data-theme="gris" title="Fond gris" aria-label="Fond gris"></button>
@@ -391,12 +392,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v32</div>
+            <div class="menu-who"><span id="who"></span> · v33</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
             <button class="mi" id="jrnBtn">Factures importées</button>
             <button class="mi" id="dupBtn">Doublons possibles</button>
+            <button class="mi" id="bkBtn">Sauvegardes</button>
             <button class="mi" id="pwBtn">Changer mon mot de passe</button>
             <button class="mi hidden" id="teamBtn">Gérer l'équipe</button>
             <button class="mi hidden" id="switchBtn">Changer de cabinet</button>
@@ -602,6 +604,16 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   <button class="btn sm" id="selDone">Terminer</button>
 </div>
 
+<dialog id="bkDlg" class="wide">
+  <div class="dlg">
+    <h2>Sauvegardes</h2>
+    <div class="sub" id="bkInfo"></div>
+    <div class="dlg-actions"><button class="btn primary sm hidden" id="bkNow">Sauvegarder maintenant</button></div>
+    <div id="bkList"></div>
+    <div class="dlg-actions"><button class="btn" id="bkClose">Fermer</button></div>
+  </div>
+</dialog>
+
 <dialog id="jrnDlg" class="wide">
   <div class="dlg">
     <h2>Factures importées</h2>
@@ -689,7 +701,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var logEntries = [];
   var logIds = new Set();
   var channels = [];
-  var trash = new Map(), arcOk = false, dupCache = null;
+  var trash = new Map(), arcOk = false, dupCache = null, undoStack = [];
   var docCounts = {};
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
@@ -883,7 +895,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   function localFields(p) {
     var o = {};
     if (!p) return o;
-    if (p.tracked === true) o.tracked = true;
+    if ("tracked" in p) o.tracked = p.tracked !== false;
     if ("ordered_qty" in p) o.ordered_qty = Number(p.ordered_qty) || 0;
     if ("ordered_at" in p) o.ordered_at = p.ordered_at || "";
     return o;
@@ -894,19 +906,82 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var left = r2(cur.ordered_qty - delta);
     return left > 0 ? { ordered_qty: left } : { ordered_qty: 0, ordered_at: null };
   }
-  function adjustQty(it, delta, note, lotInfo) {
-    if (!db || readOnly) return;
-    enqueue(function () { return doAdjust(it.id, delta, note, lotInfo); });
+  // ---------- annuler la dernière action ----------
+  function pushUndo(u) {
+    u.at = Date.now();
+    undoStack.push(u);
+    if (undoStack.length > 20) undoStack.shift();
+    updateUndoBtn();
   }
-  function doAdjust(id, delta, note, lotInfo) {
+  function updateUndoBtn() {
+    var now = Date.now();
+    undoStack = undoStack.filter(function (u) { return now - u.at < 1800000; });
+    var b = $("undoBtn"), last = undoStack[undoStack.length - 1];
+    b.classList.toggle("hidden", !last || readOnly);
+    if (last) {
+      b.textContent = "↶ Annuler" + (undoStack.length > 1 ? " (" + undoStack.length + ")" : "");
+      b.title = "Annuler : " + last.label + " (Ctrl + Z)";
+      b.setAttribute("aria-label", "Annuler : " + last.label);
+    }
+  }
+  function undoLast() {
+    if (!db || readOnly) return;
+    var u = undoStack.pop();
+    updateUndoBtn();
+    if (!u) return;
+    if (u.kind === "trash") { restoreItems(u.ids); toast("Annulé : " + u.label); }
+    else if (u.kind === "order") { undoOrder(u); }
+    else if (u.kind === "move") { undoMove(u); }
+  }
+  function undoOrder(u) {
+    u.list.forEach(function (e) {
+      var cur = items.get(e.id);
+      if (!cur) return;
+      var patch = { ordered_qty: e.snap.qty, ordered_at: e.snap.at };
+      items.set(e.id, Object.assign({}, cur, localFields(patch)));
+      enqueue(function () { return sb.from("items").update(patch).eq("id", e.id).then(check); });
+    });
+    render();
+    toast("Annulé : " + u.label);
+  }
+  function undoMove(u) {
+    var cur = items.get(u.id);
+    if (!cur) { toast("Cet article n'existe plus : annulation impossible."); return; }
+    enqueue(function () {
+      var c2 = items.get(u.id);
+      if (!c2) return Promise.resolve();
+      if (r2(Number(c2.qty) || 0) !== u.afterQty) { toast("Cet article a changé depuis : annulation impossible. Corrigez-le directement."); return Promise.resolve(); }
+      var extra = {};
+      if (trackedOk) extra.tracked = u.snap.tracked !== false;
+      if (ordOk) { extra.ordered_qty = u.snap.ordered_qty || 0; extra.ordered_at = u.snap.ordered_at || null; }
+      var hadLots = u.snap.lots.length > 0, hasNow = (lotsByItem[u.id] || []).length > 0, p;
+      if (lotsOk && (hadLots || hasNow)) {
+        var over = hadLots ? extra : Object.assign({ qty: u.snap.qty, expiry: u.snap.expiry || null, lot: u.snap.lot || "" }, extra);
+        p = persistLots(c2, u.snap.lots.map(function (l) { return { lot: l.lot, expiry: l.expiry, qty: l.qty }; }), over);
+      } else {
+        var patch = Object.assign({ qty: u.snap.qty, updated_at: new Date().toISOString() }, extra);
+        p = sb.from("items").update(patch).eq("id", u.id).then(check).then(function () { items.set(u.id, Object.assign({}, c2, { qty: u.snap.qty }, localFields(patch))); render(); });
+      }
+      return p.then(function () {
+        return appendLog({ type: "undo", itemId: u.id, item: c2.name, delta: r2(u.snap.qty - u.afterQty), qty: u.snap.qty, note: "Annulation : " + u.label });
+      }).then(function () { toast("Annulé : " + u.label); });
+    });
+  }
+  function adjustQty(it, delta, note, lotInfo, opts) {
+    if (!db || readOnly) return;
+    enqueue(function () { return doAdjust(it.id, delta, note, lotInfo, opts); });
+  }
+  function moveLabel(real, name) { return (real < 0 ? "sortie de " : "entrée de ") + fmt(Math.abs(real)) + " · " + name; }
+  function doAdjust(id, delta, note, lotInfo, opts) {
     var cur = items.get(id);
     if (!cur) return Promise.resolve();
     var lots = lotsOk ? (lotsByItem[id] || []) : [];
-    if (lotsOk && (lots.length || (delta > 0 && lotInfo && (lotInfo.lot || lotInfo.expiry)))) return adjustWithLots(cur, delta, note, lotInfo);
+    if (lotsOk && (lots.length || (delta > 0 && lotInfo && (lotInfo.lot || lotInfo.expiry)))) return adjustWithLots(cur, delta, note, lotInfo, opts);
     var before = Number(cur.qty) || 0;
     var after = Math.max(0, r2(before + delta));
     var real = r2(after - before);
     if (real === 0) return Promise.resolve();
+    var snap = { qty: before, tracked: cur.tracked !== false, ordered_qty: Number(cur.ordered_qty) || 0, ordered_at: cur.ordered_at || null, expiry: cur.expiry || "", lot: cur.lot || "", lots: [] };
     var patch = { qty: after, updated_at: new Date().toISOString() };
     if (cur.tracked === false && trackedOk && real > 0) patch.tracked = true;
     var op = orderedPatch(cur, real);
@@ -915,11 +990,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       check(res);
       var c2 = items.get(id);
       if (c2) { items.set(id, Object.assign({}, c2, { qty: after }, localFields(patch))); render(); }
+      if (!(opts && opts.noUndo)) pushUndo({ kind: "move", id: id, snap: snap, afterQty: after, label: moveLabel(real, cur.name) });
       return appendLog({ type: "move", itemId: id, item: cur.name, delta: real, qty: after, note: note || "" });
     });
   }
   // Mouvement sur un article qui a des lots : les sorties prennent d'abord le lot qui périme en premier.
-  function adjustWithLots(it, delta, note, lotInfo) {
+  function adjustWithLots(it, delta, note, lotInfo, opts) {
+    var snapLots = lotsOf(it.id).map(function (l) { return { lot: l.lot, expiry: l.expiry || null, qty: Number(l.qty) || 0 }; });
     var desired = lotsOf(it.id).map(function (l) { return { id: l.id, lot: l.lot, expiry: l.expiry || null, qty: Number(l.qty) || 0 }; });
     var before = desired.length ? r2(desired.reduce(function (a, l) { return a + l.qty; }, 0)) : (Number(it.qty) || 0);
     var tag = "";
@@ -942,11 +1019,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var after = r2(desired.reduce(function (a, l) { return a + l.qty; }, 0));
     var real = r2(after - before);
     if (real === 0) return Promise.resolve();
+    var snap = { qty: before, tracked: it.tracked !== false, ordered_qty: Number(it.ordered_qty) || 0, ordered_at: it.ordered_at || null, expiry: it.expiry || "", lot: it.lot || "", lots: snapLots };
     var extra = {};
     if (it.tracked === false && trackedOk && real > 0) extra.tracked = true;
     var op = orderedPatch(it, real);
     if (op) Object.assign(extra, op);
     return persistLots(it, desired, Object.keys(extra).length ? extra : null).then(function (dv) {
+      if (!(opts && opts.noUndo)) pushUndo({ kind: "move", id: it.id, snap: snap, afterQty: dv.qty, label: moveLabel(real, it.name) });
       return appendLog({ type: "move", itemId: it.id, item: it.name, delta: real, qty: dv.qty, note: (note || "") + tag });
     });
   }
@@ -986,6 +1065,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (!list.length) return;
     var now = new Date().toISOString();
     list.forEach(function (it) { items.delete(it.id); state.sel.delete(it.id); trash.set(it.id, Object.assign({}, it, { archived: true, archivedAt: now })); });
+    pushUndo({ kind: "trash", ids: list.map(function (it) { return it.id; }), label: list.length === 1 ? "« " + list[0].name + " » mis à la corbeille" : list.length + " articles mis à la corbeille" });
     render();
     enqueue(function () {
       var chain = Promise.resolve(), all = list.map(function (it) { return it.id; });
@@ -1409,12 +1489,15 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var target = it.target > 0 ? it.target : Math.max((it.min || 0) * 2, 1);
     return Math.max(1, Math.ceil(target - (it.qty || 0)));
   }
-  function setOrdered(it, qty) {
+  function setOrdered(it, qty, opts) {
     if (!db || readOnly) return;
     if (!ordOk) { toast("Lancez d'abord le script SQL « ajout-commandes-photos » dans Supabase."); return; }
     var patch = qty > 0 ? { ordered_qty: r2(qty), ordered_at: new Date().toISOString() } : { ordered_qty: 0, ordered_at: null };
     var cur = items.get(it.id) || it;
-    items.set(it.id, Object.assign({}, cur, localFields(patch))); render();
+    var snapO = { qty: Number(cur.ordered_qty) || 0, at: cur.ordered_at || null };
+    items.set(it.id, Object.assign({}, cur, localFields(patch)));
+    if (!(opts && opts.noUndo)) pushUndo({ kind: "order", list: [{ id: it.id, snap: snapO }], label: qty > 0 ? "commande de « " + it.name + " »" : "annulation de la commande de « " + it.name + " »" });
+    render();
     enqueue(function () {
       return sb.from("items").update(patch).eq("id", it.id).then(check).then(function () {
         return appendLog({ type: "order", itemId: it.id, item: it.name, delta: 0, qty: Number(cur.qty) || 0, note: qty > 0 ? "Commandé ×" + fmt(qty) : "Commande annulée" });
@@ -1474,7 +1557,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
             h("button", { class: "btn sm", onclick: function () { copyText(text); }, text: "Copier la commande" }),
             readOnly ? null : h("button", { class: "btn sm", onclick: function () {
               if (!ordOk) { toast("Lancez d'abord le script SQL « ajout-commandes-photos » dans Supabase."); return; }
-              arr.forEach(function (it) { setOrdered(it, suggestedQty(it)); });
+              var snaps = arr.map(function (it) { return { id: it.id, snap: { qty: Number(it.ordered_qty) || 0, at: it.ordered_at || null } }; });
+              arr.forEach(function (it) { setOrdered(it, suggestedQty(it), { noUndo: true }); });
+              pushUndo({ kind: "order", list: snaps, label: "commande de " + arr.length + " produit" + (arr.length > 1 ? "s" : "") + " (" + sup + ")" });
               toast(arr.length + " produit" + (arr.length > 1 ? "s" : "") + " marqué" + (arr.length > 1 ? "s" : "") + " comme commandé" + (arr.length > 1 ? "s" : "") + ".");
             }, text: "Tout marquer comme commandé" }))),
         lines);
@@ -1682,6 +1767,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     renderFilters();
     $("trashCount").textContent = trash.size ? " (" + trash.size + ")" : "";
     updateSelBar();
+    updateUndoBtn();
     var nd = dupGroups().length;
     $("dupBtn").textContent = "Doublons possibles" + (nd ? " (" + nd + ")" : "");
     var bn = $("banner"); bn.textContent = "";
@@ -1795,19 +1881,20 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var now = Date.now(), d30 = 0, d90 = 0, months = {};
     rows.forEach(function (r) {
       var delta = Number(r.delta) || 0;
-      if (r.type !== "move" || delta >= 0) return;
-      var t = Date.parse(r.created_at) || 0, age = (now - t) / 86400000, out = -delta;
+      var out = (r.type === "move" && delta < 0) ? -delta : (r.type === "undo" && delta > 0) ? -delta : 0;
+      if (!out) return;
+      var t = Date.parse(r.created_at) || 0, age = (now - t) / 86400000;
       if (age <= 30) d30 += out;
       if (age <= 90) d90 += out;
       var dt = new Date(t), key = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0");
       months[key] = (months[key] || 0) + out;
     });
-    body.append(h("div", { class: "sub", text: "Sorties : " + fmt(r2(d30)) + " sur 30 jours · " + fmt(r2(d90)) + " sur 90 jours" }));
+    body.append(h("div", { class: "sub", text: "Sorties : " + fmt(Math.max(0, r2(d30))) + " sur 30 jours · " + fmt(Math.max(0, r2(d90))) + " sur 90 jours" }));
     var cols = [], max = 0, base = new Date();
     for (var i = 5; i >= 0; i--) {
       var dm = new Date(base.getFullYear(), base.getMonth() - i, 1);
       var key = dm.getFullYear() + "-" + String(dm.getMonth() + 1).padStart(2, "0");
-      var v = r2(months[key] || 0); max = Math.max(max, v);
+      var v = Math.max(0, r2(months[key] || 0)); max = Math.max(max, v);
       cols.push({ label: dm.toLocaleDateString("fr-FR", { month: "short" }), v: v });
     }
     var bars = h("div", { class: "hbars", role: "img", "aria-label": "Sorties par mois sur 6 mois" });
@@ -2400,6 +2487,80 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         .then(function (res) { if (res.error && !/duplicate|unique/i.test(res.error.message || "")) throw res.error; });
     });
   }
+  function bkSlug(t) { return String(t || "cabinet").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
+  function loadBackups() {
+    sb.from("sauvegardes").select("id,created_at,origine,nb_articles").eq("cabinet_id", cabinetId).order("created_at", { ascending: false }).limit(50).then(function (res) {
+      if (res.error) { $("bkInfo").textContent = "Cette fonction n'est pas encore activée : lancez le script SQL « ajout-sauvegardes » dans Supabase."; $("bkNow").classList.add("hidden"); return; }
+      var rows = res.data || [];
+      $("bkInfo").textContent = rows.length
+        ? "Une sauvegarde automatique est faite le 1er de chaque mois ; les 24 dernières sont conservées. Elle contient les articles et les lots (sans les photos)."
+        : "Aucune sauvegarde pour l'instant.";
+      var list = $("bkList"); list.textContent = "";
+      rows.forEach(function (r) {
+        var d = new Date(r.created_at);
+        list.append(h("div", { class: "trow" },
+          h("div", { class: "tbody" },
+            h("div", { class: "item-name", text: d.toLocaleDateString("fr-FR") + " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) }),
+            h("div", { class: "meta", text: (r.origine === "auto" ? "automatique" : "manuelle") + " · " + r.nb_articles + " articles" })),
+          h("button", { class: "btn sm", onclick: function () { bkDownload(r.id); }, text: "Télécharger (Excel)" }),
+          isAdmin ? h("button", { class: "btn sm", onclick: function () { bkRecover(r.id); }, text: "Récupérer les articles supprimés" }) : null));
+      });
+    }).catch(function () { $("bkInfo").textContent = "Les sauvegardes n'ont pas pu être chargées."; });
+  }
+  function openBackups() {
+    $("bkInfo").textContent = "Chargement…"; $("bkList").textContent = "";
+    $("bkNow").classList.toggle("hidden", !isAdmin);
+    $("bkDlg").showModal();
+    loadBackups();
+  }
+  function bkDownload(id) {
+    if (!window.XLSX) { toast("Le fichier Excel n'a pas pu être créé : vérifiez votre accès à internet."); return; }
+    sb.from("sauvegardes").select("*").eq("id", id).single().then(function (res) {
+      var b = check(res), X = window.XLSX, wb = X.utils.book_new();
+      var head = ["Article", "Description", "Domaine", "Sous-catégorie", "Quantité", "Seuil", "Unité", "Emplacement", "Prix HT", "Lot", "Péremption", "Fournisseur", "Référence", "Suivi", "Corbeille"];
+      var rows = (b.items || []).slice().sort(function (x, y) { return norm(x.category || "zz").localeCompare(norm(y.category || "zz")) || norm(x.name).localeCompare(norm(y.name)); }).map(function (i) {
+        return [i.name, i.description || "", i.category || "", i.subcategory || "", Number(i.qty) || 0, Number(i.min) || 0, i.unit || "", i.location || "", Number(i.price) || 0, i.lot || "",
+          i.expiry ? isoToFr(i.expiry) : "", i.supplier || "", i.ref || "", (i.tracked === false && !(Number(i.qty) > 0)) ? "non" : "oui", i.archived ? "oui" : ""];
+      });
+      X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([head].concat(rows)), "Articles");
+      var nameById = {}; (b.items || []).forEach(function (i) { nameById[i.id] = i.name; });
+      var lrows = (b.lots || []).map(function (l) { return [nameById[l.item_id] || "", l.lot || "", l.expiry ? isoToFr(l.expiry) : "", Number(l.qty) || 0]; });
+      if (lrows.length) X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([["Libellé du produit", "Lot", "Péremption", "Quantité"]].concat(lrows)), "Lots");
+      X.writeFile(wb, "sauvegarde-" + bkSlug(cabinetName) + "-" + String(b.created_at).slice(0, 10) + ".xlsx");
+    }).catch(function () { toast("La sauvegarde n'a pas pu être téléchargée."); });
+  }
+  // Recrée seulement les articles qui n'existent plus (ni dans la liste, ni à la corbeille) ; ne modifie rien d'autre.
+  function bkRecover(id) {
+    if (!db || readOnly) return;
+    sb.from("sauvegardes").select("*").eq("id", id).single().then(function (res) {
+      var b = check(res), missing = (b.items || []).filter(function (i) { return !items.has(i.id) && !trash.has(i.id); });
+      if (!missing.length) { toast("Aucun article n'a été supprimé depuis cette sauvegarde : rien à récupérer."); return; }
+      if (!window.confirm("Récupérer " + missing.length + " article" + (missing.length > 1 ? "s" : "") + " supprimé" + (missing.length > 1 ? "s" : "") + " depuis cette sauvegarde ?\n\nIls sont recréés avec leur quantité de l'époque. Les autres articles ne sont pas modifiés.")) return;
+      var lotsBy = {}; (b.lots || []).forEach(function (l) { (lotsBy[l.item_id] = lotsBy[l.item_id] || []).push(l); });
+      enqueue(function () {
+        var chain = Promise.resolve(), restored = 0;
+        for (var i = 0; i < missing.length; i += 100) (function (chunk) {
+          chain = chain.then(function () {
+            var rows = chunk.map(function (src) { var row = toRow(fromRow(src)); row.id = src.id; if (barcodeOk) row.barcode = src.barcode || null; return row; });
+            return sb.from("items").insert(rows).select().then(function (r1) {
+              var ins = check(r1) || [], lotRows = [];
+              ins.forEach(function (r) {
+                items.set(r.id, fromRow(r)); restored++;
+                if (lotsOk) (lotsBy[r.id] || []).forEach(function (l) { lotRows.push({ cabinet_id: cabinetId, item_id: r.id, lot: l.lot || "", expiry: l.expiry || null, qty: Number(l.qty) || 0 }); });
+              });
+              if (!lotRows.length) return null;
+              return sb.from("lots").insert(lotRows).select().then(function (r3) { (check(r3) || []).forEach(function (l) { (lotsByItem[l.item_id] = lotsByItem[l.item_id] || []).push(l); }); });
+            });
+          });
+        })(missing.slice(i, i + 100));
+        return chain.then(function () {
+          render();
+          toast(restored + " article" + (restored > 1 ? "s" : "") + " récupéré" + (restored > 1 ? "s" : "") + ".");
+          return appendLog({ type: "import", itemId: "", item: "Sauvegarde", delta: 0, qty: 0, note: restored + " articles récupérés depuis la sauvegarde du " + new Date(b.created_at).toLocaleDateString("fr-FR") });
+        });
+      });
+    }).catch(function () { toast("La sauvegarde n'a pas pu être lue."); });
+  }
   function openJrn() {
     $("jrnInfo").textContent = jrnOk ? "Chargement…" : "Cette fonction n'est pas encore activée : lancez le script SQL « ajout-factures-conso » dans Supabase.";
     $("jrnList").textContent = "";
@@ -2528,7 +2689,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       var nEntries = new Set(moves.map(function (m) { return m.it.id; })).size, list = Object.keys(fresh).map(function (k) { return fresh[k]; });
       moves.forEach(function (m) {
         if (m.it.archived) restoreItems([m.it.id]);
-        adjustQty(m.it, m.qty, "Entrée PDF " + fileName, lotsOk ? { lot: m.lot, expiry: m.expiry } : null);
+        adjustQty(m.it, m.qty, "Entrée PDF " + fileName, lotsOk ? { lot: m.lot, expiry: m.expiry } : null, { noUndo: true });
         if (!lotsOk && updLot && updLot.checked) applyLotExpiry(m.it, m.lot, m.expiry);
       });
       if (list.length) {
@@ -2889,6 +3050,24 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     makeThumb(f).then(function (d) { photoDraft = d; renderPhotoBox(); }, function () { toast("Cette image n'a pas pu être lue."); });
   });
   $("photoDel").addEventListener("click", function () { photoDraft = ""; renderPhotoBox(); });
+  $("undoBtn").addEventListener("click", undoLast);
+  document.addEventListener("keydown", function (e) {
+    if (!(e.metaKey || e.ctrlKey) || e.shiftKey || String(e.key).toLowerCase() !== "z") return;
+    var t = e.target || {};
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable || document.querySelector("dialog[open]")) return;
+    if (undoStack.length) { e.preventDefault(); undoLast(); }
+  });
+  $("bkBtn").addEventListener("click", openBackups);
+  $("bkClose").addEventListener("click", function () { $("bkDlg").close(); });
+  $("bkNow").addEventListener("click", function () {
+    $("bkNow").disabled = true;
+    sb.rpc("sauvegarder_maintenant", { p_cabinet: cabinetId }).then(function (res) {
+      $("bkNow").disabled = false;
+      if (res.error) { toast("La sauvegarde n'a pas pu être faite : " + (res.error.message || "erreur")); return; }
+      toast("Sauvegarde faite.");
+      loadBackups();
+    }).catch(function () { $("bkNow").disabled = false; toast("La sauvegarde n'a pas pu être faite."); });
+  });
   $("jrnBtn").addEventListener("click", openJrn);
   $("jrnClose").addEventListener("click", function () { $("jrnDlg").close(); });
   $("dupBtn").addEventListener("click", openDup);
