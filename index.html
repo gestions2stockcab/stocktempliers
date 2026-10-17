@@ -131,6 +131,7 @@ button.item-name:hover { text-decoration:underline; }
 .qty .v.q-mid, .fav-num.q-mid, .tile-num.q-mid { color:var(--q-mid); }
 .qty .v.q-low, .fav-num.q-low, .tile-num.q-low { color:var(--q-low); }
 .qty .v.q-zero, .fav-num.q-zero, .tile-num.q-zero { color:var(--q-zero); }
+.qty .v.q-none { color:var(--muted); }
 .qty .v { font-weight:700; }
 .step { width:30px; height:30px; border-radius:8px; border:1px solid var(--line); background:var(--surface); font-weight:700; line-height:1; }
 .chip { display:inline-block; padding:3px 9px; border-radius:99px; font-size:12px; font-weight:600; }
@@ -384,7 +385,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v30</div>
+            <div class="menu-who"><span id="who"></span> · v31</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -1211,13 +1212,11 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     setTimeout(function () { $("f_qty").focus(); $("f_qty").select(); }, 30);
   }
   function qtyCell(it, unit) {
-    if (it.tracked === false) {
-      return h("div", { class: "c-qty qty" },
-        h("button", { class: "btn sm", disabled: readOnly, onclick: function () { startTracking(it); }, text: "Suivre en stock" }));
-    }
+    // Même curseur − / + pour tous les articles. Pour un produit du catalogue, le premier « + » le fait passer en stock.
+    var cls = it.tracked === false && !(Number(it.qty) > 0) ? "q-none" : qtyClass(it.qty);
     return h("div", { class: "c-qty qty" },
       h("button", { class: "step", "aria-label": "Retirer 1 " + it.name, disabled: readOnly || (it.qty || 0) <= 0, onclick: function () { adjustQty(it, -1, "Sortie rapide"); }, text: "−" }),
-      h("button", { class: "v " + qtyClass(it.qty), title: "Saisir une entrée ou une sortie" + (unit ? " (" + unit.trim() + ")" : ""), disabled: readOnly, onclick: function () { openAdjust(it); } }, fmt(it.qty)),
+      h("button", { class: "v " + cls, title: "Saisir une entrée ou une sortie" + (unit ? " (" + unit.trim() + ")" : ""), disabled: readOnly, onclick: function () { openAdjust(it); } }, fmt(it.qty)),
       h("button", { class: "step", "aria-label": "Ajouter 1 " + it.name, disabled: readOnly, onclick: function () { if (hasLots(it)) openAdjust(it); else adjustQty(it, 1, "Entrée rapide"); }, text: "+" }));
   }
   function renderInventory(box) {
