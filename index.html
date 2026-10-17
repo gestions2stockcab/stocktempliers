@@ -278,6 +278,12 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 .oline { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; padding:9px 14px; border-top:1px solid var(--line); }
 .oline .obody { flex:1 1 220px; min-width:0; }
 .oline .late { color:var(--warn); font-weight:600; }
+.tab-trash { margin-left:auto; }
+.btn.toggle[aria-pressed="true"] { background:var(--brand); color:var(--brand-ink); border-color:var(--brand); }
+.selbar { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(14px + env(safe-area-inset-bottom,0px)); background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:0 6px 24px rgba(0,0,0,.2); padding:10px 14px; display:flex; gap:10px; align-items:center; z-index:30; flex-wrap:wrap; max-width:calc(100vw - 24px); }
+.selbox { width:18px; height:18px; margin:0 8px 0 0; accent-color:var(--brand); flex:none; }
+.trow { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; padding:10px 14px; border-top:1px solid var(--line); }
+.trow .tbody { flex:1 1 260px; min-width:0; overflow-wrap:anywhere; }
 .banner.bad { background:var(--bad-bg); color:var(--bad); }
 .dupgrp { border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin:10px 0; background:var(--surface); }
 .dupgrp h3 { font-size:15px; margin:0 0 6px; }
@@ -385,7 +391,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v31</div>
+            <div class="menu-who"><span id="who"></span> · v32</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -405,6 +411,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       <button class="tab" role="tab" data-tab="commande" aria-selected="false">À commander</button>
       <button class="tab" role="tab" data-tab="comptage" aria-selected="false">Comptage</button>
       <button class="tab" role="tab" data-tab="historique" aria-selected="false">Historique</button>
+      <button class="tab tab-trash" role="tab" data-tab="corbeille" aria-selected="false" title="Articles supprimés">🗑 Corbeille<span id="trashCount"></span></button>
     </div>
   </header>
 
@@ -419,6 +426,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   <div class="filters hidden" id="filters">
     <div class="ftop">
       <button class="btn sm" id="filtersToggle" aria-expanded="false">Filtres</button>
+      <button class="btn sm toggle" id="hideCatBtn" aria-pressed="false">Masquer le catalogue</button>
+      <button class="btn sm toggle" id="hideDupBtn" aria-pressed="false">Masquer les doublons</button>
+      <button class="btn sm toggle" id="selToggle" aria-pressed="false">Sélectionner</button>
       <span class="sub" id="filtersSummary"></span>
     </div>
     <div class="fpanel hidden" id="fpanel"></div>
@@ -513,7 +523,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       </details>
     </div>
     <div class="dlg-actions">
-      <button class="btn danger" id="itemDelete">Supprimer</button>
+      <button class="btn danger" id="itemDelete">Mettre à la corbeille</button>
       <span class="spacer"></span>
       <button class="btn" id="itemCancel">Annuler</button>
       <button class="btn primary" id="itemSave">Enregistrer</button>
@@ -584,6 +594,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     </div>
   </div>
 </dialog>
+
+<div class="selbar hidden" id="selbar" role="region" aria-label="Sélection d'articles">
+  <span id="selCount"></span>
+  <button class="btn sm" id="selAll">Tout sélectionner</button>
+  <button class="btn sm danger" id="selTrash">Mettre à la corbeille</button>
+  <button class="btn sm" id="selDone">Terminer</button>
+</div>
 
 <dialog id="jrnDlg" class="wide">
   <div class="dlg">
@@ -672,6 +689,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var logEntries = [];
   var logIds = new Set();
   var channels = [];
+  var trash = new Map(), arcOk = false, dupCache = null;
   var docCounts = {};
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
@@ -679,7 +697,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
-  var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, collapsed: {}, tileSort: "usuel", fOpen: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
+  var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, collapsed: {}, tileSort: "usuel", fOpen: false, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
   var chain = Promise.resolve();
 
@@ -743,7 +761,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       id: r.id, name: r.name || "", category: r.category || "", supplier: r.supplier || "", ref: r.ref || "",
       location: r.location || "", unit: r.unit || "", qty: Number(r.qty) || 0, min: Number(r.min) || 0,
       target: Number(r.target) || 0, lot: r.lot || "", expiry: r.expiry || "", price: Number(r.price) || 0,
-      barcode: r.barcode || "", description: r.description || "", tracked: r.tracked !== false || (Number(r.qty) || 0) > 0 || (Number(r.min) || 0) > 0, subcategory: r.subcategory || "", favorite: r.favorite === true,
+      barcode: r.barcode || "", description: r.description || "", tracked: r.tracked !== false || (Number(r.qty) || 0) > 0 || (Number(r.min) || 0) > 0, subcategory: r.subcategory || "", favorite: r.favorite === true, archived: r.archived === true,
       ordered_qty: Number(r.ordered_qty) || 0, ordered_at: r.ordered_at || "", photo: r.photo || ""
     };
   }
@@ -961,6 +979,92 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       });
     });
   }
+  function archiveItems(ids) {
+    if (!db || readOnly || !ids.length) return;
+    if (!arcOk) { toast("Lancez d'abord le script SQL « ajout-catalogue-initial » dans Supabase."); return; }
+    var list = ids.map(function (id) { return items.get(id); }).filter(Boolean);
+    if (!list.length) return;
+    var now = new Date().toISOString();
+    list.forEach(function (it) { items.delete(it.id); state.sel.delete(it.id); trash.set(it.id, Object.assign({}, it, { archived: true, archivedAt: now })); });
+    render();
+    enqueue(function () {
+      var chain = Promise.resolve(), all = list.map(function (it) { return it.id; });
+      for (var i = 0; i < all.length; i += 100) (function (chunk) {
+        chain = chain.then(function () { return sb.from("items").update({ archived: true, archived_at: now, updated_at: now }).in("id", chunk).then(check); });
+      })(all.slice(i, i + 100));
+      return chain.then(function () {
+        return appendLog({ type: "trash", itemId: list.length === 1 ? list[0].id : "", item: list.length === 1 ? list[0].name : "Corbeille", delta: 0, qty: 0, note: list.length + " article" + (list.length > 1 ? "s" : "") + " mis à la corbeille" });
+      });
+    });
+  }
+  function restoreItems(ids) {
+    if (!db || readOnly || !ids.length) return;
+    var list = ids.map(function (id) { return trash.get(id); }).filter(Boolean);
+    if (!list.length) return;
+    list.forEach(function (it) { trash.delete(it.id); items.set(it.id, Object.assign({}, it, { archived: false })); });
+    render();
+    enqueue(function () {
+      var chain = Promise.resolve(), all = list.map(function (it) { return it.id; }), now = new Date().toISOString();
+      for (var i = 0; i < all.length; i += 100) (function (chunk) {
+        chain = chain.then(function () { return sb.from("items").update({ archived: false, archived_at: null, updated_at: now }).in("id", chunk).then(check); });
+      })(all.slice(i, i + 100));
+      return chain.then(function () {
+        return appendLog({ type: "trash", itemId: list.length === 1 ? list[0].id : "", item: list.length === 1 ? list[0].name : "Corbeille", delta: 0, qty: 0, note: list.length + " article" + (list.length > 1 ? "s" : "") + " restauré" + (list.length > 1 ? "s" : "") });
+      });
+    });
+  }
+  function purgeItems(ids) {
+    if (!db || readOnly || !ids.length) return;
+    var list = ids.map(function (id) { return trash.get(id); }).filter(Boolean);
+    if (!list.length) return;
+    list.forEach(function (it) { trash.delete(it.id); });
+    render();
+    enqueue(function () {
+      var chain = Promise.resolve();
+      list.forEach(function (it) {
+        chain = chain.then(function () { return cleanupDocs(it.id); }).then(function () { return sb.from("items").delete().eq("id", it.id).then(check); });
+      });
+      return chain.then(function () {
+        return appendLog({ type: "delete", itemId: "", item: "Corbeille", delta: 0, qty: 0, note: list.length + " article" + (list.length > 1 ? "s" : "") + " supprimé" + (list.length > 1 ? "s" : "") + " définitivement" });
+      });
+    });
+  }
+  function updateSelBar() {
+    var n = state.sel.size;
+    $("selbar").classList.toggle("hidden", !(state.select && state.tab === "inventaire"));
+    $("selCount").textContent = n + " sélectionné" + (n > 1 ? "s" : "");
+    $("selTrash").disabled = !n;
+  }
+  function renderTrash(box) {
+    var list = Array.from(trash.values()).sort(function (a, b) { return String(b.archivedAt || "").localeCompare(String(a.archivedAt || "")) || norm(a.name).localeCompare(norm(b.name)); });
+    if (!arcOk) {
+      box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Corbeille non activée" }), h("div", { text: "Lancez le script SQL « ajout-catalogue-initial » dans Supabase pour l'activer." }))));
+      return;
+    }
+    if (!list.length) {
+      box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "La corbeille est vide" }),
+        h("div", { text: "Les articles mis à la corbeille n'apparaissent plus dans l'appli. Ils restent ici tant que vous ne les supprimez pas définitivement, et un import ne les recrée pas." }))));
+      return;
+    }
+    box.append(h("div", { class: "crumb" },
+      h("div", { class: "sub", text: list.length + " article" + (list.length > 1 ? "s" : "") + " à la corbeille. Ils restent cachés et un import ne les recrée pas." }),
+      readOnly ? null : h("button", { class: "btn sm danger", onclick: function () {
+        if (!window.confirm("Supprimer définitivement les " + list.length + " articles de la corbeille ?\n\nCette action est irréversible : si vous réimportez un catalogue, ils pourront réapparaître.")) return;
+        purgeItems(list.map(function (it) { return it.id; }));
+      }, text: "Vider la corbeille" })));
+    var tbl = h("div", { class: "table" });
+    list.forEach(function (it) {
+      var meta = [it.category || "Sans domaine", it.subcategory, it.ref ? "réf. " + it.ref : "", (Number(it.qty) || 0) > 0 ? "stock " + fmt(it.qty) : "", it.archivedAt ? "supprimé le " + new Date(it.archivedAt).toLocaleDateString("fr-FR") : ""].filter(Boolean).join(" · ");
+      tbl.append(h("div", { class: "trow" },
+        h("div", { class: "tbody" }, h("div", { class: "item-name", text: it.name }), h("div", { class: "meta", text: meta })),
+        readOnly ? null : h("button", { class: "btn sm primary", onclick: function () { restoreItems([it.id]); }, text: "Restaurer" }),
+        readOnly ? null : h("button", { class: "btn sm danger", onclick: function () {
+          if (!window.confirm("Supprimer définitivement « " + it.name + " » ?")) return;
+          purgeItems([it.id]);
+        }, text: "Supprimer définitivement" })));
+    });
+    box.append(tbl);
+  }
   function deleteItem(it) {
     if (!db || readOnly) return;
     enqueue(function () {
@@ -978,7 +1082,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var arr = Array.from(items.values()).filter(function (it) {
       var s = statusOf(it);
       if (state.cat && (it.category || "Sans domaine") !== state.cat) return false;
-      if (state.hideCat && it.tracked === false) return false;
+      if (hiddenByToggle(it)) return false;
       if (!matchFilters(it)) return false;
       if (state.filter === "bas" && s !== "bas") return false;
       if (state.filter === "low" && s !== "bas" && s !== "rupture") return false;
@@ -1080,7 +1184,17 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var n = activeFilterCount();
     $("filtersToggle").textContent = "Filtres" + (n ? " (" + n + ")" : "");
     $("filtersToggle").setAttribute("aria-expanded", state.fOpen ? "true" : "false");
-    $("filtersSummary").textContent = n ? "" : "";
+    $("filtersSummary").textContent = "";
+    var nCatAll = 0; items.forEach(function (it) { if (it.tracked === false) nCatAll++; });
+    var nDup = dupHiddenIds().size;
+    $("hideCatBtn").setAttribute("aria-pressed", state.hideCat ? "true" : "false");
+    $("hideCatBtn").textContent = state.hideCat ? "✓ Catalogue masqué (" + nCatAll + ")" : "Masquer le catalogue" + (nCatAll ? " (" + nCatAll + ")" : "");
+    $("hideCatBtn").disabled = !nCatAll && !state.hideCat;
+    $("hideDupBtn").setAttribute("aria-pressed", state.hideDup ? "true" : "false");
+    $("hideDupBtn").textContent = state.hideDup ? "✓ Doublons masqués (" + nDup + ")" : "Masquer les doublons" + (nDup ? " (" + nDup + ")" : "");
+    $("hideDupBtn").disabled = !nDup && !state.hideDup;
+    $("selToggle").setAttribute("aria-pressed", state.select ? "true" : "false");
+    $("selToggle").textContent = state.select ? "✓ Sélection en cours" : "Sélectionner";
     var panel = $("fpanel"); panel.textContent = "";
     panel.classList.toggle("hidden", !state.fOpen);
     if (!state.fOpen) return;
@@ -1150,7 +1264,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var st = {};
     items.forEach(function (it) {
       var c = it.category || "Sans domaine", u = (it.unit || "").trim() || "unité", s = statusOf(it);
-      var o = st[c] || (st[c] = { n: 0, sum: {}, bas: 0, rupt: 0, exp: 0, cat: 0 });
+      var o = st[c] || (st[c] = { n: 0, sum: {}, bas: 0, rupt: 0, exp: 0, cat: 0, hid: 0 });
+      if (hiddenByToggle(it)) { o.hid++; return; }
       if (it.tracked === false) { o.cat++; return; }
       o.n++; o.sum[u] = (o.sum[u] || 0) + (Number(it.qty) || 0);
       if (s === "rupture") o.rupt++; else if (s === "bas") o.bas++;
@@ -1183,7 +1298,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     box.append(h("div", { class: "tilebar" }, h("label", { for: "tileSort", text: "Trier les domaines :" }), sel));
     var grid = h("div", { class: "tiles" });
     order.forEach(function (c) {
-      var o = stats[c] || { n: 0, sum: {}, bas: 0, rupt: 0, exp: 0, cat: 0 };
+      var o = stats[c] || { n: 0, sum: {}, bas: 0, rupt: 0, exp: 0, cat: 0, hid: 0 };
+      if (!o.n && !o.cat && o.hid > 0) return;
       var us = Object.keys(o.sum), big, label;
       if (!o.n) { big = "0"; label = o.cat ? "aucun article suivi" : "aucun article"; }
       else if (us.length === 1) {
@@ -1277,6 +1393,8 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         h("div", { class: "c-name" + (it.photo ? " has-photo" : "") },
           it.photo ? h("img", { class: "thumb", src: it.photo, alt: "", loading: "lazy", onclick: function () { openItem(it); } }) : null,
           h("div", { class: "nameline" },
+            state.select ? h("input", { type: "checkbox", class: "selbox", checked: state.sel.has(it.id), "aria-label": "Sélectionner " + it.name,
+              onchange: function (e) { if (e.target.checked) state.sel.add(it.id); else state.sel.delete(it.id); updateSelBar(); } }) : null,
             h("button", { class: "star" + (it.favorite ? " on" : ""), title: it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", "aria-label": it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", onclick: function () { toggleFav(it); }, text: it.favorite ? "★" : "☆" }),
             h("button", { class: "item-name", onclick: function () { openItem(it); }, text: it.name || "(sans nom)" }),
             it.description ? h("span", { class: "desc", text: "(" + it.description + ")" }) : null),
@@ -1472,9 +1590,6 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     box.append(
       h("button", { class: "btn sm", onclick: function () { state.cat = ""; state.filter = "all"; state.q = ""; clearFilters(); $("search").value = ""; render(); }, text: "← Domaines" }),
       h("h2", { class: "crumb-title", text: title }));
-    if (nCat) {
-      box.append(h("button", { class: "btn sm", onclick: function () { state.hideCat = !state.hideCat; render(); }, text: state.hideCat ? "Afficher le catalogue" : "Masquer le catalogue" }));
-    }
     if (sub) box.append(h("div", { class: "crumb-sub", text: sub }));
   }
 
@@ -1560,10 +1675,13 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   }
 
   function render() {
+    dupCache = null;
     if (state.cat && domainList().indexOf(state.cat) === -1) state.cat = "";
     renderAlerts();
     renderCrumb();
     renderFilters();
+    $("trashCount").textContent = trash.size ? " (" + trash.size + ")" : "";
+    updateSelBar();
     var nd = dupGroups().length;
     $("dupBtn").textContent = "Doublons possibles" + (nd ? " (" + nd + ")" : "");
     var bn = $("banner"); bn.textContent = "";
@@ -1575,6 +1693,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     $("exportBtn").disabled = !items.size;
     $("bar").classList.toggle("hidden", state.tab !== "inventaire");
     if (state.tab === "inventaire") renderInventory(box);
+    else if (state.tab === "corbeille") renderTrash(box);
     else if (state.tab === "favoris") renderFavorites(box);
     else if (state.tab === "commande") renderOrder(box);
     else if (state.tab === "comptage") renderCount(box);
@@ -1707,6 +1826,27 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         h("span", { class: "delta " + (delta > 0 ? "pos" : delta < 0 ? "neg" : ""), text: (delta > 0 ? "+" : "") + (delta === 0 ? "—" : fmt(delta)) + " → " + fmt(r.qty) })));
     });
   }
+  function dupScore(x) {
+    return ((lotsByItem[x.id] || []).length ? 3 : 0) + (docCounts[x.id] ? 2 : 0) + (x.description ? 1 : 0) + ((Number(x.qty) || 0) > 0 ? 1 : 0) + Math.min(1, String(x.name).length / 200);
+  }
+  // Doublons que l'on peut cacher : dans chaque groupe de même référence, tout sauf l'article le plus complet, et seulement s'il n'a ni stock ni commande en cours.
+  function dupHiddenIds() {
+    if (dupCache) return dupCache;
+    var hid = new Set();
+    dupGroups().forEach(function (g) {
+      var best = g.slice().sort(function (a, b) { return dupScore(b) - dupScore(a); })[0];
+      g.forEach(function (x) {
+        if (x.id === best.id) return;
+        if ((Number(x.qty) || 0) > 0 || (lotsByItem[x.id] || []).length || x.favorite || (x.ordered_qty > 0)) return;
+        hid.add(x.id);
+      });
+    });
+    dupCache = hid;
+    return hid;
+  }
+  function hiddenByToggle(it) {
+    return (state.hideCat && it.tracked === false) || (state.hideDup && dupHiddenIds().has(it.id));
+  }
   function dupGroups() {
     var by = {};
     items.forEach(function (it) { var k = norm(it.ref || "").trim(); if (k) (by[k] = by[k] || []).push(it); });
@@ -1767,8 +1907,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var list = $("dupList"); list.textContent = "";
     if (!groups.length) list.append(h("div", { class: "meta", text: "Aucun doublon repéré : chaque référence fournisseur n'apparaît qu'une fois." }));
     groups.forEach(function (g) {
-      var score = function (x) { return ((lotsByItem[x.id] || []).length ? 3 : 0) + (docCounts[x.id] ? 2 : 0) + (x.description ? 1 : 0) + ((Number(x.qty) || 0) > 0 ? 1 : 0) + Math.min(1, String(x.name).length / 200); };
-      var best = g.slice().sort(function (a, b) { return score(b) - score(a); })[0];
+      var best = g.slice().sort(function (a, b) { return dupScore(b) - dupScore(a); })[0];
       var chosen = best.id, card = h("section", { class: "dupgrp" });
       card.append(h("h3", { text: "Référence " + (g[0].ref || "") + " · " + g.length + " articles" }));
       g.forEach(function (x) {
@@ -1848,7 +1987,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     photoDraft = it && it.photo ? it.photo : ""; renderPhotoBox();
     $("histBox").classList.toggle("hidden", !it); $("histBox").open = false; $("histBody").textContent = "";
     $("itemDelete").classList.toggle("hidden", !it || readOnly);
-    $("itemDelete").textContent = "Supprimer";
+    $("itemDelete").textContent = arcOk ? "Mettre à la corbeille" : "Supprimer";
     $("itemSave").disabled = readOnly;
     $("itemDlg").showModal();
     setTimeout(function () { $("f_name").focus(); }, 0);
@@ -2004,6 +2143,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       return;
     }
     var have = new Map();
+    trash.forEach(function (it) { have.set(norm(it.name).trim(), it); });
     items.forEach(function (it) { have.set(norm(it.name).trim(), it); });
     var groups = new Map(), order = [];
     all.forEach(function (d) {
@@ -2024,6 +2164,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         });
       }
       if (exist) {
+        if (exist.archived) { dup++; return; }
         if (lots.length) upd.push({ it: exist, lots: lots }); else dup++;
         return;
       }
@@ -2296,6 +2437,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     dm.refact.forEach(function (n) { var j = jrnByNumber[n]; if (j) { seenBefore = true; warns.push("Cette facture remplace la n° " + n + ", déjà importée le " + frDate(j.created_at) + ". Les mêmes produits seraient ajoutés une deuxième fois : importez-la seulement si la précédente n'avait pas été importée."); } });
     dm.annul.forEach(function (n) { var j = jrnByNumber[n]; if (j) warns.push("Cet avoir annule la facture n° " + n + ", importée le " + frDate(j.created_at) + " : ses quantités ont déjà été ajoutées au stock. Corrigez-les si la marchandise n'a pas été livrée."); });
     var byRef = {}, byName = {};
+    trash.forEach(function (it) { if (it.ref) byRef[norm(it.ref).trim()] = it; byName[norm(it.name).trim()] = it; });
     items.forEach(function (it) { if (it.ref) byRef[norm(it.ref).trim()] = it; byName[norm(it.name).trim()] = it; });
     rows.forEach(function (r) {
       r.match = byRef[norm(r.ref).trim()] || byName[norm(r.name).trim()] || null;
@@ -2345,7 +2487,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         domCell = h("div", { class: "pc-dom" }, sel);
       }
       table.append(h("div", { class: "prow" }, chk, nameCell, q, domCell,
-        h("div", { class: "pc-st meta", text: (r.match ? "Entrée de stock" : "Nouvel article") })));
+        h("div", { class: "pc-st meta", text: (r.match ? (r.match.archived ? "Entrée de stock (sort l'article de la corbeille)" : "Entrée de stock") : "Nouvel article") })));
       if (lotsOk) {
         var inLot = h("input", { class: "cin left", type: "text", value: r.lot || "", placeholder: "N° de lot", autocomplete: "off", "aria-label": "Numéro de lot : " + r.name });
         var inExp = h("input", { class: "cin left", type: "date", value: r.expiry || "", "aria-label": "Péremption : " + r.name });
@@ -2385,6 +2527,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       $("pdfDlg").close();
       var nEntries = new Set(moves.map(function (m) { return m.it.id; })).size, list = Object.keys(fresh).map(function (k) { return fresh[k]; });
       moves.forEach(function (m) {
+        if (m.it.archived) restoreItems([m.it.id]);
         adjustQty(m.it, m.qty, "Entrée PDF " + fileName, lotsOk ? { lot: m.lot, expiry: m.expiry } : null);
         if (!lotsOk && updLot && updLot.checked) applyLotExpiry(m.it, m.lot, m.expiry);
       });
@@ -2761,6 +2904,27 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   $("ordDlg").addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); $("ordSave").click(); } });
   document.addEventListener("visibilitychange", function () { if (!document.hidden && db && Date.now() - consoAt > 300000) loadConso(); });
   setInterval(function () { if (db && !document.hidden && Date.now() - consoAt > 900000) loadConso(); }, 60000);
+  $("hideCatBtn").addEventListener("click", function () {
+    state.hideCat = !state.hideCat;
+    try { localStorage.setItem("simsim_hidecat", state.hideCat ? "1" : "0"); } catch (e) {}
+    render();
+  });
+  $("hideDupBtn").addEventListener("click", function () {
+    state.hideDup = !state.hideDup;
+    try { localStorage.setItem("simsim_hidedup", state.hideDup ? "1" : "0"); } catch (e) {}
+    render();
+  });
+  $("selToggle").addEventListener("click", function () { state.select = !state.select; state.sel.clear(); render(); });
+  $("selDone").addEventListener("click", function () { state.select = false; state.sel.clear(); render(); });
+  $("selAll").addEventListener("click", function () { visibleItems().forEach(function (it) { state.sel.add(it.id); }); render(); });
+  $("selTrash").addEventListener("click", function () {
+    var ids = Array.from(state.sel);
+    if (!ids.length) return;
+    if (!arcOk) { toast("Lancez d'abord le script SQL « ajout-catalogue-initial » dans Supabase."); return; }
+    archiveItems(ids);
+    state.sel.clear();
+    toast(ids.length + " article" + (ids.length > 1 ? "s" : "") + " mis à la corbeille. Ils sont dans l'onglet Corbeille, à droite.");
+  });
   $("filtersToggle").addEventListener("click", function () { state.fOpen = !state.fOpen; render(); });
   $("lotAddRow").addEventListener("click", function () {
     lotsDraft.push({ lot: "", expiry: null, qty: lotsDraft.length ? 0 : num($("f_qty").value) });
@@ -2784,12 +2948,11 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     $("itemDlg").close();
   });
   $("itemDelete").addEventListener("click", function () {
-    if (!state.confirmDelete) {
-      state.confirmDelete = true;
-      $("itemDelete").textContent = "Confirmer la suppression";
-      return;
-    }
-    if (state.editing) deleteItem(state.editing);
+    var it = state.editing;
+    if (!it) return;
+    if (arcOk) { archiveItems([it.id]); toast("« " + it.name + " » est dans la corbeille (onglet à droite)."); $("itemDlg").close(); return; }
+    if (!state.confirmDelete) { state.confirmDelete = true; $("itemDelete").textContent = "Confirmer la suppression"; return; }
+    deleteItem(it);
     $("itemDlg").close();
   });
   $("itemDlg").addEventListener("keydown", function (e) {
@@ -2993,6 +3156,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   });
   (function () { var t = "blanc"; try { t = localStorage.getItem("simsim_theme") || "blanc"; } catch (e) {} applyTheme(t); })();
   try { var ts = localStorage.getItem("simsim_tilesort"); if (ts) state.tileSort = ts; } catch (e) {}
+  try { state.hideCat = localStorage.getItem("simsim_hidecat") === "1"; state.hideDup = localStorage.getItem("simsim_hidedup") === "1"; } catch (e) {}
   function closeMenu() { $("moreMenu").classList.add("hidden"); $("moreBtn").setAttribute("aria-expanded", "false"); }
   $("moreBtn").addEventListener("click", function (e) {
     e.stopPropagation();
@@ -3010,9 +3174,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var cid = cabinetId;
     sb.from("items").select("*").eq("cabinet_id", cid).limit(5000).then(function (res) {
       if (cid !== cabinetId) return;
-      var m = new Map();
-      (check(res) || []).forEach(function (r) { m.set(r.id, fromRow(r)); });
-      items = m; render();
+      var m = new Map(), tr = new Map();
+      (check(res) || []).forEach(function (r) { var it = fromRow(r); if (it.archived) tr.set(r.id, it); else m.set(r.id, it); });
+      items = m; trash = tr; render();
     }).catch(function (e) { onWriteError(e); });
     sb.from("movements").select("*").eq("cabinet_id", cid).order("created_at", { ascending: false }).limit(300).then(function (res) {
       if (cid !== cabinetId) return;
@@ -3049,6 +3213,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     sb.from("items").select("photo").eq("cabinet_id", cid).limit(1).then(function (res) {
       if (cid === cabinetId) photoOk = !res.error;
     }).catch(function () { photoOk = false; });
+    sb.from("items").select("archived").eq("cabinet_id", cid).limit(1).then(function (res) {
+      if (cid === cabinetId) arcOk = !res.error;
+    }).catch(function () { arcOk = false; });
     sb.from("imported_docs").select("doc_number,doc_type,doc_date,user_email,created_at").eq("cabinet_id", cid).limit(5000).then(function (res) {
       if (cid !== cabinetId) return;
       if (res.error) { jrnOk = false; return; }
@@ -3065,9 +3232,11 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     }).catch(function () { lotsOk = false; });
     var ch = sb.channel("simsimstock-" + cid)
       .on("postgres_changes", { event: "*", schema: "public", table: "items" }, function (p) {
-        if (p.eventType === "DELETE") items.delete(p.old.id);
-        else if (p.new && p.new.cabinet_id === cabinetId) items.set(p.new.id, fromRow(p.new));
-        else return;
+        if (p.eventType === "DELETE") { items.delete(p.old.id); trash.delete(p.old.id); }
+        else if (p.new && p.new.cabinet_id === cabinetId) {
+          var it2 = fromRow(p.new);
+          if (it2.archived) { items.delete(it2.id); trash.set(it2.id, it2); } else { trash.delete(it2.id); items.set(it2.id, it2); }
+        } else return;
         render();
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "movements" }, function (p) { if (p.new && p.new.cabinet_id === cabinetId) addLogRow(p.new); })
@@ -3089,7 +3258,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   function stopData() {
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     channels = []; started = false;
-    items = new Map(); logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0;
+    items = new Map(); trash = new Map(); arcOk = false; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0;
   }
   function showScreen(which) {
     $("login").classList.toggle("hidden", which !== "login");
