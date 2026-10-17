@@ -107,9 +107,37 @@ h1 { font-size:28px; font-weight:700; color:var(--brand); }
 .counter.c-exp { border-left-color:var(--exp); }
 
 .toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:12px 0; }
-.tabs { display:flex; gap:2px; background:var(--surface-2); border-radius:10px; padding:3px; }
-.tab { border:0; background:transparent; padding:7px 12px; border-radius:8px; color:var(--muted); font-weight:500; }
-.tab[aria-selected="true"] { background:var(--surface); color:var(--brand); font-weight:600; box-shadow:var(--shadow); }
+.sidebar { position:fixed; left:0; top:0; bottom:0; width:232px; z-index:40; background:var(--surface); border-right:1px solid var(--line); display:flex; flex-direction:column; gap:2px;
+  padding:calc(14px + env(safe-area-inset-top,0px)) 10px calc(14px + env(safe-area-inset-bottom,0px)); overflow-y:auto;
+  transform:translateX(calc(-100% + 14px)); transition:transform .18s ease, box-shadow .18s ease; }
+.sidebar::after { content:""; position:absolute; right:4px; top:50%; width:4px; height:56px; margin-top:-28px; border-radius:4px; background:var(--muted); opacity:.45; pointer-events:none; }
+.sidebar:hover, .sidebar:focus-within, .sidebar.open { transform:none; box-shadow:8px 0 28px rgba(0,0,0,.16); }
+.sidebar:hover::after, .sidebar:focus-within::after, .sidebar.open::after { opacity:0; }
+.sb-head { display:flex; align-items:center; justify-content:space-between; padding:2px 6px 10px; }
+.sb-title { font-weight:700; color:var(--brand); }
+.sb-pin { border:0; background:transparent; font-size:16px; opacity:.5; padding:4px 6px; border-radius:8px; }
+.sb-pin[aria-pressed="true"] { opacity:1; background:var(--surface-2); }
+.tab { display:flex; align-items:center; gap:10px; width:100%; text-align:left; border:0; background:transparent; padding:10px 12px; border-radius:10px; color:var(--muted); font-weight:500; font-size:15px; }
+.tab:hover { background:var(--surface-2); color:var(--ink); }
+.tab[aria-selected="true"] { background:var(--surface-2); color:var(--brand); font-weight:600; }
+.tab .ti { width:22px; text-align:center; flex:none; }
+.tab-trash { margin-top:auto; }
+.sb-backdrop { display:none; }
+.title-left { display:flex; align-items:center; gap:10px; min-width:0; }
+body.sb-pinned { padding-left:232px; }
+body.sb-pinned .sidebar { transform:none; box-shadow:none; }
+body.sb-pinned .sidebar::after { display:none; }
+body.sb-pinned #menuBtn { display:none; }
+@media (hover: none), (max-width: 760px) {
+  .sidebar { transform:translateX(-100%); width:min(290px, 82vw); }
+  .sidebar::after { display:none; }
+  .sidebar:hover, .sidebar:focus-within { transform:translateX(-100%); box-shadow:none; }
+  .sidebar.open { transform:none !important; box-shadow:8px 0 28px rgba(0,0,0,.25); }
+  .sb-backdrop.open { display:block; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:35; }
+  body.sb-pinned { padding-left:0; }
+  body.sb-pinned .sidebar { transform:translateX(-100%); }
+  body.sb-pinned #menuBtn { display:inline-flex; }
+}
 .search { flex:1 1 200px; min-width:150px; padding:9px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
 .btn { border:1px solid var(--line); background:var(--surface); padding:8px 12px; border-radius:10px; font-weight:500; }
 .btn.primary { background:var(--brand); color:var(--brand-ink); border-color:var(--brand); }
@@ -204,7 +232,6 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
 
 
 /* ---- v7 : écran simplifié, domaines en carrés ---- */
-header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-x:auto; }
 .menuwrap { position:relative; }
 .menu { position:absolute; right:0; top:calc(100% + 6px); min-width:230px; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.18); padding:6px; z-index:20; display:flex; flex-direction:column; }
 .head-sw { margin-right:4px; }
@@ -278,7 +305,6 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 .oline { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; padding:9px 14px; border-top:1px solid var(--line); }
 .oline .obody { flex:1 1 220px; min-width:0; }
 .oline .late { color:var(--warn); font-weight:600; }
-.tab-trash { margin-left:auto; }
 .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; }
 .kpi { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
 .kpi b { display:block; font-size:22px; }
@@ -412,7 +438,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
 <div class="wrap hidden" id="app">
   <header class="top">
     <div class="title-row">
-      <h1 id="appTitle">SimSimStock</h1>
+      <div class="title-left"><button class="btn sm" id="menuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="sidebar" title="Menu">☰</button><h1 id="appTitle">SimSimStock</h1></div>
       <div class="who-row">
         <button class="btn sm hidden" id="undoBtn" type="button">↶ Annuler</button>
         <div class="swatches head-sw" role="group" aria-label="Couleur de fond">
@@ -426,7 +452,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v35</div>
+            <div class="menu-who"><span id="who"></span> · v36</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -441,16 +467,19 @@ details.prd > summary::-webkit-details-marker { display:none; }
         </div>
       </div>
     </div>
-    <div class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="inventaire" aria-selected="true">Stock</button>
-      <button class="tab" role="tab" data-tab="favoris" aria-selected="false">Favoris</button>
-      <button class="tab" role="tab" data-tab="commande" aria-selected="false">À commander</button>
-      <button class="tab" role="tab" data-tab="comptage" aria-selected="false">Comptage</button>
-      <button class="tab" role="tab" data-tab="historique" aria-selected="false">Historique</button>
-      <button class="tab" role="tab" data-tab="donnees" aria-selected="false">Données</button>
-      <button class="tab tab-trash" role="tab" data-tab="corbeille" aria-selected="false" title="Articles supprimés">🗑 Corbeille<span id="trashCount"></span></button>
-    </div>
   </header>
+
+  <nav class="sidebar" id="sidebar" role="tablist" aria-orientation="vertical" aria-label="Sections de l'application">
+    <div class="sb-head"><span class="sb-title">Menu</span><button class="sb-pin" id="sbPin" type="button" aria-pressed="false" title="Garder le menu toujours ouvert">📌</button></div>
+    <button class="tab" role="tab" data-tab="inventaire" aria-selected="true"><span class="ti">📦</span><span class="tl">Stock</span></button>
+    <button class="tab" role="tab" data-tab="favoris" aria-selected="false"><span class="ti">⭐</span><span class="tl">Favoris</span></button>
+    <button class="tab" role="tab" data-tab="commande" aria-selected="false"><span class="ti">🛒</span><span class="tl">À commander</span></button>
+    <button class="tab" role="tab" data-tab="comptage" aria-selected="false"><span class="ti">🔢</span><span class="tl">Comptage</span></button>
+    <button class="tab" role="tab" data-tab="historique" aria-selected="false"><span class="ti">🕘</span><span class="tl">Historique</span></button>
+    <button class="tab" role="tab" data-tab="donnees" aria-selected="false"><span class="ti">📊</span><span class="tl">Données</span></button>
+    <button class="tab tab-trash" role="tab" data-tab="corbeille" aria-selected="false" title="Articles supprimés"><span class="ti">🗑</span><span class="tl">Corbeille<span id="trashCount"></span></span></button>
+  </nav>
+  <div class="sb-backdrop" id="sbBackdrop"></div>
 
   <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.pdf,application/pdf,text/csv,text/plain" class="hidden">
   <div id="banner"></div>
@@ -3377,8 +3406,29 @@ details.prd > summary::-webkit-details-marker { display:none; }
   }
 
   // ---------- événements ----------
+  function setSidebarOpen(on) {
+    $("sidebar").classList.toggle("open", on);
+    $("sbBackdrop").classList.toggle("open", on);
+    $("menuBtn").setAttribute("aria-expanded", on ? "true" : "false");
+  }
+  function applySidebarPin(on) {
+    document.body.classList.toggle("sb-pinned", on);
+    $("sbPin").setAttribute("aria-pressed", on ? "true" : "false");
+    setSidebarOpen(false);
+  }
+  $("menuBtn").addEventListener("click", function () { setSidebarOpen(!$("sidebar").classList.contains("open")); });
+  $("sbBackdrop").addEventListener("click", function () { setSidebarOpen(false); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && $("sidebar").classList.contains("open")) setSidebarOpen(false); });
+  $("sbPin").addEventListener("click", function () {
+    var on = !document.body.classList.contains("sb-pinned");
+    applySidebarPin(on);
+    try { localStorage.setItem("simsim_sbpin", on ? "1" : "0"); } catch (err) {}
+  });
+  (function () { var on = false; try { on = localStorage.getItem("simsim_sbpin") === "1"; } catch (err) {} applySidebarPin(on); })();
   document.querySelectorAll(".tab").forEach(function (t) {
-    t.addEventListener("click", function () {
+    t.addEventListener("click", function (e) {
+      setSidebarOpen(false);
+      if (e && e.detail > 0) t.blur();
       var target = t.getAttribute("data-tab");
       if (target === "inventaire" && state.tab === "inventaire") { state.cat = ""; state.q = ""; $("search").value = ""; }
       state.tab = target;
