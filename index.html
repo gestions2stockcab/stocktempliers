@@ -493,6 +493,7 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
     <h1 id="pickTitle">Choisissez un cabinet</h1>
     <div class="sub" id="pickHint"></div>
     <div class="tiles" id="pickTiles"></div>
+    <button class="btn primary hidden" id="pickNew">＋ Créer un cabinet</button>
     <button class="btn" id="pickLogout">Se déconnecter</button>
   </div>
 </div>
@@ -515,7 +516,7 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v39</div>
+            <div class="menu-who"><span id="who"></span> · v40</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -525,6 +526,7 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
             <button class="mi" id="pwBtn">Changer mon mot de passe</button>
             <button class="mi hidden" id="teamBtn">Utilisateurs et invitations</button>
             <button class="mi hidden" id="switchBtn">Changer de cabinet</button>
+            <button class="mi hidden" id="newCabBtn">Créer un cabinet</button>
             <button class="mi" id="logoutBtn">Se déconnecter</button>
           </div>
         </div>
@@ -710,6 +712,21 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
   <button class="btn sm" id="selDone">Terminer</button>
 </div>
 
+<dialog id="cabDlg">
+  <div class="dlg">
+    <h2>Créer un cabinet</h2>
+    <div class="sub">Le nouveau cabinet a ses propres articles, utilisateurs et sauvegardes. Il démarre avec le catalogue de matériel si celui-ci est installé. Vous en êtes administrateur : vous pourrez ensuite inviter son équipe dans l’onglet Utilisateurs.</div>
+    <label class="f">Nom du cabinet
+      <input id="cabName" autocomplete="off" maxlength="80" placeholder="Ex. Cabinet dentaire de Vincennes">
+    </label>
+    <div class="login-err" id="cabErr" role="alert"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="cabCancel" type="button">Annuler</button>
+      <button class="btn primary" id="cabCreate" type="button">Créer le cabinet</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="bkDlg" class="wide">
   <div class="dlg">
     <h2>Sauvegardes</h2>
@@ -812,7 +829,7 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
   var barcodeOk = false, descOk = false, trackedOk = false, subOk = false, favOk = false, lotsOk = false, lotsByItem = {}, ordOk = false, photoOk = false, jrnOk = false, consoOk = false, jrnByNumber = {}, conso = {}, consoDebut = 0, consoAt = 0;
-  var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false;
+  var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false, ownerOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
   var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, collapsed: {}, tileSort: "usuel", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
@@ -4028,12 +4045,44 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
     $("app").classList.toggle("hidden", which !== "app");
     $("recover").classList.toggle("hidden", which !== "recover");
   }
+  function updateOwnerBtns() {
+    $("newCabBtn").classList.toggle("hidden", !ownerOk);
+    $("pickNew").classList.toggle("hidden", !ownerOk);
+  }
+  function openNewCab() {
+    $("cabName").value = ""; $("cabErr").textContent = ""; $("cabCreate").disabled = false;
+    $("cabDlg").showModal();
+    setTimeout(function () { $("cabName").focus(); }, 0);
+  }
+  function createCabinet() {
+    var name = $("cabName").value.trim();
+    if (name.length < 2) { $("cabErr").textContent = "Saisissez le nom du cabinet (2 caractères au moins)."; return; }
+    $("cabCreate").disabled = true; $("cabErr").textContent = "";
+    sb.rpc("creer_cabinet", { p_nom: name }).then(function (res) {
+      $("cabCreate").disabled = false;
+      if (res.error) {
+        var m = res.error.message || "";
+        $("cabErr").textContent = /existe/.test(m) ? "Un cabinet porte déjà ce nom. Choisissez-en un autre."
+          : /nom_invalide/.test(m) ? "Ce nom n'est pas valide (entre 2 et 80 caractères)."
+          : /forbidden/.test(m) ? "Seul le propriétaire peut créer un cabinet."
+          : /creer_cabinet|function/.test(m) ? "Lancez d'abord le script SQL « ajout-creer-cabinet » dans Supabase."
+          : "Le cabinet n'a pas pu être créé. Réessayez dans un instant.";
+        return;
+      }
+      $("cabDlg").close();
+      try { localStorage.setItem("simsim_cabinet_" + (sessionUser || ""), res.data); } catch (e) {}
+      toast("Cabinet « " + name + " » créé. Invitez son équipe dans l'onglet Utilisateurs.");
+      var done = loadCabinets();
+      Promise.resolve(done).then(function () { state.tab = "utilisateurs"; syncTabs(); render(); loadUsers(); });
+    }, function () { $("cabCreate").disabled = false; $("cabErr").textContent = "Connexion impossible. Vérifiez votre accès à internet."; });
+  }
   function showPick(none, loading) {
     showScreen("pick");
     $("pickTitle").textContent = loading ? "Chargement…" : (none ? "Aucun cabinet" : "Choisissez un cabinet");
     $("pickHint").textContent = loading ? "" : (none
       ? "Votre compte n'est rattaché à aucun cabinet. Demandez à la personne qui gère l'outil de vous y rattacher."
       : "Connecté en tant que " + myEmail);
+    updateOwnerBtns();
     var box = $("pickTiles"); box.textContent = "";
     if (!none && !loading) cabinets.forEach(function (c) {
       box.append(h("button", { class: "tile", onclick: function () { enterCabinet(c); } },
@@ -4051,6 +4100,7 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
     readOnly = role === "viewer"; isAdmin = role === "admin";
     $("who").textContent = myEmail + " · " + ({ admin: "Administrateur", member: "Membre", viewer: "Lecture seule" }[role] || role);
     $("teamBtn").classList.toggle("hidden", !isAdmin);
+    updateOwnerBtns();
     document.querySelector('.tab[data-tab="utilisateurs"]').classList.toggle("hidden", !isAdmin);
     usersData.members = null; usersData.msg = ""; usersData.mail = null;
     state.tab = "inventaire"; state.filter = "all"; state.cat = ""; state.q = ""; $("search").value = "";
@@ -4081,17 +4131,23 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
       $("who").textContent = myEmail;
       showPick(false, true);
       var goCab = function () { loadCabinets(); };
+      sb.rpc("est_proprietaire").then(function (r0) { ownerOk = !!(r0 && !r0.error && r0.data === true); updateOwnerBtns(); }, function () {});
       sb.rpc("accept_invitations").then(function (res) { if (res && !res.error && Number(res.data) > 0) welcomePw = true; goCab(); }, goCab);
       loadPrefs();
     } else {
       sessionUser = null; db = null; myEmail = "";
       cabinetId = null; cabinetName = ""; cabinets = [];
-      readOnly = false; isAdmin = false; roles = {}; prefsOk = false;
+      readOnly = false; isAdmin = false; roles = {}; prefsOk = false; ownerOk = false;
       stopData();
       showScreen("login");
       render();
     }
   }
+  $("newCabBtn").addEventListener("click", openNewCab);
+  $("pickNew").addEventListener("click", openNewCab);
+  $("cabCancel").addEventListener("click", function () { $("cabDlg").close(); });
+  $("cabCreate").addEventListener("click", createCabinet);
+  $("cabName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); createCabinet(); } });
   $("switchBtn").addEventListener("click", function () { stopData(); cabinetId = null; showPick(false); });
   $("pickLogout").addEventListener("click", function () { if (sb) sb.auth.signOut(); });
   $("loginAlt").addEventListener("click", function () { setLoginMode(loginMode === "in" ? "forgot" : "in"); });
