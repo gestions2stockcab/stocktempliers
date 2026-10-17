@@ -6,7 +6,7 @@
 <title>SimSimStock</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 
 <script>
   // ============================================================
@@ -26,7 +26,11 @@
 </script>
 
 <script>
-  try { var t = localStorage.getItem("simsim_theme"); if (t && t !== "auto") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
+  try {
+    var t = localStorage.getItem("simsim_theme");
+    if (!t || t === "auto" || localStorage.getItem("simsim_style") !== "c1") { if (localStorage.getItem("simsim_style") !== "c1") window.__styleMigrated = true; t = "frais"; localStorage.setItem("simsim_theme", t); localStorage.setItem("simsim_style", "c1"); }
+    document.documentElement.setAttribute("data-theme", t);
+  } catch (e) {}
 </script>
 <style>
 :root {
@@ -239,7 +243,7 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
 .swatches { display:flex; gap:8px; flex-wrap:wrap; }
 .sw { width:24px; height:24px; border-radius:50%; border:2px solid var(--line); padding:0; font-size:11px; font-weight:700; color:var(--ink); background:var(--surface); }
 .sw[aria-pressed="true"] { outline:3px solid var(--brand); outline-offset:2px; }
-.sw-blanc { background:#ffffff; } .sw-gris { background:#d1d5db; } .sw-rose { background:#f9a8d4; } .sw-mauve { background:#c4b5fd; } .sw-sombre { background:#0f172a; }
+.sw-frais { background:#14b8a6; } .sw-blanc { background:#ffffff; } .sw-gris { background:#d1d5db; } .sw-rose { background:#f9a8d4; } .sw-mauve { background:#c4b5fd; } .sw-sombre { background:#0f172a; }
 .menu-who { padding:8px 10px; color:var(--muted); font-size:12.5px; border-bottom:1px solid var(--line); margin-bottom:4px; overflow-wrap:anywhere; }
 .mi { text-align:left; background:none; border:0; padding:9px 10px; border-radius:8px; font-weight:500; }
 .mi:hover { background:var(--surface-2); }
@@ -399,6 +403,53 @@ details.prd > summary::-webkit-details-marker { display:none; }
   .log-row .c-qtyafter { display:none; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }
+
+/* ===== v38 : style « médical frais » ===== */
+:root { --sb-bg:var(--surface); --sb-ink:var(--muted); --sb-hover:var(--surface-2); --sb-active-bg:var(--surface-2); --sb-active-ink:var(--brand); --sb-title:var(--brand); --sb-mark:var(--brand); }
+:root[data-theme="frais"] {
+  color-scheme:light;
+  --bg:#f0fdfa; --surface:#ffffff; --surface-2:#e6f9f5; --ink:#134e4a; --muted:#3d6b66; --line:#c9ece6;
+  --brand:#0f766e; --brand-ink:#ffffff;
+  --ok:#15803d; --ok-bg:#dcfce7; --warn:#92400e; --warn-bg:#fef3c7; --bad:#be123c; --bad-bg:#ffe4e6; --exp:#6d28d9; --exp-bg:#ede9fe;
+  --shadow:0 1px 3px rgba(15,118,110,.10);
+  --q-high:#15803d; --q-mid:#a85a00; --q-low:#962f0a; --q-zero:#c81e1e;
+  --sb-bg:#0f766e; --sb-ink:#c7f5ee; --sb-hover:rgba(255,255,255,.14); --sb-active-bg:#115e59; --sb-active-ink:#ffffff; --sb-title:#ffffff; --sb-mark:#5eead4;
+}
+body, button, input, select, textarea { font-family:"DM Sans", "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:"DM Sans", "Instrument Sans", system-ui, sans-serif; }
+.sidebar { background:var(--sb-bg); border-right-color:transparent; }
+.sidebar::after { background:var(--sb-ink); }
+.sb-title { color:var(--sb-title); }
+.tab { color:var(--sb-ink); }
+.tab:hover { background:var(--sb-hover); color:var(--sb-active-ink); }
+.tab[aria-selected="true"] { background:var(--sb-active-bg); color:var(--sb-active-ink); box-shadow:inset 3px 0 0 var(--sb-mark); }
+.sb-pin[aria-pressed="true"] { background:var(--sb-hover); }
+.search, .btn { border-radius:12px; }
+.tiles { grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
+.tile { aspect-ratio:auto; min-height:124px; padding:14px 16px; border:1px solid var(--line); border-left:5px solid var(--brand); border-radius:14px; gap:6px; }
+.tile-num { font-size:36px; }
+.favcard { border-top:1px solid var(--line); border-left:5px solid var(--brand); border-radius:14px; }
+/* la liste des produits */
+.table { border-radius:14px; }
+.table > .row.head { display:none; }
+@media (min-width: 761px) {
+  .row { grid-template-columns:minmax(0,1fr) auto 118px; gap:16px; padding:12px 18px; }
+  .row .c-qty, .row .c-status { justify-self:end; }
+}
+.row:hover { background:var(--surface-2); }
+.row.untracked:hover { background:transparent; }
+.nameline { gap:2px 10px; align-items:center; }
+.item-name { font-size:15.5px; font-weight:700; color:var(--ink); line-height:1.3; }
+.nameline .desc { flex-basis:100%; order:5; font-size:13.5px; font-weight:400; margin-top:1px; }
+.c-meta { margin-top:3px; font-size:12.5px; }
+.step { width:34px; height:34px; border-radius:10px; border:1.5px solid var(--line); color:var(--brand); font-size:17px; }
+.step:hover:not(:disabled) { border-color:var(--brand); background:var(--surface-2); }
+.qty { gap:8px; }
+.qty .v { min-width:52px; font-size:19px; border-bottom:0; }
+.catrow { background:transparent; color:var(--brand); font-size:13px; letter-spacing:.02em; padding:16px 18px 6px; }
+.subrow { background:var(--surface-2); padding:8px 18px; border-top:1px solid var(--line); font-size:13px; }
+.subrow small { background:var(--surface); border:1px solid var(--line); border-radius:99px; padding:0 8px; }
+.thumb { border-radius:10px; }
 </style>
 </head>
 <body>
@@ -453,6 +504,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
       <div class="who-row">
         <button class="btn sm hidden" id="undoBtn" type="button">↶ Annuler</button>
         <div class="swatches head-sw" role="group" aria-label="Couleur de fond">
+          <button class="sw sw-frais" data-theme="frais" title="Frais (turquoise)" aria-label="Style frais, turquoise"></button>
           <button class="sw sw-blanc" data-theme="blanc" title="Fond blanc" aria-label="Fond blanc"></button>
           <button class="sw sw-gris" data-theme="gris" title="Fond gris" aria-label="Fond gris"></button>
           <button class="sw sw-rose" data-theme="rose" title="Fond rose" aria-label="Fond rose"></button>
@@ -463,7 +515,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v37</div>
+            <div class="menu-who"><span id="who"></span> · v38</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -1821,7 +1873,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
               onchange: function (e) { if (e.target.checked) state.sel.add(it.id); else state.sel.delete(it.id); updateSelBar(); } }) : null,
             h("button", { class: "star" + (it.favorite ? " on" : ""), title: it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", "aria-label": it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", onclick: function () { toggleFav(it); }, text: it.favorite ? "★" : "☆" }),
             h("button", { class: "item-name", onclick: function () { openItem(it); }, text: it.name || "(sans nom)" }),
-            it.description ? h("span", { class: "desc", text: "(" + it.description + ")" }) : null),
+            it.description ? h("span", { class: "desc", text: it.description }) : null),
           h("div", { class: "meta c-meta", text: meta.join(" · ") })),
         qtyCell(it, unit),
         h("div", { class: "c-status" }, chipFor(it))));
@@ -2393,7 +2445,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
           it.photo ? h("img", { class: "thumb", src: it.photo, alt: "", loading: "lazy", onclick: function () { openItem(it); } }) : null,
           h("div", null,
             h("div", { class: "fav-name", text: it.name }),
-            it.description ? h("div", { class: "desc", text: "(" + it.description + ")" }) : null)),
+            it.description ? h("div", { class: "desc", text: it.description }) : null)),
         h("div", { class: "fav-qty" },
           h("span", { class: "fav-num " + qtyClass(it.qty), text: fmt(it.qty) }),
           chipFor(it),
@@ -3839,9 +3891,9 @@ details.prd > summary::-webkit-details-marker { display:none; }
   $("loginPw").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
   $("loginEmail").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
   $("logoutBtn").addEventListener("click", function () { if (sb) sb.auth.signOut(); });
-  var THEMES = ["blanc", "gris", "rose", "mauve", "sombre"];
+  var THEMES = ["frais", "blanc", "gris", "rose", "mauve", "sombre"];
   function applyTheme(t) {
-    if (THEMES.indexOf(t) === -1) t = "blanc";
+    if (THEMES.indexOf(t) === -1) t = "frais";
     document.documentElement.setAttribute("data-theme", t);
     document.querySelectorAll(".sw").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-theme") === t ? "true" : "false"); });
     try { localStorage.setItem("simsim_theme", t); } catch (e) {}
@@ -3852,6 +3904,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
       if (uid !== sessionUser) return;
       if (res.error) { prefsOk = false; return; }
       prefsOk = true;
+      if (window.__styleMigrated) { window.__styleMigrated = false; applyTheme("frais"); saveThemePref("frais"); return; }
       if (res.data && THEMES.indexOf(res.data.theme) !== -1) applyTheme(res.data.theme);
     }).catch(function () { prefsOk = false; });
   }
@@ -3868,7 +3921,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
       applyTheme(t); saveThemePref(t);
     });
   });
-  (function () { var t = "blanc"; try { t = localStorage.getItem("simsim_theme") || "blanc"; } catch (e) {} applyTheme(t); })();
+  (function () { var t = "frais"; try { t = localStorage.getItem("simsim_theme") || "frais"; } catch (e) {} applyTheme(t); })();
   try { var ts = localStorage.getItem("simsim_tilesort"); if (ts) state.tileSort = ts; } catch (e) {}
   try { state.hideCat = localStorage.getItem("simsim_hidecat") === "1"; state.hideDup = localStorage.getItem("simsim_hidedup") === "1"; } catch (e) {}
   function closeMenu() { $("moreMenu").classList.add("hidden"); $("moreBtn").setAttribute("aria-expanded", "false"); }
