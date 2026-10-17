@@ -515,7 +515,7 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v38</div>
+            <div class="menu-who"><span id="who"></span> · v39</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -4049,6 +4049,7 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
     $("switchBtn").classList.toggle("hidden", cabinets.length < 2);
     var role = roles[c.id] || "member";
     readOnly = role === "viewer"; isAdmin = role === "admin";
+    $("who").textContent = myEmail + " · " + ({ admin: "Administrateur", member: "Membre", viewer: "Lecture seule" }[role] || role);
     $("teamBtn").classList.toggle("hidden", !isAdmin);
     document.querySelector('.tab[data-tab="utilisateurs"]').classList.toggle("hidden", !isAdmin);
     usersData.members = null; usersData.msg = ""; usersData.mail = null;
