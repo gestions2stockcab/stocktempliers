@@ -328,6 +328,16 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
 .fccard ul { margin:6px 0 0; padding-left:18px; font-size:13px; color:var(--muted); }
 .fcsum { background:var(--brand); color:var(--brand-ink); border-radius:12px; padding:12px 14px; margin:10px 0; }
 .dnote { color:var(--muted); font-size:13px; margin-top:6px; }
+.ucard { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:12px 0; }
+.ucard h3 { font-size:16px; margin:0 0 8px; }
+.uform { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto; gap:8px; align-items:center; }
+.uform input, .uform select, .urow select { padding:8px 10px; border:1px solid var(--line); border-radius:9px; background:var(--bg); color:var(--ink); font:inherit; font-size:14.5px; min-width:0; }
+@media (max-width: 760px) { .uform { grid-template-columns:1fr; } }
+.umsg { margin:10px 0 4px; padding:8px 10px; border-radius:9px; background:var(--ok-bg); color:var(--ok); font-size:14px; }
+.umsg.bad { background:var(--bad-bg); color:var(--bad); }
+.urow { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) auto; gap:6px 10px; align-items:center; padding:9px 0; border-top:1px solid var(--line); }
+.urow .uact { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+@media (max-width: 760px) { .urow { grid-template-columns:1fr; } .urow .uact { justify-content:flex-start; } }
 .up { color:var(--bad); font-weight:600; } .down { color:var(--ok); font-weight:600; }
 .prctl { display:flex; flex-wrap:wrap; gap:8px 12px; margin:0 0 10px; }
 .prctl label { display:flex; flex-direction:column; gap:2px; font-size:12.5px; color:var(--muted); font-weight:600; }
@@ -407,6 +417,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
     <div class="login-ok" id="loginOk" role="status"></div>
     <button class="btn primary" id="loginBtn">Se connecter</button>
     <button class="linkbtn" id="loginAlt">Mot de passe oublié ?</button>
+    <button class="linkbtn" id="loginMagic">Première connexion ? Recevoir un lien par e-mail</button>
     <div class="sub">Accès réservé à l'équipe. Pour obtenir un compte, contactez la personne qui gère l'outil.</div>
   </div>
 </div>
@@ -452,7 +463,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v36</div>
+            <div class="menu-who"><span id="who"></span> · v37</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -460,7 +471,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
             <button class="mi" id="dupBtn">Doublons possibles</button>
             <button class="mi" id="bkBtn">Sauvegardes</button>
             <button class="mi" id="pwBtn">Changer mon mot de passe</button>
-            <button class="mi hidden" id="teamBtn">Gérer l'équipe</button>
+            <button class="mi hidden" id="teamBtn">Utilisateurs et invitations</button>
             <button class="mi hidden" id="switchBtn">Changer de cabinet</button>
             <button class="mi" id="logoutBtn">Se déconnecter</button>
           </div>
@@ -477,6 +488,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
     <button class="tab" role="tab" data-tab="comptage" aria-selected="false"><span class="ti">🔢</span><span class="tl">Comptage</span></button>
     <button class="tab" role="tab" data-tab="historique" aria-selected="false"><span class="ti">🕘</span><span class="tl">Historique</span></button>
     <button class="tab" role="tab" data-tab="donnees" aria-selected="false"><span class="ti">📊</span><span class="tl">Données</span></button>
+    <button class="tab hidden" role="tab" data-tab="utilisateurs" aria-selected="false"><span class="ti">👥</span><span class="tl">Utilisateurs</span></button>
     <button class="tab tab-trash" role="tab" data-tab="corbeille" aria-selected="false" title="Articles supprimés"><span class="ti">🗑</span><span class="tl">Corbeille<span id="trashCount"></span></span></button>
   </nav>
   <div class="sb-backdrop" id="sbBackdrop"></div>
@@ -615,29 +627,6 @@ details.prd > summary::-webkit-details-marker { display:none; }
   </div>
 </dialog>
 
-<dialog id="teamDlg" class="wide">
-  <div class="dlg">
-    <h2 id="teamTitle">Équipe</h2>
-    <div class="sub">Administrateur : gère l'équipe et le stock. Membre : modifie le stock. Lecture seule : consulte sans rien modifier.</div>
-    <div id="teamList" class="pdfscroll"></div>
-    <div class="grid">
-      <label class="f">Ajouter une personne (adresse e-mail de son compte)
-        <input id="teamEmail" type="email" autocomplete="off" inputmode="email">
-      </label>
-      <label class="f">Rôle
-        <select id="teamRole" class="cin left">
-          <option value="member">Membre (modifie le stock)</option>
-          <option value="viewer">Lecture seule</option>
-          <option value="admin">Administrateur</option>
-        </select>
-      </label>
-    </div>
-    <button class="btn primary" id="teamAdd">Ajouter à ce cabinet</button>
-    <div class="login-err" id="teamErr" role="alert"></div>
-    <div class="sub">Le compte doit d'abord exister : créez-le dans Supabase (Authentication, puis Users, puis Add user), puis ajoutez-le ici.</div>
-    <div class="dlg-actions"><button class="btn" id="teamClose">Fermer</button></div>
-  </div>
-</dialog>
 
 <dialog id="scanDlg">
   <div class="dlg">
@@ -771,7 +760,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
   var barcodeOk = false, descOk = false, trackedOk = false, subOk = false, favOk = false, lotsOk = false, lotsByItem = {}, ordOk = false, photoOk = false, jrnOk = false, consoOk = false, jrnByNumber = {}, conso = {}, consoDebut = 0, consoAt = 0;
-  var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false;
+  var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
   var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, collapsed: {}, tileSort: "usuel", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
@@ -2140,6 +2129,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
     $("exportBtn").disabled = !items.size;
     $("bar").classList.toggle("hidden", state.tab !== "inventaire");
     if (state.tab === "inventaire") renderInventory(box);
+    else if (state.tab === "utilisateurs") renderUsers(box);
     else if (state.tab === "donnees") renderData(box);
     else if (state.tab === "corbeille") renderTrash(box);
     else if (state.tab === "favoris") renderFavorites(box);
@@ -3434,6 +3424,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
       state.tab = target;
       state.filter = "all";
       syncTabs(); render();
+      if (target === "utilisateurs") loadUsers();
     });
   });
   $("search").addEventListener("input", function (e) { state.q = e.target.value; render(); });
@@ -3591,6 +3582,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
   }
   function doLogin() {
     if (loginMode === "forgot") { doForgot(); return; }
+    if (loginMode === "magic") { doMagic(); return; }
     var email = $("loginEmail").value.trim(), pw = $("loginPw").value;
     if (!email || !pw) { $("loginErr").textContent = "Saisissez votre e-mail et votre mot de passe."; return; }
     $("loginBtn").disabled = true; $("loginErr").textContent = "";
@@ -3607,13 +3599,16 @@ details.prd > summary::-webkit-details-marker { display:none; }
   function setLoginMode(m) {
     loginMode = m;
     $("loginErr").textContent = ""; $("loginOk").textContent = "";
-    var forgot = m === "forgot";
-    $("pwLabel").classList.toggle("hidden", forgot);
-    $("loginBtn").textContent = forgot ? "Envoyer le lien" : "Se connecter";
-    $("loginAlt").textContent = forgot ? "Retour à la connexion" : "Mot de passe oublié ?";
-    $("loginHint").textContent = forgot
+    var alt = m === "forgot" || m === "magic";
+    $("pwLabel").classList.toggle("hidden", alt);
+    $("loginMagic").classList.toggle("hidden", alt);
+    $("loginBtn").textContent = alt ? "Envoyer le lien" : "Se connecter";
+    $("loginAlt").textContent = alt ? "Retour à la connexion" : "Mot de passe oublié ?";
+    $("loginHint").textContent = m === "forgot"
       ? "Saisissez votre adresse e-mail : vous recevrez un lien pour choisir un nouveau mot de passe."
-      : "Connectez-vous avec votre e-mail et votre mot de passe.";
+      : m === "magic"
+        ? "Saisissez l'adresse e-mail à laquelle on vous a invité(e) : vous recevrez un lien qui vous connecte directement."
+        : "Connectez-vous avec votre e-mail et votre mot de passe.";
   }
   function doForgot() {
     var email = $("loginEmail").value.trim();
@@ -3629,6 +3624,26 @@ details.prd > summary::-webkit-details-marker { display:none; }
         return;
       }
       $("loginOk").textContent = "Si cette adresse a un compte, un lien vient d'être envoyé. Regardez aussi dans les courriers indésirables.";
+    }, function () {
+      $("loginBtn").disabled = false;
+      $("loginErr").textContent = "Connexion impossible. Vérifiez votre accès à internet.";
+    });
+  }
+  function doMagic() {
+    var email = $("loginEmail").value.trim().toLowerCase();
+    if (!email) { $("loginErr").textContent = "Saisissez votre adresse e-mail."; return; }
+    $("loginBtn").disabled = true; $("loginErr").textContent = ""; $("loginOk").textContent = "";
+    sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.origin + location.pathname, shouldCreateUser: true } }).then(function (res) {
+      $("loginBtn").disabled = false;
+      if (res.error) {
+        var m = res.error.message || "";
+        $("loginErr").textContent = /not authorized|rate limit|too many|smtp|limit|seconds/i.test(m)
+          ? "L'envoi d'e-mails n'est pas encore activé, ou la limite est atteinte. Réessayez dans quelques minutes, ou demandez à l'administrateur de votre cabinet."
+          : /signups? not allowed|disabled/i.test(m) ? "Les inscriptions ne sont pas ouvertes : demandez à l'administrateur de votre cabinet de vous inviter."
+          : "Le lien n'a pas pu être envoyé. Réessayez dans quelques minutes.";
+        return;
+      }
+      $("loginOk").textContent = "Un lien de connexion vient d'être envoyé à cette adresse. Regardez aussi dans les courriers indésirables.";
     }, function () {
       $("loginBtn").disabled = false;
       $("loginErr").textContent = "Connexion impossible. Vérifiez votre accès à internet.";
@@ -3686,51 +3701,138 @@ details.prd > summary::-webkit-details-marker { display:none; }
     if (/invalid_role/.test(m)) return "Rôle non valide.";
     return "Opération impossible : " + m;
   }
-  function openTeam() {
-    $("teamTitle").textContent = "Équipe : " + cabinetName;
-    $("teamErr").textContent = ""; $("teamEmail").value = "";
-    $("teamDlg").showModal();
-    loadTeam();
+  // ---------- utilisateurs et invitations ----------
+  var usersData = { members: null, invites: [], invOk: true, err: "", msg: "", bad: false, mail: null };
+  function siteUrl() { return location.origin + location.pathname; }
+  function setUsersMsg(t, bad) { usersData.msg = t; usersData.bad = !!bad; if (state.tab === "utilisateurs") render(); }
+  function loadUsers() {
+    if (!db || !isAdmin) return;
+    var cid = cabinetId;
+    Promise.all([
+      sb.rpc("team_list", { c: cid }),
+      sb.from("invitations").select("*").eq("cabinet_id", cid).is("accepted_at", null).order("created_at", { ascending: false })
+    ]).then(function (rs) {
+      if (cid !== cabinetId) return;
+      usersData.err = rs[0].error ? teamMsg(rs[0].error) : "";
+      usersData.members = rs[0].data || [];
+      usersData.invOk = !rs[1].error;
+      usersData.invites = rs[1].error ? [] : (rs[1].data || []);
+      if (state.tab === "utilisateurs") render();
+    }).catch(function () { usersData.err = "Les utilisateurs n'ont pas pu être chargés."; if (state.tab === "utilisateurs") render(); });
   }
-  function loadTeam() {
-    sb.rpc("team_list", { c: cabinetId }).then(function (res) {
-      if (res.error) { $("teamErr").textContent = teamMsg(res.error); return; }
-      renderTeam(res.data || []);
-    });
+  function mailtoInvite(email, role) {
+    var subject = "Invitation à SimSimStock : " + cabinetName;
+    var body = "Bonjour,\n\nvous êtes invité(e) à rejoindre SimSimStock, l'outil de gestion de stock du cabinet « " + cabinetName + " », avec le rôle : " + (ROLE_LABEL[role] || role) + ".\n\n" +
+      "1. Ouvrez " + siteUrl() + "\n2. Cliquez sur « Première connexion ? Recevoir un lien par e-mail » et saisissez cette adresse : " + email +
+      "\n3. Cliquez sur le lien que vous recevez, puis choisissez votre mot de passe.\n\nÀ bientôt.";
+    return "mailto:" + email + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
   }
-  function renderTeam(rows) {
-    var box = $("teamList"); box.textContent = "";
-    rows.forEach(function (m) {
-      var me = m.user_id === sessionUser;
-      var sel = h("select", { class: "cin left", "aria-label": "Rôle de " + m.email, disabled: me });
-      ["admin", "member", "viewer"].forEach(function (r) {
-        var o = h("option", { value: r, text: ROLE_LABEL[r] });
-        if (r === m.role) o.selected = true;
-        sel.append(o);
+  // Envoie l'e-mail d'invitation par le service d'authentification ; renvoie "" si tout va bien, sinon la raison.
+  function sendInviteMail(email) {
+    return sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: siteUrl(), shouldCreateUser: true } }).then(function (res) {
+      if (!res.error) return "";
+      var m = res.error.message || "";
+      if (/signups? not allowed|disabled/i.test(m)) return "les inscriptions sont désactivées dans Supabase (voir le guide de configuration).";
+      if (/rate limit|too many|seconds|limit/i.test(m)) return "limite d'envoi atteinte : réessayez dans un moment, ou configurez l'envoi d'e-mails dans Supabase.";
+      if (/smtp|not authorized|sending|confirmation email/i.test(m)) return "l'envoi d'e-mails n'est pas configuré dans Supabase (voir le guide de configuration).";
+      return m || "erreur inconnue.";
+    }, function () { return "connexion impossible."; });
+  }
+  function saveInvitation(email, role) {
+    var ex = usersData.invites.find(function (i) { return i.email === email; }), now = new Date().toISOString();
+    if (ex) return sb.from("invitations").update({ role: role, last_sent_at: now }).eq("id", ex.id).then(check);
+    return sb.from("invitations").insert({ cabinet_id: cabinetId, email: email, role: role, invited_by: myEmail }).then(check);
+  }
+  function inviteUser(raw, role) {
+    var email = String(raw || "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setUsersMsg("Cette adresse e-mail n'est pas valide.", true); return; }
+    if (!usersData.invOk) { setUsersMsg("Lancez d'abord le script SQL « ajout-invitations » dans Supabase.", true); return; }
+    usersData.mail = null; setUsersMsg("Envoi en cours…", false);
+    sb.rpc("team_add", { c: cabinetId, p_email: email, p_role: role }).then(function (res) {
+      if (res.error) { setUsersMsg(teamMsg(res.error), true); return null; }
+      if (res.data === "ok") {
+        usersData.mail = { email: email, role: role };
+        setUsersMsg(email + " a déjà un compte : la personne est ajoutée à ce cabinet et le verra à sa prochaine connexion. Vous pouvez la prévenir par e-mail.", false);
+        loadUsers();
+        return null;
+      }
+      return saveInvitation(email, role).then(function () { return sendInviteMail(email); }).then(function (err) {
+        usersData.mail = { email: email, role: role };
+        setUsersMsg(err ? "L'invitation est enregistrée, mais l'e-mail n'a pas pu partir : " + err + " Vous pouvez écrire l'e-mail vous-même." : "Invitation envoyée à " + email + ". Il suffit de cliquer sur le lien reçu.", !!err);
+        loadUsers();
       });
+    }).catch(function (e) { setUsersMsg("Opération impossible : " + ((e && e.message) || "erreur"), true); });
+  }
+  function renderUsers(box) {
+    if (!isAdmin) { box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Réservé aux administrateurs" })))); return; }
+    var u = usersData;
+    box.append(h("div", { class: "dsec" }, h("h3", { text: "Utilisateurs de « " + cabinetName + " »" }),
+      h("div", { class: "sub", text: "Administrateur : gère les utilisateurs et le stock. Membre : modifie le stock. Lecture seule : consulte sans rien modifier." })));
+    var email = h("input", { type: "email", placeholder: "adresse e-mail de la personne", autocomplete: "off", inputmode: "email", "aria-label": "Adresse e-mail à inviter" });
+    var role = h("select", { "aria-label": "Rôle de la personne invitée" });
+    ["member", "viewer", "admin"].forEach(function (r) { role.append(h("option", { value: r, text: ROLE_LABEL[r] })); });
+    var go = h("button", { class: "btn primary", type: "button", onclick: function () { inviteUser(email.value, role.value); }, text: "Envoyer l'invitation par e-mail" });
+    email.addEventListener("keydown", function (e) { if (e.key === "Enter") go.click(); });
+    var card = h("div", { class: "ucard" }, h("h3", { text: "Inviter une personne" }), h("div", { class: "uform" }, email, role, go));
+    if (u.msg) card.append(h("div", { class: "umsg" + (u.bad ? " bad" : ""), role: "status", text: u.msg }));
+    if (u.mail) card.append(h("a", { class: "btn sm", style: "margin-top:6px;display:inline-block", href: mailtoInvite(u.mail.email, u.mail.role), text: "Écrire l'e-mail moi-même" }));
+    card.append(h("div", { class: "dnote", text: "La personne reçoit un lien : un clic, et elle accède à ce cabinet. Si elle a déjà un compte, elle est ajoutée tout de suite." }));
+    box.append(card);
+    // personnes qui ont accès
+    var mem = h("div", { class: "ucard" }, h("h3", { text: "Personnes ayant accès" + (u.members ? " (" + u.members.length + ")" : "") }));
+    if (u.err) mem.append(h("div", { class: "umsg bad", text: u.err }));
+    if (u.members === null && !u.err) mem.append(h("div", { class: "sub", text: "Chargement…" }));
+    (u.members || []).forEach(function (m) {
+      var me = m.user_id === sessionUser;
+      var sel = h("select", { "aria-label": "Rôle de " + m.email, disabled: me });
+      ["admin", "member", "viewer"].forEach(function (r) { var o = h("option", { value: r, text: ROLE_LABEL[r] }); if (r === m.role) o.selected = true; sel.append(o); });
       sel.addEventListener("change", function () {
         sb.rpc("team_set_role", { c: cabinetId, p_user: m.user_id, p_role: sel.value }).then(function (res) {
-          if (res.error) $("teamErr").textContent = teamMsg(res.error);
-          else { $("teamErr").textContent = ""; toast("Rôle modifié."); }
-          loadTeam();
+          if (res.error) setUsersMsg(teamMsg(res.error), true); else { toast("Rôle modifié."); }
+          loadUsers();
         });
       });
-      var rm = h("button", { class: "btn sm danger", text: "Retirer" });
-      var armed = false;
+      var rm = h("button", { class: "btn sm danger", type: "button", text: "Retirer" }), armed = false;
       rm.addEventListener("click", function () {
         if (!armed) { armed = true; rm.textContent = "Confirmer"; return; }
         sb.rpc("team_remove", { c: cabinetId, p_user: m.user_id }).then(function (res) {
-          if (res.error) $("teamErr").textContent = teamMsg(res.error);
-          else { $("teamErr").textContent = ""; toast("Personne retirée de ce cabinet."); }
-          loadTeam();
+          if (res.error) setUsersMsg(teamMsg(res.error), true); else toast("Personne retirée de ce cabinet.");
+          loadUsers();
         });
       });
-      box.append(h("div", { class: "teamrow" },
-        h("div", { class: "item-name", text: m.email + (me ? " (vous)" : "") }),
+      var seen = ("last_sign_in" in m) ? (m.last_sign_in ? "connecté le " + frDate(m.last_sign_in) : "pas encore connecté") : "";
+      mem.append(h("div", { class: "urow" },
+        h("div", null, h("div", { class: "item-name", text: m.email + (me ? " (vous)" : "") }), seen ? h("div", { class: "meta", text: seen }) : null),
         sel,
-        me ? h("span") : h("button", { class: "btn sm", onclick: function () { openPw(m); }, text: "Mot de passe" }),
-        me ? h("span") : rm));
+        me ? h("span") : h("div", { class: "uact" }, h("button", { class: "btn sm", type: "button", onclick: function () { openPw(m); }, text: "Mot de passe" }), rm)));
     });
+    box.append(mem);
+    // invitations en attente
+    if (u.invOk === false) {
+      box.append(h("div", { class: "ucard" }, h("h3", { text: "Invitations" }), h("div", { class: "umsg bad", text: "Lancez le script SQL « ajout-invitations » dans Supabase pour activer les invitations par e-mail." })));
+    } else if (u.invites.length) {
+      var pend = h("div", { class: "ucard" }, h("h3", { text: "Invitations en attente (" + u.invites.length + ")" }));
+      u.invites.forEach(function (inv) {
+        var cancel = h("button", { class: "btn sm danger", type: "button", text: "Annuler" }), armed = false;
+        cancel.addEventListener("click", function () {
+          if (!armed) { armed = true; cancel.textContent = "Confirmer"; return; }
+          sb.from("invitations").delete().eq("id", inv.id).then(function (res) { if (res.error) setUsersMsg("L'invitation n'a pas pu être annulée.", true); else toast("Invitation annulée."); loadUsers(); });
+        });
+        pend.append(h("div", { class: "urow" },
+          h("div", null, h("div", { class: "item-name", text: inv.email }), h("div", { class: "meta", text: "envoyée le " + frDate(inv.last_sent_at || inv.created_at) + " · en attente de connexion" })),
+          h("div", { class: "meta", text: ROLE_LABEL[inv.role] || inv.role }),
+          h("div", { class: "uact" },
+            h("button", { class: "btn sm", type: "button", onclick: function () {
+              usersData.mail = { email: inv.email, role: inv.role }; setUsersMsg("Envoi en cours…", false);
+              sendInviteMail(inv.email).then(function (err) {
+                if (!err) sb.from("invitations").update({ last_sent_at: new Date().toISOString() }).eq("id", inv.id).then(function () { loadUsers(); });
+                setUsersMsg(err ? "L'e-mail n'a pas pu partir : " + err : "Invitation renvoyée à " + inv.email + ".", !!err);
+              });
+            }, text: "Renvoyer" }),
+            h("a", { class: "btn sm", href: mailtoInvite(inv.email, inv.role), text: "Écrire l'e-mail" }), cancel)));
+      });
+      box.append(pend);
+    }
   }
 
   $("loginBtn").addEventListener("click", doLogin);
@@ -3895,8 +3997,11 @@ details.prd > summary::-webkit-details-marker { display:none; }
     var role = roles[c.id] || "member";
     readOnly = role === "viewer"; isAdmin = role === "admin";
     $("teamBtn").classList.toggle("hidden", !isAdmin);
+    document.querySelector('.tab[data-tab="utilisateurs"]').classList.toggle("hidden", !isAdmin);
+    usersData.members = null; usersData.msg = ""; usersData.mail = null;
     state.tab = "inventaire"; state.filter = "all"; state.cat = ""; state.q = ""; $("search").value = "";
     syncTabs(); showScreen("app"); startData(); render();
+    if (welcomePw) { welcomePw = false; toast("Bienvenue ! Choisissez un mot de passe pour vous reconnecter facilement."); openPw(null); }
   }
   function loadCabinets() {
     return sb.from("cabinets").select("id,name").order("name").then(function (res) {
@@ -3921,7 +4026,8 @@ details.prd > summary::-webkit-details-marker { display:none; }
       db = sb;
       $("who").textContent = myEmail;
       showPick(false, true);
-      loadCabinets();
+      var goCab = function () { loadCabinets(); };
+      sb.rpc("accept_invitations").then(function (res) { if (res && !res.error && Number(res.data) > 0) welcomePw = true; goCab(); }, goCab);
       loadPrefs();
     } else {
       sessionUser = null; db = null; myEmail = "";
@@ -3934,29 +4040,15 @@ details.prd > summary::-webkit-details-marker { display:none; }
   }
   $("switchBtn").addEventListener("click", function () { stopData(); cabinetId = null; showPick(false); });
   $("pickLogout").addEventListener("click", function () { if (sb) sb.auth.signOut(); });
-  $("loginAlt").addEventListener("click", function () { setLoginMode(loginMode === "forgot" ? "in" : "forgot"); });
+  $("loginAlt").addEventListener("click", function () { setLoginMode(loginMode === "in" ? "forgot" : "in"); });
+  $("loginMagic").addEventListener("click", function () { setLoginMode("magic"); });
   $("recBtn").addEventListener("click", doRecover);
   $("rec2").addEventListener("keydown", function (e) { if (e.key === "Enter") doRecover(); });
   $("pwBtn").addEventListener("click", function () { openPw(null); });
   $("pwCancel").addEventListener("click", function () { $("pwDlg").close(); });
   $("pwSave").addEventListener("click", savePw);
   $("pw2").addEventListener("keydown", function (e) { if (e.key === "Enter") savePw(); });
-  $("teamBtn").addEventListener("click", openTeam);
-  $("teamClose").addEventListener("click", function () { $("teamDlg").close(); });
-  $("teamAdd").addEventListener("click", function () {
-    var email = $("teamEmail").value.trim();
-    if (!email) { $("teamErr").textContent = "Saisissez l'adresse e-mail de la personne."; return; }
-    sb.rpc("team_add", { c: cabinetId, p_email: email, p_role: $("teamRole").value }).then(function (res) {
-      if (res.error) { $("teamErr").textContent = teamMsg(res.error); return; }
-      if (res.data === "no_account") {
-        $("teamErr").textContent = "Cette adresse n'a pas encore de compte. Créez-la dans Supabase (Authentication, puis Users, puis Add user), puis ajoutez-la ici.";
-        return;
-      }
-      $("teamEmail").value = ""; $("teamErr").textContent = "";
-      toast("Personne ajoutée à ce cabinet.");
-      loadTeam();
-    });
-  });
+  $("teamBtn").addEventListener("click", function () { state.tab = "utilisateurs"; state.filter = "all"; syncTabs(); render(); loadUsers(); });
 
   // ---------- démarrage ----------
   if (window.pdfjsLib) window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -3978,7 +4070,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
     if (em) {
       var txt = decodeURIComponent(em[1].replace(/\+/g, " "));
       $("loginErr").textContent = /expired|invalid/i.test(txt)
-        ? "Ce lien a expiré ou n'est plus valide. Demandez-en un nouveau avec « Mot de passe oublié »."
+        ? "Ce lien a expiré ou n'est plus valide. Demandez-en un nouveau avec « Mot de passe oublié » ou « Première connexion »."
         : "Le lien n'a pas pu être utilisé : " + txt;
       try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
     }
