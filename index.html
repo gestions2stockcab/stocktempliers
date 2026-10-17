@@ -279,6 +279,30 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 .oline .obody { flex:1 1 220px; min-width:0; }
 .oline .late { color:var(--warn); font-weight:600; }
 .tab-trash { margin-left:auto; }
+.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; }
+.kpi { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+.kpi b { display:block; font-size:22px; }
+.kpi span { color:var(--muted); font-size:13px; }
+.dsec { margin:20px 0 0; }
+.dsec h3 { font-size:16px; margin:0 0 8px; }
+.dsec .sub { margin:0 0 8px; }
+.dbars { display:flex; gap:6px; align-items:flex-end; height:170px; padding-top:6px; }
+.dcol { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:3px; min-width:0; height:100%; }
+.dcol small { color:var(--muted); font-size:11px; white-space:nowrap; }
+.dbar { width:100%; max-width:40px; background:var(--brand); border-radius:5px 5px 0 0; min-height:2px; }
+.dbar.fc { background:transparent; border:2px dashed var(--brand); border-bottom:0; }
+.drow { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,2fr) 96px; gap:8px; align-items:center; font-size:13.5px; padding:3px 0; }
+.drow .dname { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dtrack { background:var(--surface-2); border-radius:5px; height:10px; overflow:hidden; }
+.dtrack i { display:block; height:100%; background:var(--brand); }
+.fcgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:10px; }
+.fccard { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px; }
+.fccard h4 { margin:0 0 4px; font-size:14.5px; }
+.fccard .big { font-size:24px; font-weight:700; }
+.fccard ul { margin:6px 0 0; padding-left:18px; font-size:13px; color:var(--muted); }
+.fcsum { background:var(--brand); color:var(--brand-ink); border-radius:12px; padding:12px 14px; margin:10px 0; }
+.dnote { color:var(--muted); font-size:13px; margin-top:6px; }
+.up { color:var(--bad); font-weight:600; } .down { color:var(--ok); font-weight:600; }
 .btn.toggle[aria-pressed="true"] { background:var(--brand); color:var(--brand-ink); border-color:var(--brand); }
 .selbar { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(14px + env(safe-area-inset-bottom,0px)); background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:0 6px 24px rgba(0,0,0,.2); padding:10px 14px; display:flex; gap:10px; align-items:center; z-index:30; flex-wrap:wrap; max-width:calc(100vw - 24px); }
 .selbox { width:18px; height:18px; margin:0 8px 0 0; accent-color:var(--brand); flex:none; }
@@ -392,7 +416,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v33</div>
+            <div class="menu-who"><span id="who"></span> · v34</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -413,6 +437,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       <button class="tab" role="tab" data-tab="commande" aria-selected="false">À commander</button>
       <button class="tab" role="tab" data-tab="comptage" aria-selected="false">Comptage</button>
       <button class="tab" role="tab" data-tab="historique" aria-selected="false">Historique</button>
+      <button class="tab" role="tab" data-tab="donnees" aria-selected="false">Données</button>
       <button class="tab tab-trash" role="tab" data-tab="corbeille" aria-selected="false" title="Articles supprimés">🗑 Corbeille<span id="trashCount"></span></button>
     </div>
   </header>
@@ -592,6 +617,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     <div id="pdfTable" class="pdfscroll"></div>
     <div class="dlg-actions">
       <button class="btn" id="pdfCancel">Annuler</button>
+      <button class="btn" id="pdfSpend" title="Garde la dépense sans toucher au stock">Enregistrer seulement la dépense</button>
       <button class="btn primary" id="pdfOk">Importer</button>
     </div>
   </div>
@@ -701,7 +727,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var logEntries = [];
   var logIds = new Set();
   var channels = [];
-  var trash = new Map(), arcOk = false, dupCache = null, undoStack = [];
+  var trash = new Map(), arcOk = false, dupCache = null, undoStack = [], achOk = false, achLines = [], achAt = 0;
   var docCounts = {};
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
@@ -776,6 +802,20 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       barcode: r.barcode || "", description: r.description || "", tracked: r.tracked !== false || (Number(r.qty) || 0) > 0 || (Number(r.min) || 0) > 0, subcategory: r.subcategory || "", favorite: r.favorite === true, archived: r.archived === true,
       ordered_qty: Number(r.ordered_qty) || 0, ordered_at: r.ordered_at || "", photo: r.photo || ""
     };
+  }
+  // Lit toutes les lignes par pages de 1000 (limite de l'API), dans un ordre stable.
+  function fetchAll(make) {
+    var out = [];
+    function page(from) {
+      return make().range(from, from + 999).then(function (res) {
+        if (res.error) return res;
+        var d = res.data || [];
+        out = out.concat(d);
+        if (d.length < 1000 || out.length >= 30000) return { data: out, error: null };
+        return page(from + 1000);
+      });
+    }
+    return page(0);
   }
   function toRow(d) {
     var row = {
@@ -1108,6 +1148,196 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         return appendLog({ type: "delete", itemId: "", item: "Corbeille", delta: 0, qty: 0, note: list.length + " article" + (list.length > 1 ? "s" : "") + " supprimé" + (list.length > 1 ? "s" : "") + " définitivement" });
       });
     });
+  }
+  // ---------- données et prévisions ----------
+  function mean(a) { return a.length ? a.reduce(function (x, y) { return x + y; }, 0) / a.length : 0; }
+  function stdev(a) { if (a.length < 2) return 0; var m = mean(a); return Math.sqrt(a.reduce(function (x, y) { return x + (y - m) * (y - m); }, 0) / (a.length - 1)); }
+  function monthsBack(n) {
+    var out = [], b = new Date();
+    for (var i = n - 1; i >= 0; i--) { var m = new Date(b.getFullYear(), b.getMonth() - i, 1); out.push(m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0")); }
+    return out;
+  }
+  function monthLabel(k) { var p = k.split("-"); var d = new Date(Number(p[0]), Number(p[1]) - 1, 1); return d.toLocaleDateString("fr-FR", { month: "short" }) + (p[1] === "01" ? " " + p[0].slice(2) : ""); }
+  // Lignes d'achat comptées : un avoir d'annulation (« A REFAIRE ») et la facture qu'une refacturation remplace ne comptent pas ; un vrai avoir se déduit.
+  function spendRows() {
+    var docs = jrnByNumber, replaced = {}, out = [];
+    Object.keys(docs).forEach(function (n) { String(docs[n].remplace || "").split(",").forEach(function (x) { x = x.trim(); if (x) replaced[x] = true; }); });
+    achLines.forEach(function (l) {
+      var d = docs[l.doc_number] || {}, type = l.doc_type || d.doc_type || "facture";
+      if (replaced[l.doc_number]) return;
+      if (type === "avoir" && (d.annule_de || "")) return;
+      var date = String(l.doc_date || d.doc_date || (d.created_at || "").slice(0, 10) || "").slice(0, 10);
+      if (!date) return;
+      var sign = type === "avoir" ? -1 : 1;
+      out.push({ date: date, amount: sign * (Number(l.total_ht) || 0), supplier: l.supplier || d.supplier || "Sans fournisseur", category: l.category || "Sans domaine",
+        ref: l.ref || "", name: l.name, qty: sign * (Number(l.qty) || 0), price: Number(l.unit_price) || 0, doc: l.doc_number });
+    });
+    return out;
+  }
+  function lastPriceMap(rows) {
+    var map = {}, seen = {};
+    rows.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (r) { if (r.ref && r.price > 0 && r.qty > 0) { map[r.ref] = r.price; seen[r.ref] = r.date; } });
+    return map;
+  }
+  function priceOf(it, pm) { return (it.ref && pm[it.ref]) || Number(it.price) || 0; }
+  function forecastFromInvoices(rows) {
+    var cur = monthsBack(1)[0], byM = {};
+    rows.forEach(function (r) { var k = r.date.slice(0, 7); byM[k] = (byM[k] || 0) + r.amount; });
+    var keys = Object.keys(byM).filter(function (k) { return k < cur; }).sort();
+    if (!keys.length) return null;
+    var all = monthsBack(13).filter(function (k) { return k >= keys[0] && k < cur; });
+    var vals = all.map(function (k) { return byM[k] || 0; });
+    var avg = mean(vals), sd = stdev(vals), n = all.length;
+    return { n: n, avg: avg, sd: sd, lo: Math.max(0, 3 * avg - sd * Math.sqrt(3)), hi: 3 * avg + sd * Math.sqrt(3), rel: n >= 12 ? "bonne" : n >= 6 ? "moyenne" : n >= 3 ? "faible" : "insuffisante" };
+  }
+  function forecastFromConsumption(pm) {
+    if (!consoOk) return null;
+    var w = consoWindow();
+    if (!w) return null;
+    var tot = 0, list = [], noPrice = 0;
+    items.forEach(function (it) {
+      var c = conso[it.id];
+      if (!c || !(c.out > 0)) return;
+      var price = priceOf(it, pm);
+      if (!(price > 0)) { noPrice++; return; }
+      var m = c.out / w * 30 * price; tot += m; list.push({ it: it, m: m });
+    });
+    list.sort(function (a, b) { return b.m - a.m; });
+    return { total: tot, top: list.slice(0, 6), noPrice: noPrice };
+  }
+  function forecastNextOrder(pm) {
+    var list = [], tot = 0, noPrice = 0;
+    items.forEach(function (it) {
+      if (it.tracked === false || it.ordered_qty > 0) return;
+      var dl = daysLeft(it), low = (Number(it.qty) || 0) <= (Number(it.min) || 0);
+      if (!(low || (dl !== null && dl < 30))) return;
+      var q = suggestedQty(it), price = priceOf(it, pm);
+      if (!(price > 0)) { noPrice++; return; }
+      list.push({ it: it, q: q, cost: q * price }); tot += q * price;
+    });
+    list.sort(function (a, b) { return b.cost - a.cost; });
+    return { total: tot, top: list.slice(0, 6), noPrice: noPrice, count: list.length };
+  }
+  function groupSum(rows, key) {
+    var m = {}; rows.forEach(function (r) { m[r[key]] = (m[r[key]] || 0) + r.amount; });
+    return Object.keys(m).map(function (k) { return { k: k, v: m[k] }; }).filter(function (x) { return x.v > 0; }).sort(function (a, b) { return b.v - a.v; });
+  }
+  function priceChanges(rows) {
+    var by = {};
+    rows.filter(function (r) { return r.ref && r.price > 0 && r.qty > 0; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (r) {
+      var a = by[r.ref] = by[r.ref] || []; var last = a[a.length - 1];
+      if (!last || Math.abs(last.price - r.price) > 0.004) a.push({ price: r.price, date: r.date, name: r.name }); else last.date = r.date;
+    });
+    var out = [];
+    Object.keys(by).forEach(function (ref) { var a = by[ref]; if (a.length < 2) return; var p0 = a[a.length - 2].price, p1 = a[a.length - 1].price; out.push({ name: a[a.length - 1].name, from: p0, to: p1, pct: (p1 - p0) / p0 * 100, date: a[a.length - 1].date }); });
+    return out;
+  }
+  function barList(rows, total) {
+    var wrap = h("div");
+    rows.slice(0, 8).forEach(function (r) {
+      wrap.append(h("div", { class: "drow" }, h("div", { class: "dname", title: r.k, text: r.k }), h("div", { class: "dtrack" }, h("i", { style: "width:" + Math.max(2, Math.round(r.v / total * 100)) + "%" })), h("div", { class: "num", text: money(r.v) })));
+    });
+    return wrap;
+  }
+  function renderData(box) {
+    if (!achOk) {
+      box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Données non activées" }), h("div", { text: "Lancez le script SQL « ajout-donnees-depenses » dans Supabase pour activer le suivi des dépenses." }))));
+      return;
+    }
+    var rows = spendRows();
+    if (!rows.length) {
+      box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Aucune dépense enregistrée" }),
+        h("div", { text: "Les dépenses viennent de vos factures : importez une facture PDF (Plus, puis « Importer un fichier ») et cliquez sur « Importer » ou sur « Enregistrer seulement la dépense ». Plus vous avez de factures, plus les prévisions sont fiables." }))));
+      return;
+    }
+    var now = new Date(), today = now.toISOString().slice(0, 10), pm = lastPriceMap(rows);
+    var d30 = new Date(now.getTime() - 30 * 86400000).toISOString().slice(0, 10), d365 = new Date(now.getTime() - 365 * 86400000).toISOString().slice(0, 10);
+    var curKey = monthsBack(1)[0];
+    var sum = function (f) { return rows.filter(f).reduce(function (a, r) { return a + r.amount; }, 0); };
+    var last30 = sum(function (r) { return r.date >= d30; }), thisMonth = sum(function (r) { return r.date.slice(0, 7) === curKey; }), year = sum(function (r) { return r.date >= d365; });
+    var first = rows.map(function (r) { return r.date; }).sort()[0];
+    var nDocs = Object.keys(rows.reduce(function (m, r) { m[r.doc] = 1; return m; }, {})).length;
+    var fa = forecastFromInvoices(rows);
+    box.append(h("div", { class: "dnote", text: "Calculé d'après " + nDocs + " facture" + (nDocs > 1 ? "s" : "") + " (montants HT) depuis le " + frDate(first) + ". Les avoirs d'annulation et les factures remplacées par une refacturation ne sont pas comptés." }));
+    var kp = h("div", { class: "kpis dsec" });
+    [["Dépenses des 30 derniers jours", money(last30)], ["Ce mois-ci", money(thisMonth)], ["12 derniers mois", money(year)], ["Moyenne par mois", fa ? money(fa.avg) : "—"]].forEach(function (k) {
+      kp.append(h("div", { class: "kpi" }, h("b", { text: k[1] }), h("span", { text: k[0] })));
+    });
+    box.append(kp);
+    // graphique : 12 mois et 3 mois de prévision
+    var byM = {}; rows.forEach(function (r) { var k = r.date.slice(0, 7); byM[k] = (byM[k] || 0) + r.amount; });
+    var past = monthsBack(12), next = []; for (var i = 1; i <= 3; i++) { var m = new Date(now.getFullYear(), now.getMonth() + i, 1); next.push(m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0")); }
+    var series = past.map(function (k) { return { k: k, v: Math.max(0, byM[k] || 0), fc: false }; }).concat(fa ? next.map(function (k) { return { k: k, v: fa.avg, fc: true }; }) : []);
+    var max = Math.max.apply(null, series.map(function (x) { return x.v; }).concat([1]));
+    var bars = h("div", { class: "dbars", role: "img", "aria-label": "Dépenses par mois et prévision" });
+    series.forEach(function (x) {
+      bars.append(h("div", { class: "dcol", title: monthLabel(x.k) + " : " + money(x.v) + (x.fc ? " (prévision)" : "") }, h("small", { text: x.v >= 1000 ? Math.round(x.v / 100) / 10 + " k" : (x.v ? String(Math.round(x.v)) : "") }),
+        h("div", { class: "dbar" + (x.fc ? " fc" : ""), style: "height:" + Math.max(2, Math.round(x.v / max * 120)) + "px" }), h("small", { text: monthLabel(x.k) })));
+    });
+    box.append(h("div", { class: "dsec" }, h("h3", { text: "Dépenses par mois (HT)" }), bars, h("div", { class: "dnote", text: fa ? "Les barres en pointillés sont la prévision (moyenne mensuelle)." : "" })));
+    // prévisions
+    var fb = forecastFromConsumption(pm), fc = forecastNextOrder(pm);
+    var cards = h("div", { class: "fcgrid" });
+    var c1 = h("div", { class: "fccard" }, h("h4", { text: "D'après vos factures" }));
+    if (fa) {
+      c1.append(h("div", { class: "big", text: money(fa.avg) + " / mois" }), h("div", { class: "sub", text: "3 prochains mois : environ " + money(fa.avg * 3) + ", entre " + money(fa.lo) + " et " + money(fa.hi) }),
+        h("div", { class: "dnote", text: "Moyenne de " + fa.n + " mois complet" + (fa.n > 1 ? "s" : "") + ". Fiabilité : " + fa.rel + (fa.n < 12 ? " (il faut un an d'historique pour tenir compte des saisons)" : "") + "." + (fa.sd > fa.avg ? " Vos achats sont très irréguliers : la fourchette est large." : "") }));
+    } else c1.append(h("div", { class: "sub", text: "Il faut au moins un mois complet de factures." }));
+    cards.append(c1);
+    var c2 = h("div", { class: "fccard" }, h("h4", { text: "D'après votre consommation" }));
+    if (fb) {
+      c2.append(h("div", { class: "big", text: money(fb.total) + " / mois" }), h("div", { class: "sub", text: "Coût de remplacer ce que vous sortez du stock, au rythme des 90 derniers jours (dernier prix HT payé)." }));
+      var ul = h("ul"); fb.top.forEach(function (x) { ul.append(h("li", { text: x.it.name + " : " + money(x.m) + " / mois" })); }); c2.append(ul);
+      if (fb.noPrice) c2.append(h("div", { class: "dnote", text: fb.noPrice + " produit" + (fb.noPrice > 1 ? "s" : "") + " sans prix ne sont pas comptés." }));
+    } else c2.append(h("div", { class: "sub", text: "Disponible après 14 jours d'utilisation, quand l'appli a vu assez de sorties de stock." }));
+    cards.append(c2);
+    var c3 = h("div", { class: "fccard" }, h("h4", { text: "Prochaine commande (30 jours)" }));
+    c3.append(h("div", { class: "big", text: money(fc.total) }), h("div", { class: "sub", text: fc.count + " produit" + (fc.count > 1 ? "s" : "") + " à renouveler (stock au seuil ou moins de 30 jours), quantités proposées par l'appli." }));
+    var ul3 = h("ul"); fc.top.forEach(function (x) { ul3.append(h("li", { text: x.q + " × " + x.it.name + " : " + money(x.cost) })); }); c3.append(ul3);
+    if (fc.noPrice) c3.append(h("div", { class: "dnote", text: fc.noPrice + " produit" + (fc.noPrice > 1 ? "s" : "") + " sans prix ne sont pas comptés." }));
+    cards.append(c3);
+    box.append(h("div", { class: "dsec" }, h("h3", { text: "Prévisions" }), cards));
+    var lows = [], highs = [];
+    if (fa) { lows.push(fa.avg); highs.push(fa.avg); }
+    if (fb) { lows.push(fb.total); highs.push(fb.total); }
+    if (lows.length) {
+      var lo = Math.min.apply(null, lows), hi = Math.max.apply(null, highs);
+      box.append(h("div", { class: "fcsum" }, h("b", { text: "Budget indicatif pour les 3 prochains mois : " }), (lo === hi ? "environ " + money(lo * 3) : "entre " + money(lo * 3) + " et " + money(hi * 3)) + " HT",
+        h("div", { style: "font-size:13px;opacity:.9;margin-top:4px", text: "Estimation à confirmer : elle suppose des habitudes d'achat stables. Elle ne tient pas compte des hausses de prix ni des achats exceptionnels (équipement)." })));
+    }
+    // répartitions
+    var yr = rows.filter(function (r) { return r.date >= d365; }), tot = yr.reduce(function (a, r) { return a + r.amount; }, 0) || 1;
+    var two = h("div", { class: "fcgrid dsec" });
+    two.append(h("div", null, h("h3", { text: "Par domaine (12 mois)" }), barList(groupSum(yr, "category"), tot)));
+    two.append(h("div", null, h("h3", { text: "Par fournisseur (12 mois)" }), barList(groupSum(yr, "supplier"), tot)));
+    box.append(two);
+    var byName = {}; yr.forEach(function (r) { var k = r.ref || r.name; var o = byName[k] || (byName[k] = { k: r.name, v: 0 }); o.v += r.amount; });
+    var top = Object.keys(byName).map(function (k) { return byName[k]; }).filter(function (x) { return x.v > 0; }).sort(function (a, b) { return b.v - a.v; });
+    box.append(h("div", { class: "dsec" }, h("h3", { text: "Produits les plus coûteux (12 mois)" }), barList(top, tot)));
+    // prix
+    var chg = priceChanges(rows), up = chg.filter(function (c) { return c.pct >= 3; }).sort(function (a, b) { return b.pct - a.pct; }).slice(0, 8), down = chg.filter(function (c) { return c.pct <= -3; }).sort(function (a, b) { return a.pct - b.pct; }).slice(0, 5);
+    var pr = h("div", { class: "dsec" }, h("h3", { text: "Évolution des prix" }));
+    if (!up.length && !down.length) pr.append(h("div", { class: "sub", text: "Aucune variation de prix de plus de 3 % entre vos factures." }));
+    up.concat(down).forEach(function (c) {
+      pr.append(h("div", { class: "drow" }, h("div", { class: "dname", title: c.name, text: c.name }), h("div", { class: c.pct > 0 ? "up" : "down", text: (c.pct > 0 ? "+" : "") + c.pct.toFixed(1).replace(".", ",") + " %" }), h("div", { class: "num", text: money(c.from) + " → " + money(c.to) })));
+    });
+    box.append(pr);
+    box.append(h("div", { class: "dsec" }, h("button", { class: "btn sm", onclick: function () { exportData(rows, series, fa, fb, fc); }, text: "Exporter en Excel" })));
+  }
+  function exportData(rows, series, fa, fb, fc) {
+    if (!window.XLSX) { toast("Le fichier Excel n'a pas pu être créé : vérifiez votre accès à internet."); return; }
+    var X = window.XLSX, wb = X.utils.book_new();
+    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([["Mois", "Dépenses HT", "Type"]].concat(series.map(function (x) { return [x.k, r2(x.v), x.fc ? "prévision" : "réel"]; }))), "Mois");
+    var yr = rows.filter(function (r) { return r.date >= new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10); });
+    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([["Domaine", "Dépenses HT (12 mois)"]].concat(groupSum(yr, "category").map(function (x) { return [x.k, r2(x.v)]; }))), "Domaines");
+    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([["Fournisseur", "Dépenses HT (12 mois)"]].concat(groupSum(yr, "supplier").map(function (x) { return [x.k, r2(x.v)]; }))), "Fournisseurs");
+    var prev = [["Méthode", "Résultat", "Détail"]];
+    if (fa) prev.push(["D'après les factures", r2(fa.avg), "par mois, sur " + fa.n + " mois ; 3 mois : " + r2(fa.lo) + " à " + r2(fa.hi)]);
+    if (fb) prev.push(["D'après la consommation", r2(fb.total), "par mois, 90 derniers jours"]);
+    prev.push(["Prochaine commande (30 jours)", r2(fc.total), fc.count + " produits"]);
+    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(prev), "Prévisions");
+    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([["Date", "Document", "Fournisseur", "Domaine", "Référence", "Produit", "Quantité", "Prix unitaire HT", "Montant HT"]].concat(rows.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(function (r) { return [r.date, r.doc, r.supplier, r.category, r.ref, r.name, r.qty, r.price, r2(r.amount)]; }))), "Lignes");
+    X.writeFile(wb, "donnees-depenses-" + bkSlug(cabinetName) + "-" + new Date().toISOString().slice(0, 10) + ".xlsx");
   }
   function updateSelBar() {
     var n = state.sel.size;
@@ -1779,6 +2009,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     $("exportBtn").disabled = !items.size;
     $("bar").classList.toggle("hidden", state.tab !== "inventaire");
     if (state.tab === "inventaire") renderInventory(box);
+    else if (state.tab === "donnees") renderData(box);
     else if (state.tab === "corbeille") renderTrash(box);
     else if (state.tab === "favoris") renderFavorites(box);
     else if (state.tab === "commande") renderOrder(box);
@@ -2479,13 +2710,50 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     return out;
   }
   function frDate(iso) { var t = Date.parse(iso); return t ? new Date(t).toLocaleDateString("fr-FR") : ""; }
-  function jrnRecord(dm, fileName, nbLines, supplier) {
-    if (!jrnOk || !dm.number) return;
-    jrnByNumber[dm.number] = { doc_number: dm.number, doc_type: dm.type, user_email: myEmail, created_at: new Date().toISOString() };
+  function loadAchats() {
+    if (!sb || !cabinetId) return;
+    var cid = cabinetId;
+    fetchAll(function () { return sb.from("imported_docs").select("*").eq("cabinet_id", cid).order("id"); }).then(function (res) {
+      if (cid !== cabinetId) return;
+      if (res.error) { jrnOk = false; return; }
+      jrnOk = true; jrnByNumber = {};
+      (res.data || []).forEach(function (d) { jrnByNumber[d.doc_number] = d; });
+    }).catch(function () { jrnOk = false; });
+    fetchAll(function () { return sb.from("achat_lignes").select("*").eq("cabinet_id", cid).order("id"); }).then(function (res) {
+      if (cid !== cabinetId) return;
+      if (res.error) { achOk = false; return; }
+      achOk = true; achLines = res.data || []; achAt = Date.now();
+      if (state.tab === "donnees") render();
+    }).catch(function () { achOk = false; });
+  }
+  // Enregistre un document (facture ou avoir) dans le journal et ses lignes dans les achats, sans toucher au stock.
+  function recordDocument(dm, fileName, rows, supplier) {
+    if (!jrnOk || !dm.number) return false;
+    var already = !!jrnByNumber[dm.number], type = dm.type || "facture";
+    var meta = { doc_number: dm.number, doc_type: type, doc_date: dm.date || null, supplier: supplier || "", total_ht: dm.total, file_name: fileName, nb_lines: rows.length,
+      user_email: myEmail, created_at: new Date().toISOString(), annule_de: dm.annul.join(","), remplace: dm.refact.join(",") };
+    jrnByNumber[dm.number] = Object.assign({}, meta, jrnByNumber[dm.number] || {});
+    var hasLines = achLines.some(function (l) { return l.doc_number === dm.number; });
+    var lines = [];
+    if (achOk && !hasLines) {
+      lines = rows.map(function (r) {
+        var q = Number(r.qty0 != null ? r.qty0 : r.qty) || 0, pr = Number(r.price0 != null ? r.price0 : r.price) || 0;
+        return { cabinet_id: cabinetId, doc_number: dm.number, doc_type: type, doc_date: dm.date || null, supplier: supplier || "", ref: r.ref || "", name: r.name,
+          category: r.domain || "", subcategory: (r.match && r.match.subcategory) || "", qty: q, unit_price: pr, total_ht: r2(q * pr) };
+      });
+      achLines = achLines.concat(lines);
+    }
     enqueue(function () {
-      return sb.from("imported_docs").insert({ cabinet_id: cabinetId, doc_number: dm.number, doc_type: dm.type || "facture", doc_date: dm.date || null, supplier: supplier || "", total_ht: dm.total, file_name: fileName, nb_lines: nbLines, user_email: myEmail })
-        .then(function (res) { if (res.error && !/duplicate|unique/i.test(res.error.message || "")) throw res.error; });
+      var row = { cabinet_id: cabinetId, doc_number: dm.number, doc_type: type, doc_date: dm.date || null, supplier: supplier || "", total_ht: dm.total, file_name: fileName, nb_lines: rows.length, user_email: myEmail };
+      if (achOk) { row.annule_de = dm.annul.join(","); row.remplace = dm.refact.join(","); }
+      var p = already ? Promise.resolve() : sb.from("imported_docs").insert(row).then(function (res) { if (res.error && !/duplicate|unique/i.test(res.error.message || "")) throw res.error; });
+      return p.then(function () {
+        var chain = Promise.resolve();
+        for (var i = 0; i < lines.length; i += 200) (function (chunk) { chain = chain.then(function () { return sb.from("achat_lignes").insert(chunk).then(check); }); })(lines.slice(i, i + 200));
+        return chain;
+      });
     });
+    return true;
   }
   function bkSlug(t) { return String(t || "cabinet").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
   function loadBackups() {
@@ -2578,7 +2846,10 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
           h("div", { class: "meta", text: [d.supplier, (d.user_email || "").split("@")[0] + " le " + frDate(d.created_at), d.nb_lines + " ligne" + (d.nb_lines > 1 ? "s" : "")].filter(Boolean).join(" · ") }),
           h("div", { text: d.total_ht != null ? money(Number(d.total_ht)) : "—" }),
           isAdmin ? h("button", { class: "btn sm", title: "Retirer du journal pour pouvoir la réimporter", onclick: function () {
-            enqueue(function () { return sb.from("imported_docs").delete().eq("id", d.id).then(check).then(function () { delete jrnByNumber[d.doc_number]; openJrn(); }); });
+            enqueue(function () {
+              return sb.from("achat_lignes").delete().eq("cabinet_id", cabinetId).eq("doc_number", d.doc_number).then(function () { return sb.from("imported_docs").delete().eq("id", d.id).then(check); })
+                .then(function () { delete jrnByNumber[d.doc_number]; achLines = achLines.filter(function (l) { return l.doc_number !== d.doc_number; }); openJrn(); });
+            });
           }, text: "Retirer" }) : h("span")));
       });
     }).catch(function () { $("jrnInfo").textContent = "Le journal n'a pas pu être chargé."; });
@@ -2601,6 +2872,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     trash.forEach(function (it) { if (it.ref) byRef[norm(it.ref).trim()] = it; byName[norm(it.name).trim()] = it; });
     items.forEach(function (it) { if (it.ref) byRef[norm(it.ref).trim()] = it; byName[norm(it.name).trim()] = it; });
     rows.forEach(function (r) {
+      r.qty0 = r.qty; r.price0 = r.price;
       r.match = byRef[norm(r.ref).trim()] || byName[norm(r.name).trim()] || null;
       r.on = !isCredit && !seenBefore;
       r.domain = r.match ? (r.match.category || "") : guessDomain(r.name);
@@ -2716,8 +2988,16 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
           });
         });
       }
-      if (!catOnly.checked) jrnRecord(dm, fileName, chosen.length, supplier);
+      if (!catOnly.checked) recordDocument(dm, fileName, rows, supplier);
       toast(list.length + " nouvel" + (list.length > 1 ? "s" : "") + " article" + (list.length > 1 ? "s" : "") + ", " + nEntries + " entrée" + (nEntries > 1 ? "s" : "") + " de stock.");
+    };
+    var spendBtn = $("pdfSpend");
+    spendBtn.disabled = !dm.number || !jrnOk || !achOk || readOnly || !db;
+    spendBtn.title = !achOk ? "Lancez d'abord le script SQL « ajout-donnees-depenses » dans Supabase." : !dm.number ? "Numéro de facture non reconnu : impossible d'enregistrer la dépense." : "Garde la dépense de cette facture pour les statistiques, sans toucher au stock.";
+    spendBtn.onclick = function () {
+      if (!recordDocument(dm, fileName, rows, supplierInput.value.trim())) return;
+      $("pdfDlg").close();
+      toast("Dépense enregistrée : " + (dm.type === "avoir" ? "avoir " : "facture ") + dm.number + ". Le stock n'a pas changé.");
     };
     $("pdfDlg").showModal();
   }
@@ -3351,7 +3631,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (started) return;
     started = true;
     var cid = cabinetId;
-    sb.from("items").select("*").eq("cabinet_id", cid).limit(5000).then(function (res) {
+    fetchAll(function () { return sb.from("items").select("*").eq("cabinet_id", cid).order("id"); }).then(function (res) {
       if (cid !== cabinetId) return;
       var m = new Map(), tr = new Map();
       (check(res) || []).forEach(function (r) { var it = fromRow(r); if (it.archived) tr.set(r.id, it); else m.set(r.id, it); });
@@ -3395,14 +3675,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     sb.from("items").select("archived").eq("cabinet_id", cid).limit(1).then(function (res) {
       if (cid === cabinetId) arcOk = !res.error;
     }).catch(function () { arcOk = false; });
-    sb.from("imported_docs").select("doc_number,doc_type,doc_date,user_email,created_at").eq("cabinet_id", cid).limit(5000).then(function (res) {
-      if (cid !== cabinetId) return;
-      if (res.error) { jrnOk = false; return; }
-      jrnOk = true; jrnByNumber = {};
-      (res.data || []).forEach(function (d) { jrnByNumber[d.doc_number] = d; });
-    }).catch(function () { jrnOk = false; });
+    loadAchats();
     loadConso();
-    sb.from("lots").select("*").eq("cabinet_id", cid).limit(10000).then(function (res) {
+    fetchAll(function () { return sb.from("lots").select("*").eq("cabinet_id", cid).order("id"); }).then(function (res) {
       if (cid !== cabinetId) return;
       if (res.error) { lotsOk = false; return; }
       lotsOk = true; lotsByItem = {};
@@ -3437,7 +3712,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   function stopData() {
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     channels = []; started = false;
-    items = new Map(); trash = new Map(); arcOk = false; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0;
+    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0;
   }
   function showScreen(which) {
     $("login").classList.toggle("hidden", which !== "login");
