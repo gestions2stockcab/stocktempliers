@@ -384,7 +384,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v29</div>
+            <div class="menu-who"><span id="who"></span> · v30</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -742,7 +742,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
       id: r.id, name: r.name || "", category: r.category || "", supplier: r.supplier || "", ref: r.ref || "",
       location: r.location || "", unit: r.unit || "", qty: Number(r.qty) || 0, min: Number(r.min) || 0,
       target: Number(r.target) || 0, lot: r.lot || "", expiry: r.expiry || "", price: Number(r.price) || 0,
-      barcode: r.barcode || "", description: r.description || "", tracked: r.tracked !== false, subcategory: r.subcategory || "", favorite: r.favorite === true,
+      barcode: r.barcode || "", description: r.description || "", tracked: r.tracked !== false || (Number(r.qty) || 0) > 0 || (Number(r.min) || 0) > 0, subcategory: r.subcategory || "", favorite: r.favorite === true,
       ordered_qty: Number(r.ordered_qty) || 0, ordered_at: r.ordered_at || "", photo: r.photo || ""
     };
   }
@@ -2751,6 +2751,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   $("jrnClose").addEventListener("click", function () { $("jrnDlg").close(); });
   $("dupBtn").addEventListener("click", openDup);
   $("dupClose").addEventListener("click", function () { $("dupDlg").close(); });
+  ["f_qty", "f_min"].forEach(function (id) { $(id).addEventListener("input", function () { if (num($(id).value) > 0) $("f_tracked").checked = true; }); });
   $("ordCancel").addEventListener("click", function () { $("ordDlg").close(); });
   $("ordSave").addEventListener("click", function () {
     var q = num($("ordQty").value);
@@ -2777,6 +2778,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var d = collectItem();
     d.lots = lotsDraft.filter(function (l) { return Number(l.qty) > 0; }).map(function (l) { return { id: l.id, lot: l.lot || "", expiry: l.expiry || null, qty: r2(l.qty) }; });
     if (lotsOk && d.lots.length) { var dvl = deriveFromLots(d.lots); d.qty = dvl.qty; d.expiry = dvl.expiry; d.lot = dvl.lot; }
+    if (!d.tracked && ((Number(d.qty) || 0) > 0 || (Number(d.min) || 0) > 0)) d.tracked = true;
     if (!d.name) { toast("Indiquez le nom de l'article."); $("f_name").focus(); return; }
     if ($("f_category").value === "__new__" && !d.category) { toast("Indiquez le nom du nouveau domaine."); $("f_category_new").focus(); return; }
     saveItem(d, state.editing);
