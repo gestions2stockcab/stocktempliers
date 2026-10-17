@@ -303,6 +303,16 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
 .fcsum { background:var(--brand); color:var(--brand-ink); border-radius:12px; padding:12px 14px; margin:10px 0; }
 .dnote { color:var(--muted); font-size:13px; margin-top:6px; }
 .up { color:var(--bad); font-weight:600; } .down { color:var(--ok); font-weight:600; }
+.prctl { display:flex; flex-wrap:wrap; gap:8px 12px; margin:0 0 10px; }
+.prctl label { display:flex; flex-direction:column; gap:2px; font-size:12.5px; color:var(--muted); font-weight:600; }
+.prctl select { padding:6px 9px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink); font-size:14px; font-weight:400; }
+.prsum { display:flex; flex-wrap:wrap; gap:8px 18px; font-size:14px; margin:0 0 8px; }
+.prsum b { font-size:15px; }
+details.prd { border-top:1px solid var(--line); }
+details.prd > summary { list-style:none; cursor:pointer; padding:6px 0; }
+details.prd > summary::-webkit-details-marker { display:none; }
+.prhist { margin:0 0 8px; padding:6px 10px; background:var(--surface-2); border-radius:8px; font-size:13px; }
+.prhist div { display:flex; justify-content:space-between; gap:10px; padding:1px 0; }
 .btn.toggle[aria-pressed="true"] { background:var(--brand); color:var(--brand-ink); border-color:var(--brand); }
 .selbar { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(14px + env(safe-area-inset-bottom,0px)); background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:0 6px 24px rgba(0,0,0,.2); padding:10px 14px; display:flex; gap:10px; align-items:center; z-index:30; flex-wrap:wrap; max-width:calc(100vw - 24px); }
 .selbox { width:18px; height:18px; margin:0 8px 0 0; accent-color:var(--brand); flex:none; }
@@ -416,7 +426,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v34</div>
+            <div class="menu-who"><span id="who"></span> · v35</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -735,7 +745,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
-  var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, collapsed: {}, tileSort: "usuel", fOpen: false, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
+  var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, collapsed: {}, tileSort: "usuel", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
   var chain = Promise.resolve();
 
@@ -1222,6 +1232,96 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var m = {}; rows.forEach(function (r) { m[r[key]] = (m[r[key]] || 0) + r.amount; });
     return Object.keys(m).map(function (k) { return { k: k, v: m[k] }; }).filter(function (x) { return x.v > 0; }).sort(function (a, b) { return b.v - a.v; });
   }
+  // Historique des prix payés par produit (référence, sinon nom) : un « palier » à chaque changement de prix.
+  function priceHistories(rows) {
+    var by = {};
+    rows.filter(function (r) { return r.qty > 0 && r.price > 0; }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }).forEach(function (r) {
+      var k = r.ref || r.name;
+      var o = by[k] || (by[k] = { key: k, ref: r.ref, name: r.name, steps: [], buys: [] });
+      o.name = r.name; o.buys.push({ date: r.date, price: r.price, qty: r.qty });
+      var last = o.steps[o.steps.length - 1];
+      if (!last || Math.abs(last.price - r.price) > 0.004) o.steps.push({ price: r.price, from: r.date, to: r.date }); else last.to = r.date;
+    });
+    return by;
+  }
+  function stepsOf(buys) {
+    var steps = [];
+    buys.forEach(function (b) { var l = steps[steps.length - 1]; if (!l || Math.abs(l.price - b.price) > 0.004) steps.push({ price: b.price, from: b.date, to: b.date }); else l.to = b.date; });
+    return steps;
+  }
+  // Variations sur une période : prix de départ = premier prix payé dans la période ; impact = écart de prix × quantités achetées.
+  function priceVariations(hist, since) {
+    var out = [], stable = 0;
+    Object.keys(hist).forEach(function (k) {
+      var o = hist[k], buys = o.buys.filter(function (b) { return !since || b.date >= since; });
+      if (buys.length < 2) return;
+      var steps = stepsOf(buys);
+      if (steps.length < 2) { stable++; return; }
+      var first = steps[0].price, last = steps[steps.length - 1].price, impact = 0;
+      buys.forEach(function (b) { impact += b.qty * (b.price - first); });
+      out.push({ key: k, name: o.name, ref: o.ref, first: first, last: last, pct: (last - first) / first * 100, since: steps[steps.length - 1].from, changes: steps.length - 1, impact: impact, steps: steps });
+    });
+    return { list: out, stable: stable };
+  }
+  function renderPrices(box, rows) {
+    var st = state.pr, hist = priceHistories(rows);
+    var since = st.period === "12" ? new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10) : "";
+    var v = priceVariations(hist, since);
+    var minPct = Number(st.min) || 0;
+    var ups = v.list.filter(function (x) { return x.pct >= minPct; }), downs = v.list.filter(function (x) { return x.pct <= -minPct; });
+    var sec = h("div", { class: "dsec" }, h("h3", { text: "Évolution des prix d'un même produit" }));
+    var ctl = h("div", { class: "prctl" });
+    var sel = function (label, key, opts) {
+      var s2 = h("select", { "aria-label": label });
+      opts.forEach(function (o) { s2.append(h("option", { value: o[0], text: o[1], selected: st[key] === o[0] })); });
+      s2.addEventListener("change", function () { st[key] = s2.value; st.more = false; render(); });
+      return h("label", null, label, s2);
+    };
+    ctl.append(sel("Période", "period", [["12", "12 derniers mois"], ["all", "Depuis le début"]]),
+      sel("Afficher", "show", [["all", "Hausses et baisses"], ["up", "Hausses seulement"], ["down", "Baisses seulement"]]),
+      sel("Variation minimale", "min", [["1", "1 %"], ["3", "3 %"], ["5", "5 %"], ["10", "10 %"], ["20", "20 %"]]));
+    sec.append(ctl);
+    var impUp = ups.reduce(function (a, x) { return a + Math.max(0, x.impact); }, 0), impDown = downs.reduce(function (a, x) { return a + Math.min(0, x.impact); }, 0);
+    var avgUp = ups.length ? mean(ups.map(function (x) { return x.pct; })) : 0, avgDown = downs.length ? mean(downs.map(function (x) { return x.pct; })) : 0;
+    var pctTxt = function (n) { return (n > 0 ? "+" : "") + n.toFixed(1).replace(".", ",") + " %"; };
+    sec.append(h("div", { class: "prsum" },
+      h("span", null, h("b", { class: "up", text: String(ups.length) }), " en hausse" + (ups.length ? " (" + pctTxt(avgUp) + " en moyenne)" : "")),
+      h("span", null, h("b", { class: "down", text: String(downs.length) }), " en baisse" + (downs.length ? " (" + pctTxt(avgDown) + " en moyenne)" : "")),
+      h("span", null, h("b", { text: String(v.stable) }), " stable" + (v.stable > 1 ? "s" : "")),
+      h("span", null, "Impact estimé des hausses : ", h("b", { class: "up", text: "+" + money(impUp).replace(/^-/, "") }), " · des baisses : ", h("b", { class: "down", text: money(impDown) }))));
+    var list = (st.show === "up" ? ups : st.show === "down" ? downs : ups.concat(downs.filter(function (x) { return ups.indexOf(x) === -1; })))
+      .sort(function (a, b) { return Math.abs(b.impact) - Math.abs(a.impact); });
+    if (!list.length) sec.append(h("div", { class: "sub", text: "Aucune variation de prix de " + minPct + " % ou plus sur cette période. Il faut au moins deux factures avec le même produit à des prix différents." }));
+    var shown = st.more ? list : list.slice(0, 12);
+    shown.forEach(function (x) {
+      var det = h("details", { class: "prd" });
+      det.append(h("summary", null, h("div", { class: "drow" }, h("div", { class: "dname", title: x.name, text: x.name }), h("div", { class: x.pct > 0 ? "up" : "down", text: pctTxt(x.pct) }), h("div", { class: "num", text: money(x.first) + " → " + money(x.last) }))));
+      var hs = h("div", { class: "prhist" });
+      x.steps.forEach(function (stp, i) {
+        var prev = i ? x.steps[i - 1].price : 0, d = i ? (stp.price - prev) / prev * 100 : 0;
+        hs.append(h("div", null, h("span", { text: "depuis le " + frDate(stp.from) }), h("span", null, money(stp.price), i ? h("span", { class: d > 0 ? "up" : "down", text: " (" + pctTxt(d) + ")" }) : null)));
+      });
+      hs.append(h("div", { class: "dnote" }, "Effet sur vos achats de la période : ", h("span", { class: x.impact > 0 ? "up" : "down", text: (x.impact > 0 ? "+" : "") + money(x.impact) }), " par rapport au premier prix de la période."));
+      det.append(hs);
+      sec.append(det);
+    });
+    if (list.length > 12) sec.append(h("button", { class: "btn sm", style: "margin-top:8px", onclick: function () { st.more = !st.more; render(); }, text: st.more ? "Voir moins" : "Voir les " + list.length + " produits" }));
+    sec.append(h("div", { class: "dnote", text: "Calculé d'après les prix unitaires HT de vos factures (remises comprises). Une variation peut venir d'une remise différente autant que d'un changement de tarif." }));
+    box.append(sec);
+  }
+  function renderPriceBlock(body, it) {
+    if (!achOk || !achLines.length) return;
+    var hist = priceHistories(spendRows()), o = hist[it.ref || it.name] || hist[it.name];
+    if (!o) return;
+    var steps = o.steps, wrap = h("div", { class: "dsec" }, h("h3", { text: "Prix payés (d'après vos factures)" }));
+    var box = h("div", { class: "prhist" });
+    steps.forEach(function (stp, i) {
+      var prev = i ? steps[i - 1].price : 0, d = i ? (stp.price - prev) / prev * 100 : 0;
+      box.append(h("div", null, h("span", { text: (i ? "depuis le " : "le ") + frDate(stp.from) }), h("span", null, money(stp.price), i ? h("span", { class: d > 0 ? "up" : "down", text: " (" + (d > 0 ? "+" : "") + d.toFixed(1).replace(".", ",") + " %)" }) : null)));
+    });
+    if (steps.length === 1) box.append(h("div", { class: "dnote", text: "Prix stable depuis le premier achat enregistré (" + o.buys.length + " achat" + (o.buys.length > 1 ? "s" : "") + ")." }));
+    wrap.append(box); body.append(wrap);
+  }
   function priceChanges(rows) {
     var by = {};
     rows.filter(function (r) { return r.ref && r.price > 0 && r.qty > 0; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (r) {
@@ -1314,14 +1414,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     var byName = {}; yr.forEach(function (r) { var k = r.ref || r.name; var o = byName[k] || (byName[k] = { k: r.name, v: 0 }); o.v += r.amount; });
     var top = Object.keys(byName).map(function (k) { return byName[k]; }).filter(function (x) { return x.v > 0; }).sort(function (a, b) { return b.v - a.v; });
     box.append(h("div", { class: "dsec" }, h("h3", { text: "Produits les plus coûteux (12 mois)" }), barList(top, tot)));
-    // prix
-    var chg = priceChanges(rows), up = chg.filter(function (c) { return c.pct >= 3; }).sort(function (a, b) { return b.pct - a.pct; }).slice(0, 8), down = chg.filter(function (c) { return c.pct <= -3; }).sort(function (a, b) { return a.pct - b.pct; }).slice(0, 5);
-    var pr = h("div", { class: "dsec" }, h("h3", { text: "Évolution des prix" }));
-    if (!up.length && !down.length) pr.append(h("div", { class: "sub", text: "Aucune variation de prix de plus de 3 % entre vos factures." }));
-    up.concat(down).forEach(function (c) {
-      pr.append(h("div", { class: "drow" }, h("div", { class: "dname", title: c.name, text: c.name }), h("div", { class: c.pct > 0 ? "up" : "down", text: (c.pct > 0 ? "+" : "") + c.pct.toFixed(1).replace(".", ",") + " %" }), h("div", { class: "num", text: money(c.from) + " → " + money(c.to) })));
-    });
-    box.append(pr);
+    renderPrices(box, rows);
     box.append(h("div", { class: "dsec" }, h("button", { class: "btn sm", onclick: function () { exportData(rows, series, fa, fb, fc); }, text: "Exporter en Excel" })));
   }
   function exportData(rows, series, fa, fb, fc) {
@@ -1336,6 +1429,9 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     if (fb) prev.push(["D'après la consommation", r2(fb.total), "par mois, 90 derniers jours"]);
     prev.push(["Prochaine commande (30 jours)", r2(fc.total), fc.count + " produits"]);
     X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(prev), "Prévisions");
+    var pv = priceVariations(priceHistories(rows), "");
+    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([["Produit", "Référence", "Premier prix HT", "Dernier prix HT", "Variation %", "Depuis le", "Nombre de changements", "Effet sur les achats"]].concat(
+      pv.list.slice().sort(function (a, b) { return Math.abs(b.impact) - Math.abs(a.impact); }).map(function (x) { return [x.name, x.ref, x.first, x.last, Math.round(x.pct * 10) / 10, x.since, x.changes, r2(x.impact)]; }))), "Prix");
     X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([["Date", "Document", "Fournisseur", "Domaine", "Référence", "Produit", "Quantité", "Prix unitaire HT", "Montant HT"]].concat(rows.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(function (r) { return [r.date, r.doc, r.supplier, r.category, r.ref, r.name, r.qty, r.price, r2(r.amount)]; }))), "Lignes");
     X.writeFile(wb, "donnees-depenses-" + bkSlug(cabinetName) + "-" + new Date().toISOString().slice(0, 10) + ".xlsx");
   }
@@ -1746,6 +1842,12 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
   function renderOrder(box) {
     var all = Array.from(items.values());
     var need = all.filter(function (it) { return it.tracked !== false && !(it.ordered_qty > 0) && (it.qty || 0) <= (it.min || 0); });
+    var phs = achOk ? priceHistories(spendRows()) : {}, d365o = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
+    var priceNote = function (it) {
+      var o = phs[it.ref || it.name]; if (!o || o.steps.length < 2) return "";
+      var l = o.steps[o.steps.length - 1], pv = o.steps[o.steps.length - 2], pc = (l.price - pv.price) / pv.price * 100;
+      return (Math.abs(pc) >= 3 && l.from >= d365o) ? "prix " + (pc > 0 ? "+" : "") + pc.toFixed(1).replace(".", ",") + " % depuis le " + frDate(l.from) : "";
+    };
     var ordered = all.filter(function (it) { return it.ordered_qty > 0; }).sort(function (a, b) { return String(a.ordered_at).localeCompare(String(b.ordered_at)); });
     if (!need.length && !ordered.length) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" },
@@ -1770,7 +1872,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
         if (amount !== null) { total += amount; hasPrice = true; }
         var dlo = daysLeft(it);
         lines.append(h("div", { class: "line" },
-          h("div", null, h("div", { text: labelOf(it) }), h("div", { class: "meta", text: [it.ref ? "réf. " + it.ref : "", dlo !== null && dlo > 0 ? "≈ " + fmtDays(dlo) + " de stock" : ""].filter(Boolean).join(" · ") }),
+          h("div", null, h("div", { text: labelOf(it) }), h("div", { class: "meta", text: [it.ref ? "réf. " + it.ref : "", dlo !== null && dlo > 0 ? "≈ " + fmtDays(dlo) + " de stock" : "", priceNote(it)].filter(Boolean).join(" · ") }),
             readOnly ? null : h("button", { class: "btn sm", onclick: function () { openOrdDlg(it); }, text: "Marquer comme commandé" })),
           h("div", { class: "num", text: fmt(it.qty) }),
           h("div", { class: "num", text: fmt(q) + (it.unit ? " " + it.unit : "") }),
@@ -2104,6 +2206,7 @@ header.top .tabs { margin-top:12px; width:fit-content; max-width:100%; overflow-
     sb.from("movements").select("*").eq("cabinet_id", cabinetId).eq("item_id", it.id).order("created_at", { ascending: false }).limit(300).then(function (res) {
       if (!state.editing || state.editing.id !== it.id) return;
       renderItemHistory(body, check(res) || []);
+      renderPriceBlock(body, state.editing);
     }).catch(function () { body.textContent = "L'historique n'a pas pu être chargé."; });
   }
   function renderItemHistory(body, rows) {
