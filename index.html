@@ -706,6 +706,20 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 #itemRooms { margin:10px 0 4px; }
 #itemRooms .roomchips { margin:6px 0 0; }
 .roompanel .item-name { background:none; border:0; padding:0; text-align:left; cursor:pointer; color:var(--ink); }
+
+/* ===== v55 : petit onglet « déplacer » ===== */
+.mvtab { flex:none; border:1px solid var(--line); background:var(--surface); color:var(--muted); border-radius:8px; width:30px; height:30px; font-size:15px; line-height:1; cursor:pointer; padding:0; }
+.mvtab:hover { border-color:var(--brand); color:var(--brand); }
+.mvtab.on { background:var(--brand); color:var(--brand-ink); border-color:var(--brand); }
+.rowmove { grid-column:1 / -1; overflow:hidden; max-height:0; opacity:0; transition:max-height .22s ease, opacity .18s ease; }
+.rowmove.open { max-height:240px; opacity:1; }
+.mvbar { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; padding:10px 12px; margin-top:8px; background:var(--surface-2); border-radius:12px; }
+.mvsrc { display:flex; gap:6px; align-items:center; font-weight:600; font-size:13.5px; color:var(--muted); }
+.mvsrc select { padding:6px 10px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); font:inherit; font-weight:500; }
+.mvlbl { font-weight:600; font-size:13.5px; color:var(--muted); }
+.mvdest { display:flex; gap:6px; overflow-x:auto; max-width:100%; padding:2px 2px 4px; scrollbar-width:thin; }
+.mvdest .roomchip { white-space:nowrap; flex:none; padding:6px 12px 6px 10px; }
+@media (prefers-reduced-motion: reduce) { .rowmove { transition:none; } }
 </style>
 </head>
 <body>
@@ -778,7 +792,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v54</div>
+            <div class="menu-who"><span id="who"></span> · v55</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -2173,7 +2187,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
   // ---------- aide et visite guidée ----------
   var HELP = {
-    inventaire: ["Stock", "Choisissez un domaine, puis utilisez « − » et « + » pour sortir ou ajouter une unité. Cliquez sur le chiffre pour saisir plusieurs unités (des boutons 1, 2, 5, 10… vont plus vite que le clavier) ou un numéro de lot. Cliquez sur le nom pour ouvrir la fiche de l'article. Sur téléphone, balayez une ligne vers la gauche pour sortir 1, vers la droite pour ajouter 1. Quand des salles sont configurées, les puces au-dessus de la liste (Total, puis une par salle) permettent de voir le stock par salle : saisissez ce qu'il y a dans la salle, ou faites son réassort. Dans la fenêtre qui s'ouvre en cliquant sur le chiffre, « Déplacer » transfère du stock entre le stock central et les salles, ou d'une salle à l'autre."],
+    inventaire: ["Stock", "Choisissez un domaine, puis utilisez « − » et « + » pour sortir ou ajouter une unité. Cliquez sur le chiffre pour saisir plusieurs unités (des boutons 1, 2, 5, 10… vont plus vite que le clavier) ou un numéro de lot. Cliquez sur le nom pour ouvrir la fiche de l'article. Sur téléphone, balayez une ligne vers la gauche pour sortir 1, vers la droite pour ajouter 1. Quand des salles sont configurées, les puces au-dessus de la liste (Total, puis une par salle) permettent de voir le stock par salle : saisissez ce qu'il y a dans la salle, ou faites son réassort. Le petit onglet ⇄ à droite de la quantité se déplie pour mettre du stock dans une salle (ou le reprendre) en un clic ; la fenêtre qui s'ouvre en cliquant sur le chiffre propose aussi « Déplacer »."],
     favoris: ["Favoris", "Les produits que vous sortez le plus, en grosses cartes avec « − 1 » et « + 1 ». Pour y ajouter un produit, cliquez sur l'étoile à côté de son nom dans l'onglet Stock."],
     commande: ["À commander", "Les produits sous leur seuil, regroupés par fournisseur. « Marquer comme commandé » les met de côté pour ne pas les recommander ; « Reçu » enregistre l'arrivée du stock."],
     comptage: ["Comptage", "L'écran de l'inventaire : saisissez ce que vous avez compté en rayon, puis « Enregistrer le comptage ». Les écarts sont gardés dans l'Historique."],
@@ -3308,6 +3322,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (!(q > 0)) { toast("Indiquez une quantité supérieure à zéro."); return false; }
     var cur = items.get(it.id) || it, central = Number(cur.qty) || 0, rf = from ? roomById(from) : null, rt = to ? roomById(to) : null;
     if (!from && q > central) { toast("Stock central insuffisant : il n'en reste que " + fmt(central) + "."); return false; }
+    if (from && !roomLine(from, it.id)) { toast("Ce produit n'est pas rangé dans « " + rf.name + " »."); return false; }
     if (from) { var lf = roomLine(from, it.id); if (lf && lf.counted_qty != null && q > Number(lf.counted_qty)) { toast("Il n'y a que " + fmt(lf.counted_qty) + " dans « " + rf.name + " »."); return false; } }
     var nf = rf ? rf.name : "le stock central", nt = rt ? rt.name : "le stock central", extra = note ? " · " + note : "";
     if (!from) adjustQty(cur, -q, "Dispatch vers " + nt + extra, null, { reason: "restock", noUndo: true });
@@ -3321,6 +3336,58 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
   function dispatchFromDialog(q) {
     return dispatchStock(state.adjusting, $("adjFrom").value, $("adjTo").value, q, $("adjNote").value.trim());
+  }
+  // ---------- petit onglet « déplacer » à droite de la quantité ----------
+  function moveEligible(it) { return sallesOk && rooms.length > 0 && !readOnly && it.tracked !== false; }
+  function roomQtyOf(rid, itemId) { var li = roomLine(rid, itemId); return li ? (li.counted_qty != null ? Number(li.counted_qty) : null) : null; }
+  function moveTab(it) {
+    if (!moveEligible(it)) return null;
+    var open = state.mvId === it.id;
+    var b = h("button", { class: "mvtab" + (open ? " on" : ""), type: "button", title: "Déplacer vers une salle ou entre salles", "aria-label": "Déplacer " + it.name + " vers une salle", "aria-expanded": open ? "true" : "false", text: "⇄" });
+    b.addEventListener("click", function () { toggleMove(it, b); });
+    return b;
+  }
+  function movePanelFor(it) {
+    if (!moveEligible(it)) return null;
+    var el = h("div", { class: "rowmove" + (state.mvId === it.id ? " open" : "") });
+    if (state.mvId === it.id) fillMovePanel(it, el);
+    return el;
+  }
+  function toggleMove(it, btn) {
+    var row = btn.closest(".row"), panel = row && row.querySelector(".rowmove");
+    if (!panel) return;
+    var opening = !panel.classList.contains("open");
+    document.querySelectorAll(".rowmove.open").forEach(function (p) {
+      if (p === panel) return;
+      p.classList.remove("open");
+      var b = p.closest(".row") && p.closest(".row").querySelector(".mvtab");
+      if (b) { b.classList.remove("on"); b.setAttribute("aria-expanded", "false"); }
+    });
+    if (opening) { if (state.mvId !== it.id) state.mvFrom = ""; state.mvId = it.id; fillMovePanel(it, panel); } else state.mvId = "";
+    panel.classList.toggle("open", opening); btn.classList.toggle("on", opening); btn.setAttribute("aria-expanded", opening ? "true" : "false");
+  }
+  function fillMovePanel(it, el) {
+    el.textContent = "";
+    var cur = items.get(it.id) || it, from = state.mvFrom || "", q = state.mvQty > 0 ? state.mvQty : 1;
+    if (from && !roomById(from)) from = state.mvFrom = "";
+    var spots = [{ id: "", label: "Stock central", color: null, n: Number(cur.qty) || 0 }].concat(rooms.map(function (r) { return { id: r.id, label: r.name, color: r.color, n: roomQtyOf(r.id, it.id) }; }));
+    var src = h("select", { "aria-label": "Prendre depuis" });
+    spots.forEach(function (o) { src.append(h("option", { value: o.id, text: o.label + " · " + (o.n == null ? "—" : fmt(o.n)) })); });
+    src.value = from;
+    src.addEventListener("change", function () { state.mvFrom = src.value; fillMovePanel(it, el); });
+    var qIn = h("input", { class: "oqty", type: "number", min: "0", step: "any", inputmode: "decimal", value: String(q), "aria-label": "Quantité à déplacer" });
+    qIn.addEventListener("change", function () { state.mvQty = Math.max(0, num(qIn.value)) || 1; qIn.value = String(state.mvQty); });
+    var dest = h("div", { class: "mvdest", role: "group", "aria-label": "Mettre dans" });
+    spots.filter(function (o) { return o.id !== from; }).forEach(function (o) {
+      dest.append(h("button", { class: "roomchip", type: "button", style: "--rc:" + (o.color || "var(--muted)"), title: "Mettre " + fmt(q) + " dans " + o.label,
+        onclick: function () { state.mvQty = Math.max(0, num(qIn.value)) || 1; dispatchStock(cur, from, o.id, state.mvQty, ""); } }, h("i"), o.label + (o.n == null ? "" : " · " + fmt(o.n))));
+    });
+    el.append(h("div", { class: "mvbar" },
+      h("label", { class: "mvsrc" }, h("span", { text: "De" }), src),
+      h("div", { class: "ostep" },
+        h("button", { class: "step", type: "button", "aria-label": "Une unité de moins", onclick: function () { state.mvQty = Math.max(1, (num(qIn.value) || 1) - 1); fillMovePanel(it, el); }, text: "−" }), qIn,
+        h("button", { class: "step", type: "button", "aria-label": "Une unité de plus", onclick: function () { state.mvQty = (num(qIn.value) || 0) + 1; fillMovePanel(it, el); }, text: "+" })),
+      h("span", { class: "mvlbl", text: "Mettre dans :" }), dest));
   }
   function updateSelBar() {
     var n = state.sel.size;
@@ -3631,7 +3698,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     return h("div", { class: "c-qty qty" },
       h("button", { class: "step", "aria-label": "Retirer 1 " + it.name, disabled: readOnly || (it.qty || 0) <= 0, onclick: function () { adjustQty(it, -1, "Sortie rapide"); }, text: "−" }),
       h("button", { class: "v " + cls, title: "Saisir une entrée ou une sortie" + (unit ? " (" + unit.trim() + ")" : ""), disabled: readOnly, onclick: function () { openAdjust(it); } }, fmt(it.qty)),
-      h("button", { class: "step", "aria-label": "Ajouter 1 " + it.name, disabled: readOnly, onclick: function () { if (hasLots(it)) openAdjust(it); else adjustQty(it, 1, "Entrée rapide"); }, text: "+" }));
+      h("button", { class: "step", "aria-label": "Ajouter 1 " + it.name, disabled: readOnly, onclick: function () { if (hasLots(it)) openAdjust(it); else adjustQty(it, 1, "Entrée rapide"); }, text: "+" }),
+      moveTab(it));
   }
   function renderInventory(box) {
     if (!items.size) {
@@ -3712,7 +3780,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
             it.description ? h("span", { class: "desc", text: it.description }) : null),
           h("div", { class: "meta c-meta", text: meta.join(" · ") })),
         qtyCell(it, unit),
-        h("div", { class: "c-status" }, chipFor(it)));
+        h("div", { class: "c-status" }, chipFor(it)), movePanelFor(it));
       attachSwipe(rowEl, it);
       table.append(rowEl);
     });
@@ -5590,6 +5658,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       state.filter = "all";
       syncTabs(); render();
       if (target === "utilisateurs") loadUsers();
+      state.mvId = "";
       if (target === "administration") loadAdmin();
       if (target === "salles") loadRooms();
       if (target === "controles") loadControls();
