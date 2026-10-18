@@ -452,6 +452,45 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
 .subrow { background:var(--surface-2); padding:8px 18px; border-top:1px solid var(--line); font-size:13px; }
 .subrow small { background:var(--surface); border:1px solid var(--line); border-radius:99px; padding:0 8px; }
 .thumb { border-radius:10px; }
+
+/* ===== v42 : fluidité, téléphone, raccourcis, aide ===== */
+.morebar { display:flex; justify-content:center; padding:14px 0 6px; }
+.row { touch-action:pan-y; }
+.row.swiping { transition:none; }
+.row.swp-out { background:rgba(220,38,38,.14); }
+.row.swp-in { background:rgba(22,163,74,.16); }
+.qchips { display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 10px; }
+.qchips button { border:1px solid var(--line); background:var(--surface); color:var(--brand); border-radius:99px; padding:7px 16px; font:inherit; font-weight:700; cursor:pointer; }
+.qchips button:hover { background:var(--surface-2); border-color:var(--brand); }
+.bottombar { display:none; }
+dialog.cmdk { width:min(660px, calc(100vw - 24px)); padding:0; border:1px solid var(--line); border-radius:16px; background:var(--surface); color:var(--ink); margin:12vh auto auto; }
+dialog.cmdk::backdrop { background:rgba(0,0,0,.4); }
+.cmdk input { width:100%; box-sizing:border-box; border:0; border-bottom:1px solid var(--line); padding:16px 18px; font-size:17px; background:transparent; color:var(--ink); outline:none; border-radius:16px 16px 0 0; }
+.cmdk ul { list-style:none; margin:0; padding:6px; max-height:52vh; overflow:auto; }
+.cmdk li { padding:9px 12px; border-radius:10px; cursor:pointer; display:flex; justify-content:space-between; gap:12px; align-items:baseline; }
+.cmdk li[aria-selected="true"] { background:var(--surface-2); }
+.cmdk li small { color:var(--muted); white-space:nowrap; }
+.cmdk .k-head { color:var(--muted); font-size:12px; font-weight:700; padding:8px 12px 2px; cursor:default; }
+.cmdk .k-foot { color:var(--muted); font-size:12px; padding:6px 14px 10px; border-top:1px solid var(--line); }
+.helpbody h3 { font-size:15px; margin:14px 0 4px; color:var(--brand); }
+.helpbody p, .helpbody li { font-size:14.5px; margin:3px 0; }
+.helpbody ul { padding-left:20px; margin:4px 0; }
+.kbd { display:inline-block; border:1px solid var(--line); border-bottom-width:2px; border-radius:6px; padding:0 6px; font-size:12.5px; background:var(--surface-2); }
+.tourdots { display:flex; gap:6px; justify-content:center; margin:10px 0 2px; }
+.tourdots i { width:8px; height:8px; border-radius:50%; background:var(--line); }
+.tourdots i.on { background:var(--brand); }
+.tourbig { font-size:44px; text-align:center; margin:6px 0; }
+@media (max-width: 760px) {
+  .bottombar { display:flex; position:fixed; left:0; right:0; bottom:0; z-index:38; background:var(--surface); border-top:1px solid var(--line); padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px)); justify-content:space-around; box-shadow:0 -4px 16px rgba(0,0,0,.08); }
+  .bottombar button { flex:1; border:0; background:transparent; color:var(--muted); font:inherit; font-size:11.5px; display:flex; flex-direction:column; align-items:center; gap:2px; padding:4px 2px; border-radius:10px; cursor:pointer; }
+  .bottombar button span:first-child { font-size:20px; line-height:1; }
+  .bottombar button[aria-current="page"] { color:var(--brand); font-weight:700; }
+  .bottombar .bb-scan span:first-child { background:var(--brand); color:var(--brand-ink); border-radius:50%; width:46px; height:46px; display:grid; place-items:center; margin-top:-20px; box-shadow:0 4px 12px rgba(0,0,0,.22); }
+  body { padding-bottom:calc(72px + env(safe-area-inset-bottom,0px)); }
+  .toast { bottom:calc(88px + env(safe-area-inset-bottom,0px)); }
+  .selbar { bottom:calc(88px + env(safe-area-inset-bottom,0px)); }
+  #kBtn { display:none; }
+}
 </style>
 </head>
 <body>
@@ -505,6 +544,8 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
     <div class="title-row">
       <div class="title-left"><button class="btn sm" id="menuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="sidebar" title="Menu">☰</button><h1 id="appTitle">SimSimStock</h1></div>
       <div class="who-row">
+        <button class="btn sm" id="kBtn" type="button" title="Rechercher partout (Ctrl + K)" aria-label="Rechercher partout">⌘K</button>
+        <button class="btn sm" id="helpBtn" type="button" title="Aide et raccourcis" aria-label="Aide">?</button>
         <button class="btn sm hidden" id="undoBtn" type="button">↶ Annuler</button>
         <div class="swatches head-sw" role="group" aria-label="Couleur de fond">
           <button class="sw sw-frais" data-theme="frais" title="Frais (turquoise)" aria-label="Style frais, turquoise"></button>
@@ -518,7 +559,7 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v41</div>
+            <div class="menu-who"><span id="who"></span> · v42</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -548,6 +589,13 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
     <button class="tab tab-trash" role="tab" data-tab="corbeille" aria-selected="false" title="Articles supprimés"><span class="ti">🗑</span><span class="tl">Corbeille<span id="trashCount"></span></span></button>
   </nav>
   <div class="sb-backdrop" id="sbBackdrop"></div>
+  <nav class="bottombar" id="bottombar" aria-label="Navigation rapide">
+    <button type="button" data-go="inventaire"><span>📦</span><span>Stock</span></button>
+    <button type="button" data-go="favoris"><span>⭐</span><span>Favoris</span></button>
+    <button type="button" class="bb-scan" id="bbScan"><span>📷</span><span>Scanner</span></button>
+    <button type="button" data-go="commande"><span>🛒</span><span>À commander</span></button>
+    <button type="button" id="bbMenu"><span>☰</span><span>Menu</span></button>
+  </nav>
 
   <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.pdf,application/pdf,text/csv,text/plain" class="hidden">
   <div id="banner"></div>
@@ -715,6 +763,37 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
   <button class="btn sm" id="selDone">Terminer</button>
 </div>
 
+<dialog id="kDlg" class="cmdk" aria-label="Recherche universelle">
+  <input id="kIn" type="search" autocomplete="off" placeholder="Chercher un article, une section, une action…" aria-label="Recherche universelle">
+  <ul id="kList" role="listbox"></ul>
+  <div class="k-foot"><span class="kbd">↑</span> <span class="kbd">↓</span> pour choisir · <span class="kbd">Entrée</span> pour ouvrir · <span class="kbd">Échap</span> pour fermer</div>
+</dialog>
+
+<dialog id="helpDlg">
+  <div class="dlg">
+    <h2 id="helpTitle">Aide</h2>
+    <div class="helpbody" id="helpBody"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="helpTour" type="button">Revoir la visite guidée</button>
+      <button class="btn primary" id="helpClose" type="button">Fermer</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="tourDlg">
+  <div class="dlg">
+    <div class="tourbig" id="tourIcon"></div>
+    <h2 id="tourTitle"></h2>
+    <div class="sub" id="tourText" style="font-size:15px"></div>
+    <div class="tourdots" id="tourDots"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="tourSkip" type="button">Passer</button>
+      <button class="btn" id="tourPrev" type="button">Précédent</button>
+      <button class="btn primary" id="tourNext" type="button">Suivant</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="cabDlg">
   <div class="dlg">
     <h2>Créer un cabinet</h2>
@@ -788,6 +867,9 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
         <input id="adjNote" autocomplete="off">
       </label>
     </div>
+    <div class="qchips" id="qchips" aria-label="Quantités rapides">
+      <button type="button" data-q="1">1</button><button type="button" data-q="2">2</button><button type="button" data-q="3">3</button><button type="button" data-q="5">5</button><button type="button" data-q="10">10</button><button type="button" data-q="20">20</button><button type="button" data-q="50">50</button>
+    </div>
     <div class="grid" id="adjLotBox">
       <label class="f">N° de lot (facultatif)
         <input id="adjLot" autocomplete="off">
@@ -835,7 +917,7 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false, ownerOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
-  var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, collapsed: {}, tileSort: "usuel", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
+  var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, collapsed: {}, tileSort: "usuel", limit: 60, limitSig: "", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
   var chain = Promise.resolve();
 
@@ -1525,6 +1607,141 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
     X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([["Date", "Document", "Fournisseur", "Domaine", "Référence", "Produit", "Quantité", "Prix unitaire HT", "Montant HT"]].concat(rows.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).map(function (r) { return [r.date, r.doc, r.supplier, r.category, r.ref, r.name, r.qty, r.price, r2(r.amount)]; }))), "Lignes");
     X.writeFile(wb, "donnees-depenses-" + bkSlug(cabinetName) + "-" + new Date().toISOString().slice(0, 10) + ".xlsx");
   }
+  // ---------- gestes sur une ligne (téléphone) ----------
+  function attachSwipe(el, it) {
+    var x0 = 0, y0 = 0, dx = 0, on = false, locked = false;
+    el.addEventListener("touchstart", function (e) {
+      if (readOnly || state.select || it.tracked === false || !e.touches || e.touches.length !== 1) { on = false; return; }
+      x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; on = true; locked = false;
+    }, { passive: true });
+    el.addEventListener("touchmove", function (e) {
+      if (!on || !e.touches || !e.touches[0]) return;
+      var mx = e.touches[0].clientX - x0, my = e.touches[0].clientY - y0;
+      if (!locked) {
+        if (Math.abs(mx) < 12 && Math.abs(my) < 12) return;
+        if (Math.abs(my) > Math.abs(mx)) { on = false; return; }
+        locked = true;
+      }
+      dx = Math.max(-110, Math.min(110, mx));
+      el.classList.add("swiping");
+      el.style.transform = "translateX(" + dx + "px)";
+      el.classList.toggle("swp-out", dx < -20);
+      el.classList.toggle("swp-in", dx > 20);
+    }, { passive: true });
+    function end(e) {
+      if (!on) return;
+      on = false;
+      var d = dx; dx = 0;
+      el.classList.remove("swiping", "swp-out", "swp-in"); el.style.transform = "";
+      if (!locked) return;
+      if (e && e.type === "touchend" && e.cancelable) e.preventDefault();
+      if (d <= -70) adjustQty(it, -1, "Sortie (geste)");
+      else if (d >= 70) { if (hasLots(it)) openAdjust(it); else adjustQty(it, 1, "Entrée (geste)"); }
+    }
+    el.addEventListener("touchend", end, { passive: false });
+    el.addEventListener("touchcancel", end, { passive: true });
+  }
+  // ---------- recherche universelle (Ctrl/Cmd + K) ----------
+  var kSel = 0, kRes = [];
+  function goTab(t) { var b = document.querySelector('.tab[data-tab="' + t + '"]'); if (b) b.click(); }
+  function kActions() {
+    var a = [
+      ["Stock", "section", function () { goTab("inventaire"); }], ["Favoris", "section", function () { goTab("favoris"); }],
+      ["À commander", "section", function () { goTab("commande"); }], ["Comptage", "section", function () { goTab("comptage"); }],
+      ["Historique", "section", function () { goTab("historique"); }], ["Données et prévisions", "section", function () { goTab("donnees"); }],
+      ["Corbeille", "section", function () { goTab("corbeille"); }]
+    ];
+    if (isAdmin) a.splice(6, 0, ["Utilisateurs et invitations", "section", function () { goTab("utilisateurs"); }]);
+    a.push(["Ajouter un article", "action", function () { openItem(null); }], ["Scanner un code-barres", "action", function () { $("scanBtn").click(); }],
+      ["Importer un fichier", "action", function () { $("importFile").click(); }], ["Sauvegardes", "action", openBackups], ["Factures importées", "action", openJrn],
+      ["Doublons possibles", "action", openDup], ["Aide et raccourcis", "aide", openHelp]);
+    if (cabinets.length > 1) a.push(["Changer de cabinet", "action", function () { $("switchBtn").click(); }]);
+    if (ownerOk) a.push(["Créer un cabinet", "action", openNewCab]);
+    return a;
+  }
+  function kRender() {
+    var q = norm($("kIn").value).trim(), words = q.split(/\s+/).filter(Boolean), res = [], list = $("kList");
+    if (q.length >= 2) {
+      var n = 0;
+      items.forEach(function (it) {
+        if (n >= 8) return;
+        var hay = norm([it.name, it.description, it.ref, it.supplier, it.subcategory, it.category].join(" "));
+        if (words.every(function (w) { return hay.indexOf(w) !== -1; })) { n++; res.push({ head: "Articles", label: it.name, hint: (it.category || "") + " · stock " + fmt(it.qty), run: function () { openItem(it); } }); }
+      });
+    }
+    kActions().forEach(function (a) { if (!q || words.every(function (w) { return norm(a[0]).indexOf(w) !== -1; })) res.push({ head: "Sections et actions", label: a[0], hint: a[1], run: a[2] }); });
+    kRes = res; kSel = 0; list.textContent = "";
+    if (!res.length) { list.append(h("li", { class: "k-head", text: "Aucun résultat" })); return; }
+    var lastHead = "";
+    res.forEach(function (r, i) {
+      if (r.head !== lastHead) { lastHead = r.head; list.append(h("li", { class: "k-head", role: "presentation", text: r.head })); }
+      list.append(h("li", { role: "option", "aria-selected": i === 0 ? "true" : "false", "data-i": String(i), onclick: function () { kRun(i); } }, h("span", { text: r.label }), h("small", { text: r.hint })));
+    });
+  }
+  function kMove(d) {
+    if (!kRes.length) return;
+    kSel = (kSel + d + kRes.length) % kRes.length;
+    $("kList").querySelectorAll("li[role=option]").forEach(function (li) { li.setAttribute("aria-selected", li.getAttribute("data-i") === String(kSel) ? "true" : "false"); });
+    var cur = $("kList").querySelector('li[aria-selected="true"]'); if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: "nearest" });
+  }
+  function kRun(i) { var r = kRes[i]; if (!r) return; $("kDlg").close(); setTimeout(r.run, 0); }
+  function openPalette() {
+    if (!db) return;
+    $("kIn").value = ""; kRender(); $("kDlg").showModal();
+    setTimeout(function () { $("kIn").focus(); }, 0);
+  }
+  // ---------- aide et visite guidée ----------
+  var HELP = {
+    inventaire: ["Stock", "Choisissez un domaine, puis utilisez « − » et « + » pour sortir ou ajouter une unité. Cliquez sur le chiffre pour saisir plusieurs unités (des boutons 1, 2, 5, 10… vont plus vite que le clavier) ou un numéro de lot. Cliquez sur le nom pour ouvrir la fiche de l'article. Sur téléphone, balayez une ligne vers la gauche pour sortir 1, vers la droite pour ajouter 1."],
+    favoris: ["Favoris", "Les produits que vous sortez le plus, en grosses cartes avec « − 1 » et « + 1 ». Pour y ajouter un produit, cliquez sur l'étoile à côté de son nom dans l'onglet Stock."],
+    commande: ["À commander", "Les produits sous leur seuil, regroupés par fournisseur. « Marquer comme commandé » les met de côté pour ne pas les recommander ; « Reçu » enregistre l'arrivée du stock."],
+    comptage: ["Comptage", "L'écran de l'inventaire : saisissez ce que vous avez compté en rayon, puis « Enregistrer le comptage ». Les écarts sont gardés dans l'Historique."],
+    historique: ["Historique", "Tous les mouvements de stock, avec la personne, l'heure et la note. Pratique pour comprendre une différence."],
+    donnees: ["Données et prévisions", "Vos dépenses d'après les factures importées, l'évolution des prix et une estimation des dépenses à venir. Pour les alimenter, importez vos factures PDF."],
+    utilisateurs: ["Utilisateurs", "Invitez une personne par e-mail, choisissez son rôle et suivez les invitations en attente. Réservé aux administrateurs du cabinet."],
+    corbeille: ["Corbeille", "Les articles retirés de la liste. Vous pouvez les restaurer ou les supprimer définitivement. Un import ne les recrée pas."]
+  };
+  function openHelp() {
+    var cur = HELP[state.tab] || HELP.inventaire, body = $("helpBody");
+    $("helpTitle").textContent = "Aide : " + cur[0];
+    body.textContent = "";
+    body.append(h("p", { text: cur[1] }));
+    var g = h("div"); g.append(h("h3", { text: "Gestes et astuces" }));
+    var ul = h("ul");
+    ["↶ Annuler (en haut) corrige la dernière action ; Ctrl ou Cmd + Z fait la même chose.", "Scanner lit le code-barres d'un produit pour le retrouver ou ajouter du stock.", "« ⬆ Importer un fichier » lit un fichier Excel, CSV ou une facture PDF.", "Le menu de gauche : amenez la souris contre le bord gauche, ou touchez ☰ sur téléphone."].forEach(function (t) { ul.append(h("li", { text: t })); });
+    g.append(ul); body.append(g);
+    var k = h("div"); k.append(h("h3", { text: "Raccourcis clavier (ordinateur)" }));
+    var kul = h("ul");
+    [["Ctrl / Cmd + K", "recherche universelle"], ["/", "aller à la recherche"], ["n", "nouvel article"], ["s", "scanner"], ["?", "cette aide"]].forEach(function (r) {
+      kul.append(h("li", null, h("span", { class: "kbd", text: r[0] }), " " + r[1]));
+    });
+    k.append(kul); body.append(k);
+    $("helpDlg").showModal();
+  }
+  var TOUR = [
+    ["👋", "Bienvenue dans SimSimStock", "Votre stock de matériel, cabinet par cabinet. Cette visite dure une minute."],
+    ["📋", "Le menu à gauche", "Amenez la souris contre le bord gauche de l'écran (ou touchez ☰ sur téléphone) pour changer de section : Stock, Favoris, À commander, Comptage, Données…"],
+    ["➕", "Sortir ou ajouter du stock", "Dans la liste, « − » sort une unité et « + » en ajoute une. Cliquez sur le chiffre pour saisir une quantité. Sur téléphone, balayez une ligne. Le bouton ↶ Annuler en haut corrige une erreur."],
+    ["📷", "Scanner et importer", "« Scanner » lit le code-barres d'un produit. « Importer un fichier » lit un fichier Excel ou une facture PDF, et ajoute le stock pour vous."],
+    ["🔎", "Tout trouver vite", "Ctrl + K (ou Cmd + K) ouvre la recherche universelle. Le bouton « ? » en haut ouvre l'aide à tout moment."]
+  ];
+  var tourIdx = 0;
+  function tourShow() {
+    var t = TOUR[tourIdx];
+    $("tourIcon").textContent = t[0]; $("tourTitle").textContent = t[1]; $("tourText").textContent = t[2];
+    var dots = $("tourDots"); dots.textContent = "";
+    TOUR.forEach(function (_, i) { dots.append(h("i", { class: i === tourIdx ? "on" : "" })); });
+    $("tourPrev").classList.toggle("hidden", tourIdx === 0);
+    $("tourNext").textContent = tourIdx === TOUR.length - 1 ? "Terminer" : "Suivant";
+    $("tourSkip").classList.toggle("hidden", tourIdx === TOUR.length - 1);
+  }
+  function openTour() { tourIdx = 0; tourShow(); $("tourDlg").showModal(); }
+  function endTour() { try { localStorage.setItem("simsim_tour", "1"); } catch (e) {} $("tourDlg").close(); }
+  function maybeTour() {
+    var seen = false; try { seen = localStorage.getItem("simsim_tour") === "1"; } catch (e) {}
+    if (seen) return;
+    setTimeout(function () { if (!document.querySelector("dialog[open]") && db) openTour(); }, 900);
+  }
   function updateSelBar() {
     var n = state.sel.size;
     $("selbar").classList.toggle("hidden", !(state.select && state.tab === "inventaire"));
@@ -1851,9 +2068,18 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
     }
     var table = h("div", { class: "table" });
     table.append(h("div", { class: "row head" }, h("div", { text: "Article" }), h("div", { text: "Quantité" }), h("div", { text: "État" })));
+    var sig = [state.tab, state.cat, state.q, state.filter, JSON.stringify(state.f), state.hideCat, state.hideDup].join("|");
+    if (sig !== state.limitSig) { state.limitSig = sig; state.limit = 60; }
     var grouped = !state.f.sort;
     var hasSubs = grouped && list.some(function (x) { return x.subcategory; });
-    list.forEach(function (it, i) {
+    // affichage par paquets : on ne dessine que les premières lignes, le reste vient avec « Voir la suite »
+    var shownList = [], drawn = 0;
+    for (var li = 0; li < list.length; li++) {
+      var cur = list[li], ck = (state.cat && hasSubs) ? state.cat + "|" + (cur.subcategory || "Sans sous-catégorie") : "";
+      if (!(ck && state.collapsed[ck])) { if (drawn >= state.limit) break; drawn++; }
+      shownList.push(cur);
+    }
+    shownList.forEach(function (it, i) {
       var cname = it.category || "Sans domaine";
       var prevIt = list[i - 1];
       if (grouped && !state.cat && (!prevIt || (prevIt.category || "Sans domaine") !== cname)) {
@@ -1885,7 +2111,7 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
       var nLots = (lotsByItem[it.id] || []).length;
       if (nLots) meta.push(nLots + " lot" + (nLots > 1 ? "s" : ""));
       if (docCounts[it.id]) meta.push(docCounts[it.id] + " doc" + (docCounts[it.id] > 1 ? "s" : ""));
-      table.append(h("div", { class: "row" + (it.tracked === false ? " untracked" : "") },
+      var rowEl = h("div", { class: "row" + (it.tracked === false ? " untracked" : "") },
         h("div", { class: "c-name" + (it.photo ? " has-photo" : "") },
           it.photo ? h("img", { class: "thumb", src: it.photo, alt: "", loading: "lazy", onclick: function () { openItem(it); } }) : null,
           h("div", { class: "nameline" },
@@ -1896,9 +2122,15 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
             it.description ? h("span", { class: "desc", text: it.description }) : null),
           h("div", { class: "meta c-meta", text: meta.join(" · ") })),
         qtyCell(it, unit),
-        h("div", { class: "c-status" }, chipFor(it))));
+        h("div", { class: "c-status" }, chipFor(it)));
+      attachSwipe(rowEl, it);
+      table.append(rowEl);
     });
     box.append(table);
+    if (shownList.length < list.length) {
+      var left = list.length - shownList.length;
+      box.append(h("div", { class: "morebar" }, h("button", { class: "btn", type: "button", onclick: function () { state.limit += 60; render(); }, text: "Voir la suite (" + left + " restant" + (left > 1 ? "s" : "") + ")" })));
+    }
   }
 
   function suggestedQty(it) {
@@ -2213,6 +2445,9 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
   function syncTabs() {
     document.querySelectorAll(".tab").forEach(function (t) {
       t.setAttribute("aria-selected", t.getAttribute("data-tab") === state.tab ? "true" : "false");
+    });
+    document.querySelectorAll("#bottombar [data-go]").forEach(function (b) {
+      if (b.getAttribute("data-go") === state.tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
   }
 
@@ -3500,7 +3735,8 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
       if (target === "utilisateurs") loadUsers();
     });
   });
-  $("search").addEventListener("input", function (e) { state.q = e.target.value; render(); });
+  var searchTimer = null;
+  $("search").addEventListener("input", function (e) { var v = e.target.value; clearTimeout(searchTimer); searchTimer = setTimeout(function () { state.q = v; render(); }, 130); });
   $("addBtn").addEventListener("click", function () { openItem(null); });
   $("importBtn").addEventListener("click", function () { $("importFile").click(); });
   $("importBar").addEventListener("click", function () { $("importFile").click(); });
@@ -4111,6 +4347,7 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
     state.tab = "inventaire"; state.filter = "all"; state.cat = ""; state.q = ""; $("search").value = "";
     syncTabs(); showScreen("app"); startData(); render();
     if (welcomePw) { welcomePw = false; toast("Bienvenue ! Choisissez un mot de passe pour vous reconnecter facilement."); openPw(null); }
+    else maybeTour();
   }
   function loadCabinets() {
     return sb.from("cabinets").select("id,name").order("name").then(function (res) {
@@ -4148,6 +4385,45 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
       render();
     }
   }
+  $("kBtn").addEventListener("click", openPalette);
+  $("helpBtn").addEventListener("click", openHelp);
+  $("helpClose").addEventListener("click", function () { $("helpDlg").close(); });
+  $("helpTour").addEventListener("click", function () { $("helpDlg").close(); openTour(); });
+  $("tourSkip").addEventListener("click", endTour);
+  $("tourPrev").addEventListener("click", function () { if (tourIdx > 0) { tourIdx--; tourShow(); } });
+  $("tourNext").addEventListener("click", function () { if (tourIdx >= TOUR.length - 1) endTour(); else { tourIdx++; tourShow(); } });
+  $("kIn").addEventListener("input", kRender);
+  $("kIn").addEventListener("keydown", function (e) {
+    if (e.key === "ArrowDown") { e.preventDefault(); kMove(1); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); kMove(-1); }
+    else if (e.key === "Enter") { e.preventDefault(); kRun(kSel); }
+  });
+  document.querySelectorAll("#qchips button").forEach(function (b) {
+    b.addEventListener("click", function () { $("adjQty").value = b.getAttribute("data-q"); $("adjQty").focus(); });
+  });
+  document.querySelectorAll("#bottombar [data-go]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var t = b.getAttribute("data-go");
+      if (t === "inventaire") { state.cat = ""; state.q = ""; $("search").value = ""; clearFilters(); }
+      goTab(t);
+    });
+  });
+  $("bbScan").addEventListener("click", function () { $("scanBtn").click(); });
+  $("bbMenu").addEventListener("click", function () { $("menuBtn").click(); });
+  document.addEventListener("keydown", function (e) {
+    if (!db || $("app").classList.contains("hidden")) return;
+    var t = e.target || {}, typing = /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable;
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && String(e.key).toLowerCase() === "k") {
+      e.preventDefault();
+      if ($("kDlg").open) $("kDlg").close(); else if (!document.querySelector("dialog[open]")) openPalette();
+      return;
+    }
+    if (typing || e.metaKey || e.ctrlKey || e.altKey || document.querySelector("dialog[open]")) return;
+    if (e.key === "/") { e.preventDefault(); goTab("inventaire"); $("search").focus(); }
+    else if (e.key === "n" && !readOnly) { e.preventDefault(); openItem(null); }
+    else if (e.key === "s") { e.preventDefault(); $("scanBtn").click(); }
+    else if (e.key === "?") { e.preventDefault(); openHelp(); }
+  });
   $("newCabBtn").addEventListener("click", openNewCab);
   $("pickNew").addEventListener("click", openNewCab);
   $("cabCancel").addEventListener("click", function () { $("cabDlg").close(); });
