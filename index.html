@@ -202,9 +202,12 @@ label.f select { padding:8px 10px; border:1px solid var(--line); border-radius:8
 .supplier { background:var(--surface); border:1px solid var(--line); border-radius:12px; margin-bottom:14px; overflow:hidden; box-shadow:var(--shadow); }
 .supplier header { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:12px 14px; background:var(--surface-2); flex-wrap:wrap; }
 .supplier h3 { font-size:17px; }
-.line { display:grid; grid-template-columns:minmax(0,2fr) 90px 90px 90px; gap:10px; padding:9px 14px; border-top:1px solid var(--line); align-items:center; }
+.line { display:grid; grid-template-columns:minmax(0,2fr) 80px 156px 96px; gap:10px; padding:9px 14px; border-top:1px solid var(--line); align-items:center; }
 .line .num { text-align:right; font-variant-numeric:tabular-nums; }
 .line.head { color:var(--muted); font-size:12.5px; font-weight:600; border-top:0; }
+.ostep { display:flex; gap:4px; justify-content:flex-end; align-items:center; }
+.oqty { width:56px; text-align:center; padding:6px 2px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); font:inherit; font-weight:700; -moz-appearance:textfield; appearance:textfield; }
+.oqty::-webkit-inner-spin-button, .oqty::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
 
 .log { background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); }
 .log-row { display:grid; grid-template-columns:130px minmax(0,1fr) 70px 70px; gap:10px; padding:9px 14px; border-top:1px solid var(--line); align-items:baseline; }
@@ -394,7 +397,9 @@ details.prd > summary::-webkit-details-marker { display:none; }
   .row .c-name { grid-area:name; } .row .c-status { grid-area:status; justify-self:end; }
   .row .c-qty { grid-area:qty; } .row .c-meta { grid-area:meta; }
   .row .c-loc, .row .c-sup { display:none; }
-  .line { grid-template-columns:minmax(0,1.6fr) 60px 60px 70px; font-size:14px; }
+  .line { grid-template-columns:minmax(0,1.4fr) 50px 122px 64px; font-size:14px; }
+  .ostep .step { width:28px; height:28px; font-size:15px; }
+  .oqty { width:42px; }
   .crow { grid-template-columns:minmax(0,1fr) 80px 80px; }
   .prow { grid-template-columns:28px minmax(0,1fr) 70px; }
   .prow .pc-dom, .prow .pc-st { grid-column:2 / -1; }
@@ -593,7 +598,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v44</div>
+            <div class="menu-who"><span id="who"></span> · v45</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -2256,6 +2261,17 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     }
   }
 
+  // Quantités à commander modifiées à la main (gardées sur l'appareil, par cabinet, jusqu'à la commande)
+  var orderQty = {};
+  function orderKey() { return "simsim_orderqty_" + (cabinetId || ""); }
+  function loadOrderQty() { try { orderQty = JSON.parse(localStorage.getItem(orderKey()) || "{}") || {}; } catch (e) { orderQty = {}; } }
+  function saveOrderQty() { try { localStorage.setItem(orderKey(), JSON.stringify(orderQty)); } catch (e) {} }
+  function orderQtyOf(it) { var v = Number(orderQty[it.id]); return v >= 1 ? v : suggestedQty(it); }
+  function setOrderQty(it, n) {
+    n = Math.max(1, Math.round(Number(n) || 0));
+    if (n === suggestedQty(it)) delete orderQty[it.id]; else orderQty[it.id] = n;
+    saveOrderQty(); render();
+  }
   function suggestedQty(it) {
     var target = it.target > 0 ? it.target : Math.max((it.min || 0) * 2, 1);
     return Math.max(1, Math.ceil(target - (it.qty || 0)));
@@ -2304,13 +2320,13 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     for (var p = 1; p <= n2; p++) { doc.setPage(p); doc.setFontSize(8); doc.setTextColor(120); doc.text("Page " + p + " / " + n2 + " · SimSimStock", W / 2, 290, { align: "center" }); }
     return doc;
   }
-  function pdfMoney(n) { return money(n).replace(/[  ]/g, " "); }
+  function pdfMoney(n) { return money(n).replace(/[\u202f\u00a0]/g, " "); }
   function orderPdf(sup, arr) {
     var lib = window.jspdf && window.jspdf.jsPDF;
     if (!lib) { toast("Le PDF n'a pas pu être créé : vérifiez votre accès à internet, puis rechargez la page."); return; }
     var pm = achOk ? lastPriceMap(spendRows()) : {};
     var lines = arr.slice().sort(function (a, b) { return norm(a.name).localeCompare(norm(b.name)); }).map(function (it) {
-      return { ref: it.ref || "", name: it.name || "", qty: suggestedQty(it), unit: it.unit || "", price: priceOf(it, pm) };
+      return { ref: it.ref || "", name: it.name || "", qty: orderQtyOf(it), unit: it.unit || "", price: priceOf(it, pm) };
     });
     var doc = buildOrderPdf(lib, { cabinet: cabinetName, supplier: sup, user: myEmail, date: new Date().toLocaleDateString("fr-FR"), lines: lines, fmtMoney: pdfMoney });
     doc.save("bon-de-commande-" + bkSlug(sup) + "-" + new Date().toISOString().slice(0, 10) + ".pdf");
@@ -2319,6 +2335,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
   function setOrdered(it, qty, opts) {
     if (!db || readOnly) return;
     if (!ordOk) { toast("Lancez d'abord le script SQL « ajout-commandes-photos » dans Supabase."); return; }
+    if (qty > 0 && orderQty[it.id]) { delete orderQty[it.id]; saveOrderQty(); }
     var patch = qty > 0 ? { ordered_qty: r2(qty), ordered_at: new Date().toISOString() } : { ordered_qty: 0, ordered_at: null };
     var cur = items.get(it.id) || it;
     var snapO = { qty: Number(cur.ordered_qty) || 0, at: cur.ordered_at || null };
@@ -2336,7 +2353,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     state.ordering = it;
     $("ordTitle").textContent = labelOf(it);
     $("ordInfo").textContent = "En stock : " + fmt(it.qty) + (it.unit ? " " + it.unit : "") + ". Le produit passera dans « Déjà commandés » et ne sera plus proposé à la commande.";
-    $("ordQty").value = String(suggestedQty(it));
+    $("ordQty").value = String(orderQtyOf(it));
     $("ordDlg").showModal();
     setTimeout(function () { $("ordQty").focus(); $("ordQty").select(); }, 0);
   }
@@ -2368,7 +2385,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
       var lines = h("div");
       lines.append(h("div", { class: "line head" }, h("div", { text: "Article" }), h("div", { class: "num", text: "En stock" }), h("div", { class: "num", text: "À commander" }), h("div", { class: "num", text: "Montant HT" })));
       arr.forEach(function (it) {
-        var q = suggestedQty(it);
+        var q = orderQtyOf(it);
         var amount = it.price > 0 ? q * it.price : null;
         if (amount !== null) { total += amount; hasPrice = true; }
         var dlo = daysLeft(it);
@@ -2376,24 +2393,28 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
           h("div", null, h("div", { text: labelOf(it) }), h("div", { class: "meta", text: [it.ref ? "réf. " + it.ref : "", dlo !== null && dlo > 0 ? "≈ " + fmtDays(dlo) + " de stock" : "", priceNote(it)].filter(Boolean).join(" · ") }),
             readOnly ? null : h("button", { class: "btn sm", onclick: function () { openOrdDlg(it); }, text: "Marquer comme commandé" })),
           h("div", { class: "num", text: fmt(it.qty) }),
-          h("div", { class: "num", text: fmt(q) + (it.unit ? " " + it.unit : "") }),
+          readOnly ? h("div", { class: "num", text: fmt(q) + (it.unit ? " " + it.unit : "") }) : h("div", { class: "num ostep" },
+            h("button", { class: "step", type: "button", "aria-label": "Commander une unité de moins : " + it.name, disabled: q <= 1, onclick: function () { setOrderQty(it, q - 1); }, text: "−" }),
+            h("input", { class: "oqty", type: "number", min: "1", step: "1", inputmode: "numeric", value: String(q), title: it.unit ? "en " + it.unit : "", "aria-label": "Quantité à commander : " + it.name, onchange: function (e) { setOrderQty(it, e.target.value); } }),
+            h("button", { class: "step", type: "button", "aria-label": "Commander une unité de plus : " + it.name, onclick: function () { setOrderQty(it, q + 1); }, text: "+" })),
           h("div", { class: "num", text: amount !== null ? money(amount) : "—" })));
       });
       var text = "Commande " + sup + "\n" + arr.map(function (it) {
-        return "- " + suggestedQty(it) + (it.unit ? " " + it.unit : "") + " × " + labelOf(it) + (it.ref ? " (réf. " + it.ref + ")" : "");
+        return "- " + orderQtyOf(it) + (it.unit ? " " + it.unit : "") + " × " + labelOf(it) + (it.ref ? " (réf. " + it.ref + ")" : "");
       }).join("\n");
       card.append(
         h("header", null,
           h("h3", { text: sup + " (" + arr.length + ")" }),
           h("div", { class: "qty" },
             hasPrice ? h("span", { class: "meta", text: "Total estimé " + money(total) }) : null,
+            arr.some(function (it) { return orderQty[it.id]; }) ? h("button", { class: "btn sm", type: "button", onclick: function () { arr.forEach(function (it) { delete orderQty[it.id]; }); saveOrderQty(); render(); }, text: "↺ Quantités proposées" }) : null,
             h("button", { class: "btn sm", onclick: function () { copyText(text); }, text: "Copier la commande" }),
             h("button", { class: "btn sm", onclick: function () { orderPdf(sup, arr); }, text: "Bon de commande (PDF)" }),
             h("a", { class: "btn sm", href: "mailto:?subject=" + encodeURIComponent("Commande " + cabinetName + " : " + sup) + "&body=" + encodeURIComponent(text + "\n\nCordialement,\n" + cabinetName), text: "E-mail" }),
             readOnly ? null : h("button", { class: "btn sm", onclick: function () {
               if (!ordOk) { toast("Lancez d'abord le script SQL « ajout-commandes-photos » dans Supabase."); return; }
               var snaps = arr.map(function (it) { return { id: it.id, snap: { qty: Number(it.ordered_qty) || 0, at: it.ordered_at || null } }; });
-              arr.forEach(function (it) { setOrdered(it, suggestedQty(it), { noUndo: true }); });
+              arr.forEach(function (it) { setOrdered(it, orderQtyOf(it), { noUndo: true }); });
               pushUndo({ kind: "order", list: snaps, label: "commande de " + arr.length + " produit" + (arr.length > 1 ? "s" : "") + " (" + sup + ")" });
               toast(arr.length + " produit" + (arr.length > 1 ? "s" : "") + " marqué" + (arr.length > 1 ? "s" : "") + " comme commandé" + (arr.length > 1 ? "s" : "") + ".");
             }, text: "Tout marquer comme commandé" }))),
@@ -4528,6 +4549,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     updateOwnerBtns();
     document.querySelector('.tab[data-tab="utilisateurs"]').classList.toggle("hidden", !isAdmin);
     usersData.members = null; usersData.msg = ""; usersData.mail = null;
+    loadOrderQty();
     state.tab = "inventaire"; state.filter = "all"; state.cat = ""; state.q = ""; $("search").value = "";
     syncTabs(); showScreen("app"); startData(); render();
     if (welcomePw) { welcomePw = false; toast("Bienvenue ! Choisissez un mot de passe pour vous reconnecter facilement."); openPw(null); }
