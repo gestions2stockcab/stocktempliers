@@ -545,6 +545,12 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
 .recv .rg.warn summary { color:var(--warn); }
 .recv .rg.ok summary { color:var(--ok); }
 .recv ul { margin:4px 0 2px 18px; padding:0; font-size:14px; }
+
+/* ===== v48 : signalement « presque plus » ===== */
+.flagbtn { border:0; background:transparent; color:var(--muted); opacity:.5; cursor:pointer; font-size:15px; line-height:1; padding:0 4px; }
+.flagbtn:hover, .flagbtn:focus-visible { opacity:1; color:var(--brand); }
+.flagbtn.on { color:#d9480f; opacity:1; }
+.btn.flagged { border-color:#d9480f; color:#d9480f; }
 </style>
 </head>
 <body>
@@ -616,7 +622,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v47</div>
+            <div class="menu-who"><span id="who"></span> · v48</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -732,6 +738,9 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
           </label>
           <label class="f">Stock cible après commande
             <input id="f_target" type="number" min="0" step="any" inputmode="decimal">
+          </label>
+          <label class="f" id="packBox">Commande par lots de
+            <input id="f_pack" type="number" min="0" step="any" inputmode="decimal" placeholder="1 (à l'unité)">
           </label>
           <label class="f">Prix unitaire HT (€)
             <input id="f_price" type="number" min="0" step="any" inputmode="decimal">
@@ -959,6 +968,16 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
         <input id="adjNote" autocomplete="off">
       </label>
     </div>
+    <label class="f hidden" id="adjReasonBox">Motif de la sortie
+      <select id="adjReason">
+        <option value="">Utilisé en soin</option>
+        <option value="expired">Périmé</option>
+        <option value="damaged">Cassé ou abîmé</option>
+        <option value="lost">Perdu ou introuvable</option>
+        <option value="gift">Don ou prêt</option>
+        <option value="other">Autre</option>
+      </select>
+    </label>
     <div class="qchips" id="qchips" aria-label="Quantités rapides">
       <button type="button" data-q="1">1</button><button type="button" data-q="2">2</button><button type="button" data-q="3">3</button><button type="button" data-q="5">5</button><button type="button" data-q="10">10</button><button type="button" data-q="20">20</button><button type="button" data-q="50">50</button>
     </div>
@@ -1006,7 +1025,9 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
   var docCounts = {};
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
-  var barcodeOk = false, descOk = false, trackedOk = false, subOk = false, favOk = false, lotsOk = false, lotsByItem = {}, ordOk = false, photoOk = false, jrnOk = false, consoOk = false, jrnByNumber = {}, conso = {}, consoDebut = 0, consoAt = 0;
+  var barcodeOk = false, descOk = false, trackedOk = false, subOk = false, favOk = false, lotsOk = false, lotsByItem = {}, ordOk = false, photoOk = false, jrnOk = false, consoOk = false, jrnByNumber = {}, conso = {}, consoDebut = 0, consoAt = 0, reasonOk = false, packOk = false, pertes = { ok: false, rows: [] };
+  var REASONS = { expired: "Périmé", damaged: "Cassé ou abîmé", lost: "Perdu ou introuvable", gift: "Don ou prêt", other: "Autre" };
+  var LOSS = ["expired", "damaged", "lost"];
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false, ownerOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
@@ -1075,7 +1096,8 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
       location: r.location || "", unit: r.unit || "", qty: Number(r.qty) || 0, min: Number(r.min) || 0,
       target: Number(r.target) || 0, lot: r.lot || "", expiry: r.expiry || "", price: Number(r.price) || 0,
       barcode: r.barcode || "", description: r.description || "", tracked: r.tracked !== false || (Number(r.qty) || 0) > 0 || (Number(r.min) || 0) > 0, subcategory: r.subcategory || "", favorite: r.favorite === true, archived: r.archived === true,
-      ordered_qty: Number(r.ordered_qty) || 0, ordered_at: r.ordered_at || "", photo: r.photo || ""
+      ordered_qty: Number(r.ordered_qty) || 0, ordered_at: r.ordered_at || "", photo: r.photo || "",
+      pack: Number(r.pack_size) || 0, flag_at: r.low_flag_at || "", flag_by: r.low_flag_by || ""
     };
   }
   // Lit toutes les lignes par pages de 1000 (limite de l'API), dans un ordre stable.
@@ -1106,6 +1128,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     if (subOk) row.subcategory = d.subcategory || null;
     if (favOk) row.favorite = !!d.favorite;
     if (photoOk) row.photo = d.photo || null;
+    if (packOk && "pack" in d) row.pack_size = d.pack > 0 ? d.pack : null;
     return row;
   }
   function check(res) {
@@ -1148,16 +1171,21 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     logIds.add(r.id);
     logEntries.push({
       id: r.id, t: Date.parse(r.created_at) || Date.now(), uid: r.user_email || "", itemId: r.item_id,
-      item: r.item || "", type: r.type || "", delta: Number(r.delta) || 0, qty: Number(r.qty) || 0, note: r.note || ""
+      item: r.item || "", type: r.type || "", delta: Number(r.delta) || 0, qty: Number(r.qty) || 0, note: r.note || "", reason: r.reason || ""
     });
     if (logEntries.length > 300) logEntries.shift();
     if (state.tab === "historique") render();
   }
   function appendLog(entry) {
-    return sb.from("movements").insert({
+    var row = {
       cabinet_id: cabinetId, user_email: myEmail, item_id: entry.itemId || null, item: entry.item || "", type: entry.type || "",
       delta: entry.delta || 0, qty: entry.qty || 0, note: entry.note || ""
-    }).select().single().then(function (res) { addLogRow(check(res)); });
+    };
+    if (reasonOk && entry.reason) row.reason = entry.reason;
+    return sb.from("movements").insert(row).select().single().then(function (res) {
+      addLogRow(check(res));
+      if (row.reason && LOSS.indexOf(row.reason) !== -1) { loadPertes(); loadConso(); }
+    });
   }
   // ---------- lots et péremptions ----------
   function r2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
@@ -1213,6 +1241,8 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     if ("tracked" in p) o.tracked = p.tracked !== false;
     if ("ordered_qty" in p) o.ordered_qty = Number(p.ordered_qty) || 0;
     if ("ordered_at" in p) o.ordered_at = p.ordered_at || "";
+    if ("low_flag_at" in p) o.flag_at = p.low_flag_at || "";
+    if ("low_flag_by" in p) o.flag_by = p.low_flag_by || "";
     return o;
   }
   // Une entrée de stock diminue d'autant la quantité « déjà commandée ».
@@ -1271,6 +1301,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
       var extra = {};
       if (trackedOk) extra.tracked = u.snap.tracked !== false;
       if (ordOk) { extra.ordered_qty = u.snap.ordered_qty || 0; extra.ordered_at = u.snap.ordered_at || null; }
+      if (packOk && "flag_at" in u.snap) { extra.low_flag_at = u.snap.flag_at || null; extra.low_flag_by = u.snap.flag_by || null; }
       var hadLots = u.snap.lots.length > 0, hasNow = (lotsByItem[u.id] || []).length > 0, p;
       if (lotsOk && (hadLots || hasNow)) {
         var over = hadLots ? extra : Object.assign({ qty: u.snap.qty, expiry: u.snap.expiry || null, lot: u.snap.lot || "" }, extra);
@@ -1280,7 +1311,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
         p = sb.from("items").update(patch).eq("id", u.id).then(check).then(function () { items.set(u.id, Object.assign({}, c2, { qty: u.snap.qty }, localFields(patch))); render(); });
       }
       return p.then(function () {
-        return appendLog({ type: "undo", itemId: u.id, item: c2.name, delta: r2(u.snap.qty - u.afterQty), qty: u.snap.qty, note: "Annulation : " + u.label });
+        return appendLog({ type: "undo", itemId: u.id, item: c2.name, delta: r2(u.snap.qty - u.afterQty), qty: u.snap.qty, note: "Annulation : " + u.label, reason: u.reason || "" });
       }).then(function () { toast("Annulé : " + u.label); });
     });
   }
@@ -1298,17 +1329,18 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     var after = Math.max(0, r2(before + delta));
     var real = r2(after - before);
     if (real === 0) return Promise.resolve();
-    var snap = { qty: before, tracked: cur.tracked !== false, ordered_qty: Number(cur.ordered_qty) || 0, ordered_at: cur.ordered_at || null, expiry: cur.expiry || "", lot: cur.lot || "", lots: [] };
+    var snap = { qty: before, tracked: cur.tracked !== false, ordered_qty: Number(cur.ordered_qty) || 0, ordered_at: cur.ordered_at || null, expiry: cur.expiry || "", lot: cur.lot || "", lots: [], flag_at: cur.flag_at || "", flag_by: cur.flag_by || "" };
     var patch = { qty: after, updated_at: new Date().toISOString() };
     if (cur.tracked === false && trackedOk && real > 0) patch.tracked = true;
     var op = orderedPatch(cur, real);
     if (op) Object.assign(patch, op);
+    if (packOk && cur.flag_at && real > 0) { patch.low_flag_at = null; patch.low_flag_by = null; }
     return sb.from("items").update(patch).eq("id", id).then(function (res) {
       check(res);
       var c2 = items.get(id);
       if (c2) { items.set(id, Object.assign({}, c2, { qty: after }, localFields(patch))); render(); }
-      if (!(opts && opts.noUndo)) pushUndo({ kind: "move", id: id, snap: snap, afterQty: after, label: moveLabel(real, cur.name) });
-      return appendLog({ type: "move", itemId: id, item: cur.name, delta: real, qty: after, note: note || "" });
+      if (!(opts && opts.noUndo)) pushUndo({ kind: "move", id: id, snap: snap, afterQty: after, label: moveLabel(real, cur.name), reason: (opts && opts.reason) || "" });
+      return appendLog({ type: "move", itemId: id, item: cur.name, delta: real, qty: after, note: note || "", reason: (opts && opts.reason) || "" });
     });
   }
   // Mouvement sur un article qui a des lots : les sorties prennent d'abord le lot qui périme en premier.
@@ -1336,14 +1368,15 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     var after = r2(desired.reduce(function (a, l) { return a + l.qty; }, 0));
     var real = r2(after - before);
     if (real === 0) return Promise.resolve();
-    var snap = { qty: before, tracked: it.tracked !== false, ordered_qty: Number(it.ordered_qty) || 0, ordered_at: it.ordered_at || null, expiry: it.expiry || "", lot: it.lot || "", lots: snapLots };
+    var snap = { qty: before, tracked: it.tracked !== false, ordered_qty: Number(it.ordered_qty) || 0, ordered_at: it.ordered_at || null, expiry: it.expiry || "", lot: it.lot || "", lots: snapLots, flag_at: it.flag_at || "", flag_by: it.flag_by || "" };
     var extra = {};
     if (it.tracked === false && trackedOk && real > 0) extra.tracked = true;
     var op = orderedPatch(it, real);
     if (op) Object.assign(extra, op);
+    if (packOk && it.flag_at && real > 0) { extra.low_flag_at = null; extra.low_flag_by = null; }
     return persistLots(it, desired, Object.keys(extra).length ? extra : null).then(function (dv) {
-      if (!(opts && opts.noUndo)) pushUndo({ kind: "move", id: it.id, snap: snap, afterQty: dv.qty, label: moveLabel(real, it.name) });
-      return appendLog({ type: "move", itemId: it.id, item: it.name, delta: real, qty: dv.qty, note: (note || "") + tag });
+      if (!(opts && opts.noUndo)) pushUndo({ kind: "move", id: it.id, snap: snap, afterQty: dv.qty, label: moveLabel(real, it.name), reason: (opts && opts.reason) || "" });
+      return appendLog({ type: "move", itemId: it.id, item: it.name, delta: real, qty: dv.qty, note: (note || "") + tag, reason: (opts && opts.reason) || "" });
     });
   }
   function saveItem(data, existing) {
@@ -1606,6 +1639,41 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     });
     return wrap;
   }
+  function loadPertes() {
+    if (!sb || !cabinetId || !reasonOk) return;
+    var cid = cabinetId;
+    sb.rpc("pertes_stats", { p_cabinet: cid, p_days: 365 }).then(function (res) {
+      if (cid !== cabinetId) return;
+      if (res.error) { pertes.ok = false; return; }
+      pertes.ok = true;
+      pertes.rows = (res.data || []).map(function (r) { return { id: r.item_id, name: r.item || "", reason: r.reason, qty: Number(r.perdu) || 0 }; });
+      if (state.tab === "donnees") render();
+    }).catch(function () { pertes.ok = false; });
+  }
+  function renderPertes(box, pm) {
+    if (!reasonOk) return;
+    var sec = h("div", { class: "dsec" }, h("h3", { text: "Pertes (12 mois)" }));
+    box.append(sec);
+    var rows = pertes.rows.filter(function (r) { return r.qty > 0; });
+    if (!pertes.ok || !rows.length) {
+      sec.append(h("div", { class: "dnote", text: pertes.ok ? "Aucune perte enregistrée. Quand vous sortez un produit « périmé », « cassé » ou « perdu » (fenêtre de sortie, champ « Motif »), il apparaît ici avec sa valeur." : "Les pertes n'ont pas pu être chargées." }));
+      return;
+    }
+    var val = function (r) { var it = items.get(r.id); return it ? r.qty * priceOf(it, pm) : 0; };
+    var byReason = {}, byItem = {}, units = 0, total = 0, noPrice = 0;
+    rows.forEach(function (r) {
+      var v = val(r); units += r.qty; total += v; if (!(v > 0)) noPrice += r.qty;
+      byReason[REASONS[r.reason] || r.reason] = (byReason[REASONS[r.reason] || r.reason] || 0) + v;
+      var k = r.id || r.name; var o = byItem[k] || (byItem[k] = { k: r.name, v: 0 }); o.v += v;
+    });
+    sec.append(h("div", { class: "sub", text: fmt(r2(units)) + " unité" + (units > 1 ? "s" : "") + " perdue" + (units > 1 ? "s" : "") + ", soit environ " + money(total) + " HT" + (noPrice ? " (" + fmt(r2(noPrice)) + " sans prix connu)" : "") + "." }));
+    var list = function (m) { return Object.keys(m).map(function (k) { return { k: k, v: m[k] }; }).filter(function (x) { return x.v > 0; }).sort(function (a, b) { return b.v - a.v; }); };
+    var two = h("div", { class: "fcgrid" });
+    two.append(h("div", null, h("h3", { text: "Par motif" }), barList(list(byReason), total || 1)));
+    two.append(h("div", null, h("h3", { text: "Produits les plus perdus" }), barList(list(byItem).slice(0, 5), total || 1)));
+    sec.append(two);
+    sec.append(h("div", { class: "dnote", text: "Valeur estimée au dernier prix connu. Les pertes ne sont pas comptées dans la consommation ni dans les seuils suggérés." }));
+  }
   function renderData(box) {
     if (!achOk) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Données non activées" }), h("div", { text: "Lancez le script SQL « ajout-donnees-depenses » dans Supabase pour activer le suivi des dépenses." }))));
@@ -1681,6 +1749,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     var byName = {}; yr.forEach(function (r) { var k = r.ref || r.name; var o = byName[k] || (byName[k] = { k: r.name, v: 0 }); o.v += r.amount; });
     var top = Object.keys(byName).map(function (k) { return byName[k]; }).filter(function (x) { return x.v > 0; }).sort(function (a, b) { return b.v - a.v; });
     box.append(h("div", { class: "dsec" }, h("h3", { text: "Produits les plus coûteux (12 mois)" }), barList(top, tot)));
+    renderPertes(box, lastPriceMap(rows));
     renderPrices(box, rows);
     box.append(h("div", { class: "dsec" }, h("button", { class: "btn sm", onclick: function () { exportData(rows, series, fa, fb, fc); }, text: "Exporter en Excel" })));
   }
@@ -2097,8 +2166,9 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
 
   function renderAlerts() {
     var all = Array.from(items.values());
-    var bas = 0, rupt = 0, exp = 0, total = 0, soon = 0;
+    var bas = 0, rupt = 0, exp = 0, total = 0, soon = 0, flagged = 0;
     all.forEach(function (it) {
+      if (it.flag_at && it.tracked !== false && !(it.ordered_qty > 0)) flagged++;
       var s = statusOf(it);
       if (s === "ok" && isSoon(it)) soon++;
       if (s === "rupture") rupt++;
@@ -2109,7 +2179,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     var home = state.tab === "inventaire" && isHome();
     $("stockValue").textContent = (home && all.length) ? "Valeur du stock (hors équipement) : " + money(total) + " HT · " + money(total * (1 + TVA / 100)) + " TTC (TVA " + TVA + " %)" : "";
     var box = $("alerts"); box.textContent = "";
-    box.classList.toggle("hidden", !home || (!bas && !rupt && !exp && !soon));
+    box.classList.toggle("hidden", !home || (!bas && !rupt && !exp && !soon && !flagged));
     var mk = function (n, label, filter, cls) {
       if (!n) return;
       box.append(h("button", { class: "alert " + cls, onclick: function () { state.filter = filter; state.cat = ""; render(); } },
@@ -2120,6 +2190,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     mk(exp, "péremption à surveiller", "exp", "a-exp");
     if (soon) box.append(h("button", { class: "alert a-bas", onclick: function () { state.filter = "all"; state.cat = ""; state.f.status = "soon"; state.f.sort = "autonomie"; render(); } },
       h("strong", { text: String(soon) }), " bientôt en rupture (moins de 15 jours de stock)"));
+    if (flagged) box.append(h("button", { class: "alert a-bas", onclick: function () { goTab("commande"); } }, h("strong", { text: String(flagged) }), " signalé" + (flagged > 1 ? "s" : "") + " « presque plus »"));
   }
 
   // Couleur du chiffre : plus de 30 vert, de 10 à 30 orange, sous 10 orange foncé, 0 rouge
@@ -2267,6 +2338,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
       if (it.lot) meta.push("lot " + it.lot);
       if (it.expiry) meta.push("exp. " + isoToFr(it.expiry));
       if (it.ordered_qty > 0) meta.push("commandé ×" + fmt(it.ordered_qty) + (it.ordered_at ? " le " + new Date(it.ordered_at).toLocaleDateString("fr-FR") : ""));
+      if (it.flag_at) meta.push("⚑ signalé" + (it.flag_by ? " par " + it.flag_by.split("@")[0] : "") + " le " + new Date(it.flag_at).toLocaleDateString("fr-FR"));
       var dl = daysLeft(it);
       if (dl !== null && dl > 0) meta.push("≈ " + fmtDays(dl) + " de stock");
       if (it.tracked !== false) meta.push("seuil " + fmt(it.min || 0));
@@ -2281,6 +2353,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
             state.select ? h("input", { type: "checkbox", class: "selbox", checked: state.sel.has(it.id), "aria-label": "Sélectionner " + it.name,
               onchange: function (e) { if (e.target.checked) state.sel.add(it.id); else state.sel.delete(it.id); updateSelBar(); } }) : null,
             h("button", { class: "star" + (it.favorite ? " on" : ""), title: it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", "aria-label": it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", onclick: function () { toggleFav(it); }, text: it.favorite ? "★" : "☆" }),
+            flagBtn(it),
             h("button", { class: "item-name", onclick: function () { openItem(it); }, text: it.name || "(sans nom)" }),
             it.description ? h("span", { class: "desc", text: it.description }) : null),
           h("div", { class: "meta c-meta", text: meta.join(" · ") })),
@@ -2303,14 +2376,18 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
   function saveOrderQty() { try { localStorage.setItem(orderKey(), JSON.stringify(orderQty)); } catch (e) {} }
   function orderQtyOf(it) { var v = Number(orderQty[it.id]); return v >= 1 ? v : suggestedQty(it); }
   function setOrderQty(it, n) {
-    n = Math.max(1, Math.round(Number(n) || 0));
+    var pk = packOf(it);
+    n = Math.max(pk, Math.ceil(Math.max(1, Math.round(Number(n) || 0)) / pk) * pk);
     if (n === suggestedQty(it)) delete orderQty[it.id]; else orderQty[it.id] = n;
     saveOrderQty(); render();
   }
   function suggestedQty(it) {
     var target = it.target > 0 ? it.target : Math.max((it.min || 0) * 2, 1);
-    return Math.max(1, Math.ceil(target - (it.qty || 0)));
+    var q = Math.max(1, Math.ceil(target - (it.qty || 0))), pk = Number(it.pack) || 0;
+    if (pk > 1) q = Math.ceil(q / pk) * pk;
+    return q;
   }
+  function packOf(it) { return Math.max(1, Number(it.pack) || 1); }
   function buildOrderPdf(JsPDF, o) {
     var doc = new JsPDF({ unit: "mm", format: "a4" });
     var W = 210, M = 15, y = 0;
@@ -2435,11 +2512,31 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     b.addEventListener("click", function () { openMiniMenu(b, entriesFn()); });
     return b;
   }
+  function toggleFlag(it) {
+    if (readOnly || !db) return;
+    if (!packOk) { toast("Lancez d'abord le script SQL « ajout-motifs-lots-signalements » dans Supabase."); return; }
+    var cur = items.get(it.id) || it, on = !cur.flag_at;
+    var patch = on ? { low_flag_at: new Date().toISOString(), low_flag_by: myEmail } : { low_flag_at: null, low_flag_by: null };
+    items.set(it.id, Object.assign({}, cur, localFields(patch)));
+    render();
+    enqueue(function () {
+      return sb.from("items").update(patch).eq("id", it.id).then(check).then(function () {
+        return appendLog({ type: "edit", itemId: it.id, item: cur.name, delta: 0, qty: Number(cur.qty) || 0, note: on ? "Signalé : il n'y en a presque plus" : "Signalement retiré" });
+      });
+    });
+    toast(on ? "Signalé : « " + cur.name + " » apparaît dans « À commander »." : "Signalement retiré.");
+  }
+  function flagBtn(it) {
+    if (!packOk || readOnly) return null;
+    var on = !!it.flag_at, t = on ? "Retirer le signalement « presque plus »" : "Signaler : il n'y en a presque plus";
+    return h("button", { class: "flagbtn" + (on ? " on" : ""), type: "button", title: t, "aria-label": t + " : " + it.name, "aria-pressed": on ? "true" : "false", onclick: function () { toggleFlag(it); }, text: "⚑" });
+  }
   function setOrdered(it, qty, opts) {
     if (!db || readOnly) return;
     if (!ordOk) { toast("Lancez d'abord le script SQL « ajout-commandes-photos » dans Supabase."); return; }
     if (qty > 0 && orderQty[it.id]) { delete orderQty[it.id]; saveOrderQty(); }
     var patch = qty > 0 ? { ordered_qty: r2(qty), ordered_at: new Date().toISOString() } : { ordered_qty: 0, ordered_at: null };
+    if (qty > 0 && packOk && (items.get(it.id) || it).flag_at) { patch.low_flag_at = null; patch.low_flag_by = null; }
     var cur = items.get(it.id) || it;
     var snapO = { qty: Number(cur.ordered_qty) || 0, at: cur.ordered_at || null };
     items.set(it.id, Object.assign({}, cur, localFields(patch)));
@@ -2462,7 +2559,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
   }
   function renderOrder(box) {
     var all = Array.from(items.values());
-    var need = all.filter(function (it) { return it.tracked !== false && !(it.ordered_qty > 0) && (it.qty || 0) <= (it.min || 0); });
+    var need = all.filter(function (it) { return it.tracked !== false && !(it.ordered_qty > 0) && ((it.qty || 0) <= (it.min || 0) || !!it.flag_at); });
     var phs = achOk ? priceHistories(spendRows()) : {}, d365o = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
     var priceNote = function (it) {
       var o = phs[it.ref || it.name]; if (!o || o.steps.length < 2) return "";
@@ -2493,7 +2590,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
         if (amount !== null) { total += amount; hasPrice = true; }
         var dlo = daysLeft(it);
         lines.append(h("div", { class: "line" },
-          h("div", null, h("div", { text: labelOf(it) }), h("div", { class: "meta", text: [it.ref ? "réf. " + it.ref : "", dlo !== null && dlo > 0 ? "≈ " + fmtDays(dlo) + " de stock" : "", priceNote(it)].filter(Boolean).join(" · ") }),
+          h("div", null, h("div", { text: labelOf(it) }), h("div", { class: "meta", text: [it.ref ? "réf. " + it.ref : "", dlo !== null && dlo > 0 ? "≈ " + fmtDays(dlo) + " de stock" : "", priceNote(it), Number(it.pack) > 1 ? "par lots de " + fmt(it.pack) : "", it.flag_at ? "⚑ signalé" + (it.flag_by ? " par " + it.flag_by.split("@")[0] : "") + " le " + new Date(it.flag_at).toLocaleDateString("fr-FR") : ""].filter(Boolean).join(" · ") }),
             readOnly ? null : h("div", { class: "lineact" },
               h("button", { class: "btn sm", onclick: function () { openOrdDlg(it); }, text: "Marquer comme commandé" }),
               dotsBtn(function () {
@@ -2502,9 +2599,9 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
               }, "Plus d'actions pour " + it.name))),
           h("div", { class: "num", text: fmt(it.qty) }),
           readOnly ? h("div", { class: "num", text: fmt(q) + (it.unit ? " " + it.unit : "") }) : h("div", { class: "num ostep" },
-            h("button", { class: "step", type: "button", "aria-label": "Commander une unité de moins : " + it.name, disabled: q <= 1, onclick: function () { setOrderQty(it, q - 1); }, text: "−" }),
-            h("input", { class: "oqty", type: "number", min: "1", step: "1", inputmode: "numeric", value: String(q), title: it.unit ? "en " + it.unit : "", "aria-label": "Quantité à commander : " + it.name, onchange: function (e) { setOrderQty(it, e.target.value); } }),
-            h("button", { class: "step", type: "button", "aria-label": "Commander une unité de plus : " + it.name, onclick: function () { setOrderQty(it, q + 1); }, text: "+" })),
+            h("button", { class: "step", type: "button", "aria-label": "Commander une unité de moins : " + it.name, disabled: q <= packOf(it), onclick: function () { setOrderQty(it, q - packOf(it)); }, text: "−" }),
+            h("input", { class: "oqty", type: "number", min: String(packOf(it)), step: String(packOf(it)), inputmode: "numeric", value: String(q), title: it.unit ? "en " + it.unit : "", "aria-label": "Quantité à commander : " + it.name, onchange: function (e) { setOrderQty(it, e.target.value); } }),
+            h("button", { class: "step", type: "button", "aria-label": "Commander une unité de plus : " + it.name, onclick: function () { setOrderQty(it, q + packOf(it)); }, text: "+" })),
           h("div", { class: "num", text: amount !== null ? money(amount) : "—" })));
       });
       var text = "Commande " + sup + "\n" + arr.map(function (it) {
@@ -2576,7 +2673,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
       var delta = e.delta || 0;
       wrap.append(h("div", { class: "log-row" },
         h("div", { class: "c-date meta", text: d.toLocaleDateString("fr-FR") + " " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) }),
-        h("div", { class: "c-what" }, h("div", { text: e.item || "" }), h("div", { class: "meta c-who", text: [who, e.note].filter(Boolean).join(" · ") })),
+        h("div", { class: "c-what" }, h("div", { text: e.item || "" }), h("div", { class: "meta c-who", text: [who, e.reason && REASONS[e.reason] ? "motif : " + REASONS[e.reason].toLowerCase() : "", e.note].filter(Boolean).join(" · ") })),
         h("div", { class: "c-delta delta " + (delta > 0 ? "pos" : delta < 0 ? "neg" : ""), text: delta === 0 ? "—" : (delta > 0 ? "+" : "") + fmt(delta) }),
         h("div", { class: "c-qtyafter meta", text: "→ " + fmt(e.qty) })));
     });
@@ -2768,7 +2865,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
   }
 
   // ---------- boîtes de dialogue ----------
-  var FIELDS = ["name", "category", "location", "unit", "qty", "min", "target", "lot", "expiry", "price", "barcode", "description", "subcategory"];
+  var FIELDS = ["name", "category", "location", "unit", "qty", "min", "target", "lot", "expiry", "price", "barcode", "description", "subcategory", "pack"];
   function fillDomainSelect(current) {
     var sel = $("f_category");
     var list = DOMAINS.concat([EQUIP]);
@@ -2855,18 +2952,20 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
   function renderItemHistory(body, rows) {
     body.textContent = "";
     if (!rows.length) { body.append(h("div", { class: "meta", text: "Aucun mouvement enregistré pour cet article." })); return; }
-    var now = Date.now(), d30 = 0, d90 = 0, months = {};
+    var now = Date.now(), d30 = 0, d90 = 0, l90 = 0, months = {};
     rows.forEach(function (r) {
       var delta = Number(r.delta) || 0;
       var out = (r.type === "move" && delta < 0) ? -delta : (r.type === "undo" && delta > 0) ? -delta : 0;
       if (!out) return;
       var t = Date.parse(r.created_at) || 0, age = (now - t) / 86400000;
+      if (LOSS.indexOf(r.reason) !== -1) { if (age <= 90) l90 += out; return; }
       if (age <= 30) d30 += out;
       if (age <= 90) d90 += out;
       var dt = new Date(t), key = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0");
       months[key] = (months[key] || 0) + out;
     });
     body.append(h("div", { class: "sub", text: "Sorties : " + fmt(Math.max(0, r2(d30))) + " sur 30 jours · " + fmt(Math.max(0, r2(d90))) + " sur 90 jours" }));
+    if (r2(l90) > 0) body.append(h("div", { class: "sub", text: "Pertes (périmé, cassé, perdu) : " + fmt(r2(l90)) + " sur 90 jours, non comptées dans la consommation." }));
     var cols = [], max = 0, base = new Date();
     for (var i = 5; i >= 0; i--) {
       var dm = new Date(base.getFullYear(), base.getMonth() - i, 1);
@@ -3025,7 +3124,8 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
         h("div", { class: "fav-actions" },
           h("button", { class: "btn big", disabled: readOnly || (it.qty || 0) <= 0, "aria-label": "Retirer 1 " + it.name, onclick: function () { adjustQty(it, -1, "Sortie rapide (favoris)"); }, text: "− 1" }),
           h("button", { class: "btn big primary", disabled: readOnly, "aria-label": "Ajouter 1 " + it.name, onclick: function () { if (hasLots(it)) openAdjust(it); else adjustQty(it, 1, "Entrée rapide (favoris)"); }, text: "+ 1" }),
-          h("button", { class: "btn sm", disabled: readOnly, onclick: function () { openAdjust(it); }, text: "Autre quantité" }))));
+          h("button", { class: "btn sm", disabled: readOnly, onclick: function () { openAdjust(it); }, text: "Autre quantité" }),
+          (packOk && !readOnly) ? h("button", { class: "btn sm" + (it.flag_at ? " flagged" : ""), type: "button", "aria-pressed": it.flag_at ? "true" : "false", onclick: function () { toggleFlag(it); }, text: it.flag_at ? "⚑ Signalé (retirer)" : "⚑ Presque plus" }) : null)));
     });
     box.append(grid);
   }
@@ -3046,6 +3146,8 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
       el.disabled = readOnly;
     });
     fillSubList();
+    if (!(it && it.pack > 0)) $("f_pack").value = "";
+    $("packBox").classList.toggle("hidden", !packOk);
     $("f_fav").checked = !!(it && it.favorite); $("f_fav").disabled = readOnly;
     initLotsBox(it);
     photoDraft = it && it.photo ? it.photo : ""; renderPhotoBox();
@@ -3067,6 +3169,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
       qty: Math.max(0, num($("f_qty").value)),
       min: Math.max(0, num($("f_min").value)),
       target: Math.max(0, num($("f_target").value)),
+      pack: Math.max(0, num($("f_pack").value)),
       lot: $("f_lot").value.trim(),
       expiry: $("f_expiry").value,
       price: Math.max(0, num($("f_price").value)),
@@ -3082,7 +3185,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     state.adjusting = it; state.adjSign = 1;
     $("adjTitle").textContent = labelOf(it);
     $("adjCurrent").textContent = "En stock : " + fmt(it.qty) + (it.unit ? " " + it.unit : "");
-    $("adjQty").value = ""; $("adjNote").value = ""; $("adjLot").value = ""; $("adjExp").value = "";
+    $("adjQty").value = ""; $("adjNote").value = ""; $("adjLot").value = ""; $("adjExp").value = ""; $("adjReason").value = "";
     $("adjLots").textContent = (lotsOk && hasLots(it))
       ? "Lots en stock : " + lotsOf(it.id).map(function (l) { return (l.lot || "sans lot") + " " + fmt(l.qty) + (l.expiry ? " (exp. " + isoToFr(l.expiry) + ")" : ""); }).join(" · ") + ". Une sortie prend d'abord le lot qui périme en premier."
       : "";
@@ -3094,6 +3197,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     $("adjIn").setAttribute("aria-pressed", state.adjSign > 0 ? "true" : "false");
     $("adjOut").setAttribute("aria-pressed", state.adjSign < 0 ? "true" : "false");
     $("adjLotBox").classList.toggle("hidden", !(lotsOk && state.adjSign > 0));
+    $("adjReasonBox").classList.toggle("hidden", !(reasonOk && state.adjSign < 0));
   }
 
   // ---------- CSV ----------
@@ -4266,8 +4370,9 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
   $("adjSave").addEventListener("click", function () {
     var q = num($("adjQty").value);
     if (q <= 0) { toast("Indiquez une quantité supérieure à zéro."); $("adjQty").focus(); return; }
+    var reason = (state.adjSign < 0 && reasonOk) ? $("adjReason").value : "";
     adjustQty(state.adjusting, state.adjSign * q, $("adjNote").value.trim() || (state.adjSign > 0 ? "Entrée" : "Sortie"),
-      state.adjSign > 0 ? { lot: $("adjLot").value, expiry: $("adjExp").value } : null);
+      state.adjSign > 0 ? { lot: $("adjLot").value, expiry: $("adjExp").value } : null, reason ? { reason: reason } : undefined);
     $("adjDlg").close();
   });
   $("adjDlg").addEventListener("keydown", function (e) {
@@ -4624,6 +4729,12 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     sb.from("items").select("ordered_qty").eq("cabinet_id", cid).limit(1).then(function (res) {
       if (cid === cabinetId) ordOk = !res.error;
     }).catch(function () { ordOk = false; });
+    sb.from("items").select("pack_size,low_flag_at,low_flag_by").eq("cabinet_id", cid).limit(1).then(function (res) {
+      if (cid === cabinetId) { packOk = !res.error; render(); }
+    }).catch(function () { packOk = false; });
+    sb.from("movements").select("reason").eq("cabinet_id", cid).limit(1).then(function (res) {
+      if (cid === cabinetId) { reasonOk = !res.error; if (reasonOk) loadPertes(); }
+    }).catch(function () { reasonOk = false; });
     sb.from("items").select("photo").eq("cabinet_id", cid).limit(1).then(function (res) {
       if (cid === cabinetId) photoOk = !res.error;
     }).catch(function () { photoOk = false; });
@@ -4667,7 +4778,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
   function stopData() {
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     channels = []; started = false;
-    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0;
+    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] };
   }
   function showScreen(which) {
     $("login").classList.toggle("hidden", which !== "login");
