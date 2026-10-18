@@ -720,6 +720,11 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .mvdest { display:flex; gap:6px; overflow-x:auto; max-width:100%; padding:2px 2px 4px; scrollbar-width:thin; }
 .mvdest .roomchip { white-space:nowrap; flex:none; padding:6px 12px 6px 10px; }
 @media (prefers-reduced-motion: reduce) { .rowmove { transition:none; } }
+
+/* ===== v56 : chaque salle comme le stock central ===== */
+.roomstrip { --rc:#2F67FF; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center; background:var(--surface); border:1px solid var(--line); border-left:6px solid var(--rc); border-radius:14px; padding:10px 14px; margin:0 0 12px; }
+.rs-t { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.rs-t i { width:12px; height:12px; border-radius:50%; background:var(--rc); flex:none; }
 </style>
 </head>
 <body>
@@ -792,7 +797,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v55</div>
+            <div class="menu-who"><span id="who"></span> · v56</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -1286,6 +1291,13 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       <label class="f">Vers<select id="adjTo"></select></label>
     </div>
     <div class="sub hidden" id="adjMoveInfo"></div>
+    <label class="f hidden" id="adjSrcBox">Provenance
+      <select id="adjSrc">
+        <option value="central">Du stock central (le stock central baisse)</option>
+        <option value="direct">Livraison directe dans la salle</option>
+        <option value="count">Comptage : la salle contient exactement…</option>
+      </select>
+    </label>
     <div class="grid">
       <label class="f">Quantité
         <input id="adjQty" type="number" min="0" step="any" inputmode="decimal">
@@ -1606,6 +1618,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     else if (u.kind === "move") { undoMove(u); }
     else if (u.kind === "seuils") { undoSeuils(u); }
     else if (u.kind === "supplier") { undoSupplier(u); }
+    else if (u.kind === "room") { undoRoom(u); }
   }
   function undoOrder(u) {
     u.list.forEach(function (e) {
@@ -2128,6 +2141,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       el.classList.remove("swiping", "swp-out", "swp-in"); el.style.transform = "";
       if (!locked) return;
       if (e && e.type === "touchend" && e.cancelable) e.preventDefault();
+      if (it._room) { if (d <= -70) roomUse(it, 1); else if (d >= 70) roomFromCentral(it, 1); return; }
       if (d <= -70) adjustQty(it, -1, "Sortie (geste)");
       else if (d >= 70) { if (hasLots(it)) openAdjust(it); else adjustQty(it, 1, "Entrée (geste)"); }
     }
@@ -2187,7 +2201,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
   // ---------- aide et visite guidée ----------
   var HELP = {
-    inventaire: ["Stock", "Choisissez un domaine, puis utilisez « − » et « + » pour sortir ou ajouter une unité. Cliquez sur le chiffre pour saisir plusieurs unités (des boutons 1, 2, 5, 10… vont plus vite que le clavier) ou un numéro de lot. Cliquez sur le nom pour ouvrir la fiche de l'article. Sur téléphone, balayez une ligne vers la gauche pour sortir 1, vers la droite pour ajouter 1. Quand des salles sont configurées, les puces au-dessus de la liste (Total, puis une par salle) permettent de voir le stock par salle : saisissez ce qu'il y a dans la salle, ou faites son réassort. Le petit onglet ⇄ à droite de la quantité se déplie pour mettre du stock dans une salle (ou le reprendre) en un clic ; la fenêtre qui s'ouvre en cliquant sur le chiffre propose aussi « Déplacer »."],
+    inventaire: ["Stock", "Choisissez un domaine, puis utilisez « − » et « + » pour sortir ou ajouter une unité. Cliquez sur le chiffre pour saisir plusieurs unités (des boutons 1, 2, 5, 10… vont plus vite que le clavier) ou un numéro de lot. Cliquez sur le nom pour ouvrir la fiche de l'article. Sur téléphone, balayez une ligne vers la gauche pour sortir 1, vers la droite pour ajouter 1. Quand des salles sont configurées, les puces au-dessus de la liste (Total, puis une par salle) ouvrent la salle comme un stock à part, avec les mêmes écrans : « − » = utilisé dans la salle, « + » = pris dans le stock central, clic sur le chiffre pour une entrée, une sortie, un comptage ou un déplacement. Le petit onglet ⇄ à droite de la quantité se déplie pour mettre du stock dans une salle (ou le reprendre) en un clic ; la fenêtre qui s'ouvre en cliquant sur le chiffre propose aussi « Déplacer »."],
     favoris: ["Favoris", "Les produits que vous sortez le plus, en grosses cartes avec « − 1 » et « + 1 ». Pour y ajouter un produit, cliquez sur l'étoile à côté de son nom dans l'onglet Stock."],
     commande: ["À commander", "Les produits sous leur seuil, regroupés par fournisseur. « Marquer comme commandé » les met de côté pour ne pas les recommander ; « Reçu » enregistre l'arrivée du stock."],
     comptage: ["Comptage", "L'écran de l'inventaire : saisissez ce que vous avez compté en rayon, puis « Enregistrer le comptage ». Les écarts sont gardés dans l'Historique."],
@@ -2338,6 +2352,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     }).catch(function () { sallesOk = false; });
   }
   function roomDots(it) {
+    if (it._room) return null;
     var ids = roomIdx[it.id];
     if (!sallesOk || !ids || !ids.length) return null;
     var names = [], wrap = h("span", { class: "roomdots" });
@@ -3191,7 +3206,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (state.view && !roomById(state.view)) state.view = "";
     var mk = function (id, label, color) {
       return h("button", { class: "roomchip" + ((state.view || "") === id ? " on" : ""), type: "button", style: "--rc:" + (color || "var(--brand)"), "aria-pressed": (state.view || "") === id ? "true" : "false",
-        onclick: function () { state.view = id; state.cat = ""; render(); } }, h("i"), label);
+        onclick: function () { state.view = id; state.cat = ""; state.mvId = ""; render(); } }, h("i"), label);
     };
     bar.append(mk("", "Total", null));
     rooms.forEach(function (r) { bar.append(mk(r.id, r.name + " · " + (roomItems[r.id] || []).length, r.color)); });
@@ -3207,53 +3222,10 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     });
     return parts.length ? "en salles : " + parts.join(", ") + " · total " + fmt(r2((Number(it.qty) || 0) + sum)) : "";
   }
-  function saveRoomCount(li, v) {
-    var val = String(v).trim() === "" ? null : Math.max(0, num(v)), now = val === null ? null : new Date().toISOString();
-    li.counted_qty = val; li.counted_at = now;
-    enqueue(function () { return sb.from("salle_items").update({ counted_qty: val, counted_at: now }).eq("id", li.id).then(check); });
-    render();
-  }
   function startRestock(room, lines) {
     state.room = room.id; state.rc = state.rc || {};
     lines.forEach(function (x) { if (x.li.counted_qty != null) state.rc[room.id + "|" + x.it.id] = String(x.li.counted_qty); });
     goTab("salles");
-  }
-  function renderRoomView(box) {
-    var room = roomById(state.view);
-    var words = norm(state.q || "").trim().split(/\s+/).filter(Boolean);
-    var all = (roomItems[room.id] || []).map(function (li) { return { li: li, it: items.get(li.item_id) }; }).filter(function (x) { return x.it; });
-    var lines = all.filter(function (x) { var hay = norm([x.it.name, x.it.description, x.it.ref, x.it.category].join(" ")); return words.every(function (w) { return hay.indexOf(w) !== -1; }); })
-      .sort(function (a, b) { return byNameItem(a.it, b.it); });
-    var low = all.filter(function (x) { return x.li.counted_qty != null && Number(x.li.counted_qty) < (Number(x.li.target) || 0); }).length;
-    var last = restocks[room.id];
-    var panel = h("div", { class: "roompanel", style: "--rc:" + room.color });
-    panel.append(h("div", { class: "roomhead" },
-      h("div", null, h("h3", { text: room.name }),
-        h("div", { class: "meta", text: ROOM_KINDS[room.kind] + " · " + all.length + " produit" + (all.length > 1 ? "s" : "") + (low ? " · " + low + " à compléter" : "") + " · " + (last ? "dernier réassort " + agoText(last.done_at) : "jamais réapprovisionnée") })),
-      h("div", { class: "roomact" },
-        (!readOnly && all.length) ? h("button", { class: "btn sm primary", type: "button", onclick: function () { startRestock(room, all.sort(function (a, b) { return byNameItem(a.it, b.it); })); }, text: "Faire le réassort" }) : null,
-        h("button", { class: "btn sm", type: "button", onclick: function () { state.room = room.id; goTab("salles"); }, text: "Ouvrir dans Salles" }))));
-    if (!all.length) {
-      panel.append(h("div", { class: "empty" }, h("div", { text: "Aucun produit dans cette salle. Ouvrez la fiche d'un article et choisissez ses salles, ou ajoutez-les depuis l'onglet Salles." })));
-      box.append(panel); return;
-    }
-    if (!lines.length) { panel.append(h("div", { class: "empty" }, h("div", { text: "Aucun produit de cette salle ne correspond à la recherche." }))); box.append(panel); return; }
-    var tbl = h("div", { class: "rtable" });
-    tbl.append(h("div", { class: "rline head" }, h("div", { text: "Produit" }), h("div", { class: "num", text: "Cible" }), h("div", { class: "num", text: "Dans la salle" }), h("div", { class: "num", text: "À apporter" }), h("div", { class: "num", text: "Stock central" }), h("div")));
-    lines.forEach(function (x) {
-      var target = Number(x.li.target) || 0, cnt = x.li.counted_qty, bring = cnt == null ? null : Math.max(0, target - Number(cnt));
-      var inp = h("input", { class: "oqty", type: "number", min: "0", step: "any", inputmode: "decimal", value: cnt != null ? String(cnt) : "", placeholder: "—", disabled: readOnly, "aria-label": "Quantité dans " + room.name + " : " + x.it.name, onchange: function (e) { saveRoomCount(x.li, e.target.value); } });
-      tbl.append(h("div", { class: "rline" },
-        h("div", null, h("button", { class: "item-name", type: "button", onclick: function () { openItem(x.it); }, text: x.it.name }),
-          h("div", { class: "meta", text: [x.it.ref ? "réf. " + x.it.ref : "", x.li.counted_at ? "compté " + agoText(x.li.counted_at) : "jamais compté"].filter(Boolean).join(" · ") })),
-        h("div", { class: "num", text: fmt(target) }), h("div", { class: "num" }, inp),
-        h("div", { class: "num bring" + (bring > 0 ? " on" : ""), text: bring == null ? "—" : fmt(bring) }),
-        h("div", { class: "num" + (bring > (Number(x.it.qty) || 0) ? " short" : ""), text: fmt(x.it.qty) + (x.it.unit ? " " + x.it.unit : "") }),
-        h("div")));
-    });
-    panel.append(tbl);
-    panel.append(h("div", { class: "dnote", text: "Saisissez ce qu'il y a dans la salle : c'est enregistré tout de suite, sans toucher au stock central. « Faire le réassort » prépare la tournée avec ces quantités." }));
-    box.append(panel);
   }
   function drawItemRooms(it) {
     var box = $("itemRooms"), chips = $("itemRoomChips"); chips.textContent = "";
@@ -3292,7 +3264,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     };
     mk(from); mk(to);
     var assigned = rooms.find(function (r) { return roomLine(r.id, it.id); });
-    from.value = ""; to.value = assigned ? assigned.id : (rooms[0] ? rooms[0].id : "");
+    if (state.adjScope) { from.value = state.adjScope; var other = rooms.find(function (r) { return r.id !== state.adjScope; }); to.value = other ? other.id : ""; }
+    else { from.value = ""; to.value = assigned ? assigned.id : (rooms[0] ? rooms[0].id : ""); }
     moveInfo();
   }
   function moveInfo() {
@@ -3363,12 +3336,12 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       var b = p.closest(".row") && p.closest(".row").querySelector(".mvtab");
       if (b) { b.classList.remove("on"); b.setAttribute("aria-expanded", "false"); }
     });
-    if (opening) { if (state.mvId !== it.id) state.mvFrom = ""; state.mvId = it.id; fillMovePanel(it, panel); } else state.mvId = "";
+    if (opening) { if (state.mvId !== it.id) state.mvFrom = it._room ? it._room.id : ""; state.mvId = it.id; fillMovePanel(it, panel); } else state.mvId = "";
     panel.classList.toggle("open", opening); btn.classList.toggle("on", opening); btn.setAttribute("aria-expanded", opening ? "true" : "false");
   }
   function fillMovePanel(it, el) {
     el.textContent = "";
-    var cur = items.get(it.id) || it, from = state.mvFrom || "", q = state.mvQty > 0 ? state.mvQty : 1;
+    var cur = R(it), from = state.mvFrom || "", q = state.mvQty > 0 ? state.mvQty : 1;
     if (from && !roomById(from)) from = state.mvFrom = "";
     var spots = [{ id: "", label: "Stock central", color: null, n: Number(cur.qty) || 0 }].concat(rooms.map(function (r) { return { id: r.id, label: r.name, color: r.color, n: roomQtyOf(r.id, it.id) }; }));
     var src = h("select", { "aria-label": "Prendre depuis" });
@@ -3388,6 +3361,125 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         h("button", { class: "step", type: "button", "aria-label": "Une unité de moins", onclick: function () { state.mvQty = Math.max(1, (num(qIn.value) || 1) - 1); fillMovePanel(it, el); }, text: "−" }), qIn,
         h("button", { class: "step", type: "button", "aria-label": "Une unité de plus", onclick: function () { state.mvQty = (num(qIn.value) || 0) + 1; fillMovePanel(it, el); }, text: "+" })),
       h("span", { class: "mvlbl", text: "Mettre dans :" }), dest));
+  }
+  // ---------- chaque salle fonctionne comme le stock central ----------
+  var ROOM_FILTER_LABEL = { bas: "À compléter", rupt: "Vides" };
+  function roomScope() { return (state.tab === "inventaire" && state.view) ? (roomById(state.view) || null) : null; }
+  function R(it) { return it && it._real ? it._real : it; }
+  // Pendant l'affichage d'une salle, la liste des articles est remplacée par celle de la salle : toutes les fonctions du Stock s'y appliquent.
+  function roomVirtual(room) {
+    var m = new Map();
+    (roomItems[room.id] || []).forEach(function (li) {
+      var r = items.get(li.item_id);
+      if (!r || r.tracked === false) return;
+      var target = Number(li.target) || 0;
+      m.set(r.id, Object.assign({}, r, { qty: li.counted_qty == null ? 0 : Number(li.counted_qty), min: Math.max(0, target - 1), tracked: true, expiry: "", lot: "", ordered_qty: 0, ordered_at: "", flag_at: "", flag_by: "", pack: 0, target: target,
+        _real: r, _room: { id: room.id, name: room.name, li: li } }));
+    });
+    return m;
+  }
+  function scoped(fn) {
+    var room = roomScope();
+    if (!room) { fn(); return; }
+    var real = items; items = roomVirtual(room); dupCache = null;
+    try { fn(); } finally { items = real; dupCache = null; }
+  }
+  function roomMeta(it) {
+    var li = it._room.li;
+    return [it.subcategory && !state.cat ? it.subcategory : "", it.ref ? "réf. " + it.ref : "", "cible " + fmt(Number(li.target) || 0), li.counted_at ? "compté " + agoText(li.counted_at) : "jamais compté", "stock central " + fmt(Number(it._real.qty) || 0)].filter(Boolean);
+  }
+  function roomHeader(room) {
+    var last = restocks[room.id];
+    var lines = Array.from(items.values()).map(function (v) { return { li: v._room.li, it: v }; }).sort(function (a, b) { return byNameItem(a.it, b.it); });
+    return h("div", { class: "roomstrip", style: "--rc:" + room.color },
+      h("div", { class: "rs-t" }, h("i"), h("b", { text: room.name }), h("span", { class: "meta", text: " · " + ROOM_KINDS[room.kind] + " · " + (last ? "dernier réassort " + agoText(last.done_at) : "jamais réapprovisionnée") })),
+      h("div", { class: "roomact" },
+        (!readOnly && items.size) ? h("button", { class: "btn sm primary", type: "button", onclick: function () { startRestock(room, lines); }, text: "Faire le réassort" }) : null,
+        readOnly ? null : h("button", { class: "btn sm", type: "button", onclick: function () { state.room = room.id; openRoomAdd(); }, text: "＋ Ajouter des produits" }),
+        h("button", { class: "btn sm", type: "button", onclick: function () { state.room = room.id; goTab("salles"); }, text: "Ouvrir dans Salles" })));
+  }
+  function roomEmpty(room) {
+    return h("div", { class: "table" }, h("div", { class: "empty" },
+      h("h2", { text: "Aucun produit dans cette salle" }),
+      h("div", { text: "Ajoutez ceux que vous gardez dans ses tiroirs : ils s'afficheront ici comme dans le stock central, avec « − » et « + »." }),
+      readOnly ? null : h("div", { class: "actions" }, h("button", { class: "btn primary", type: "button", onclick: function () { state.room = room.id; openRoomAdd(); }, text: "＋ Ajouter des produits" }))));
+  }
+  function roomQtyCell(it, unit) {
+    var q = Number(it.qty) || 0, rn = it._room.name;
+    return h("div", { class: "c-qty qty" },
+      h("button", { class: "step", "aria-label": "Utiliser 1 " + it.name + " dans " + rn, disabled: readOnly || q <= 0, onclick: function () { roomUse(it, 1); }, text: "−" }),
+      h("button", { class: "v " + qtyClass(q), title: "Saisir une entrée, une sortie ou un comptage dans « " + rn + " »" + (unit ? " (" + unit.trim() + ")" : ""), disabled: readOnly, onclick: function () { openAdjust(it); } }, fmt(q)),
+      h("button", { class: "step", "aria-label": "Prendre 1 " + it.name + " dans le stock central pour " + rn, disabled: readOnly, onclick: function () { roomFromCentral(it, 1); }, text: "+" }),
+      moveTab(it));
+  }
+  function roomFromCentral(vit, q) { return dispatchStock(R(vit), "", vit._room.id, q, ""); }
+  function roomUse(vit, q) { return roomRemove(R(vit), vit._room.id, q, "", ""); }
+  function roomSetQty(it, rid, val, undoLabel) {
+    var li = roomLine(rid, it.id), now = new Date().toISOString();
+    if (!li) return;
+    var prev = li.counted_qty == null ? null : Number(li.counted_qty);
+    li.counted_qty = val; li.counted_at = now;
+    enqueue(function () { return sb.from("salle_items").update({ counted_qty: val, counted_at: now }).eq("id", li.id).then(check); });
+    if (undoLabel) pushUndo({ kind: "room", rid: rid, itemId: it.id, prev: prev, label: undoLabel });
+  }
+  function undoRoom(u) {
+    var li = roomLine(u.rid, u.itemId);
+    if (!li) { toast("Ce produit n'est plus rangé dans cette salle : annulation impossible."); return; }
+    var now = new Date().toISOString();
+    li.counted_qty = u.prev; li.counted_at = u.prev == null ? null : now;
+    enqueue(function () { return sb.from("salle_items").update({ counted_qty: u.prev, counted_at: li.counted_at }).eq("id", li.id).then(check); });
+    render(); toast("Annulé : " + u.label);
+  }
+  function roomHistory(it, note, extra) {
+    var central = Number((items.get(it.id) || it).qty) || 0;
+    enqueue(function () { return appendLog(Object.assign({ type: "edit", itemId: it.id, item: it.name, delta: 0, qty: central, note: note }, extra || {})); });
+  }
+  function roomRemove(it, rid, q, reason, note) {
+    if (readOnly || !db) return false;
+    if (!(q > 0)) { toast("Indiquez une quantité supérieure à zéro."); return false; }
+    var room = roomById(rid), li = roomLine(rid, it.id);
+    if (!li) { toast("Ce produit n'est pas rangé dans « " + room.name + " »."); return false; }
+    var cnt = li.counted_qty == null ? 0 : Number(li.counted_qty);
+    if (q > cnt) { toast(cnt > 0 ? "Il n'y a que " + fmt(cnt) + " dans « " + room.name + " »." : "Il n'y en a pas dans « " + room.name + " » (0 ou jamais compté) : utilisez « Comptage » dans « Entrée »."); return false; }
+    roomSetQty(it, rid, r2(cnt - q), fmt(q) + " × " + it.name + " retiré de « " + room.name + " »");
+    var tag = reason && REASONS[reason] ? " · " + REASONS[reason].toLowerCase() : "", extra = note ? " · " + note : "";
+    if (reason && LOSS.indexOf(reason) !== -1) {
+      var central = Number((items.get(it.id) || it).qty) || 0;
+      enqueue(function () { return appendLog({ type: "move", itemId: it.id, item: it.name, delta: -q, qty: central, note: "Perte en " + room.name + extra, reason: reason }); });
+    } else roomHistory(it, "Utilisé en " + room.name + " : " + fmt(q) + tag + extra);
+    render();
+    toast(fmt(q) + " × " + it.name + " : " + (reason && LOSS.indexOf(reason) !== -1 ? "perte enregistrée" : "utilisé") + " en " + room.name + ".");
+    return true;
+  }
+  function roomDirect(it, rid, q, note) {
+    if (readOnly || !db) return false;
+    if (!(q > 0)) { toast("Indiquez une quantité supérieure à zéro."); return false; }
+    var room = roomById(rid), li = roomLine(rid, it.id);
+    if (li) roomSetQty(it, rid, r2((li.counted_qty == null ? 0 : Number(li.counted_qty)) + q), fmt(q) + " × " + it.name + " ajouté dans « " + room.name + " »");
+    else bumpRoom(rid, it, q);
+    roomHistory(it, "Entrée directe en " + room.name + " : " + fmt(q) + (note ? " · " + note : ""));
+    render(); toast(fmt(q) + " × " + it.name + " ajouté directement dans " + room.name + " (le stock central ne change pas).");
+    return true;
+  }
+  function roomSetCount(it, rid, q, note) {
+    if (readOnly || !db) return false;
+    var room = roomById(rid), li = roomLine(rid, it.id);
+    if (q < 0) { toast("La quantité ne peut pas être négative."); return false; }
+    if (li) roomSetQty(it, rid, q, "comptage de « " + room.name + " » : " + it.name);
+    else bumpRoom(rid, it, q);
+    roomHistory(it, "Comptage " + room.name + " : " + fmt(q) + (note ? " · " + note : ""));
+    render(); toast("« " + room.name + " » contient maintenant " + fmt(q) + " × " + it.name + ".");
+    return true;
+  }
+  function roomAdjustSave(q) {
+    var it = state.adjusting, rid = state.adjScope, note = $("adjNote").value.trim();
+    if (state.adjSign > 0) {
+      var src = $("adjSrc").value;
+      if (src === "central") return dispatchStock(it, "", rid, q, note);
+      if (src === "count") return roomSetCount(it, rid, q, note);
+      return roomDirect(it, rid, q, note);
+    }
+    return roomRemove(it, rid, q, reasonOk ? $("adjReason").value : "", note);
   }
   function updateSelBar() {
     var n = state.sel.size;
@@ -3485,6 +3577,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     return days >= 14 ? days : 0;
   }
   function daysLeft(it) {
+    if (it._room) return null;
     if (!consoOk || it.tracked === false) return null;
     var c = conso[it.id], w = consoWindow();
     if (!c || !w || !(c.out > 0)) return null;
@@ -3582,8 +3675,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function renderAlerts() {
     var all = Array.from(items.values());
     var bas = 0, rupt = 0, exp = 0, total = 0, soon = 0, flagged = 0;
-    var ctlN = ctlOk ? ctlProblems() : 0;
-    $("ctlBadge").textContent = ctlN ? " (" + ctlN + ")" : "";
+    var ctlAll = ctlOk ? ctlProblems() : 0, ctlN = state.view ? 0 : ctlAll;
+    $("ctlBadge").textContent = ctlAll ? " (" + ctlAll + ")" : "";
     all.forEach(function (it) {
       if (it.flag_at && it.tracked !== false && !(it.ordered_qty > 0)) flagged++;
       var s = statusOf(it);
@@ -3593,8 +3686,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       if (s === "perime" || s === "peremption") exp++;
       if (norm(it.category).indexOf("equipement") !== 0) total += (Number(it.qty) || 0) * (Number(it.price) || 0);
     });
-    var home = state.tab === "inventaire" && isHome() && !state.view;
-    $("stockValue").textContent = (home && all.length) ? "Valeur du stock (hors équipement) : " + money(total) + " HT · " + money(total * (1 + TVA / 100)) + " TTC (TVA " + TVA + " %)" : "";
+    var home = state.tab === "inventaire" && isHome();
+    $("stockValue").textContent = (home && all.length) ? (state.view ? "Valeur dans la salle (hors équipement) : " : "Valeur du stock (hors équipement) : ") + money(total) + " HT · " + money(total * (1 + TVA / 100)) + " TTC (TVA " + TVA + " %)" : "";
     var box = $("alerts"); box.textContent = "";
     box.classList.toggle("hidden", !home || (!bas && !rupt && !exp && !soon && !flagged && !ctlN));
     var mk = function (n, label, filter, cls) {
@@ -3602,8 +3695,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       box.append(h("button", { class: "alert " + cls, onclick: function () { state.filter = filter; state.cat = ""; render(); } },
         h("strong", { text: String(n) }), " " + label));
     };
-    mk(rupt, "en rupture", "rupt", "a-rupt");
-    mk(bas, "sous le seuil", "bas", "a-bas");
+    mk(rupt, state.view ? (rupt > 1 ? "vides" : "vide") : "en rupture", "rupt", "a-rupt");
+    mk(bas, state.view ? "à compléter" : "sous le seuil", "bas", "a-bas");
     mk(exp, "péremption à surveiller", "exp", "a-exp");
     if (soon) box.append(h("button", { class: "alert a-bas", onclick: function () { state.filter = "all"; state.cat = ""; state.f.status = "soon"; state.f.sort = "autonomie"; render(); } },
       h("strong", { text: String(soon) }), " bientôt en rupture (moins de 15 jours de stock)"));
@@ -3620,6 +3713,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var s = statusOf(it);
     if (s === "ok") return null;
     var label = STATUS[s].label;
+    if (it._room) label = s === "rupture" ? "Vide" : s === "bas" ? "À compléter" : label;
     if (s === "peremption") { var d = daysUntil(it.expiry); label = "Expire dans " + d + " j"; }
     return h("span", { class: "chip " + s, text: label });
   }
@@ -3665,6 +3759,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     order.forEach(function (c) {
       var o = stats[c] || { n: 0, sum: {}, bas: 0, rupt: 0, exp: 0, cat: 0, hid: 0 };
       if (!o.n && !o.cat && o.hid > 0) return;
+      if (state.view && !o.n) return;
       var us = Object.keys(o.sum), big, label;
       if (!o.n) { big = "0"; label = o.cat ? "aucun article suivi" : "aucun article"; }
       else if (us.length === 1) {
@@ -3675,7 +3770,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       var bigNum = !o.n ? 0 : (us.length === 1 ? Math.round(o.sum[us[0]] * 100) / 100 : o.n);
       var shown = o.n ? "" : "aucun article";
       if (o.cat) label += " · " + o.cat + " au catalogue";
-      var alertTxt = o.rupt ? o.rupt + " en rupture" : (o.bas ? o.bas + " sous le seuil" : (o.exp ? o.exp + " à surveiller" : ""));
+      var alertTxt = o.rupt ? o.rupt + (state.view ? (o.rupt > 1 ? " vides" : " vide") : " en rupture") : (o.bas ? o.bas + (state.view ? " à compléter" : " sous le seuil") : (o.exp ? o.exp + " à surveiller" : ""));
       var alertCls = o.rupt ? "t-bad" : (o.bas ? "t-warn" : "t-exp");
       grid.append(h("button", { class: "tile", "aria-label": c + " : " + big + " " + label,
         onclick: function () { state.cat = c; render(); } },
@@ -3693,6 +3788,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     setTimeout(function () { $("f_qty").focus(); $("f_qty").select(); }, 30);
   }
   function qtyCell(it, unit) {
+    if (it._room) return roomQtyCell(it, unit);
     // Même curseur − / + pour tous les articles. Pour un produit du catalogue, le premier « + » le fait passer en stock.
     var cls = it.tracked === false && !(Number(it.qty) > 0) ? "q-none" : qtyClass(it.qty);
     return h("div", { class: "c-qty qty" },
@@ -3702,6 +3798,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       moveTab(it));
   }
   function renderInventory(box) {
+    var rsc = roomScope();
+    if (rsc) { box.append(roomHeader(rsc)); if (!items.size) { box.append(roomEmpty(rsc)); return; } }
     if (!items.size) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" },
         h("h2", { text: "Aucun article pour l'instant" }),
@@ -3711,7 +3809,6 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
           h("button", { class: "btn", disabled: readOnly, onclick: function () { $("importFile").click(); }, text: "Importer un fichier" })))));
       return;
     }
-    if (state.view && roomById(state.view)) { renderRoomView(box); return; }
     if (isHome()) { renderTiles(box); return; }
     var list = visibleItems();
     if (!list.length) {
@@ -3767,15 +3864,16 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       var nLots = (lotsByItem[it.id] || []).length;
       if (nLots) meta.push(nLots + " lot" + (nLots > 1 ? "s" : ""));
       if (docCounts[it.id]) meta.push(docCounts[it.id] + " doc" + (docCounts[it.id] > 1 ? "s" : ""));
+      if (it._room) meta = roomMeta(it);
       var rowEl = h("div", { class: "row" + (it.tracked === false ? " untracked" : "") },
         h("div", { class: "c-name" + (it.photo ? " has-photo" : "") },
-          it.photo ? h("img", { class: "thumb", src: it.photo, alt: "", loading: "lazy", onclick: function () { openItem(it); } }) : null,
+          it.photo ? h("img", { class: "thumb", src: it.photo, alt: "", loading: "lazy", onclick: function () { openItem(R(it)); } }) : null,
           h("div", { class: "nameline" },
             state.select ? h("input", { type: "checkbox", class: "selbox", checked: state.sel.has(it.id), "aria-label": "Sélectionner " + it.name,
               onchange: function (e) { if (e.target.checked) state.sel.add(it.id); else state.sel.delete(it.id); updateSelBar(); } }) : null,
             h("button", { class: "star" + (it.favorite ? " on" : ""), title: it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", "aria-label": it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", onclick: function () { toggleFav(it); }, text: it.favorite ? "★" : "☆" }),
             flagBtn(it),
-            h("button", { class: "item-name", onclick: function () { openItem(it); }, text: it.name || "(sans nom)" }),
+            h("button", { class: "item-name", onclick: function () { openItem(R(it)); }, text: it.name || "(sans nom)" }),
             roomDots(it),
             it.description ? h("span", { class: "desc", text: it.description }) : null),
           h("div", { class: "meta c-meta", text: meta.join(" · ") })),
@@ -3949,6 +4047,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     toast(on ? "Signalé : « " + cur.name + " » apparaît dans « À commander »." : "Signalement retiré.");
   }
   function flagBtn(it) {
+    if (it._room) return null;
     if (!packOk || readOnly) return null;
     var on = !!it.flag_at, t = on ? "Retirer le signalement « presque plus »" : "Signaler : il n'y en a presque plus";
     return h("button", { class: "flagbtn" + (on ? " on" : ""), type: "button", title: t, "aria-label": t + " : " + it.name, "aria-pressed": on ? "true" : "false", onclick: function () { toggleFlag(it); }, text: "⚑" });
@@ -4132,10 +4231,10 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
   function renderCrumb() {
     var box = $("crumb"); box.textContent = "";
-    var hide = state.tab !== "inventaire" || isHome() || !items.size || !!state.view;
+    var hide = state.tab !== "inventaire" || isHome() || !items.size;
     box.classList.toggle("hidden", hide);
     if (hide) return;
-    var title = state.cat || FILTER_LABEL[state.filter] || "Résultats";
+    var title = state.cat || (state.view && ROOM_FILTER_LABEL[state.filter]) || FILTER_LABEL[state.filter] || "Résultats";
     var sub = "", nCat = 0;
     if (state.cat) {
       var allDom = Array.from(items.values()).filter(function (it) { return (it.category || "Sans domaine") === state.cat; });
@@ -4250,11 +4349,10 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 
   function render() {
     dupCache = null;
-    if (state.cat && domainList().indexOf(state.cat) === -1) state.cat = "";
-    renderAlerts();
+    scoped(function () { if (state.cat && domainList().indexOf(state.cat) === -1) state.cat = ""; });
+    scoped(function () { renderAlerts(); });
     renderViewBar();
-    renderCrumb();
-    renderFilters();
+    scoped(function () { renderCrumb(); renderFilters(); });
     $("trashCount").textContent = trash.size ? " (" + trash.size + ")" : "";
     updateSelBar();
     updateUndoBtn();
@@ -4267,9 +4365,12 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     $("scanBtn").disabled = !db;
     $("importBtn").disabled = readOnly || !db;
     $("importBar").disabled = readOnly || !db;
+    var rsc0 = roomScope();
+    $("importBar").classList.toggle("hidden", !!rsc0);
+    $("addBtn").textContent = rsc0 ? "＋ Ajouter à la salle" : "+ Ajouter";
     $("exportBtn").disabled = !items.size;
     $("bar").classList.toggle("hidden", state.tab !== "inventaire");
-    if (state.tab === "inventaire") renderInventory(box);
+    if (state.tab === "inventaire") scoped(function () { renderInventory(box); });
     else if (state.tab === "utilisateurs") renderUsers(box);
     else if (state.tab === "donnees") renderData(box);
     else if (state.tab === "corbeille") renderTrash(box);
@@ -4540,7 +4641,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       var unit = it.unit ? " " + it.unit : "";
       grid.append(h("div", { class: "favcard" },
         h("div", { class: "fav-top" },
-          it.photo ? h("img", { class: "thumb", src: it.photo, alt: "", loading: "lazy", onclick: function () { openItem(it); } }) : null,
+          it.photo ? h("img", { class: "thumb", src: it.photo, alt: "", loading: "lazy", onclick: function () { openItem(R(it)); } }) : null,
           h("div", null,
             h("div", { class: "fav-name", text: it.name }),
             it.description ? h("div", { class: "desc", text: it.description }) : null)),
@@ -4610,11 +4711,12 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     };
   }
   function openAdjust(it) {
-    state.adjusting = it; state.adjSign = 1;
-    $("adjTitle").textContent = labelOf(it);
-    $("adjCurrent").textContent = "En stock : " + fmt(it.qty) + (it.unit ? " " + it.unit : "");
+    var vr = it._room || null; state.adjScope = vr ? vr.id : ""; it = R(it);
+    state.adjusting = it; state.adjSign = 1; $("adjSrc").value = "central";
+    $("adjTitle").textContent = labelOf(it) + (vr ? " · " + vr.name : "");
+    $("adjCurrent").textContent = vr ? "Dans « " + vr.name + " » : " + (roomQtyOf(vr.id, it.id) == null ? "pas compté" : fmt(roomQtyOf(vr.id, it.id))) + " · stock central : " + fmt(it.qty) + (it.unit ? " " + it.unit : "") : "En stock : " + fmt(it.qty) + (it.unit ? " " + it.unit : "");
     $("adjQty").value = ""; $("adjNote").value = ""; $("adjLot").value = ""; $("adjExp").value = ""; $("adjReason").value = "";
-    $("adjLots").textContent = (lotsOk && hasLots(it))
+    $("adjLots").textContent = (!vr && lotsOk && hasLots(it))
       ? "Lots en stock : " + lotsOf(it.id).map(function (l) { return (l.lot || "sans lot") + " " + fmt(l.qty) + (l.expiry ? " (exp. " + isoToFr(l.expiry) + ")" : ""); }).join(" · ") + ". Une sortie prend d'abord le lot qui périme en premier."
       : "";
     $("adjMove").classList.toggle("hidden", !(sallesOk && rooms.length && !readOnly));
@@ -4628,7 +4730,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     $("adjMove").setAttribute("aria-pressed", state.adjSign === 0 ? "true" : "false");
     $("adjMoveBox").classList.toggle("hidden", state.adjSign !== 0);
     $("adjMoveInfo").classList.toggle("hidden", state.adjSign !== 0);
-    $("adjLotBox").classList.toggle("hidden", !(lotsOk && state.adjSign > 0));
+    $("adjLotBox").classList.toggle("hidden", !(lotsOk && state.adjSign > 0 && !state.adjScope));
+    $("adjSrcBox").classList.toggle("hidden", !(state.adjScope && state.adjSign > 0));
     $("adjReasonBox").classList.toggle("hidden", !(reasonOk && state.adjSign < 0));
   }
 
@@ -5666,7 +5769,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   });
   var searchTimer = null;
   $("search").addEventListener("input", function (e) { var v = e.target.value; clearTimeout(searchTimer); searchTimer = setTimeout(function () { state.q = v; render(); }, 130); });
-  $("addBtn").addEventListener("click", function () { openItem(null); });
+  $("addBtn").addEventListener("click", function () { var rr = roomScope(); if (rr) { state.room = rr.id; openRoomAdd(); } else openItem(null); });
   $("importBtn").addEventListener("click", function () { $("importFile").click(); });
   $("importBar").addEventListener("click", function () { $("importFile").click(); });
   $("exportBtn").addEventListener("click", exportCsv);
@@ -5809,6 +5912,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   $("adjSave").addEventListener("click", function () {
     var q = num($("adjQty").value);
     if (q <= 0) { toast("Indiquez une quantité supérieure à zéro."); $("adjQty").focus(); return; }
+    if (state.adjScope && state.adjSign !== 0) { if (roomAdjustSave(q)) $("adjDlg").close(); return; }
     if (state.adjSign === 0) { if (dispatchFromDialog(q)) $("adjDlg").close(); return; }
     var reason = (state.adjSign < 0 && reasonOk) ? $("adjReason").value : "";
     adjustQty(state.adjusting, state.adjSign * q, $("adjNote").value.trim() || (state.adjSign > 0 ? "Entrée" : "Sortie"),
