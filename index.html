@@ -6,7 +6,7 @@
 <title>SimSimStock</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=DM+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <script>
   // ============================================================
@@ -28,7 +28,7 @@
 <script>
   try {
     var t = localStorage.getItem("simsim_theme");
-    if (!t || t === "auto" || localStorage.getItem("simsim_style") !== "c1") { if (localStorage.getItem("simsim_style") !== "c1") window.__styleMigrated = true; t = "frais"; localStorage.setItem("simsim_theme", t); localStorage.setItem("simsim_style", "c1"); }
+    if (!t || t === "auto" || localStorage.getItem("simsim_style") !== "r1") { if (localStorage.getItem("simsim_style") !== "r1") window.__styleMigrated = true; t = "recept"; localStorage.setItem("simsim_theme", t); localStorage.setItem("simsim_style", "r1"); }
     document.documentElement.setAttribute("data-theme", t);
   } catch (e) {}
 </script>
@@ -551,6 +551,60 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
 .flagbtn:hover, .flagbtn:focus-visible { opacity:1; color:var(--brand); }
 .flagbtn.on { color:#d9480f; opacity:1; }
 .btn.flagged { border-color:#d9480f; color:#d9480f; }
+
+/* ===== v49 : style « Recept », startup moderne ===== */
+:root { --grad:var(--brand); }
+:root[data-theme="recept"] {
+  color-scheme:light;
+  --bg:#F5F7FB; --surface:#FFFFFF; --surface-2:#EEF2FB; --ink:#0B1B3A; --muted:#5B6B8C; --line:#E3E8F2;
+  --brand:#2F67FF; --brand-ink:#FFFFFF; --grad:linear-gradient(135deg,#2F67FF 0%,#6B5BFF 100%);
+  --ok:#0F7A42; --ok-bg:#E0F7EA; --warn:#9A5B00; --warn-bg:#FFF3D6; --bad:#C62C4A; --bad-bg:#FFE5EA; --exp:#6B3FD1; --exp-bg:#EDE7FF;
+  --shadow:0 1px 2px rgba(16,24,40,.05), 0 6px 18px rgba(16,24,40,.06);
+  --q-high:#0F7A42; --q-mid:#A85A00; --q-low:#962F0A; --q-zero:#C62C4A;
+  --sb-bg:#FFFFFF; --sb-ink:#5B6B8C; --sb-hover:#EEF2FB; --sb-active-bg:rgba(47,103,255,.10); --sb-active-ink:#2352D8; --sb-title:#0B1B3A; --sb-mark:#2F67FF;
+}
+.sw-recept { background:linear-gradient(135deg,#2F67FF,#6B5BFF); }
+:root[data-theme="recept"] body { background-image:radial-gradient(900px 360px at 85% -140px, rgba(47,103,255,.11), transparent 70%); background-repeat:no-repeat; }
+body, button, input, select, textarea { font-family:"Inter","DM Sans","Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+body { letter-spacing:-.005em; -webkit-font-smoothing:antialiased; }
+h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:"Inter","DM Sans",system-ui,sans-serif; letter-spacing:-.02em; }
+header.top { padding:16px 0 12px; }
+header.top h1 { font-size:24px; letter-spacing:-.03em; color:var(--ink); display:flex; align-items:center; gap:10px; }
+header.top h1::before { content:"S"; flex:none; display:grid; place-items:center; width:32px; height:32px; border-radius:10px; background:var(--grad); color:var(--brand-ink); font-size:17px; font-weight:800; box-shadow:0 4px 12px rgba(47,103,255,.35); }
+.btn { border-radius:999px; padding-left:16px; padding-right:16px; font-weight:600; }
+.btn.sm { padding-left:13px; padding-right:13px; }
+.btn.primary { background:var(--grad); color:var(--brand-ink); border-color:transparent; box-shadow:0 6px 16px rgba(47,103,255,.28); }
+.search { border-radius:999px; padding:11px 18px; box-shadow:0 1px 2px rgba(16,24,40,.05); }
+/* tableau de bord de l'accueil : des cartes d'indicateurs */
+.alerts { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+.alert { display:flex; flex-direction:column; align-items:flex-start; gap:4px; text-align:left; padding:14px 16px; border-radius:16px; background:var(--surface); border:1px solid var(--line); border-top:3px solid var(--line); box-shadow:var(--shadow); font-weight:500; color:var(--muted); cursor:pointer; transition:transform .15s, box-shadow .15s; }
+.alert:hover { transform:translateY(-2px); }
+.alert strong { font-size:30px; line-height:1; letter-spacing:-.03em; color:var(--ink); }
+.alert.a-rupt { background:var(--surface); color:var(--muted); border-top-color:var(--bad); }
+.alert.a-rupt strong { color:var(--bad); }
+.alert.a-bas { background:var(--surface); color:var(--muted); border-top-color:var(--warn); }
+.alert.a-bas strong { color:var(--warn); }
+.alert.a-exp { background:var(--surface); color:var(--muted); border-top-color:var(--exp); }
+.alert.a-exp strong { color:var(--exp); }
+/* cartes */
+.tile { border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); transition:transform .15s, box-shadow .15s, border-color .15s; }
+.tile:hover { transform:translateY(-2px); border-color:var(--brand); box-shadow:0 12px 28px rgba(16,24,40,.10); }
+.tile-name { font-size:15px; font-weight:600; color:var(--ink); }
+.tile-num { font-size:36px; font-weight:700; letter-spacing:-.04em; }
+.favcard { border:1px solid var(--line); border-radius:18px; }
+.table { border-radius:16px; box-shadow:var(--shadow); }
+.dsec, .supplier, .ucard, .kpi, .fccard, .fpanel { border-radius:16px; }
+.sidebar { border-right:1px solid var(--line); }
+.tab { border-radius:12px; font-weight:600; }
+:root[data-theme="recept"] .tab[aria-selected="true"] { box-shadow:none; }
+dialog { border-radius:22px; box-shadow:0 30px 80px rgba(16,24,40,.30); }
+dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
+#login { background:radial-gradient(900px 420px at 50% -80px, rgba(47,103,255,.14), transparent 70%); }
+.brandmark { background:var(--grad); }
+.login-card { border-radius:24px; box-shadow:0 24px 60px rgba(16,24,40,.12); }
+.login-card h1 { color:var(--ink); letter-spacing:-.03em; }
+@media (max-width: 760px) { .bottombar .bb-scan span:first-child { background:var(--grad); } }
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }
 </style>
 </head>
 <body>
@@ -611,6 +665,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
         <button class="btn sm" id="helpBtn" type="button" title="Aide et raccourcis" aria-label="Aide">?</button>
         <button class="btn sm hidden" id="undoBtn" type="button">↶ Annuler</button>
         <div class="swatches head-sw" role="group" aria-label="Couleur de fond">
+          <button class="sw sw-recept" data-theme="recept" title="Recept (bleu)" aria-label="Style Recept, bleu"></button>
           <button class="sw sw-frais" data-theme="frais" title="Frais (turquoise)" aria-label="Style frais, turquoise"></button>
           <button class="sw sw-blanc" data-theme="blanc" title="Fond blanc" aria-label="Fond blanc"></button>
           <button class="sw sw-gris" data-theme="gris" title="Fond gris" aria-label="Fond gris"></button>
@@ -622,7 +677,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v48</div>
+            <div class="menu-who"><span id="who"></span> · v49</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -4643,9 +4698,9 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
   $("loginPw").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
   $("loginEmail").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
   $("logoutBtn").addEventListener("click", function () { if (sb) sb.auth.signOut(); });
-  var THEMES = ["frais", "blanc", "gris", "rose", "mauve", "sombre"];
+  var THEMES = ["recept", "frais", "blanc", "gris", "rose", "mauve", "sombre"];
   function applyTheme(t) {
-    if (THEMES.indexOf(t) === -1) t = "frais";
+    if (THEMES.indexOf(t) === -1) t = "recept";
     document.documentElement.setAttribute("data-theme", t);
     document.querySelectorAll(".sw").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-theme") === t ? "true" : "false"); });
     try { localStorage.setItem("simsim_theme", t); } catch (e) {}
@@ -4656,7 +4711,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
       if (uid !== sessionUser) return;
       if (res.error) { prefsOk = false; return; }
       prefsOk = true;
-      if (window.__styleMigrated) { window.__styleMigrated = false; applyTheme("frais"); saveThemePref("frais"); return; }
+      if (window.__styleMigrated) { window.__styleMigrated = false; applyTheme("recept"); saveThemePref("recept"); return; }
       if (res.data && THEMES.indexOf(res.data.theme) !== -1) applyTheme(res.data.theme);
     }).catch(function () { prefsOk = false; });
   }
@@ -4673,7 +4728,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
       applyTheme(t); saveThemePref(t);
     });
   });
-  (function () { var t = "frais"; try { t = localStorage.getItem("simsim_theme") || "frais"; } catch (e) {} applyTheme(t); })();
+  (function () { var t = "recept"; try { t = localStorage.getItem("simsim_theme") || "recept"; } catch (e) {} applyTheme(t); })();
   try { var ts = localStorage.getItem("simsim_tilesort"); if (ts) state.tileSort = ts; } catch (e) {}
   try { state.hideCat = localStorage.getItem("simsim_hidecat") === "1"; state.hideDup = localStorage.getItem("simsim_hidedup") === "1"; } catch (e) {}
   function closeMenu() { $("moreMenu").classList.add("hidden"); $("moreBtn").setAttribute("aria-expanded", "false"); }
