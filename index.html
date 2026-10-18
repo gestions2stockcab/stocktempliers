@@ -693,6 +693,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .achip.r-admin { background:var(--ok-bg); color:var(--ok); }
 .achip.r-member { background:var(--surface-2); color:var(--ink); }
 .achip.r-viewer { background:var(--warn-bg); color:var(--warn); }
+.achip.pending { background:var(--warn-bg); color:var(--warn); border:1px dashed var(--warn); }
+.admintabs { margin:4px 0 10px; }
+.aperson .aact select { padding:7px 10px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); font:inherit; }
 .arow { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--line); }
 .arow select { padding:7px 10px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); font:inherit; }
 .btn.danger { background:var(--bad); color:#fff; border-color:var(--bad); }
@@ -775,7 +778,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v52</div>
+            <div class="menu-who"><span id="who"></span> · v54</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -1262,7 +1265,13 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     <div class="seg">
       <button id="adjIn" aria-pressed="true">Entrée</button>
       <button id="adjOut" aria-pressed="false">Sortie</button>
+      <button id="adjMove" class="hidden" aria-pressed="false">Déplacer</button>
     </div>
+    <div class="grid hidden" id="adjMoveBox">
+      <label class="f">De<select id="adjFrom"></select></label>
+      <label class="f">Vers<select id="adjTo"></select></label>
+    </div>
+    <div class="sub hidden" id="adjMoveInfo"></div>
     <div class="grid">
       <label class="f">Quantité
         <input id="adjQty" type="number" min="0" step="any" inputmode="decimal">
@@ -1329,7 +1338,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
   var barcodeOk = false, descOk = false, trackedOk = false, subOk = false, favOk = false, lotsOk = false, lotsByItem = {}, ordOk = false, photoOk = false, jrnOk = false, consoOk = false, jrnByNumber = {}, conso = {}, consoDebut = 0, consoAt = 0, reasonOk = false, packOk = false, pertes = { ok: false, rows: [] };
-  var REASONS = { expired: "Périmé", damaged: "Cassé ou abîmé", lost: "Perdu ou introuvable", gift: "Don ou prêt", other: "Autre", restock: "Réassort de salle" };
+  var REASONS = { expired: "Périmé", damaged: "Cassé ou abîmé", lost: "Perdu ou introuvable", gift: "Don ou prêt", other: "Autre", restock: "Réassort de salle", restock_return: "Retour de salle" };
   var LOSS = ["expired", "damaged", "lost"];
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false, ownerOk = false;
   var recovering = /type=recovery/.test(location.hash);
@@ -1488,6 +1497,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     return sb.from("movements").insert(row).select().single().then(function (res) {
       addLogRow(check(res));
       if (row.reason && LOSS.indexOf(row.reason) !== -1) { loadPertes(); loadConso(); }
+      else if (row.reason === "restock" || row.reason === "restock_return") loadConso();
     });
   }
   // ---------- lots et péremptions ----------
@@ -1635,9 +1645,10 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var snap = { qty: before, tracked: cur.tracked !== false, ordered_qty: Number(cur.ordered_qty) || 0, ordered_at: cur.ordered_at || null, expiry: cur.expiry || "", lot: cur.lot || "", lots: [], flag_at: cur.flag_at || "", flag_by: cur.flag_by || "" };
     var patch = { qty: after, updated_at: new Date().toISOString() };
     if (cur.tracked === false && trackedOk && real > 0) patch.tracked = true;
-    var op = orderedPatch(cur, real);
+    var isRet = !!(opts && opts.reason === "restock_return");
+    var op = isRet ? null : orderedPatch(cur, real);
     if (op) Object.assign(patch, op);
-    if (packOk && cur.flag_at && real > 0) { patch.low_flag_at = null; patch.low_flag_by = null; }
+    if (!isRet && packOk && cur.flag_at && real > 0) { patch.low_flag_at = null; patch.low_flag_by = null; }
     return sb.from("items").update(patch).eq("id", id).then(function (res) {
       check(res);
       var c2 = items.get(id);
@@ -1674,9 +1685,10 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var snap = { qty: before, tracked: it.tracked !== false, ordered_qty: Number(it.ordered_qty) || 0, ordered_at: it.ordered_at || null, expiry: it.expiry || "", lot: it.lot || "", lots: snapLots, flag_at: it.flag_at || "", flag_by: it.flag_by || "" };
     var extra = {};
     if (it.tracked === false && trackedOk && real > 0) extra.tracked = true;
-    var op = orderedPatch(it, real);
+    var isRet = !!(opts && opts.reason === "restock_return");
+    var op = isRet ? null : orderedPatch(it, real);
     if (op) Object.assign(extra, op);
-    if (packOk && it.flag_at && real > 0) { extra.low_flag_at = null; extra.low_flag_by = null; }
+    if (!isRet && packOk && it.flag_at && real > 0) { extra.low_flag_at = null; extra.low_flag_by = null; }
     return persistLots(it, desired, Object.keys(extra).length ? extra : null).then(function (dv) {
       if (!(opts && opts.noUndo)) pushUndo({ kind: "move", id: it.id, snap: snap, afterQty: dv.qty, label: moveLabel(real, it.name), reason: (opts && opts.reason) || "" });
       return appendLog({ type: "move", itemId: it.id, item: it.name, delta: real, qty: dv.qty, note: (note || "") + tag, reason: (opts && opts.reason) || "" });
@@ -2161,7 +2173,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
   // ---------- aide et visite guidée ----------
   var HELP = {
-    inventaire: ["Stock", "Choisissez un domaine, puis utilisez « − » et « + » pour sortir ou ajouter une unité. Cliquez sur le chiffre pour saisir plusieurs unités (des boutons 1, 2, 5, 10… vont plus vite que le clavier) ou un numéro de lot. Cliquez sur le nom pour ouvrir la fiche de l'article. Sur téléphone, balayez une ligne vers la gauche pour sortir 1, vers la droite pour ajouter 1. Quand des salles sont configurées, les puces au-dessus de la liste (Total, puis une par salle) permettent de voir le stock par salle : saisissez ce qu'il y a dans la salle, ou faites son réassort."],
+    inventaire: ["Stock", "Choisissez un domaine, puis utilisez « − » et « + » pour sortir ou ajouter une unité. Cliquez sur le chiffre pour saisir plusieurs unités (des boutons 1, 2, 5, 10… vont plus vite que le clavier) ou un numéro de lot. Cliquez sur le nom pour ouvrir la fiche de l'article. Sur téléphone, balayez une ligne vers la gauche pour sortir 1, vers la droite pour ajouter 1. Quand des salles sont configurées, les puces au-dessus de la liste (Total, puis une par salle) permettent de voir le stock par salle : saisissez ce qu'il y a dans la salle, ou faites son réassort. Dans la fenêtre qui s'ouvre en cliquant sur le chiffre, « Déplacer » transfère du stock entre le stock central et les salles, ou d'une salle à l'autre."],
     favoris: ["Favoris", "Les produits que vous sortez le plus, en grosses cartes avec « − 1 » et « + 1 ». Pour y ajouter un produit, cliquez sur l'étoile à côté de son nom dans l'onglet Stock."],
     commande: ["À commander", "Les produits sous leur seuil, regroupés par fournisseur. « Marquer comme commandé » les met de côté pour ne pas les recommander ; « Reçu » enregistre l'arrivée du stock."],
     comptage: ["Comptage", "L'écran de l'inventaire : saisissez ce que vous avez compté en rayon, puis « Enregistrer le comptage ». Les écarts sont gardés dans l'Historique."],
@@ -2820,7 +2832,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
 
   // ---------- administration (propriétaire) ----------
-  var adminData = { ok: null, err: "", cabinets: [], users: [], invitations: [], q: "" };
+  var adminData = { ok: null, err: "", cabinets: [], users: [], invitations: [], q: "", tab: "" };
   var ADMIN_ROLES = [["none", "Aucun accès"], ["viewer", "Lecture seule"], ["member", "Membre"], ["admin", "Administrateur"]];
   var ROLE_SHORT = { admin: "Administrateur", member: "Membre", viewer: "Lecture seule" };
   function adminErr(e) {
@@ -2927,11 +2939,11 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
   // ajouter une personne
   var addSelA = [];
-  function openAdminAdd() {
+  function openAdminAdd(preId) {
     $("adminAddEmail").value = ""; $("adminAddErr").textContent = "";
     var box = $("adminAddList"); box.textContent = ""; addSelA = [];
     adminData.cabinets.forEach(function (c) {
-      var sel = adminRoleSelect(c.id === cabinetId ? "member" : "none"); addSelA.push({ c: c, sel: sel });
+      var sel = adminRoleSelect(c.id === (preId || cabinetId) ? "member" : "none"); addSelA.push({ c: c, sel: sel });
       box.append(h("label", { class: "arow" }, h("span", { text: c.name }), sel));
     });
     $("adminAddDlg").showModal(); setTimeout(function () { $("adminAddEmail").focus(); }, 0);
@@ -3000,72 +3012,163 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       toast("Invitation annulée."); loadAdmin();
     }, function () { toast("Connexion impossible."); });
   }
+  function adminPeople() {
+    var by = {};
+    adminData.users.forEach(function (u) { by[String(u.email).toLowerCase()] = { email: u.email, user: u, memberships: u.memberships || [], pending: [] }; });
+    adminData.invitations.forEach(function (i) {
+      var k = String(i.email).toLowerCase();
+      (by[k] = by[k] || { email: i.email, user: null, memberships: [], pending: [] }).pending.push(i);
+    });
+    return Object.keys(by).sort().map(function (k) { return by[k]; });
+  }
+  function personInCab(p, cid) {
+    var m = p.memberships.find(function (x) { return x.cabinet_id === cid; });
+    if (m) return { kind: "member", role: m.role };
+    var i = p.pending.find(function (x) { return x.cabinet_id === cid; });
+    return i ? { kind: "pending", role: i.role, inv: i } : null;
+  }
+  function adminStatus(p) {
+    if (!p.memberships.length && p.pending.length) {
+      var last = Math.max.apply(null, p.pending.map(function (i) { return Date.parse(i.last_sent_at || i.created_at) || 0; }));
+      return "invitation en attente · envoyée " + agoText(new Date(last).toISOString());
+    }
+    if (p.user && p.user.last_sign_in) return "dernière connexion " + agoText(p.user.last_sign_in);
+    return "ne s'est jamais connectée";
+  }
+  function adminSeq(list, fn) {
+    var chain = Promise.resolve(true);
+    list.forEach(function (x) { chain = chain.then(function (ok) { return ok ? fn(x) : false; }); });
+    return chain;
+  }
+  function adminResendPerson(p) {
+    adminSeq(p.pending, function (i) {
+      return sb.rpc("admin_invite", { p_email: i.email, p_cabinet: i.cabinet_id, p_role: i.role }).then(function (res) { if (res.error) { toast(adminErr(res.error)); return false; } return true; });
+    }).then(function (ok) {
+      if (!ok) return;
+      sendInviteMail(p.email).then(function (err) { toast(err ? "L'e-mail n'a pas pu partir : " + err : "Invitation renvoyée à " + p.email + "."); loadAdmin(); });
+    }, function () { toast("Connexion impossible."); });
+  }
+  function adminCancelPerson(p) {
+    if (!window.confirm("Annuler l'invitation de " + p.email + " ?")) return;
+    adminSeq(p.pending, function (i) {
+      return sb.rpc("admin_cancel_invite", { p_id: i.id }).then(function (res) { if (res.error) { toast(adminErr(res.error)); return false; } return true; });
+    }).then(function (ok) { if (ok) toast("Invitation annulée."); loadAdmin(); }, function () { toast("Connexion impossible."); });
+  }
+  function adminChangeRole(p, c, sel, cur) {
+    var v = sel.value;
+    var done = function (err) {
+      if (err) { toast(c.name + " : " + adminErr(err)); sel.value = cur.role; }
+      else toast(v === "remove" ? p.email + " retirée de « " + c.name + " »." : "Rôle de " + p.email + " dans « " + c.name + " » : " + (ROLE_SHORT[v] || v).toLowerCase() + ".");
+      loadAdmin();
+    };
+    var call = cur.kind === "pending"
+      ? sb.rpc("admin_set_invite_role", { p_id: cur.inv.id, p_role: v })
+      : sb.rpc("admin_set_access", { p_user: p.user.id, p_cabinet: c.id, p_role: v === "remove" ? "none" : v });
+    call.then(function (res) { done(res.error); }, function () { done({ message: "Connexion impossible." }); });
+  }
+  function adminPersonMenu(p) {
+    var e = [];
+    if (p.user && (p.memberships.length || p.user.confirmed)) e.push(["Accès à tous les cabinets…", function () { openAdminAccess(p.user); }], ["Mot de passe provisoire…", function () { openAdminPw(p.user); }]);
+    if (p.pending.length && p.memberships.length) e.push(["Renvoyer l'invitation", function () { adminResendPerson(p); }], ["Annuler l'invitation", function () { adminCancelPerson(p); }]);
+    if (p.user && p.user.id !== sessionUser) e.push(["Supprimer le compte…", function () { adminDeleteUser(p.user); }]);
+    return e;
+  }
+  function adminPersonActions(p) {
+    var box = h("div", { class: "aact" });
+    var pendingOnly = !p.memberships.length && p.pending.length;
+    if (pendingOnly) {
+      box.append(h("button", { class: "btn sm", type: "button", onclick: function () { adminResendPerson(p); }, text: "Renvoyer" }),
+        h("button", { class: "btn sm", type: "button", onclick: function () { adminCancelPerson(p); }, text: "Annuler" }));
+      return box;
+    }
+    if (p.user && (p.memberships.length || p.user.confirmed)) box.append(h("button", { class: "btn sm", type: "button", onclick: function () { openAdminAccess(p.user); }, text: "Accès" }));
+    var menu = adminPersonMenu(p);
+    if (menu.length) box.append(dotsBtn(function () { return adminPersonMenu(p); }, "Plus d'actions pour " + p.email));
+    return box;
+  }
+  function adminPersonRowAll(p) {
+    var chips = h("div", { class: "achips" });
+    p.memberships.forEach(function (m) { var c = adminCabById(m.cabinet_id); if (c) chips.append(h("span", { class: "achip r-" + m.role, text: c.name + " · " + (ROLE_SHORT[m.role] || m.role) })); });
+    p.pending.forEach(function (i) { var c = adminCabById(i.cabinet_id); chips.append(h("span", { class: "achip pending", text: (c ? c.name : "cabinet supprimé") + " · " + (ROLE_SHORT[i.role] || i.role) + " (en attente)" })); });
+    if (!chips.children.length) chips.append(h("span", { class: "achip", text: "Aucun accès" }));
+    return h("div", { class: "aperson" },
+      h("div", { class: "amain" }, h("div", { class: "aname", text: p.email + (p.user && p.user.id === sessionUser ? " (vous)" : "") }), h("div", { class: "meta", text: adminStatus(p) }), chips),
+      adminPersonActions(p));
+  }
+  function adminPersonRowCab(p, st, c) {
+    var sel = h("select", { "aria-label": "Rôle de " + p.email + " dans " + c.name });
+    [["admin", "Administrateur"], ["member", "Membre"], ["viewer", "Lecture seule"]].forEach(function (o) { sel.append(h("option", { value: o[0], text: o[1] })); });
+    if (st.kind === "member") sel.append(h("option", { value: "remove", text: "Retirer du cabinet" }));
+    sel.value = st.role;
+    sel.addEventListener("change", function () { adminChangeRole(p, c, sel, st); });
+    var acts = h("div", { class: "aact" }, sel);
+    if (st.kind === "pending") acts.append(h("button", { class: "btn sm", type: "button", onclick: function () { adminResend(st.inv); }, text: "Renvoyer" }), h("button", { class: "btn sm", type: "button", onclick: function () { adminCancelInvite(st.inv); }, text: "Annuler" }));
+    else if (adminPersonMenu(p).length) acts.append(dotsBtn(function () { return adminPersonMenu(p); }, "Plus d'actions pour " + p.email));
+    return h("div", { class: "aperson" },
+      h("div", { class: "amain" }, h("div", { class: "aname", text: p.email + (p.user && p.user.id === sessionUser ? " (vous)" : "") }),
+        h("div", { class: "meta", text: st.kind === "pending" ? "invitation en attente · envoyée " + agoText(st.inv.last_sent_at || st.inv.created_at) : adminStatus(p) })),
+      acts);
+  }
   function renderAdmin(box) {
     if (!ownerOk) { box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Réservé au propriétaire" })))); return; }
     if (adminData.ok === null) { box.append(h("div", { class: "meta", text: "Chargement…" })); return; }
     if (!adminData.ok) { box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Administration indisponible" }), h("div", { text: adminData.err })))); return; }
+    var people = adminPeople();
     var cabs = h("div", { class: "dsec" });
     cabs.append(h("div", { class: "adminhead" }, h("h3", { text: "Cabinets (" + adminData.cabinets.length + ")" }),
       h("button", { class: "btn", type: "button", onclick: openNewCab, text: "＋ Créer un cabinet" })));
     var grid = h("div", { class: "agrid" });
     adminData.cabinets.forEach(function (c) {
-      var mine = roles[c.id];
+      var mine = roles[c.id], n = people.filter(function (p) { return personInCab(p, c.id); }).length;
       grid.append(h("div", { class: "acab" },
         h("div", { class: "aname", text: c.name }),
-        h("div", { class: "meta", text: fmt(c.nb_membres) + " personne" + (c.nb_membres > 1 ? "s" : "") + " · " + fmt(c.nb_articles) + " article" + (c.nb_articles > 1 ? "s" : "") + " suivis" }),
+        h("div", { class: "meta", text: fmt(n) + " personne" + (n > 1 ? "s" : "") + " · " + fmt(c.nb_articles) + " article" + (c.nb_articles > 1 ? "s" : "") + " suivis" }),
         h("div", { class: "meta", text: (c.derniere_activite ? "dernière activité " + agoText(c.derniere_activite) : "aucune activité") + (mine ? " · vous : " + (ROLE_SHORT[mine] || mine).toLowerCase() : " · vous n'y avez pas accès") }),
         h("div", { class: "aact" },
           h("button", { class: "btn sm primary", type: "button", onclick: function () { adminOpen(c); }, text: c.id === cabinetId ? "Ouvert" : "Ouvrir" }),
+          h("button", { class: "btn sm", type: "button", onclick: function () { adminData.tab = c.id; adminData.q = ""; render(); var el = $("adminPeople"); if (el && el.scrollIntoView) el.scrollIntoView({ block: "start" }); }, text: "Personnes" }),
           dotsBtn(function () { return [["Renommer", function () { openAdminRename(c); }], ["Supprimer le cabinet…", function () { openAdminDelete(c); }]]; }, "Plus d'actions pour " + c.name))));
     });
     cabs.append(grid);
     box.append(cabs);
-    var ppl = h("div", { class: "dsec" });
-    ppl.append(h("div", { class: "adminhead" }, h("h3", { text: "Personnes (" + adminData.users.length + ")" }),
-      h("button", { class: "btn", type: "button", onclick: openAdminAdd, text: "＋ Ajouter une personne" })));
-    var users = adminData.users.slice();
-    if (users.length > 8) {
-      var q = h("input", { class: "search", type: "search", placeholder: "Chercher une adresse e-mail", value: adminData.q || "", "aria-label": "Chercher une personne" });
-      q.addEventListener("input", function () { adminData.q = q.value; clearTimeout(q._t); q._t = setTimeout(render, 150); });
-      ppl.append(q);
-      if (adminData.q) users = users.filter(function (u) { return norm(u.email).indexOf(norm(adminData.q)) !== -1; });
+    var tab = adminData.tab || "";
+    if (tab && !adminCabById(tab)) tab = adminData.tab = "";
+    var sec = h("div", { class: "dsec", id: "adminPeople" });
+    sec.append(h("div", { class: "adminhead" }, h("h3", { text: "Personnes" }),
+      h("button", { class: "btn", type: "button", onclick: function () { openAdminAdd(tab || undefined); }, text: tab ? "＋ Ajouter une personne à ce cabinet" : "＋ Ajouter une personne" })));
+    var tabs = h("div", { class: "roomchips admintabs", role: "tablist", "aria-label": "Personnes par cabinet" });
+    var mkTab = function (id, label, n) {
+      tabs.append(h("button", { class: "roomchip" + (tab === id ? " on" : ""), type: "button", role: "tab", "aria-selected": tab === id ? "true" : "false", style: "--rc:var(--brand)",
+        onclick: function () { adminData.tab = id; adminData.q = ""; render(); } }, h("i"), label + " · " + n));
+    };
+    mkTab("", "Tous", people.length);
+    adminData.cabinets.forEach(function (c) { mkTab(c.id, c.name, people.filter(function (p) { return personInCab(p, c.id); }).length); });
+    sec.append(tabs);
+    if (!tab) {
+      var list = people;
+      if (people.length > 8) {
+        var q = h("input", { class: "search", type: "search", placeholder: "Chercher une adresse e-mail", value: adminData.q || "", "aria-label": "Chercher une personne" });
+        q.addEventListener("input", function () { adminData.q = q.value; clearTimeout(q._t); q._t = setTimeout(render, 150); });
+        sec.append(q);
+        if (adminData.q) list = people.filter(function (p) { return norm(p.email).indexOf(norm(adminData.q)) !== -1; });
+      }
+      var wrap = h("div", { class: "alist" });
+      list.forEach(function (p) { wrap.append(adminPersonRowAll(p)); });
+      if (!list.length) wrap.append(h("div", { class: "meta", text: "Aucune personne." }));
+      sec.append(wrap);
+    } else {
+      var c = adminCabById(tab), rank = { admin: 0, member: 1, viewer: 2 };
+      var rows = people.map(function (p) { return { p: p, st: personInCab(p, c.id) }; }).filter(function (x) { return x.st; })
+        .sort(function (a, b) { return ((a.st.kind === "pending" ? 10 : 0) + (rank[a.st.role] || 0)) - ((b.st.kind === "pending" ? 10 : 0) + (rank[b.st.role] || 0)) || a.p.email.localeCompare(b.p.email); });
+      var nAdm = rows.filter(function (x) { return x.st.kind === "member" && x.st.role === "admin"; }).length, nPend = rows.filter(function (x) { return x.st.kind === "pending"; }).length;
+      sec.append(h("div", { class: "meta", text: c.name + " : " + rows.length + " personne" + (rows.length > 1 ? "s" : "") + " · " + nAdm + " administrateur" + (nAdm > 1 ? "s" : "") + (nPend ? " · " + nPend + " en attente" : "") }));
+      var wrap2 = h("div", { class: "alist" });
+      rows.forEach(function (x) { wrap2.append(adminPersonRowCab(x.p, x.st, c)); });
+      if (!rows.length) wrap2.append(h("div", { class: "meta", text: "Personne pour le moment dans ce cabinet." }));
+      sec.append(wrap2);
     }
-    var list = h("div", { class: "alist" });
-    users.forEach(function (u) {
-      var chips = h("div", { class: "achips" });
-      (u.memberships || []).forEach(function (m) { var c = adminCabById(m.cabinet_id); if (c) chips.append(h("span", { class: "achip r-" + m.role, text: c.name + " · " + (ROLE_SHORT[m.role] || m.role) })); });
-      if (!(u.memberships || []).length) chips.append(h("span", { class: "achip", text: "Aucun accès" }));
-      list.append(h("div", { class: "aperson" },
-        h("div", { class: "amain" },
-          h("div", { class: "aname", text: u.email + (u.id === sessionUser ? " (vous)" : "") }),
-          h("div", { class: "meta", text: u.last_sign_in ? "dernière connexion " + agoText(u.last_sign_in) : "ne s'est jamais connectée" }),
-          chips),
-        h("div", { class: "aact" },
-          h("button", { class: "btn sm", type: "button", onclick: function () { openAdminAccess(u); }, text: "Accès" }),
-          dotsBtn(function () {
-            var e = [["Mot de passe provisoire…", function () { openAdminPw(u); }]];
-            if (u.id !== sessionUser) e.push(["Supprimer le compte…", function () { adminDeleteUser(u); }]);
-            return e;
-          }, "Plus d'actions pour " + u.email))));
-    });
-    if (!users.length) list.append(h("div", { class: "meta", text: "Aucune personne." }));
-    ppl.append(list);
-    box.append(ppl);
-    var inv = adminData.invitations;
-    var sec = h("div", { class: "dsec" }, h("h3", { text: "Invitations en attente (" + inv.length + ")" }));
-    if (!inv.length) sec.append(h("div", { class: "meta", text: "Aucune invitation en attente." }));
-    inv.forEach(function (i) {
-      var c = adminCabById(i.cabinet_id);
-      sec.append(h("div", { class: "aperson" },
-        h("div", { class: "amain" }, h("div", { class: "aname", text: i.email }),
-          h("div", { class: "meta", text: (c ? c.name : "cabinet supprimé") + " · " + (ROLE_SHORT[i.role] || i.role) + " · envoyée " + agoText(i.last_sent_at || i.created_at) })),
-        h("div", { class: "aact" },
-          h("button", { class: "btn sm", type: "button", onclick: function () { adminResend(i); }, text: "Renvoyer" }),
-          h("button", { class: "btn sm", type: "button", onclick: function () { adminCancelInvite(i); }, text: "Annuler" }))));
-    });
     box.append(sec);
   }
-
   // ---------- vue du stock par salle ou en total ----------
   function renderViewBar() {
     var bar = $("viewBar"), show = state.tab === "inventaire" && sallesOk && rooms.length > 0 && items.size > 0;
@@ -3159,6 +3262,65 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     enqueue(function () {
       return sb.from("salle_items").insert(row).select().single().then(check).then(function (li) { (roomItems[r.id] = roomItems[r.id] || []).push(li); indexRooms(); if (state.editing && state.editing.id === it.id) drawItemRooms(it); render(); });
     });
+  }
+  // ---------- déplacer du stock : stock central <-> salles, ou d'une salle à l'autre ----------
+  function roomLine(rid, itemId) { return (roomItems[rid] || []).find(function (x) { return x.item_id === itemId; }); }
+  function fillMoveSelects() {
+    var it = state.adjusting; if (!it) return;
+    var from = $("adjFrom"), to = $("adjTo"); from.textContent = ""; to.textContent = "";
+    var central = Number((items.get(it.id) || it).qty) || 0;
+    var mk = function (sel) {
+      sel.append(h("option", { value: "", text: "Stock central · " + fmt(central) }));
+      rooms.forEach(function (r) {
+        var li = roomLine(r.id, it.id);
+        sel.append(h("option", { value: r.id, text: "● " + r.name + " · " + (li ? (li.counted_qty != null ? fmt(li.counted_qty) : "pas compté") : "pas rangé ici") }));
+      });
+    };
+    mk(from); mk(to);
+    var assigned = rooms.find(function (r) { return roomLine(r.id, it.id); });
+    from.value = ""; to.value = assigned ? assigned.id : (rooms[0] ? rooms[0].id : "");
+    moveInfo();
+  }
+  function moveInfo() {
+    var f = $("adjFrom").value, t = $("adjTo").value, m = $("adjMoveInfo");
+    m.textContent = f === t ? "Choisissez deux endroits différents."
+      : !f ? "Le stock central baisse de cette quantité : elle est comptée comme consommée, comme pour un réassort."
+      : !t ? "Retour au stock central : il augmente, et la consommation est corrigée d'autant."
+      : "Le stock central ne change pas : seules les quantités des deux salles bougent.";
+  }
+  function bumpRoom(rid, it, delta) {
+    var li = roomLine(rid, it.id), now = new Date().toISOString();
+    if (!li) {
+      if (delta < 0) return;
+      var row = { cabinet_id: cabinetId, salle_id: rid, item_id: it.id, target: Math.max(1, Number(it.min) || 2), counted_qty: delta, counted_at: now };
+      enqueue(function () {
+        return sb.from("salle_items").insert(row).select().single().then(check).then(function (l) { (roomItems[rid] = roomItems[rid] || []).push(l); indexRooms(); render(); });
+      });
+      return;
+    }
+    var nv = Math.max(0, r2((li.counted_qty == null ? 0 : Number(li.counted_qty)) + delta));
+    li.counted_qty = nv; li.counted_at = now;
+    enqueue(function () { return sb.from("salle_items").update({ counted_qty: nv, counted_at: now }).eq("id", li.id).then(check); });
+  }
+  function dispatchStock(it, from, to, q, note) {
+    if (readOnly || !db) return false;
+    if (from === to) { toast("Choisissez deux endroits différents."); return false; }
+    if (!(q > 0)) { toast("Indiquez une quantité supérieure à zéro."); return false; }
+    var cur = items.get(it.id) || it, central = Number(cur.qty) || 0, rf = from ? roomById(from) : null, rt = to ? roomById(to) : null;
+    if (!from && q > central) { toast("Stock central insuffisant : il n'en reste que " + fmt(central) + "."); return false; }
+    if (from) { var lf = roomLine(from, it.id); if (lf && lf.counted_qty != null && q > Number(lf.counted_qty)) { toast("Il n'y a que " + fmt(lf.counted_qty) + " dans « " + rf.name + " »."); return false; } }
+    var nf = rf ? rf.name : "le stock central", nt = rt ? rt.name : "le stock central", extra = note ? " · " + note : "";
+    if (!from) adjustQty(cur, -q, "Dispatch vers " + nt + extra, null, { reason: "restock", noUndo: true });
+    else if (!to) adjustQty(cur, q, "Retour de " + nf + extra, null, { reason: "restock_return", noUndo: true });
+    else enqueue(function () { return appendLog({ type: "edit", itemId: it.id, item: cur.name, delta: 0, qty: central, note: "Transfert " + nf + " → " + nt + " : " + fmt(q) + extra }); });
+    if (from) bumpRoom(from, cur, -q);
+    if (to) bumpRoom(to, cur, q);
+    render();
+    toast(fmt(q) + " × " + cur.name + " : " + nf + " → " + nt + ".");
+    return true;
+  }
+  function dispatchFromDialog(q) {
+    return dispatchStock(state.adjusting, $("adjFrom").value, $("adjTo").value, q, $("adjNote").value.trim());
   }
   function updateSelBar() {
     var n = state.sel.size;
@@ -4152,6 +4314,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     rows.forEach(function (r) {
       var delta = Number(r.delta) || 0;
       var out = (r.type === "move" && delta < 0) ? -delta : (r.type === "undo" && delta > 0) ? -delta : 0;
+      if (r.type === "move" && r.reason === "restock_return" && delta > 0) out = -delta;
       if (!out) return;
       var t = Date.parse(r.created_at) || 0, age = (now - t) / 86400000;
       if (LOSS.indexOf(r.reason) !== -1) { if (age <= 90) l90 += out; return; }
@@ -4386,6 +4549,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     $("adjLots").textContent = (lotsOk && hasLots(it))
       ? "Lots en stock : " + lotsOf(it.id).map(function (l) { return (l.lot || "sans lot") + " " + fmt(l.qty) + (l.expiry ? " (exp. " + isoToFr(l.expiry) + ")" : ""); }).join(" · ") + ". Une sortie prend d'abord le lot qui périme en premier."
       : "";
+    $("adjMove").classList.toggle("hidden", !(sallesOk && rooms.length && !readOnly));
     syncSeg();
     $("adjDlg").showModal();
     setTimeout(function () { $("adjQty").focus(); }, 0);
@@ -4393,6 +4557,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function syncSeg() {
     $("adjIn").setAttribute("aria-pressed", state.adjSign > 0 ? "true" : "false");
     $("adjOut").setAttribute("aria-pressed", state.adjSign < 0 ? "true" : "false");
+    $("adjMove").setAttribute("aria-pressed", state.adjSign === 0 ? "true" : "false");
+    $("adjMoveBox").classList.toggle("hidden", state.adjSign !== 0);
+    $("adjMoveInfo").classList.toggle("hidden", state.adjSign !== 0);
     $("adjLotBox").classList.toggle("hidden", !(lotsOk && state.adjSign > 0));
     $("adjReasonBox").classList.toggle("hidden", !(reasonOk && state.adjSign < 0));
   }
@@ -5566,10 +5733,14 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   });
   $("adjIn").addEventListener("click", function () { state.adjSign = 1; syncSeg(); });
   $("adjOut").addEventListener("click", function () { state.adjSign = -1; syncSeg(); });
+  $("adjMove").addEventListener("click", function () { state.adjSign = 0; fillMoveSelects(); syncSeg(); });
+  $("adjFrom").addEventListener("change", moveInfo);
+  $("adjTo").addEventListener("change", moveInfo);
   $("adjCancel").addEventListener("click", function () { $("adjDlg").close(); });
   $("adjSave").addEventListener("click", function () {
     var q = num($("adjQty").value);
     if (q <= 0) { toast("Indiquez une quantité supérieure à zéro."); $("adjQty").focus(); return; }
+    if (state.adjSign === 0) { if (dispatchFromDialog(q)) $("adjDlg").close(); return; }
     var reason = (state.adjSign < 0 && reasonOk) ? $("adjReason").value : "";
     adjustQty(state.adjusting, state.adjSign * q, $("adjNote").value.trim() || (state.adjSign > 0 ? "Entrée" : "Sortie"),
       state.adjSign > 0 ? { lot: $("adjLot").value, expiry: $("adjExp").value } : null, reason ? { reason: reason } : undefined);
