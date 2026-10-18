@@ -250,6 +250,8 @@ label.f input { padding:8px 10px; border:1px solid var(--line); border-radius:8p
 .mi:disabled { opacity:.45; cursor:not-allowed; }
 .bar { display:flex; gap:8px; margin:4px 0 14px; }
 .bar .search { flex:1; min-width:0; }
+.bar .btn { white-space:nowrap; }
+@media (max-width: 760px) { .bar { flex-wrap:wrap; } .bar .search { flex:1 1 100%; } .bar .btn { flex:1 1 auto; } }
 .alerts { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 14px; }
 .alert { border:1px solid transparent; border-radius:99px; padding:6px 12px; font-weight:500; }
 .alert strong { font-weight:700; }
@@ -516,7 +518,7 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v40</div>
+            <div class="menu-who"><span id="who"></span> · v41</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -553,6 +555,7 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
   <div class="bar" id="bar">
     <input class="search" id="search" type="search" placeholder="Rechercher un article" aria-label="Rechercher">
     <button class="btn" id="scanBtn">Scanner</button>
+    <button class="btn" id="importBar" title="Importer des articles ou une facture (Excel, CSV ou PDF)">⬆ Importer un fichier</button>
     <button class="btn primary" id="addBtn">+ Ajouter</button>
   </div>
   <div class="filters hidden" id="filters">
@@ -2195,6 +2198,7 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
     $("addBtn").disabled = readOnly || !db;
     $("scanBtn").disabled = !db;
     $("importBtn").disabled = readOnly || !db;
+    $("importBar").disabled = readOnly || !db;
     $("exportBtn").disabled = !items.size;
     $("bar").classList.toggle("hidden", state.tab !== "inventaire");
     if (state.tab === "inventaire") renderInventory(box);
@@ -3499,6 +3503,7 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
   $("search").addEventListener("input", function (e) { state.q = e.target.value; render(); });
   $("addBtn").addEventListener("click", function () { openItem(null); });
   $("importBtn").addEventListener("click", function () { $("importFile").click(); });
+  $("importBar").addEventListener("click", function () { $("importFile").click(); });
   $("exportBtn").addEventListener("click", exportCsv);
   $("importFile").addEventListener("change", function (e) {
     var f = e.target.files && e.target.files[0];
