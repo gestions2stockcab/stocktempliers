@@ -536,6 +536,15 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
 .minimenu { position:fixed; z-index:60; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.22); padding:6px; min-width:230px; max-width:calc(100vw - 16px); }
 .minimenu button { display:block; width:100%; text-align:left; border:0; background:transparent; padding:9px 12px; border-radius:8px; font:inherit; color:var(--ink); cursor:pointer; }
 .minimenu button:hover, .minimenu button:focus-visible { background:var(--surface-2); }
+
+/* ===== v47 : contrôle de réception ===== */
+.recv { border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin:10px 0; background:var(--surface-2); }
+.recv h4 { margin:0 0 4px; font-size:15px; color:var(--brand); }
+.recv .rg { margin:6px 0; }
+.recv summary { cursor:pointer; font-weight:600; }
+.recv .rg.warn summary { color:var(--warn); }
+.recv .rg.ok summary { color:var(--ok); }
+.recv ul { margin:4px 0 2px 18px; padding:0; font-size:14px; }
 </style>
 </head>
 <body>
@@ -607,7 +616,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v46</div>
+            <div class="menu-who"><span id="who"></span> · v47</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -3591,6 +3600,73 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
       });
     }).catch(function () { $("jrnInfo").textContent = "Le journal n'a pas pu être chargé."; });
   }
+  // ---------- contrôle de réception : la facture comparée à ce qui avait été commandé ----------
+  function receiptReport(rows, supplier, isCredit) {
+    var out = { ok: [], partial: [], excess: [], missing: [], unordered: [], price: [] };
+    if (isCredit) return out;
+    var pm = achOk ? lastPriceMap(spendRows()) : {}, sum = {}, anyOrdered = false;
+    items.forEach(function (x) { if (x.ordered_qty > 0) anyOrdered = true; });
+    rows.forEach(function (r) {
+      if (!r.on || !(r.qty > 0) || !r.match) return;
+      var e = sum[r.match.id] = sum[r.match.id] || { it: r.match, qty: 0, price: 0 };
+      e.qty += r.qty; if (r.price > 0) e.price = r.price;
+    });
+    Object.keys(sum).forEach(function (id) {
+      var e = sum[id], it = e.it, ord = Number(it.ordered_qty) || 0;
+      if (ord > 0) {
+        var d = r2(e.qty - ord);
+        if (d === 0) out.ok.push({ it: it, got: e.qty, ord: ord });
+        else if (d < 0) out.partial.push({ it: it, got: e.qty, ord: ord, left: -d });
+        else out.excess.push({ it: it, got: e.qty, ord: ord, extra: d });
+      } else if (ordOk && anyOrdered) out.unordered.push({ it: it, got: e.qty });
+      var known = it.ref ? pm[it.ref] || 0 : 0;   // seulement le dernier prix réellement payé (factures déjà importées)
+      if (e.price > 0 && known > 0) {
+        var pc = (e.price - known) / known * 100;
+        if (Math.abs(pc) >= 3) out.price.push({ it: it, known: known, now: e.price, pc: pc });
+      }
+    });
+    var sup = norm(supplier || "").trim();
+    if (sup && ordOk) items.forEach(function (it) {
+      if (it.ordered_qty > 0 && !sum[it.id] && norm(it.supplier || "").trim() === sup) out.missing.push({ it: it, ord: it.ordered_qty, at: it.ordered_at });
+    });
+    return out;
+  }
+  function recvSummary(rep) {
+    var p = [];
+    if (rep.ok.length) p.push(rep.ok.length + " conforme" + (rep.ok.length > 1 ? "s" : ""));
+    if (rep.partial.length) p.push(rep.partial.length + " partielle" + (rep.partial.length > 1 ? "s" : "") + " (reste à recevoir)");
+    if (rep.excess.length) p.push(rep.excess.length + " en plus de la commande");
+    if (rep.missing.length) p.push(rep.missing.length + " commandé" + (rep.missing.length > 1 ? "s" : "") + " mais absent" + (rep.missing.length > 1 ? "s" : "") + " de la facture");
+    return "Contrôle de réception : " + p.join(", ");
+  }
+  function recvPanel(rep) {
+    var n = rep.ok.length + rep.partial.length + rep.excess.length + rep.missing.length + rep.unordered.length + rep.price.length;
+    if (!n) return null;
+    var box = h("div", { class: "recv" }, h("h4", { text: "Contrôle de réception" }));
+    var chips = [];
+    if (rep.ok.length) chips.push("✓ " + rep.ok.length + " conforme" + (rep.ok.length > 1 ? "s" : ""));
+    if (rep.partial.length) chips.push("⚠ " + rep.partial.length + " partielle" + (rep.partial.length > 1 ? "s" : ""));
+    if (rep.excess.length) chips.push("⚠ " + rep.excess.length + " en plus");
+    if (rep.missing.length) chips.push("⚠ " + rep.missing.length + " absent" + (rep.missing.length > 1 ? "s" : "") + " de la facture");
+    if (rep.price.length) chips.push("⚠ " + rep.price.length + " prix différent" + (rep.price.length > 1 ? "s" : ""));
+    if (rep.unordered.length) chips.push(rep.unordered.length + " sans commande enregistrée");
+    box.append(h("div", { class: "sub", text: chips.join(" · ") + ". Les quantités sont comparées telles qu'elles sont écrites sur la facture." }));
+    var group = function (cls, title, arr, line, open) {
+      if (!arr.length) return;
+      var ul = h("ul");
+      arr.forEach(function (a) { ul.append(h("li", { text: line(a) })); });
+      var det = h("details", { class: "rg " + cls }, h("summary", { text: title + " (" + arr.length + ")" }), ul);
+      if (open) det.setAttribute("open", "");
+      box.append(det);
+    };
+    group("warn", "Livraison partielle : le reste reste en attente", rep.partial, function (a) { return a.it.name + " : reçu " + fmt(a.got) + " sur " + fmt(a.ord) + " commandés, il en reste " + fmt(a.left) + " à recevoir"; }, true);
+    group("warn", "Plus que commandé", rep.excess, function (a) { return a.it.name + " : reçu " + fmt(a.got) + " pour " + fmt(a.ord) + " commandés (+" + fmt(a.extra) + ")"; }, true);
+    group("warn", "Commandé mais absent de cette facture", rep.missing, function (a) { return a.it.name + " : " + fmt(a.ord) + " commandé" + (a.ord > 1 ? "s" : "") + (a.at ? " le " + new Date(a.at).toLocaleDateString("fr-FR") : "") + ", toujours attendu" + (a.ord > 1 ? "s" : ""); }, true);
+    group("warn", "Prix différent du dernier prix payé", rep.price, function (a) { return a.it.name + " : " + money(a.known) + " → " + money(a.now) + " (" + (a.pc > 0 ? "+" : "") + a.pc.toFixed(1).replace(".", ",") + " %)"; }, true);
+    group("ok", "Conforme à la commande", rep.ok, function (a) { return a.it.name + " : " + fmt(a.got) + " reçu" + (a.got > 1 ? "s" : ""); }, false);
+    group("", "Livré sans commande enregistrée", rep.unordered, function (a) { return a.it.name + " : " + fmt(a.got) + " reçu" + (a.got > 1 ? "s" : ""); }, false);
+    return box;
+  }
   function showPdfPreview(fileName, lines) {
     var rows = parseDocLines(lines);
     if (!rows.length) rows = parseLinesB(lines);
@@ -3621,12 +3697,16 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     if (isCredit) info.append(h("div", { class: "banner", text: "Ce document est un avoir (annulation ou retour) : les lignes sont décochées. Ne les importez pas comme une livraison." }));
     var supplierInput = h("input", { type: "text", value: guessSupplier(head), autocomplete: "off" });
     info.append(h("label", { class: "f" }, "Fournisseur des nouveaux articles (facultatif)", supplierInput));
+    var recv = h("div"); info.append(recv);
+    supplierInput.addEventListener("input", function () { refresh(); });
     var anyLot = rows.some(function (r) { return r.match && (r.lot || r.expiry); });
     var updLot = anyLot ? h("input", { type: "checkbox" }) : null;
     var catOnly = h("input", { type: "checkbox" });
     info.append(h("label", { class: "chk" }, catOnly, "Ajouter seulement au catalogue (articles non suivis, sans quantité ni entrée de stock)"));
     if (updLot) info.append(h("label", { class: "chk" }, updLot, "Mettre à jour le lot et la péremption des articles déjà présents (remplace l'ancien lot)"));
     var refresh = function () {
+      recv.textContent = "";
+      var pnl = recvPanel(receiptReport(rows, supplierInput.value, isCredit)); if (pnl) recv.append(pnl);
       var n = rows.filter(function (r) { return r.on && r.qty > 0; }).length;
       okBtn.textContent = "Importer (" + n + ")";
       okBtn.disabled = n === 0 || readOnly || !db;
@@ -3671,6 +3751,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     okBtn.onclick = function () {
       var chosen = rows.filter(function (r) { return r.on && r.qty > 0; });
       if (!chosen.length) return;
+      var repNow = receiptReport(rows, supplierInput.value, isCredit);
       if (seenBefore && !catOnly.checked && !window.confirm("Ce document semble déjà avoir été importé. Si vous continuez, ses quantités seront ajoutées une deuxième fois au stock.\n\nImporter quand même ?")) return;
       var supplier = supplierInput.value.trim();
       var moves = [], fresh = {};
@@ -3726,7 +3807,8 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
         });
       }
       if (!catOnly.checked) recordDocument(dm, fileName, rows, supplier);
-      toast(list.length + " nouvel" + (list.length > 1 ? "s" : "") + " article" + (list.length > 1 ? "s" : "") + ", " + nEntries + " entrée" + (nEntries > 1 ? "s" : "") + " de stock.");
+      if (!catOnly.checked && (repNow.ok.length + repNow.partial.length + repNow.excess.length + repNow.missing.length)) enqueue(function () { return appendLog({ type: "import", itemId: "", item: "Réception " + (dm.number || fileName), delta: 0, qty: 0, note: recvSummary(repNow) }); });
+      toast(list.length + " nouvel" + (list.length > 1 ? "s" : "") + " article" + (list.length > 1 ? "s" : "") + ", " + nEntries + " entrée" + (nEntries > 1 ? "s" : "") + " de stock." + (!catOnly.checked && repNow.partial.length ? " " + repNow.partial.length + " livraison" + (repNow.partial.length > 1 ? "s" : "") + " partielle" + (repNow.partial.length > 1 ? "s" : "") + " : le reste reste en attente de livraison." : ""));
     };
     var spendBtn = $("pdfSpend");
     spendBtn.disabled = !dm.number || !jrnOk || !achOk || readOnly || !db;
