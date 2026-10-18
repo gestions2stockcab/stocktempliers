@@ -491,12 +491,44 @@ dialog.cmdk::backdrop { background:rgba(0,0,0,.4); }
   .selbar { bottom:calc(88px + env(safe-area-inset-bottom,0px)); }
   #kBtn { display:none; }
 }
+
+/* ===== v43 : finitions ===== */
+* { scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+:focus-visible { outline:2px solid var(--brand); outline-offset:2px; }
+input:focus, select:focus, textarea:focus { border-color:var(--brand); }
+@supports (color: color-mix(in srgb, red, blue)) {
+  input:focus, select:focus, textarea:focus { outline:none; box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent); }
+}
+input, select, textarea { border-radius:10px; }
+.btn { transition:background .12s, border-color .12s, transform .08s, box-shadow .12s; }
+.btn:hover:not(:disabled) { border-color:var(--brand); }
+.btn:active:not(:disabled) { transform:scale(.97); }
+.btn.primary { box-shadow:0 2px 8px rgba(0,0,0,.16); }
+.btn.primary:hover:not(:disabled) { filter:brightness(1.08); }
+.step { transition:background .12s, border-color .12s, transform .08s; }
+.step:active:not(:disabled) { transform:scale(.9); }
+dialog { border:0; border-radius:20px; box-shadow:0 24px 60px rgba(0,0,0,.3); }
+dialog::backdrop { background:rgba(8,36,34,.45); }
+.dlg h2 { font-size:20px; letter-spacing:-.01em; }
+.toast { border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.28); }
+.chip { border-radius:99px; font-weight:600; }
+.supplier, .ucard, .kpi, .fccard, .favcard, .fpanel { border-radius:14px; box-shadow:var(--shadow); }
+.supplier > header { background:var(--surface-2); }
+.empty { padding:42px 16px; text-align:center; }
+.empty h2 { color:var(--brand); margin:0 0 6px; }
+.brandmark { width:58px; height:58px; border-radius:16px; background:var(--brand); color:var(--brand-ink); display:grid; place-items:center; font-size:30px; margin:0 auto 12px; box-shadow:0 8px 20px rgba(0,0,0,.18); }
+.login-card { border-radius:22px; box-shadow:0 18px 50px rgba(0,0,0,.14); text-align:center; }
+.login-card h1 { color:var(--brand); }
+.login-card label, .login-card .login-err { text-align:left; }
+.alert { border-radius:12px; }
+.row, .trow, .urow, .oline { transition:background .12s; }
 </style>
 </head>
 <body>
 
 <div id="login" class="hidden">
   <div class="login-card">
+    <div class="brandmark" aria-hidden="true">📦</div>
     <h1 id="loginTitle">SimSimStock</h1>
     <div class="sub" id="loginHint">Connectez-vous avec votre e-mail et votre mot de passe.</div>
     <label class="f">Adresse e-mail
@@ -516,6 +548,7 @@ dialog.cmdk::backdrop { background:rgba(0,0,0,.4); }
 
 <div id="recover" class="hidden">
   <div class="login-card">
+    <div class="brandmark" aria-hidden="true">📦</div>
     <h1>Nouveau mot de passe</h1>
     <div class="sub">Choisissez un nouveau mot de passe (8 caractères minimum).</div>
     <label class="f">Nouveau mot de passe
@@ -531,6 +564,7 @@ dialog.cmdk::backdrop { background:rgba(0,0,0,.4); }
 
 <div id="pick" class="hidden">
   <div class="login-card pick-card">
+    <div class="brandmark" aria-hidden="true">📦</div>
     <h1 id="pickTitle">Choisissez un cabinet</h1>
     <div class="sub" id="pickHint"></div>
     <div class="tiles" id="pickTiles"></div>
@@ -559,7 +593,7 @@ dialog.cmdk::backdrop { background:rgba(0,0,0,.4); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v42</div>
+            <div class="menu-who"><span id="who"></span> · v43</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -763,6 +797,25 @@ dialog.cmdk::backdrop { background:rgba(0,0,0,.4); }
   <button class="btn sm" id="selDone">Terminer</button>
 </div>
 
+<dialog id="seuilDlg" class="wide">
+  <div class="dlg">
+    <h2>Seuils d’alerte suggérés</h2>
+    <div class="sub" id="seuilInfo"></div>
+    <label class="f">Couvrir environ
+      <select id="seuilDays">
+        <option value="14">2 semaines de consommation</option>
+        <option value="21" selected>3 semaines de consommation</option>
+        <option value="30">1 mois de consommation</option>
+      </select>
+    </label>
+    <div id="seuilList"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="seuilCancel" type="button">Annuler</button>
+      <button class="btn primary" id="seuilApply" type="button">Appliquer</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="kDlg" class="cmdk" aria-label="Recherche universelle">
   <input id="kIn" type="search" autocomplete="off" placeholder="Chercher un article, une section, une action…" aria-label="Recherche universelle">
   <ul id="kList" role="listbox"></ul>
@@ -890,6 +943,7 @@ dialog.cmdk::backdrop { background:rgba(0,0,0,.4); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function () {
   "use strict";
@@ -1154,6 +1208,7 @@ dialog.cmdk::backdrop { background:rgba(0,0,0,.4); }
     if (u.kind === "trash") { restoreItems(u.ids); toast("Annulé : " + u.label); }
     else if (u.kind === "order") { undoOrder(u); }
     else if (u.kind === "move") { undoMove(u); }
+    else if (u.kind === "seuils") { undoSeuils(u); }
   }
   function undoOrder(u) {
     u.list.forEach(function (e) {
@@ -1742,6 +1797,74 @@ dialog.cmdk::backdrop { background:rgba(0,0,0,.4); }
     if (seen) return;
     setTimeout(function () { if (!document.querySelector("dialog[open]") && db) openTour(); }, 900);
   }
+  // ---------- seuils d'alerte suggérés d'après la consommation ----------
+  var seuilRows = [];
+  function seuilSuggestions(days) {
+    var w = consoWindow();
+    if (!consoOk || !w) return null;
+    var out = [];
+    items.forEach(function (it) {
+      if (it.tracked === false) return;
+      var c = conso[it.id];
+      if (!c || !(c.out > 0)) return;
+      var perDay = c.out / w, sug = Math.max(1, Math.ceil(perDay * days)), cur = Number(it.min) || 0;
+      if (cur === sug) return;
+      if (cur > 0 && Math.abs(sug - cur) < Math.max(1, cur * 0.3)) return;   // on ne propose qu'un écart net
+      out.push({ it: it, cur: cur, val: sug, perMonth: perDay * 30, on: true });
+    });
+    out.sort(function (a, b) { return norm(a.it.name).localeCompare(norm(b.it.name)); });
+    return out;
+  }
+  function drawSeuils() {
+    var days = Number($("seuilDays").value) || 21, rows = seuilSuggestions(days), list = $("seuilList");
+    list.textContent = "";
+    if (rows === null) {
+      $("seuilInfo").textContent = "Cette fonction a besoin de quelques semaines d'utilisation : l'appli calcule les seuils d'après vos sorties de stock. Revenez après 14 jours.";
+      seuilRows = []; $("seuilApply").disabled = true; $("seuilApply").textContent = "Appliquer"; return;
+    }
+    seuilRows = rows;
+    $("seuilInfo").textContent = rows.length
+      ? "Seuil proposé = la consommation de la période choisie (d'après vos sorties des 90 derniers jours). Décochez ou modifiez ce qui ne convient pas."
+      : "Vos seuils correspondent déjà à votre consommation : rien à proposer.";
+    var count = function () { var n = seuilRows.filter(function (r) { return r.on; }).length; $("seuilApply").textContent = "Appliquer" + (n ? " (" + n + ")" : ""); $("seuilApply").disabled = !n; };
+    rows.forEach(function (r) {
+      var cb = h("input", { type: "checkbox", checked: true, "aria-label": "Appliquer pour " + r.it.name });
+      cb.addEventListener("change", function () { r.on = cb.checked; count(); });
+      var inp = h("input", { type: "number", min: "0", step: "1", value: String(r.val), "aria-label": "Seuil proposé pour " + r.it.name, style: "width:84px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit" });
+      inp.addEventListener("input", function () { r.val = Math.max(0, Math.round(num(inp.value))); });
+      list.append(h("div", { class: "trow" }, cb,
+        h("div", { class: "tbody" }, h("div", { class: "item-name", text: r.it.name }), h("div", { class: "meta", text: "consomme environ " + fmt(Math.round(r.perMonth * 10) / 10) + " par mois · seuil actuel " + fmt(r.cur) })),
+        inp));
+    });
+    count();
+  }
+  function openSeuils() {
+    if (readOnly) return;
+    $("seuilDays").value = "21"; drawSeuils(); $("seuilDlg").showModal();
+  }
+  function applySeuils() {
+    var todo = seuilRows.filter(function (r) { return r.on && r.val >= 0 && r.val !== r.cur; });
+    $("seuilDlg").close();
+    if (!todo.length) return;
+    var before = todo.map(function (r) { return { id: r.it.id, min: r.cur }; });
+    todo.forEach(function (r) { var c = items.get(r.it.id); if (c) items.set(r.it.id, Object.assign({}, c, { min: r.val })); });
+    pushUndo({ kind: "seuils", list: before, label: todo.length + " seuil" + (todo.length > 1 ? "s" : "") + " d'alerte modifié" + (todo.length > 1 ? "s" : "") });
+    render();
+    enqueue(function () {
+      var chain = Promise.resolve(), now = new Date().toISOString();
+      todo.forEach(function (r) { chain = chain.then(function () { return sb.from("items").update({ min: r.val, updated_at: now }).eq("id", r.it.id).then(check); }); });
+      return chain.then(function () { return appendLog({ type: "edit", itemId: "", item: "Seuils d'alerte", delta: 0, qty: 0, note: todo.length + " seuils mis à jour d'après la consommation" }); });
+    });
+    toast(todo.length + " seuil" + (todo.length > 1 ? "s" : "") + " d'alerte mis à jour. « ↶ Annuler » pour revenir en arrière.");
+  }
+  function undoSeuils(u) {
+    u.list.forEach(function (e) {
+      var c = items.get(e.id); if (!c) return;
+      items.set(e.id, Object.assign({}, c, { min: e.min }));
+      enqueue(function () { return sb.from("items").update({ min: e.min, updated_at: new Date().toISOString() }).eq("id", e.id).then(check); });
+    });
+    render(); toast("Annulé : " + u.label);
+  }
   function updateSelBar() {
     var n = state.sel.size;
     $("selbar").classList.toggle("hidden", !(state.select && state.tab === "inventaire"));
@@ -2137,6 +2260,62 @@ dialog.cmdk::backdrop { background:rgba(0,0,0,.4); }
     var target = it.target > 0 ? it.target : Math.max((it.min || 0) * 2, 1);
     return Math.max(1, Math.ceil(target - (it.qty || 0)));
   }
+  function buildOrderPdf(JsPDF, o) {
+    var doc = new JsPDF({ unit: "mm", format: "a4" });
+    var W = 210, M = 15, y = 0;
+    var X = { ref: M, name: M + 31, qty: M + 126, pu: M + 152, tot: M + 180 };
+    function header() {
+      doc.setTextColor(15, 118, 110); doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.text(o.cabinet, M, 20);
+      doc.setTextColor(0); doc.setFont("helvetica", "normal"); doc.setFontSize(13); doc.text("Bon de commande", M, 28);
+      doc.setFontSize(10); doc.text("Date : " + o.date, W - M, 20, { align: "right" });
+      doc.text("Fournisseur : " + o.supplier, M, 38);
+      doc.text("Établi par : " + o.user, M, 43.5);
+      y = 54;
+    }
+    function tableHead() {
+      doc.setFillColor(15, 118, 110); doc.rect(M, y - 5, W - 2 * M, 8, "F");
+      doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(9.5);
+      doc.text("Réf.", X.ref + 1.5, y); doc.text("Désignation", X.name, y);
+      doc.text("Qté", X.qty, y, { align: "right" }); doc.text("PU HT", X.pu, y, { align: "right" }); doc.text("Total HT", X.tot, y, { align: "right" });
+      doc.setTextColor(0); doc.setFont("helvetica", "normal"); y += 8;
+    }
+    header(); tableHead();
+    var total = 0, priced = 0;
+    doc.setFontSize(9.5);
+    o.lines.forEach(function (l, i) {
+      var nameLines = doc.splitTextToSize(String(l.name || ""), 92), refLines = doc.splitTextToSize(String(l.ref || ""), 28);
+      var n = Math.max(nameLines.length, refLines.length, 1), h = n * 4.5 + 3;
+      if (y + h > 272) { doc.addPage(); y = 22; tableHead(); doc.setFontSize(9.5); }
+      if (i % 2 === 0) { doc.setFillColor(240, 250, 248); doc.rect(M, y - 4, W - 2 * M, h, "F"); }
+      doc.text(refLines, X.ref + 1.5, y); doc.text(nameLines, X.name, y);
+      doc.text(String(l.qty) + (l.unit ? " " + l.unit : ""), X.qty, y, { align: "right" });
+      if (l.price > 0) { var t = l.qty * l.price; total += t; priced++; doc.text(o.fmtMoney(l.price), X.pu, y, { align: "right" }); doc.text(o.fmtMoney(t), X.tot, y, { align: "right" }); }
+      else { doc.text("—", X.pu, y, { align: "right" }); doc.text("—", X.tot, y, { align: "right" }); }
+      y += h;
+    });
+    if (y > 255) { doc.addPage(); y = 22; }
+    y += 3; doc.setDrawColor(15, 118, 110); doc.line(M, y - 3, W - M, y - 3);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+    doc.text(priced ? "Total estimé HT : " + o.fmtMoney(total) : "Prix non renseignés", X.tot, y + 3, { align: "right" });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(90);
+    doc.text(o.lines.length + " article" + (o.lines.length > 1 ? "s" : "") + (priced ? " · prix indicatifs : dernier prix HT payé" + (priced < o.lines.length ? " (certains articles sans prix)" : "") : ""), M, y + 3);
+    doc.text("Merci de confirmer la disponibilité et le délai de livraison.", M, y + 9);
+    var n2 = doc.getNumberOfPages();
+    for (var p = 1; p <= n2; p++) { doc.setPage(p); doc.setFontSize(8); doc.setTextColor(120); doc.text("Page " + p + " / " + n2 + " · SimSimStock", W / 2, 290, { align: "center" }); }
+    return doc;
+  }
+  function pdfMoney(n) { return money(n).replace(/[  ]/g, " "); }
+  function orderPdf(sup, arr) {
+    var lib = window.jspdf && window.jspdf.jsPDF;
+    if (!lib) { toast("Le PDF n'a pas pu être créé : vérifiez votre accès à internet, puis rechargez la page."); return; }
+    var pm = achOk ? lastPriceMap(spendRows()) : {};
+    var lines = arr.slice().sort(function (a, b) { return norm(a.name).localeCompare(norm(b.name)); }).map(function (it) {
+      return { ref: it.ref || "", name: it.name || "", qty: suggestedQty(it), unit: it.unit || "", price: priceOf(it, pm) };
+    });
+    var doc = buildOrderPdf(lib, { cabinet: cabinetName, supplier: sup, user: myEmail, date: new Date().toLocaleDateString("fr-FR"), lines: lines, fmtMoney: pdfMoney });
+    doc.save("bon-de-commande-" + bkSlug(sup) + "-" + new Date().toISOString().slice(0, 10) + ".pdf");
+    toast("Bon de commande créé : regardez dans vos téléchargements.");
+  }
   function setOrdered(it, qty, opts) {
     if (!db || readOnly) return;
     if (!ordOk) { toast("Lancez d'abord le script SQL « ajout-commandes-photos » dans Supabase."); return; }
@@ -2209,6 +2388,8 @@ dialog.cmdk::backdrop { background:rgba(0,0,0,.4); }
           h("div", { class: "qty" },
             hasPrice ? h("span", { class: "meta", text: "Total estimé " + money(total) }) : null,
             h("button", { class: "btn sm", onclick: function () { copyText(text); }, text: "Copier la commande" }),
+            h("button", { class: "btn sm", onclick: function () { orderPdf(sup, arr); }, text: "Bon de commande (PDF)" }),
+            h("a", { class: "btn sm", href: "mailto:?subject=" + encodeURIComponent("Commande " + cabinetName + " : " + sup) + "&body=" + encodeURIComponent(text + "\n\nCordialement,\n" + cabinetName), text: "E-mail" }),
             readOnly ? null : h("button", { class: "btn sm", onclick: function () {
               if (!ordOk) { toast("Lancez d'abord le script SQL « ajout-commandes-photos » dans Supabase."); return; }
               var snaps = arr.map(function (it) { return { id: it.id, snap: { qty: Number(it.ordered_qty) || 0, at: it.ordered_at || null } }; });
@@ -2340,6 +2521,9 @@ dialog.cmdk::backdrop { background:rgba(0,0,0,.4); }
         h("div", { text: "Ajoutez d'abord des articles à l'inventaire." }))));
       return;
     }
+    box.append(h("div", { class: "crumb" },
+      h("div", { class: "sub", text: "Saisissez ce que vous avez compté en rayon, puis enregistrez. Les seuils peuvent aussi être calculés d'après votre consommation." }),
+      readOnly ? null : h("button", { class: "btn sm", type: "button", onclick: openSeuils, text: "Proposer des seuils d'après ma consommation" })));
     var list = Array.from(items.values()).filter(function (it) { return it.tracked !== false; }).sort(function (a, b) {
       var ca = norm(a.category || "zz"), cb = norm(b.category || "zz");
       if (ca !== cb) return ca.localeCompare(cb);
@@ -4385,6 +4569,9 @@ dialog.cmdk::backdrop { background:rgba(0,0,0,.4); }
       render();
     }
   }
+  $("seuilDays").addEventListener("change", drawSeuils);
+  $("seuilCancel").addEventListener("click", function () { $("seuilDlg").close(); });
+  $("seuilApply").addEventListener("click", applySeuils);
   $("kBtn").addEventListener("click", openPalette);
   $("helpBtn").addEventListener("click", openHelp);
   $("helpClose").addEventListener("click", function () { $("helpDlg").close(); });
