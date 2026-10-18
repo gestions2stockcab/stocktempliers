@@ -677,6 +677,26 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   .checkrow { grid-template-columns:24px minmax(0,1fr) 64px; }
   .checkrow input[type="date"] { grid-column:2 / span 2; }
 }
+
+/* ===== v51 : administration du propriétaire ===== */
+.adminhead { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+.adminhead h3 { margin:0; }
+.agrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; }
+.acab { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 16px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:3px; }
+.aname { font-weight:700; font-size:16px; overflow-wrap:anywhere; }
+.aact { display:flex; gap:6px; align-items:center; margin-top:8px; }
+.alist { display:block; }
+.aperson { display:flex; gap:10px; justify-content:space-between; align-items:center; flex-wrap:wrap; padding:11px 2px; border-top:1px solid var(--line); }
+.aperson .amain { flex:1 1 280px; min-width:0; }
+.achips { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; }
+.achip { border-radius:999px; padding:2px 10px; font-size:12.5px; font-weight:600; background:var(--surface-2); color:var(--muted); }
+.achip.r-admin { background:var(--ok-bg); color:var(--ok); }
+.achip.r-member { background:var(--surface-2); color:var(--ink); }
+.achip.r-viewer { background:var(--warn-bg); color:var(--warn); }
+.arow { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--line); }
+.arow select { padding:7px 10px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); font:inherit; }
+.btn.danger { background:var(--bad); color:#fff; border-color:var(--bad); }
+.btn.danger:disabled { opacity:.45; cursor:not-allowed; }
 </style>
 </head>
 <body>
@@ -749,7 +769,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v50</div>
+            <div class="menu-who"><span id="who"></span> · v51</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -760,6 +780,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
             <button class="mi hidden" id="teamBtn">Utilisateurs et invitations</button>
             <button class="mi hidden" id="switchBtn">Changer de cabinet</button>
             <button class="mi hidden" id="newCabBtn">Créer un cabinet</button>
+            <button class="mi hidden" id="adminBtn">Administration</button>
             <button class="mi" id="logoutBtn">Se déconnecter</button>
           </div>
         </div>
@@ -778,6 +799,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     <button class="tab" role="tab" data-tab="historique" aria-selected="false"><span class="ti">🕘</span><span class="tl">Historique</span></button>
     <button class="tab" role="tab" data-tab="donnees" aria-selected="false"><span class="ti">📊</span><span class="tl">Données</span></button>
     <button class="tab hidden" role="tab" data-tab="utilisateurs" aria-selected="false"><span class="ti">👥</span><span class="tl">Utilisateurs</span></button>
+    <button class="tab hidden" role="tab" data-tab="administration" aria-selected="false"><span class="ti">🛠</span><span class="tl">Administration</span></button>
     <button class="tab tab-trash" role="tab" data-tab="corbeille" aria-selected="false" title="Articles supprimés"><span class="ti">🗑</span><span class="tl">Corbeille<span id="trashCount"></span></span></button>
   </nav>
   <div class="sb-backdrop" id="sbBackdrop"></div>
@@ -957,6 +979,72 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   <button class="btn sm danger" id="selTrash">Mettre à la corbeille</button>
   <button class="btn sm" id="selDone">Terminer</button>
 </div>
+
+<dialog id="adminRenDlg">
+  <div class="dlg">
+    <h2>Renommer le cabinet</h2>
+    <label class="f">Nouveau nom<input id="adminRenName" maxlength="80" autocomplete="off"></label>
+    <div class="login-err" id="adminRenErr" role="alert"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="adminRenCancel" type="button">Annuler</button>
+      <button class="btn primary" id="adminRenOk" type="button">Renommer</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="adminDelDlg">
+  <div class="dlg">
+    <h2 id="adminDelTitle">Supprimer le cabinet ?</h2>
+    <div class="sub" id="adminDelInfo"></div>
+    <label class="f">Pour confirmer, tapez le nom exact du cabinet<input id="adminDelName" autocomplete="off"></label>
+    <div class="login-err" id="adminDelErr" role="alert"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="adminDelCancel" type="button">Annuler</button>
+      <button class="btn danger" id="adminDelOk" type="button" disabled>Supprimer définitivement</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="adminAccessDlg">
+  <div class="dlg">
+    <h2>Accès de la personne</h2>
+    <div class="sub" id="adminAccessWho"></div>
+    <div id="adminAccessList"></div>
+    <div class="login-err" id="adminAccessErr" role="alert"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="adminAccessCancel" type="button">Annuler</button>
+      <button class="btn primary" id="adminAccessOk" type="button">Enregistrer</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="adminAddDlg">
+  <div class="dlg">
+    <h2>Ajouter une personne</h2>
+    <div class="sub">Si elle n’a pas encore de compte, elle reçoit un e-mail d’invitation. Choisissez ses cabinets et son rôle dans chacun.</div>
+    <label class="f">Adresse e-mail<input id="adminAddEmail" type="email" autocomplete="off" inputmode="email"></label>
+    <div id="adminAddList"></div>
+    <div class="login-err" id="adminAddErr" role="alert"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="adminAddCancel" type="button">Annuler</button>
+      <button class="btn primary" id="adminAddOk" type="button">Ajouter</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="adminPwDlg">
+  <div class="dlg">
+    <h2>Mot de passe provisoire</h2>
+    <div class="sub" id="adminPwWho"></div>
+    <label class="f">Nouveau mot de passe (8 caractères au moins)<input id="adminPwVal" autocomplete="off" spellcheck="false"></label>
+    <button class="btn sm" id="adminPwGen" type="button">Générer un mot de passe</button>
+    <div class="login-err" id="adminPwErr" role="alert"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="adminPwCancel" type="button">Annuler</button>
+      <button class="btn primary" id="adminPwOk" type="button">Enregistrer</button>
+    </div>
+  </div>
+</dialog>
 
 <dialog id="roomCfgDlg" class="wide">
   <div class="dlg">
@@ -2018,7 +2106,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       ["À commander", "section", function () { goTab("commande"); }], ["Comptage", "section", function () { goTab("comptage"); }],
       ["Historique", "section", function () { goTab("historique"); }], ["Données et prévisions", "section", function () { goTab("donnees"); }],
       ["Corbeille", "section", function () { goTab("corbeille"); }],
-      ["Salles et réassort", "section", function () { goTab("salles"); }], ["Contrôles et trousse d'urgence", "section", function () { goTab("controles"); }]
+      ["Salles et réassort", "section", function () { goTab("salles"); }],
+      ["Administration (propriétaire)", "section", function () { if (ownerOk) goTab("administration"); else toast("Réservé au propriétaire."); }], ["Contrôles et trousse d'urgence", "section", function () { goTab("controles"); }]
     ];
     if (isAdmin) a.splice(6, 0, ["Utilisateurs et invitations", "section", function () { goTab("utilisateurs"); }]);
     a.push(["Ajouter un article", "action", function () { openItem(null); }], ["Scanner un code-barres", "action", function () { $("scanBtn").click(); }],
@@ -2070,6 +2159,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     utilisateurs: ["Utilisateurs", "Invitez une personne par e-mail, choisissez son rôle et suivez les invitations en attente. Réservé aux administrateurs du cabinet."],
     salles: ["Salles", "Chaque salle a sa couleur et la liste de ce qu'on y range. Pour un réassort : comptez ce qu'il reste dans les tiroirs, saisissez-le dans « Compté », l'appli calcule ce qu'il faut apporter pour atteindre la cible et le sort du stock central quand vous validez. « Feuille de réassort (PDF) » donne une feuille à imprimer pour faire la tournée. Un administrateur règle le nombre de salles, leurs noms et leurs couleurs avec « Gérer les salles »."],
     controles: ["Contrôles", "La trousse d'urgence est suivie élément par élément (quantité et péremption), avec un contrôle mensuel qui garde la date et la personne. Les contrôles périodiques (autoclave, déchets, radioprotection…) affichent s'ils sont à jour, à faire bientôt ou en retard. Les fréquences proposées sont des idées : adaptez-les à vos obligations réelles."],
+    administration: ["Administration", "Réservée au propriétaire. Cabinets : ouvrir, renommer, supprimer (une copie de sécurité est gardée) ou en créer un. Personnes : voir leurs accès à chaque cabinet, les modifier, donner un mot de passe provisoire, supprimer un compte, ajouter quelqu'un. Invitations : renvoyer ou annuler celles en attente."],
     corbeille: ["Corbeille", "Les articles retirés de la liste. Vous pouvez les restaurer ou les supprimer définitivement. Un import ne les recrée pas."]
   };
   function openHelp() {
@@ -2716,6 +2806,253 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     });
     if (!readOnly) sec2.append(h("div", { class: "ctlact" }, h("button", { class: "btn", type: "button", onclick: function () { openCtl(null); }, text: "＋ Ajouter un contrôle" })));
     box.append(sec2);
+  }
+
+  // ---------- administration (propriétaire) ----------
+  var adminData = { ok: null, err: "", cabinets: [], users: [], invitations: [], q: "" };
+  var ADMIN_ROLES = [["none", "Aucun accès"], ["viewer", "Lecture seule"], ["member", "Membre"], ["admin", "Administrateur"]];
+  var ROLE_SHORT = { admin: "Administrateur", member: "Membre", viewer: "Lecture seule" };
+  function adminErr(e) {
+    var m = (e && e.message) || "";
+    return /forbidden/.test(m) ? "Réservé au propriétaire."
+      : /confirmation/.test(m) ? "Le nom saisi ne correspond pas à celui du cabinet."
+      : /existe/.test(m) ? "Un cabinet porte déjà ce nom."
+      : /nom_invalide/.test(m) ? "Ce nom n'est pas valide (entre 2 et 80 caractères)."
+      : /last_admin/.test(m) ? "Un cabinet doit garder au moins un administrateur."
+      : /short_password/.test(m) ? "Le mot de passe doit faire 8 caractères au moins."
+      : /email_invalide/.test(m) ? "Cette adresse e-mail n'est pas valide."
+      : /self/.test(m) ? "Vous ne pouvez pas faire cela sur votre propre compte."
+      : /introuvable/.test(m) ? "Ce cabinet n'existe plus."
+      : /admin_overview|function|schema cache|does not exist/.test(m) ? "Lancez d'abord le script SQL « ajout-administration » dans Supabase."
+      : "Opération impossible : " + (m || "erreur");
+  }
+  function loadAdmin() {
+    if (!sb || !ownerOk) return;
+    sb.rpc("admin_overview").then(function (res) {
+      if (res.error) { adminData.ok = false; adminData.err = adminErr(res.error); }
+      else { var d = res.data || {}; adminData.ok = true; adminData.err = ""; adminData.cabinets = d.cabinets || []; adminData.users = d.users || []; adminData.invitations = d.invitations || []; }
+      if (state.tab === "administration") render();
+    }, function () { adminData.ok = false; adminData.err = "Connexion impossible. Vérifiez votre accès à internet."; if (state.tab === "administration") render(); });
+  }
+  function adminCabById(id) { return adminData.cabinets.find(function (c) { return c.id === id; }); }
+  function adminOpen(c) {
+    sb.rpc("admin_join_cabinet", { p_cabinet: c.id }).then(function (res) {
+      if (res.error) { toast(adminErr(res.error)); return; }
+      try { localStorage.setItem("simsim_cabinet_" + (sessionUser || ""), c.id); } catch (e) {}
+      loadCabinets();
+    }, function () { toast("Connexion impossible."); });
+  }
+  // renommer
+  var adminCabFor = null;
+  function openAdminRename(c) { adminCabFor = c; $("adminRenName").value = c.name; $("adminRenErr").textContent = ""; $("adminRenDlg").showModal(); setTimeout(function () { $("adminRenName").select(); }, 0); }
+  function saveAdminRename() {
+    var c = adminCabFor, name = $("adminRenName").value.trim();
+    if (name.length < 2) { $("adminRenErr").textContent = "Saisissez le nom du cabinet (2 caractères au moins)."; return; }
+    sb.rpc("admin_rename_cabinet", { p_cabinet: c.id, p_name: name }).then(function (res) {
+      if (res.error) { $("adminRenErr").textContent = adminErr(res.error); return; }
+      $("adminRenDlg").close();
+      c.name = name;
+      if (c.id === cabinetId) { cabinetName = name; $("appTitle").textContent = name; document.title = siteName + " – " + name; }
+      var k = cabinets.find(function (x) { return x.id === c.id; }); if (k) k.name = name;
+      toast("Cabinet renommé : « " + name + " ».");
+      loadAdmin();
+    }, function () { $("adminRenErr").textContent = "Connexion impossible."; });
+  }
+  // supprimer un cabinet
+  function openAdminDelete(c) {
+    adminCabFor = c;
+    $("adminDelTitle").textContent = "Supprimer « " + c.name + " » ?";
+    $("adminDelInfo").textContent = "Cela supprime définitivement ses " + fmt(c.nb_articles) + " article" + (c.nb_articles > 1 ? "s" : "") + " suivis, son historique, ses salles, ses contrôles, ses sauvegardes et l'accès de ses " + fmt(c.nb_membres) + " personne" + (c.nb_membres > 1 ? "s" : "") + ". Une copie de sécurité (articles, lots, liste des accès) est gardée dans les archives de la base : elle n'est lisible que dans Supabase.";
+    $("adminDelName").value = ""; $("adminDelErr").textContent = ""; $("adminDelOk").disabled = true;
+    $("adminDelDlg").showModal(); setTimeout(function () { $("adminDelName").focus(); }, 0);
+  }
+  function saveAdminDelete() {
+    var c = adminCabFor, typed = $("adminDelName").value.trim();
+    $("adminDelOk").disabled = true;
+    sb.rpc("admin_delete_cabinet", { p_cabinet: c.id, p_confirm: typed }).then(function (res) {
+      if (res.error) { $("adminDelErr").textContent = adminErr(res.error); $("adminDelOk").disabled = false; return; }
+      $("adminDelDlg").close();
+      toast("Cabinet « " + c.name + " » supprimé. Une copie est dans les archives.");
+      if (c.id === cabinetId) { try { localStorage.removeItem("simsim_cabinet_" + (sessionUser || "")); } catch (e) {} }
+      loadCabinets(); loadAdmin();
+    }, function () { $("adminDelErr").textContent = "Connexion impossible."; $("adminDelOk").disabled = false; });
+  }
+  // accès d'une personne
+  var accessFor = null, accessSel = [];
+  function adminRoleSelect(cur) {
+    var s = h("select", { "aria-label": "Rôle" });
+    ADMIN_ROLES.forEach(function (o) { s.append(h("option", { value: o[0], text: o[1] })); });
+    s.value = cur || "none"; return s;
+  }
+  function openAdminAccess(u) {
+    accessFor = u; $("adminAccessWho").textContent = u.email; $("adminAccessErr").textContent = "";
+    var box = $("adminAccessList"); box.textContent = ""; accessSel = [];
+    adminData.cabinets.forEach(function (c) {
+      var cur = ((u.memberships || []).find(function (m) { return m.cabinet_id === c.id; }) || {}).role || "none";
+      var sel = adminRoleSelect(cur); accessSel.push({ c: c, cur: cur, sel: sel });
+      box.append(h("label", { class: "arow" }, h("span", { text: c.name }), sel));
+    });
+    $("adminAccessDlg").showModal();
+  }
+  function saveAdminAccess() {
+    var u = accessFor, todo = accessSel.filter(function (x) { return x.sel.value !== x.cur; });
+    if (!todo.length) { $("adminAccessDlg").close(); return; }
+    $("adminAccessOk").disabled = true;
+    var chain = Promise.resolve(true);
+    todo.forEach(function (x) {
+      chain = chain.then(function (ok) {
+        if (!ok) return false;
+        return sb.rpc("admin_set_access", { p_user: u.id, p_cabinet: x.c.id, p_role: x.sel.value }).then(function (res) {
+          if (res.error) { $("adminAccessErr").textContent = x.c.name + " : " + adminErr(res.error); return false; }
+          return true;
+        });
+      });
+    });
+    chain.then(function (ok) {
+      $("adminAccessOk").disabled = false;
+      loadAdmin();
+      if (ok) { $("adminAccessDlg").close(); toast("Accès de " + u.email + " mis à jour."); }
+    }, function () { $("adminAccessOk").disabled = false; $("adminAccessErr").textContent = "Connexion impossible."; });
+  }
+  // ajouter une personne
+  var addSelA = [];
+  function openAdminAdd() {
+    $("adminAddEmail").value = ""; $("adminAddErr").textContent = "";
+    var box = $("adminAddList"); box.textContent = ""; addSelA = [];
+    adminData.cabinets.forEach(function (c) {
+      var sel = adminRoleSelect(c.id === cabinetId ? "member" : "none"); addSelA.push({ c: c, sel: sel });
+      box.append(h("label", { class: "arow" }, h("span", { text: c.name }), sel));
+    });
+    $("adminAddDlg").showModal(); setTimeout(function () { $("adminAddEmail").focus(); }, 0);
+  }
+  function saveAdminAdd() {
+    var email = $("adminAddEmail").value.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $("adminAddErr").textContent = "Cette adresse e-mail n'est pas valide."; return; }
+    var chosen = addSelA.filter(function (x) { return x.sel.value !== "none"; });
+    if (!chosen.length) { $("adminAddErr").textContent = "Choisissez au moins un cabinet et un rôle."; return; }
+    $("adminAddOk").disabled = true; $("adminAddErr").textContent = "";
+    var needMail = false, chain = Promise.resolve(true);
+    chosen.forEach(function (x) {
+      chain = chain.then(function (ok) {
+        if (!ok) return false;
+        return sb.rpc("admin_invite", { p_email: email, p_cabinet: x.c.id, p_role: x.sel.value }).then(function (res) {
+          if (res.error) { $("adminAddErr").textContent = x.c.name + " : " + adminErr(res.error); return false; }
+          if (res.data === "invite") needMail = true;
+          return true;
+        });
+      });
+    });
+    chain.then(function (ok) {
+      $("adminAddOk").disabled = false;
+      if (!ok) { loadAdmin(); return; }
+      $("adminAddDlg").close(); loadAdmin();
+      if (!needMail) { toast(email + " a déjà un compte : l'accès est ajouté, la personne le verra à sa prochaine connexion."); return; }
+      sendInviteMail(email).then(function (err) {
+        toast(err ? "Invitation enregistrée, mais l'e-mail n'a pas pu partir : " + err : "Invitation envoyée à " + email + ".");
+      });
+    }, function () { $("adminAddOk").disabled = false; $("adminAddErr").textContent = "Connexion impossible."; });
+  }
+  // mot de passe provisoire
+  var pwFor = null;
+  function randomPassword() {
+    var al = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789", out = "", arr = new Uint32Array(12);
+    (window.crypto || window.msCrypto).getRandomValues(arr);
+    for (var i = 0; i < 12; i++) out += al[arr[i] % al.length];
+    return out;
+  }
+  function openAdminPw(u) { pwFor = u; $("adminPwWho").textContent = u.email; $("adminPwVal").value = ""; $("adminPwErr").textContent = ""; $("adminPwDlg").showModal(); }
+  function saveAdminPw() {
+    var u = pwFor, pw = $("adminPwVal").value;
+    if (pw.length < 8) { $("adminPwErr").textContent = "Le mot de passe doit faire 8 caractères au moins."; return; }
+    sb.rpc("admin_reset_password", { p_user: u.id, p_password: pw }).then(function (res) {
+      if (res.error) { $("adminPwErr").textContent = adminErr(res.error); return; }
+      $("adminPwDlg").close(); toast("Mot de passe changé pour " + u.email + " : communiquez-le lui, et conseillez-lui de le changer.");
+    }, function () { $("adminPwErr").textContent = "Connexion impossible."; });
+  }
+  function adminDeleteUser(u) {
+    if (!window.confirm("Supprimer définitivement le compte de " + u.email + " ?\nSes accès à tous les cabinets disparaissent. Cette action est irréversible.")) return;
+    sb.rpc("admin_delete_user", { p_user: u.id }).then(function (res) {
+      if (res.error) { toast(adminErr(res.error)); return; }
+      toast("Compte de " + u.email + " supprimé."); loadAdmin();
+    }, function () { toast("Connexion impossible."); });
+  }
+  function adminResend(inv) {
+    sb.rpc("admin_invite", { p_email: inv.email, p_cabinet: inv.cabinet_id, p_role: inv.role }).then(function (res) {
+      if (res.error) { toast(adminErr(res.error)); return; }
+      if (res.data !== "invite") { toast("Cette personne a maintenant un compte : l'accès est ajouté."); loadAdmin(); return; }
+      sendInviteMail(inv.email).then(function (err) { toast(err ? "L'e-mail n'a pas pu partir : " + err : "Invitation renvoyée à " + inv.email + "."); loadAdmin(); });
+    }, function () { toast("Connexion impossible."); });
+  }
+  function adminCancelInvite(inv) {
+    sb.rpc("admin_cancel_invite", { p_id: inv.id }).then(function (res) {
+      if (res.error) { toast(adminErr(res.error)); return; }
+      toast("Invitation annulée."); loadAdmin();
+    }, function () { toast("Connexion impossible."); });
+  }
+  function renderAdmin(box) {
+    if (!ownerOk) { box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Réservé au propriétaire" })))); return; }
+    if (adminData.ok === null) { box.append(h("div", { class: "meta", text: "Chargement…" })); return; }
+    if (!adminData.ok) { box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Administration indisponible" }), h("div", { text: adminData.err })))); return; }
+    var cabs = h("div", { class: "dsec" });
+    cabs.append(h("div", { class: "adminhead" }, h("h3", { text: "Cabinets (" + adminData.cabinets.length + ")" }),
+      h("button", { class: "btn", type: "button", onclick: openNewCab, text: "＋ Créer un cabinet" })));
+    var grid = h("div", { class: "agrid" });
+    adminData.cabinets.forEach(function (c) {
+      var mine = roles[c.id];
+      grid.append(h("div", { class: "acab" },
+        h("div", { class: "aname", text: c.name }),
+        h("div", { class: "meta", text: fmt(c.nb_membres) + " personne" + (c.nb_membres > 1 ? "s" : "") + " · " + fmt(c.nb_articles) + " article" + (c.nb_articles > 1 ? "s" : "") + " suivis" }),
+        h("div", { class: "meta", text: (c.derniere_activite ? "dernière activité " + agoText(c.derniere_activite) : "aucune activité") + (mine ? " · vous : " + (ROLE_SHORT[mine] || mine).toLowerCase() : " · vous n'y avez pas accès") }),
+        h("div", { class: "aact" },
+          h("button", { class: "btn sm primary", type: "button", onclick: function () { adminOpen(c); }, text: c.id === cabinetId ? "Ouvert" : "Ouvrir" }),
+          dotsBtn(function () { return [["Renommer", function () { openAdminRename(c); }], ["Supprimer le cabinet…", function () { openAdminDelete(c); }]]; }, "Plus d'actions pour " + c.name))));
+    });
+    cabs.append(grid);
+    box.append(cabs);
+    var ppl = h("div", { class: "dsec" });
+    ppl.append(h("div", { class: "adminhead" }, h("h3", { text: "Personnes (" + adminData.users.length + ")" }),
+      h("button", { class: "btn", type: "button", onclick: openAdminAdd, text: "＋ Ajouter une personne" })));
+    var users = adminData.users.slice();
+    if (users.length > 8) {
+      var q = h("input", { class: "search", type: "search", placeholder: "Chercher une adresse e-mail", value: adminData.q || "", "aria-label": "Chercher une personne" });
+      q.addEventListener("input", function () { adminData.q = q.value; clearTimeout(q._t); q._t = setTimeout(render, 150); });
+      ppl.append(q);
+      if (adminData.q) users = users.filter(function (u) { return norm(u.email).indexOf(norm(adminData.q)) !== -1; });
+    }
+    var list = h("div", { class: "alist" });
+    users.forEach(function (u) {
+      var chips = h("div", { class: "achips" });
+      (u.memberships || []).forEach(function (m) { var c = adminCabById(m.cabinet_id); if (c) chips.append(h("span", { class: "achip r-" + m.role, text: c.name + " · " + (ROLE_SHORT[m.role] || m.role) })); });
+      if (!(u.memberships || []).length) chips.append(h("span", { class: "achip", text: "Aucun accès" }));
+      list.append(h("div", { class: "aperson" },
+        h("div", { class: "amain" },
+          h("div", { class: "aname", text: u.email + (u.id === sessionUser ? " (vous)" : "") }),
+          h("div", { class: "meta", text: u.last_sign_in ? "dernière connexion " + agoText(u.last_sign_in) : "ne s'est jamais connectée" }),
+          chips),
+        h("div", { class: "aact" },
+          h("button", { class: "btn sm", type: "button", onclick: function () { openAdminAccess(u); }, text: "Accès" }),
+          dotsBtn(function () {
+            var e = [["Mot de passe provisoire…", function () { openAdminPw(u); }]];
+            if (u.id !== sessionUser) e.push(["Supprimer le compte…", function () { adminDeleteUser(u); }]);
+            return e;
+          }, "Plus d'actions pour " + u.email))));
+    });
+    if (!users.length) list.append(h("div", { class: "meta", text: "Aucune personne." }));
+    ppl.append(list);
+    box.append(ppl);
+    var inv = adminData.invitations;
+    var sec = h("div", { class: "dsec" }, h("h3", { text: "Invitations en attente (" + inv.length + ")" }));
+    if (!inv.length) sec.append(h("div", { class: "meta", text: "Aucune invitation en attente." }));
+    inv.forEach(function (i) {
+      var c = adminCabById(i.cabinet_id);
+      sec.append(h("div", { class: "aperson" },
+        h("div", { class: "amain" }, h("div", { class: "aname", text: i.email }),
+          h("div", { class: "meta", text: (c ? c.name : "cabinet supprimé") + " · " + (ROLE_SHORT[i.role] || i.role) + " · envoyée " + agoText(i.last_sent_at || i.created_at) })),
+        h("div", { class: "aact" },
+          h("button", { class: "btn sm", type: "button", onclick: function () { adminResend(i); }, text: "Renvoyer" }),
+          h("button", { class: "btn sm", type: "button", onclick: function () { adminCancelInvite(i); }, text: "Annuler" }))));
+    });
+    box.append(sec);
   }
 
   function updateSelBar() {
@@ -3601,6 +3938,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     else if (state.tab === "favoris") renderFavorites(box);
     else if (state.tab === "commande") renderOrder(box);
     else if (state.tab === "comptage") renderCount(box);
+    else if (state.tab === "administration") renderAdmin(box);
     else if (state.tab === "salles") renderRooms(box);
     else if (state.tab === "controles") renderControls(box);
     else renderHistory(box);
@@ -4976,6 +5314,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       state.filter = "all";
       syncTabs(); render();
       if (target === "utilisateurs") loadUsers();
+      if (target === "administration") loadAdmin();
       if (target === "salles") loadRooms();
       if (target === "controles") loadControls();
     });
@@ -5543,6 +5882,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function updateOwnerBtns() {
     $("newCabBtn").classList.toggle("hidden", !ownerOk);
     $("pickNew").classList.toggle("hidden", !ownerOk);
+    $("adminBtn").classList.toggle("hidden", !ownerOk);
+    document.querySelector('.tab[data-tab="administration"]').classList.toggle("hidden", !ownerOk);
   }
   function openNewCab() {
     $("cabName").value = ""; $("cabErr").textContent = ""; $("cabCreate").disabled = false;
@@ -5646,6 +5987,21 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   $("seuilDays").addEventListener("change", drawSeuils);
   $("seuilCancel").addEventListener("click", function () { $("seuilDlg").close(); });
   $("seuilApply").addEventListener("click", applySeuils);
+  $("adminBtn").addEventListener("click", function () { state.tab = "administration"; state.filter = "all"; syncTabs(); render(); loadAdmin(); });
+  $("adminRenCancel").addEventListener("click", function () { $("adminRenDlg").close(); });
+  $("adminRenOk").addEventListener("click", saveAdminRename);
+  $("adminRenName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); saveAdminRename(); } });
+  $("adminDelCancel").addEventListener("click", function () { $("adminDelDlg").close(); });
+  $("adminDelOk").addEventListener("click", saveAdminDelete);
+  $("adminDelName").addEventListener("input", function () { $("adminDelOk").disabled = !adminCabFor || norm($("adminDelName").value).trim() !== norm(adminCabFor.name).trim(); });
+  $("adminAccessCancel").addEventListener("click", function () { $("adminAccessDlg").close(); });
+  $("adminAccessOk").addEventListener("click", saveAdminAccess);
+  $("adminAddCancel").addEventListener("click", function () { $("adminAddDlg").close(); });
+  $("adminAddOk").addEventListener("click", saveAdminAdd);
+  $("adminAddEmail").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); saveAdminAdd(); } });
+  $("adminPwCancel").addEventListener("click", function () { $("adminPwDlg").close(); });
+  $("adminPwOk").addEventListener("click", saveAdminPw);
+  $("adminPwGen").addEventListener("click", function () { $("adminPwVal").value = randomPassword(); });
   $("roomCfgClose").addEventListener("click", function () { $("roomCfgDlg").close(); });
   $("newRoomAdd").addEventListener("click", function () { addRoom($("newRoomName").value, $("newRoomKind").value); $("newRoomName").value = ""; });
   $("newRoomName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("newRoomAdd").click(); } });
