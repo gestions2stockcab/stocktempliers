@@ -527,6 +527,15 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
 .login-card label, .login-card .login-err { text-align:left; }
 .alert { border-radius:12px; }
 .row, .trow, .urow, .oline { transition:background .12s; }
+
+/* ===== v46 : menu « ⋯ » et fournisseurs ===== */
+.dots { border:1px solid var(--line); background:var(--surface); border-radius:8px; width:32px; height:30px; font-size:18px; line-height:1; color:var(--muted); cursor:pointer; padding:0; }
+.dots:hover { border-color:var(--brand); color:var(--brand); }
+.lineact { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:4px; }
+.supplier > header .hh { display:flex; align-items:center; gap:8px; min-width:0; }
+.minimenu { position:fixed; z-index:60; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.22); padding:6px; min-width:230px; max-width:calc(100vw - 16px); }
+.minimenu button { display:block; width:100%; text-align:left; border:0; background:transparent; padding:9px 12px; border-radius:8px; font:inherit; color:var(--ink); cursor:pointer; }
+.minimenu button:hover, .minimenu button:focus-visible { background:var(--surface-2); }
 </style>
 </head>
 <body>
@@ -598,7 +607,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v45</div>
+            <div class="menu-who"><span id="who"></span> · v46</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -801,6 +810,22 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
   <button class="btn sm danger" id="selTrash">Mettre à la corbeille</button>
   <button class="btn sm" id="selDone">Terminer</button>
 </div>
+
+<dialog id="supDlg">
+  <div class="dlg">
+    <h2 id="supTitle">Ajouter un fournisseur</h2>
+    <div class="sub" id="supInfo"></div>
+    <label class="f">Nom du fournisseur
+      <input id="supName" list="supList" autocomplete="off" maxlength="80" placeholder="Ex. GACD, Henry Schein…">
+      <datalist id="supList"></datalist>
+    </label>
+    <div class="login-err" id="supErr" role="alert"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="supCancel" type="button">Annuler</button>
+      <button class="btn primary" id="supSave" type="button">Enregistrer</button>
+    </div>
+  </div>
+</dialog>
 
 <dialog id="seuilDlg" class="wide">
   <div class="dlg">
@@ -1214,6 +1239,7 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     else if (u.kind === "order") { undoOrder(u); }
     else if (u.kind === "move") { undoMove(u); }
     else if (u.kind === "seuils") { undoSeuils(u); }
+    else if (u.kind === "supplier") { undoSupplier(u); }
   }
   function undoOrder(u) {
     u.list.forEach(function (e) {
@@ -2332,6 +2358,74 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
     doc.save("bon-de-commande-" + bkSlug(sup) + "-" + new Date().toISOString().slice(0, 10) + ".pdf");
     toast("Bon de commande créé : regardez dans vos téléchargements.");
   }
+  // ---------- petit menu « ⋯ » ----------
+  var miniMenu = null;
+  function closeMiniMenu() {
+    if (miniMenu) { miniMenu.remove(); miniMenu = null; }
+    document.removeEventListener("click", miniOutside, true);
+    document.removeEventListener("keydown", miniKey, true);
+  }
+  function miniOutside(e) { if (miniMenu && !miniMenu.contains(e.target)) closeMiniMenu(); }
+  function miniKey(e) { if (e.key === "Escape") closeMiniMenu(); }
+  function openMiniMenu(anchor, entries) {
+    closeMiniMenu();
+    var m = h("div", { class: "minimenu", role: "menu" });
+    entries.forEach(function (en) {
+      m.append(h("button", { type: "button", role: "menuitem", onclick: function () { closeMiniMenu(); en[1](); }, text: en[0] }));
+    });
+    document.body.append(m); miniMenu = m;
+    var r = anchor.getBoundingClientRect();
+    m.style.top = Math.max(8, Math.min(window.innerHeight - m.offsetHeight - 8, r.bottom + 4)) + "px";
+    m.style.left = Math.max(8, Math.min(window.innerWidth - 246, r.right - 230)) + "px";
+    setTimeout(function () { document.addEventListener("click", miniOutside, true); document.addEventListener("keydown", miniKey, true); }, 0);
+    var first = m.querySelector("button"); if (first) first.focus();
+  }
+  // ---------- ajouter ou changer le fournisseur d'articles ----------
+  var supIds = [];
+  function openSupDlg(ids, label, changing) {
+    if (readOnly) return;
+    supIds = ids.slice();
+    $("supTitle").textContent = changing ? "Changer le fournisseur" : "Ajouter un fournisseur";
+    $("supInfo").textContent = label;
+    var set = new Set(); items.forEach(function (x) { var v = (x.supplier || "").trim(); if (v) set.add(v); });
+    var dl = $("supList"); dl.textContent = "";
+    Array.from(set).sort(function (a, b) { return norm(a).localeCompare(norm(b)); }).forEach(function (v) { dl.append(h("option", { value: v })); });
+    $("supName").value = ""; $("supErr").textContent = ""; $("supSave").disabled = false;
+    $("supDlg").showModal();
+    setTimeout(function () { $("supName").focus(); }, 0);
+  }
+  function saveSup() {
+    var name = $("supName").value.trim().replace(/\s+/g, " ");
+    if (name.length < 2) { $("supErr").textContent = "Saisissez le nom du fournisseur (2 caractères au moins)."; return; }
+    // si le fournisseur existe déjà (majuscules ou accents différents), on garde son orthographe
+    items.forEach(function (x) { if (x.supplier && norm(x.supplier).trim() === norm(name).trim()) name = x.supplier; });
+    var targets = supIds.map(function (id) { return items.get(id); }).filter(Boolean);
+    if (!targets.length) { $("supDlg").close(); return; }
+    var before = targets.map(function (it) { return { id: it.id, supplier: it.supplier || "" }; });
+    targets.forEach(function (it) { items.set(it.id, Object.assign({}, it, { supplier: name })); });
+    pushUndo({ kind: "supplier", list: before, label: "fournisseur « " + name + " » pour " + targets.length + " produit" + (targets.length > 1 ? "s" : "") });
+    $("supDlg").close();
+    render();
+    enqueue(function () {
+      var chain = Promise.resolve(), now = new Date().toISOString(), ids = targets.map(function (it) { return it.id; });
+      for (var i = 0; i < ids.length; i += 100) (function (chunk) { chain = chain.then(function () { return sb.from("items").update({ supplier: name, updated_at: now }).in("id", chunk).then(check); }); })(ids.slice(i, i + 100));
+      return chain.then(function () { return appendLog({ type: "edit", itemId: targets.length === 1 ? targets[0].id : "", item: targets.length === 1 ? targets[0].name : "Fournisseur", delta: 0, qty: 0, note: "Fournisseur « " + name + " » pour " + targets.length + " article" + (targets.length > 1 ? "s" : "") }); });
+    });
+    toast("Fournisseur « " + name + " » enregistré pour " + targets.length + " produit" + (targets.length > 1 ? "s" : "") + ".");
+  }
+  function undoSupplier(u) {
+    u.list.forEach(function (e) {
+      var c = items.get(e.id); if (!c) return;
+      items.set(e.id, Object.assign({}, c, { supplier: e.supplier }));
+      enqueue(function () { return sb.from("items").update({ supplier: e.supplier || null, updated_at: new Date().toISOString() }).eq("id", e.id).then(check); });
+    });
+    render(); toast("Annulé : " + u.label);
+  }
+  function dotsBtn(entriesFn, label) {
+    var b = h("button", { class: "dots", type: "button", "aria-label": label || "Plus d'actions", "aria-haspopup": "menu", title: label || "Plus d'actions", text: "⋯" });
+    b.addEventListener("click", function () { openMiniMenu(b, entriesFn()); });
+    return b;
+  }
   function setOrdered(it, qty, opts) {
     if (!db || readOnly) return;
     if (!ordOk) { toast("Lancez d'abord le script SQL « ajout-commandes-photos » dans Supabase."); return; }
@@ -2391,7 +2485,12 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
         var dlo = daysLeft(it);
         lines.append(h("div", { class: "line" },
           h("div", null, h("div", { text: labelOf(it) }), h("div", { class: "meta", text: [it.ref ? "réf. " + it.ref : "", dlo !== null && dlo > 0 ? "≈ " + fmtDays(dlo) + " de stock" : "", priceNote(it)].filter(Boolean).join(" · ") }),
-            readOnly ? null : h("button", { class: "btn sm", onclick: function () { openOrdDlg(it); }, text: "Marquer comme commandé" })),
+            readOnly ? null : h("div", { class: "lineact" },
+              h("button", { class: "btn sm", onclick: function () { openOrdDlg(it); }, text: "Marquer comme commandé" }),
+              dotsBtn(function () {
+                return [[it.supplier ? "Changer le fournisseur" : "Ajouter un fournisseur", function () { openSupDlg([it.id], it.name, !!it.supplier); }],
+                        ["Ouvrir la fiche de l'article", function () { openItem(it); }]];
+              }, "Plus d'actions pour " + it.name))),
           h("div", { class: "num", text: fmt(it.qty) }),
           readOnly ? h("div", { class: "num", text: fmt(q) + (it.unit ? " " + it.unit : "") }) : h("div", { class: "num ostep" },
             h("button", { class: "step", type: "button", "aria-label": "Commander une unité de moins : " + it.name, disabled: q <= 1, onclick: function () { setOrderQty(it, q - 1); }, text: "−" }),
@@ -2404,7 +2503,10 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
       }).join("\n");
       card.append(
         h("header", null,
-          h("h3", { text: sup + " (" + arr.length + ")" }),
+          h("div", { class: "hh" }, h("h3", { text: sup + " (" + arr.length + ")" }),
+            (sup === "Sans fournisseur" && !readOnly) ? dotsBtn(function () {
+              return [["Ajouter un fournisseur à ces " + arr.length + " produit" + (arr.length > 1 ? "s" : ""), function () { openSupDlg(arr.map(function (x) { return x.id; }), arr.length + " produit" + (arr.length > 1 ? "s" : "") + " sans fournisseur : le fournisseur choisi sera enregistré sur chacun.", false); }]];
+            }, "Plus d'actions pour les produits sans fournisseur") : null),
           h("div", { class: "qty" },
             hasPrice ? h("span", { class: "meta", text: "Total estimé " + money(total) }) : null,
             arr.some(function (it) { return orderQty[it.id]; }) ? h("button", { class: "btn sm", type: "button", onclick: function () { arr.forEach(function (it) { delete orderQty[it.id]; }); saveOrderQty(); render(); }, text: "↺ Quantités proposées" }) : null,
@@ -4591,6 +4693,9 @@ dialog::backdrop { background:rgba(8,36,34,.45); }
       render();
     }
   }
+  $("supCancel").addEventListener("click", function () { $("supDlg").close(); });
+  $("supSave").addEventListener("click", saveSup);
+  $("supName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); saveSup(); } });
   $("seuilDays").addEventListener("change", drawSeuils);
   $("seuilCancel").addEventListener("click", function () { $("seuilDlg").close(); });
   $("seuilApply").addEventListener("click", applySeuils);
