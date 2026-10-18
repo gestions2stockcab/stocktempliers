@@ -725,6 +725,13 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .roomstrip { --rc:#2F67FF; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center; background:var(--surface); border:1px solid var(--line); border-left:6px solid var(--rc); border-radius:14px; padding:10px 14px; margin:0 0 12px; }
 .rs-t { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 .rs-t i { width:12px; height:12px; border-radius:50%; background:var(--rc); flex:none; }
+
+/* ===== v57 : ajouter les produits d'un domaine à une salle ===== */
+.roomaddsec { margin-top:16px; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:12px 16px; box-shadow:var(--shadow); }
+.roomaddsec .adminhead h3 { font-size:15px; }
+.addfilters { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0; }
+.addfilters select, .addfilters input { padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); font:inherit; min-width:0; }
+.addfilters input { flex:1 1 160px; }
 </style>
 </head>
 <body>
@@ -797,7 +804,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v56</div>
+            <div class="menu-who"><span id="who"></span> · v57</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -1097,7 +1104,11 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   <div class="dlg">
     <h2 id="roomAddTitle">Ajouter des produits</h2>
     <div class="sub">Cochez les produits que vous gardez dans cette salle. Vous réglerez ensuite la quantité cible de chacun.</div>
-    <input id="roomAddSearch" type="search" placeholder="Rechercher un produit" autocomplete="off" aria-label="Rechercher un produit">
+    <div class="addfilters">
+      <select id="roomAddDom" aria-label="Domaine"></select>
+      <input id="roomAddSearch" type="search" placeholder="Rechercher un produit" autocomplete="off" aria-label="Rechercher un produit">
+      <button class="btn sm" id="roomAddAll" type="button">Tout cocher</button>
+    </div>
     <div id="roomAddList" class="pick-list"></div>
     <div class="dlg-actions">
       <button class="btn" id="roomAddCancel" type="button">Annuler</button>
@@ -2437,14 +2448,16 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   var addSel = new Set();
   function byNameItem(a, b) { return norm(a.name).localeCompare(norm(b.name)); }
   function drawRoomAdd() {
-    var words = norm($("roomAddSearch").value).trim().split(/\s+/).filter(Boolean), box = $("roomAddList");
+    var words = norm($("roomAddSearch").value).trim().split(/\s+/).filter(Boolean), box = $("roomAddList"), dom = $("roomAddDom").value;
     var have = new Set((roomItems[state.room] || []).map(function (l) { return l.item_id; }));
     box.textContent = "";
     var list = Array.from(items.values()).filter(function (it) {
       if (it.tracked === false || have.has(it.id)) return false;
+      if (dom && (it.category || "Sans domaine") !== dom) return false;
       var hay = norm([it.name, it.description, it.category, it.ref].join(" "));
       return words.every(function (w) { return hay.indexOf(w) !== -1; });
     }).sort(byNameItem).slice(0, 80);
+    state.addShown = list.map(function (it) { return it.id; });
     if (!list.length) box.append(h("div", { class: "meta", text: "Aucun produit à ajouter." }));
     list.forEach(function (it) {
       var cb = h("input", { type: "checkbox", checked: addSel.has(it.id), "aria-label": it.name });
@@ -2457,6 +2470,10 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function openRoomAdd() {
     var room = roomById(state.room); if (!room || readOnly) return;
     addSel = new Set(); $("roomAddSearch").value = "";
+    var dsel = $("roomAddDom"); dsel.textContent = "";
+    dsel.append(h("option", { value: "", text: "Tous les domaines (" + roomAddables(room).length + ")" }));
+    domainList().forEach(function (c) { var n = roomAddables(room, c).length; if (n) dsel.append(h("option", { value: c, text: c + " (" + n + ")" })); });
+    dsel.value = state.cat && Array.from(dsel.options).some(function (o) { return o.value === state.cat; }) ? state.cat : "";
     $("roomAddTitle").textContent = "Ajouter des produits : " + room.name;
     drawRoomAdd(); $("roomAddDlg").showModal();
   }
@@ -3378,11 +3395,45 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     });
     return m;
   }
+  var itemsReal = null;
   function scoped(fn) {
     var room = roomScope();
     if (!room) { fn(); return; }
-    var real = items; items = roomVirtual(room); dupCache = null;
-    try { fn(); } finally { items = real; dupCache = null; }
+    var real = items; itemsReal = real; items = roomVirtual(room); dupCache = null;
+    try { fn(); } finally { items = real; itemsReal = null; dupCache = null; }
+  }
+  // produits suivis (d'un domaine) qui ne sont pas encore dans la salle
+  function roomAddables(room, cat) {
+    var base = itemsReal || items, have = new Set((roomItems[room.id] || []).map(function (l) { return l.item_id; }));
+    return Array.from(base.values()).filter(function (it) { return it.tracked !== false && !have.has(it.id) && (cat == null || (it.category || "Sans domaine") === cat); }).sort(byNameItem);
+  }
+  function roomAddMany(room, list) {
+    if (readOnly || !list.length) return;
+    var rows = list.map(function (it) { return { cabinet_id: cabinetId, salle_id: room.id, item_id: it.id, target: Math.max(1, Number(it.min) || 2) }; });
+    enqueue(function () {
+      return sb.from("salle_items").insert(rows).select().then(check).then(function (data) {
+        (data || []).forEach(function (li) { (roomItems[room.id] = roomItems[room.id] || []).push(li); });
+        indexRooms(); render();
+        toast(rows.length + " produit" + (rows.length > 1 ? "s" : "") + " ajouté" + (rows.length > 1 ? "s" : "") + " à « " + room.name + " ». Utilisez « + » ou le chiffre pour les remplir, et l'onglet Salles pour régler leur cible.");
+      });
+    });
+  }
+  function roomAddSection(box, room) {
+    if (readOnly || !state.cat) return;
+    var q = norm(state.q || "").trim().split(/\s+/).filter(Boolean);
+    var cand = roomAddables(room, state.cat).filter(function (it) { var hay = norm([it.name, it.description, it.ref].join(" ")); return q.every(function (w) { return hay.indexOf(w) !== -1; }); });
+    if (!cand.length) return;
+    var sec = h("div", { class: "roomaddsec" });
+    sec.append(h("div", { class: "adminhead" },
+      h("h3", { text: "Pas encore dans « " + room.name + " » · " + cand.length + " produit" + (cand.length > 1 ? "s" : "") + " de « " + state.cat + " »" }),
+      h("button", { class: "btn sm primary", type: "button", onclick: function () { roomAddMany(room, cand); }, text: "Tout ajouter (" + cand.length + ")" })));
+    cand.slice(0, 60).forEach(function (it) {
+      sec.append(h("div", { class: "aperson" },
+        h("div", { class: "amain" }, h("div", { class: "aname", text: it.name }), h("div", { class: "meta", text: [it.ref ? "réf. " + it.ref : "", "stock central " + fmt(Number(it.qty) || 0)].filter(Boolean).join(" · ") })),
+        h("div", { class: "aact" }, h("button", { class: "btn sm", type: "button", onclick: function () { roomAddMany(room, [it]); }, text: "＋ Ajouter" }))));
+    });
+    if (cand.length > 60) sec.append(h("div", { class: "meta", text: "… et " + (cand.length - 60) + " autres : précisez avec la recherche." }));
+    box.append(sec);
   }
   function roomMeta(it) {
     var li = it._room.li;
@@ -3759,7 +3810,6 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     order.forEach(function (c) {
       var o = stats[c] || { n: 0, sum: {}, bas: 0, rupt: 0, exp: 0, cat: 0, hid: 0 };
       if (!o.n && !o.cat && o.hid > 0) return;
-      if (state.view && !o.n) return;
       var us = Object.keys(o.sum), big, label;
       if (!o.n) { big = "0"; label = o.cat ? "aucun article suivi" : "aucun article"; }
       else if (us.length === 1) {
@@ -3768,14 +3818,15 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         label = us[0] + (n > 1 && !/s$/i.test(us[0]) ? "s" : "") + " · " + o.n + " réf.";
       } else { big = String(o.n); label = "références"; }
       var bigNum = !o.n ? 0 : (us.length === 1 ? Math.round(o.sum[us[0]] * 100) / 100 : o.n);
-      var shown = o.n ? "" : "aucun article";
+      var shown = o.n ? "" : (state.view ? "rien dans la salle" : "aucun article");
       if (o.cat) label += " · " + o.cat + " au catalogue";
       var alertTxt = o.rupt ? o.rupt + (state.view ? (o.rupt > 1 ? " vides" : " vide") : " en rupture") : (o.bas ? o.bas + (state.view ? " à compléter" : " sous le seuil") : (o.exp ? o.exp + " à surveiller" : ""));
       var alertCls = o.rupt ? "t-bad" : (o.bas ? "t-warn" : "t-exp");
+      if (!alertTxt && roomScope() && !readOnly) { var nAdd = roomAddables(roomScope(), c).length; if (nAdd) alertTxt = nAdd + " à ajouter"; }
       grid.append(h("button", { class: "tile", "aria-label": c + " : " + big + " " + label,
         onclick: function () { state.cat = c; render(); } },
         h("span", { class: "tile-name", text: c }),
-        h("span", { class: "tile-num " + qtyClass(bigNum), text: big }),
+        h("span", { class: "tile-num " + (state.view && !o.n ? "q-none" : qtyClass(bigNum)), text: big }),
         shown ? h("span", { class: "tile-unit", text: shown }) : null,
         alertTxt ? h("span", { class: "tile-alert " + alertCls, text: alertTxt }) : null));
     });
@@ -3799,8 +3850,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
   function renderInventory(box) {
     var rsc = roomScope();
-    if (rsc) { box.append(roomHeader(rsc)); if (!items.size) { box.append(roomEmpty(rsc)); return; } }
-    if (!items.size) {
+    if (rsc) { box.append(roomHeader(rsc)); if (!items.size && !state.cat) box.append(h("div", { class: "dnote", text: "Cette salle est vide. Cliquez sur un domaine pour y ajouter ses produits, ou utilisez « ＋ Ajouter des produits »." })); }
+    if (!items.size && !rsc) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" },
         h("h2", { text: "Aucun article pour l'instant" }),
         h("div", { text: "Ajoutez vos consommables un par un, ou importez un fichier Excel, CSV ou PDF (facture)." }),
@@ -3813,8 +3864,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var list = visibleItems();
     if (!list.length) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" },
-        h("h2", { text: "Aucun résultat" }),
-        h("div", { text: "Aucun article ne correspond à ce filtre ou à cette recherche." }))));
+        h("h2", { text: rsc ? "Rien dans cette salle pour l'instant" : "Aucun résultat" }),
+        h("div", { text: rsc ? "Ajoutez des produits de ce domaine avec les boutons ci-dessous." : "Aucun article ne correspond à ce filtre ou à cette recherche." }))));
+      if (rsc) roomAddSection(box, rsc);
       return;
     }
     var table = h("div", { class: "table" });
@@ -3887,6 +3939,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       var left = list.length - shownList.length;
       box.append(h("div", { class: "morebar" }, h("button", { class: "btn", type: "button", onclick: function () { state.limit += 60; render(); }, text: "Voir la suite (" + left + " restant" + (left > 1 ? "s" : "") + ")" })));
     }
+    if (rsc) roomAddSection(box, rsc);
   }
 
   // Quantités à commander modifiées à la main (gardées sur l'appareil, par cabinet, jusqu'à la commande)
@@ -4223,7 +4276,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
   function domainList() {
     var extra = new Set();
-    items.forEach(function (it) {
+    (itemsReal || items).forEach(function (it) {
       var c = it.category || "Sans domaine";
       if (DOMAINS.indexOf(c) === -1) extra.add(c);
     });
@@ -4231,7 +4284,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
   function renderCrumb() {
     var box = $("crumb"); box.textContent = "";
-    var hide = state.tab !== "inventaire" || isHome() || !items.size;
+    var hide = state.tab !== "inventaire" || isHome() || (!items.size && !state.view);
     box.classList.toggle("hidden", hide);
     if (hide) return;
     var title = state.cat || (state.view && ROOM_FILTER_LABEL[state.filter]) || FILTER_LABEL[state.filter] || "Résultats";
@@ -6459,6 +6512,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   $("newRoomAdd").addEventListener("click", function () { addRoom($("newRoomName").value, $("newRoomKind").value); $("newRoomName").value = ""; });
   $("newRoomName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("newRoomAdd").click(); } });
   $("roomAddSearch").addEventListener("input", drawRoomAdd);
+  $("roomAddDom").addEventListener("change", drawRoomAdd);
+  $("roomAddAll").addEventListener("click", function () { (state.addShown || []).forEach(function (id) { addSel.add(id); }); drawRoomAdd(); });
   $("roomAddCancel").addEventListener("click", function () { $("roomAddDlg").close(); });
   $("roomAddOk").addEventListener("click", saveRoomAdd);
   $("ctlOkBtn").addEventListener("click", saveCtl);
