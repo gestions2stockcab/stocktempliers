@@ -605,6 +605,78 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .login-card h1 { color:var(--ink); letter-spacing:-.03em; }
 @media (max-width: 760px) { .bottombar .bb-scan span:first-child { background:var(--grad); } }
 @media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }
+
+/* ===== v50 : salles de soins et contrôles ===== */
+.roomdots { display:inline-flex; gap:3px; align-items:center; margin-left:2px; }
+.roomdots i { width:9px; height:9px; border-radius:50%; display:inline-block; }
+.roomchips { display:flex; flex-wrap:wrap; gap:8px; margin:4px 0 14px; align-items:center; }
+.roomchip { --rc:#2F67FF; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:999px; padding:7px 16px 7px 12px; font:inherit; font-weight:600; display:inline-flex; gap:8px; align-items:center; cursor:pointer; }
+.roomchip i { width:11px; height:11px; border-radius:50%; background:var(--rc); }
+.roomchip.on { border-color:var(--rc); border-width:2px; padding:6px 15px 6px 11px; }
+.roompanel { --rc:#2F67FF; background:var(--surface); border:1px solid var(--line); border-left:6px solid var(--rc); border-radius:16px; padding:14px 16px; box-shadow:var(--shadow); }
+.roomhead { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-start; margin-bottom:10px; }
+.roomhead h3 { margin:0 0 2px; font-size:20px; }
+.roomact { display:flex; gap:8px; flex-wrap:wrap; }
+.rtable { display:block; }
+.rline { display:grid; grid-template-columns:minmax(0,2.2fr) 84px 90px 90px 110px 34px; gap:10px; align-items:center; padding:10px 4px; border-top:1px solid var(--line); }
+.rline.head { color:var(--muted); font-size:12.5px; font-weight:600; border-top:0; }
+.rline .num { text-align:right; }
+.rline .oqty { width:100%; box-sizing:border-box; }
+.bring.on { color:var(--brand); font-weight:700; }
+.rline .short { color:var(--bad); font-weight:700; }
+.roomgo { display:flex; justify-content:flex-end; margin-top:12px; }
+.setupcard { max-width:520px; }
+.setupin { padding:18px 20px; }
+.setupin h2 { margin:0 0 4px; }
+.setuprow { display:flex; justify-content:space-between; align-items:center; padding:10px 0; font-weight:600; }
+.setupn { min-width:28px; text-align:center; font-size:20px; }
+.setupchk { display:block; padding:6px 0; }
+.cfgroom { --rc:#2F67FF; border:1px solid var(--line); border-left:6px solid var(--rc); border-radius:12px; padding:10px 12px; margin:8px 0; }
+.cfgtop { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.cfgdot { width:14px; height:14px; border-radius:50%; background:var(--rc); flex:none; }
+.cfgname { flex:1 1 160px; min-width:0; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); font:inherit; }
+.rswatches { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; }
+.rsw { width:24px; height:24px; border-radius:50%; border:2px solid transparent; cursor:pointer; padding:0; }
+.rsw.on { border-color:var(--ink); box-shadow:0 0 0 2px var(--surface) inset; }
+.cfgact { display:flex; gap:6px; justify-content:flex-end; }
+.addroom { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+.addroom input { flex:1 1 180px; min-width:0; padding:9px 12px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); font:inherit; }
+.pick-list { max-height:46vh; overflow:auto; border:1px solid var(--line); border-radius:12px; margin:10px 0; padding:4px 8px; }
+.pickrow { display:flex; gap:10px; align-items:center; padding:7px 4px; border-top:1px solid var(--line); cursor:pointer; }
+.pickrow:first-child { border-top:0; }
+.pickrow span { flex:1; min-width:0; }
+.ctlsec { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 16px; margin:0 0 14px; box-shadow:var(--shadow); }
+.ctlsec h3 { margin:0 0 8px; font-size:18px; }
+.ctlhead { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
+.ctlact { margin-top:10px; }
+.cchip { display:inline-block; border-radius:999px; padding:3px 11px; font-size:12.5px; font-weight:600; white-space:nowrap; }
+.cs-ok { background:var(--ok-bg); color:var(--ok); }
+.cs-soon { background:var(--warn-bg); color:var(--warn); }
+.cs-late { background:var(--bad-bg); color:var(--bad); }
+.crow { display:grid; grid-template-columns:minmax(0,2fr) 76px 150px auto 34px; gap:10px; align-items:center; padding:8px 0; border-top:1px solid var(--line); }
+.crow input[type="date"], .checkrow input[type="date"] { padding:6px 8px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); font:inherit; }
+.crow .cl { font-weight:600; }
+.urgadd { display:flex; gap:8px; margin-top:10px; }
+.urgadd input { flex:1; min-width:0; padding:9px 12px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); font:inherit; }
+.urgsug { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 10px; }
+.ctlrow { display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; padding:10px 0; border-top:1px solid var(--line); }
+.ctlrow .cmain { flex:1 1 280px; min-width:0; }
+.cname { font-weight:700; display:flex; gap:8px; align-items:center; }
+.cdot { width:10px; height:10px; border-radius:50%; display:inline-block; flex:none; }
+.cact { display:flex; gap:6px; align-items:center; }
+.chist { margin-top:4px; font-size:13.5px; }
+.chist summary { cursor:pointer; color:var(--brand); }
+.clogs { margin:4px 0 0 18px; padding:0; }
+.checkrow { display:grid; grid-template-columns:24px minmax(0,2fr) 76px 150px; gap:10px; align-items:center; padding:8px 0; border-top:1px solid var(--line); }
+.checkrow .cl { font-weight:600; }
+@media (max-width: 760px) {
+  .rline { grid-template-columns:minmax(0,1.6fr) 62px 72px 62px 30px; }
+  .rline > :nth-child(5) { display:none; }
+  .crow { grid-template-columns:minmax(0,1fr) 64px 34px; }
+  .crow input[type="date"], .crow .cchip { grid-column:1 / span 2; }
+  .checkrow { grid-template-columns:24px minmax(0,1fr) 64px; }
+  .checkrow input[type="date"] { grid-column:2 / span 2; }
+}
 </style>
 </head>
 <body>
@@ -677,7 +749,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v49</div>
+            <div class="menu-who"><span id="who"></span> · v50</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -701,6 +773,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     <button class="tab" role="tab" data-tab="favoris" aria-selected="false"><span class="ti">⭐</span><span class="tl">Favoris</span></button>
     <button class="tab" role="tab" data-tab="commande" aria-selected="false"><span class="ti">🛒</span><span class="tl">À commander</span></button>
     <button class="tab" role="tab" data-tab="comptage" aria-selected="false"><span class="ti">🔢</span><span class="tl">Comptage</span></button>
+    <button class="tab" role="tab" data-tab="salles" aria-selected="false"><span class="ti">🏠</span><span class="tl">Salles</span></button>
+    <button class="tab" role="tab" data-tab="controles" aria-selected="false"><span class="ti">✅</span><span class="tl">Contrôles<span id="ctlBadge"></span></span></button>
     <button class="tab" role="tab" data-tab="historique" aria-selected="false"><span class="ti">🕘</span><span class="tl">Historique</span></button>
     <button class="tab" role="tab" data-tab="donnees" aria-selected="false"><span class="ti">📊</span><span class="tl">Données</span></button>
     <button class="tab hidden" role="tab" data-tab="utilisateurs" aria-selected="false"><span class="ti">👥</span><span class="tl">Utilisateurs</span></button>
@@ -883,6 +957,81 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   <button class="btn sm danger" id="selTrash">Mettre à la corbeille</button>
   <button class="btn sm" id="selDone">Terminer</button>
 </div>
+
+<dialog id="roomCfgDlg" class="wide">
+  <div class="dlg">
+    <h2>Gérer les salles</h2>
+    <div class="sub">Une couleur par salle : elle sert à reconnaître la salle partout dans l’appli (liste du stock, réassort, contrôles).</div>
+    <div id="roomCfgList"></div>
+    <div class="addroom">
+      <input id="newRoomName" placeholder="Nom de la nouvelle salle" maxlength="60" autocomplete="off" aria-label="Nom de la nouvelle salle">
+      <select id="newRoomKind" aria-label="Type de la nouvelle salle"><option value="soin">Salle de soins</option><option value="bloc">Bloc</option><option value="ortho">Salle d'orthodontie</option><option value="sterilisation">Stérilisation</option><option value="autre">Autre salle</option></select>
+      <button class="btn" id="newRoomAdd" type="button">Ajouter la salle</button>
+    </div>
+    <div class="dlg-actions"><button class="btn primary" id="roomCfgClose" type="button">Terminer</button></div>
+  </div>
+</dialog>
+
+<dialog id="roomAddDlg" class="wide">
+  <div class="dlg">
+    <h2 id="roomAddTitle">Ajouter des produits</h2>
+    <div class="sub">Cochez les produits que vous gardez dans cette salle. Vous réglerez ensuite la quantité cible de chacun.</div>
+    <input id="roomAddSearch" type="search" placeholder="Rechercher un produit" autocomplete="off" aria-label="Rechercher un produit">
+    <div id="roomAddList" class="pick-list"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="roomAddCancel" type="button">Annuler</button>
+      <button class="btn primary" id="roomAddOk" type="button" disabled>Ajouter</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="ctlDlg">
+  <div class="dlg">
+    <h2 id="ctlTitle">Ajouter un contrôle</h2>
+    <div class="sub">Idées à adapter à vos obligations réelles :</div>
+    <div class="urgsug" id="ctlTpl"></div>
+    <label class="f">Nom du contrôle<input id="ctlName" maxlength="100" autocomplete="off"></label>
+    <div class="grid">
+      <label class="f">Catégorie<select id="ctlCat"></select></label>
+      <label class="f">Fréquence<select id="ctlEvery"></select></label>
+    </div>
+    <label class="f">Salle concernée (facultatif)<select id="ctlRoom"></select></label>
+    <div class="login-err" id="ctlErr" role="alert"></div>
+    <div class="dlg-actions">
+      <button class="btn hidden" id="ctlDel" type="button">Supprimer</button>
+      <button class="btn" id="ctlCancel" type="button">Annuler</button>
+      <button class="btn primary" id="ctlOkBtn" type="button">Enregistrer</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="ctlDoneDlg">
+  <div class="dlg">
+    <h2>Contrôle effectué</h2>
+    <div class="sub" id="ctlDoneTitle"></div>
+    <div class="grid">
+      <label class="f">Date<input id="ctlDoneDate" type="date"></label>
+      <label class="f">Remarque (facultatif)<input id="ctlDoneNote" maxlength="200" autocomplete="off"></label>
+    </div>
+    <div class="dlg-actions">
+      <button class="btn" id="ctlDoneCancel" type="button">Annuler</button>
+      <button class="btn primary" id="ctlDoneOk" type="button">Valider</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="ctlCheckDlg" class="wide">
+  <div class="dlg">
+    <h2>Contrôle de la trousse d’urgence</h2>
+    <div class="sub">Pour chaque élément : cochez s’il est présent et conforme, corrigez la quantité et la péremption si besoin. Un élément décoché ou périmé sera signalé « à remplacer ».</div>
+    <div id="ctlCheckList"></div>
+    <label class="f">Remarque (facultatif)<input id="ctlCheckNote" maxlength="200" autocomplete="off"></label>
+    <div class="dlg-actions">
+      <button class="btn" id="ctlCheckCancel" type="button">Annuler</button>
+      <button class="btn primary" id="ctlCheckOk" type="button">Valider le contrôle</button>
+    </div>
+  </div>
+</dialog>
 
 <dialog id="supDlg">
   <div class="dlg">
@@ -1081,7 +1230,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
   var barcodeOk = false, descOk = false, trackedOk = false, subOk = false, favOk = false, lotsOk = false, lotsByItem = {}, ordOk = false, photoOk = false, jrnOk = false, consoOk = false, jrnByNumber = {}, conso = {}, consoDebut = 0, consoAt = 0, reasonOk = false, packOk = false, pertes = { ok: false, rows: [] };
-  var REASONS = { expired: "Périmé", damaged: "Cassé ou abîmé", lost: "Perdu ou introuvable", gift: "Don ou prêt", other: "Autre" };
+  var REASONS = { expired: "Périmé", damaged: "Cassé ou abîmé", lost: "Perdu ou introuvable", gift: "Don ou prêt", other: "Autre", restock: "Réassort de salle" };
   var LOSS = ["expired", "damaged", "lost"];
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false, ownerOk = false;
   var recovering = /type=recovery/.test(location.hash);
@@ -1868,7 +2017,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       ["Stock", "section", function () { goTab("inventaire"); }], ["Favoris", "section", function () { goTab("favoris"); }],
       ["À commander", "section", function () { goTab("commande"); }], ["Comptage", "section", function () { goTab("comptage"); }],
       ["Historique", "section", function () { goTab("historique"); }], ["Données et prévisions", "section", function () { goTab("donnees"); }],
-      ["Corbeille", "section", function () { goTab("corbeille"); }]
+      ["Corbeille", "section", function () { goTab("corbeille"); }],
+      ["Salles et réassort", "section", function () { goTab("salles"); }], ["Contrôles et trousse d'urgence", "section", function () { goTab("controles"); }]
     ];
     if (isAdmin) a.splice(6, 0, ["Utilisateurs et invitations", "section", function () { goTab("utilisateurs"); }]);
     a.push(["Ajouter un article", "action", function () { openItem(null); }], ["Scanner un code-barres", "action", function () { $("scanBtn").click(); }],
@@ -1918,6 +2068,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     historique: ["Historique", "Tous les mouvements de stock, avec la personne, l'heure et la note. Pratique pour comprendre une différence."],
     donnees: ["Données et prévisions", "Vos dépenses d'après les factures importées, l'évolution des prix et une estimation des dépenses à venir. Pour les alimenter, importez vos factures PDF."],
     utilisateurs: ["Utilisateurs", "Invitez une personne par e-mail, choisissez son rôle et suivez les invitations en attente. Réservé aux administrateurs du cabinet."],
+    salles: ["Salles", "Chaque salle a sa couleur et la liste de ce qu'on y range. Pour un réassort : comptez ce qu'il reste dans les tiroirs, saisissez-le dans « Compté », l'appli calcule ce qu'il faut apporter pour atteindre la cible et le sort du stock central quand vous validez. « Feuille de réassort (PDF) » donne une feuille à imprimer pour faire la tournée. Un administrateur règle le nombre de salles, leurs noms et leurs couleurs avec « Gérer les salles »."],
+    controles: ["Contrôles", "La trousse d'urgence est suivie élément par élément (quantité et péremption), avec un contrôle mensuel qui garde la date et la personne. Les contrôles périodiques (autoclave, déchets, radioprotection…) affichent s'ils sont à jour, à faire bientôt ou en retard. Les fréquences proposées sont des idées : adaptez-les à vos obligations réelles."],
     corbeille: ["Corbeille", "Les articles retirés de la liste. Vous pouvez les restaurer ou les supprimer définitivement. Un import ne les recrée pas."]
   };
   function openHelp() {
@@ -2029,6 +2181,543 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     });
     render(); toast("Annulé : " + u.label);
   }
+  // ---------- salles de soins : stock par salle et réassort ----------
+  var sallesOk = false, rooms = [], roomItems = {}, restocks = {}, roomIdx = {};
+  var ROOM_KINDS = { soin: "Salle de soins", bloc: "Bloc", ortho: "Salle d'orthodontie", sterilisation: "Stérilisation", autre: "Autre salle" };
+  var ROOM_COLORS = ["#2F67FF", "#12B76A", "#F79009", "#7A5AF8", "#EE46BC", "#06AED4", "#F04438", "#0E9384", "#B54708", "#667085", "#444CE7", "#84CC16"];
+  function roomById(id) { return rooms.find(function (r) { return r.id === id; }); }
+  function indexRooms() {
+    roomIdx = {};
+    Object.keys(roomItems).forEach(function (rid) { roomItems[rid].forEach(function (li) { (roomIdx[li.item_id] = roomIdx[li.item_id] || []).push(rid); }); });
+  }
+  function agoText(iso) {
+    var d = Math.floor((Date.now() - Date.parse(iso)) / 86400000);
+    return d <= 0 ? "aujourd'hui" : d === 1 ? "hier" : "il y a " + d + " jours";
+  }
+  function loadRooms() {
+    if (!sb || !cabinetId) return;
+    var cid = cabinetId;
+    Promise.all([
+      sb.from("salles").select("*").eq("cabinet_id", cid).order("position"),
+      fetchAll(function () { return sb.from("salle_items").select("*").eq("cabinet_id", cid).order("id"); }),
+      sb.from("salle_reassorts").select("*").eq("cabinet_id", cid).order("done_at", { ascending: false }).limit(300)
+    ]).then(function (r) {
+      if (cid !== cabinetId) return;
+      if (r[0].error) { sallesOk = false; return; }
+      sallesOk = true; rooms = r[0].data || [];
+      roomItems = {}; (r[1].data || []).forEach(function (li) { (roomItems[li.salle_id] = roomItems[li.salle_id] || []).push(li); });
+      restocks = {}; (r[2].data || []).forEach(function (x) { if (!restocks[x.salle_id]) restocks[x.salle_id] = x; });
+      indexRooms(); render();
+    }).catch(function () { sallesOk = false; });
+  }
+  function roomDots(it) {
+    var ids = roomIdx[it.id];
+    if (!sallesOk || !ids || !ids.length) return null;
+    var names = [], wrap = h("span", { class: "roomdots" });
+    ids.forEach(function (rid) { var r = roomById(rid); if (r) { names.push(r.name); wrap.append(h("i", { style: "background:" + r.color })); } });
+    wrap.setAttribute("title", "Rangé dans : " + names.join(", "));
+    return wrap;
+  }
+  function nextRoomColor() {
+    var used = rooms.map(function (r) { return r.color; });
+    return ROOM_COLORS.find(function (c) { return used.indexOf(c) === -1; }) || ROOM_COLORS[rooms.length % ROOM_COLORS.length];
+  }
+  function saveRoom(r, patch) {
+    Object.assign(r, patch);
+    enqueue(function () { return sb.from("salles").update(patch).eq("id", r.id).then(check); });
+    render();
+  }
+  function createRooms(st) {
+    var specs = [];
+    for (var i = 1; i <= st.n; i++) specs.push(["Salle " + i, "soin"]);
+    if (st.bloc) specs.push(["Bloc", "bloc"]);
+    if (st.ortho) specs.push(["Salle d'orthodontie", "ortho"]);
+    if (st.steri) specs.push(["Stérilisation", "sterilisation"]);
+    if (!specs.length) { toast("Choisissez au moins une salle."); return; }
+    var rows = specs.map(function (sp, i) { return { cabinet_id: cabinetId, name: sp[0], kind: sp[1], color: ROOM_COLORS[i % ROOM_COLORS.length], position: i + 1 }; });
+    enqueue(function () {
+      return sb.from("salles").insert(rows).select().then(check).then(function (data) {
+        rooms = rooms.concat(data || []); state.room = rooms[0] ? rooms[0].id : ""; indexRooms(); render();
+        toast(rooms.length + " salle" + (rooms.length > 1 ? "s" : "") + " créée" + (rooms.length > 1 ? "s" : "") + ". Ajoutez maintenant les produits de chaque salle.");
+      });
+    });
+  }
+  function addRoom(name, kind) {
+    name = (name || "").trim();
+    if (!name) { toast("Donnez un nom à la salle."); return; }
+    var row = { cabinet_id: cabinetId, name: name, kind: kind || "soin", color: nextRoomColor(), position: rooms.length + 1 };
+    enqueue(function () {
+      return sb.from("salles").insert(row).select().single().then(check).then(function (r) { rooms.push(r); indexRooms(); drawRoomCfg(); render(); });
+    });
+  }
+  function deleteRoom(r) {
+    if (!window.confirm("Supprimer « " + r.name + " » et la liste de ses produits ? Le stock central n'est pas modifié.")) return;
+    rooms = rooms.filter(function (x) { return x.id !== r.id; }); delete roomItems[r.id]; indexRooms();
+    if (state.room === r.id) state.room = "";
+    ctlList.forEach(function (c) { if (c.salle_id === r.id) c.salle_id = null; });
+    enqueue(function () { return sb.from("salles").delete().eq("id", r.id).then(check); });
+    drawRoomCfg(); render();
+  }
+  function moveRoom(r, d) {
+    var i = rooms.indexOf(r), j = i + d;
+    if (j < 0 || j >= rooms.length) return;
+    rooms.splice(i, 1); rooms.splice(j, 0, r);
+    rooms.forEach(function (x, k) {
+      if (x.position !== k + 1) { x.position = k + 1; var id = x.id, pos = k + 1; enqueue(function () { return sb.from("salles").update({ position: pos }).eq("id", id).then(check); }); }
+    });
+    drawRoomCfg(); render();
+  }
+  function drawRoomCfg() {
+    var box = $("roomCfgList"); box.textContent = "";
+    rooms.forEach(function (r, i) {
+      var name = h("input", { value: r.name, maxlength: "60", "aria-label": "Nom de la salle", class: "cfgname" });
+      name.addEventListener("change", function () { var v = name.value.trim(); if (!v) { name.value = r.name; return; } saveRoom(r, { name: v }); });
+      var kind = h("select", { "aria-label": "Type de salle" });
+      Object.keys(ROOM_KINDS).forEach(function (k) { kind.append(h("option", { value: k, text: ROOM_KINDS[k] })); });
+      kind.value = r.kind;
+      kind.addEventListener("change", function () { saveRoom(r, { kind: kind.value }); });
+      var sw = h("div", { class: "rswatches", role: "group", "aria-label": "Couleur de " + r.name });
+      ROOM_COLORS.forEach(function (c) {
+        sw.append(h("button", { type: "button", class: "rsw" + (c === r.color ? " on" : ""), style: "background:" + c, "aria-label": "Couleur " + c, "aria-pressed": c === r.color ? "true" : "false", onclick: function () { saveRoom(r, { color: c }); drawRoomCfg(); } }));
+      });
+      box.append(h("div", { class: "cfgroom", style: "--rc:" + r.color },
+        h("div", { class: "cfgtop" }, h("i", { class: "cfgdot" }), name, kind),
+        sw,
+        h("div", { class: "cfgact" },
+          h("button", { class: "btn sm", type: "button", disabled: i === 0, "aria-label": "Monter " + r.name, onclick: function () { moveRoom(r, -1); }, text: "↑" }),
+          h("button", { class: "btn sm", type: "button", disabled: i === rooms.length - 1, "aria-label": "Descendre " + r.name, onclick: function () { moveRoom(r, 1); }, text: "↓" }),
+          h("button", { class: "btn sm", type: "button", onclick: function () { deleteRoom(r); }, text: "Supprimer" }))));
+    });
+    if (!rooms.length) box.append(h("div", { class: "meta", text: "Aucune salle pour le moment." }));
+  }
+  function openRoomCfg() { drawRoomCfg(); $("newRoomName").value = ""; $("roomCfgDlg").showModal(); }
+  // produits d'une salle
+  var addSel = new Set();
+  function byNameItem(a, b) { return norm(a.name).localeCompare(norm(b.name)); }
+  function drawRoomAdd() {
+    var words = norm($("roomAddSearch").value).trim().split(/\s+/).filter(Boolean), box = $("roomAddList");
+    var have = new Set((roomItems[state.room] || []).map(function (l) { return l.item_id; }));
+    box.textContent = "";
+    var list = Array.from(items.values()).filter(function (it) {
+      if (it.tracked === false || have.has(it.id)) return false;
+      var hay = norm([it.name, it.description, it.category, it.ref].join(" "));
+      return words.every(function (w) { return hay.indexOf(w) !== -1; });
+    }).sort(byNameItem).slice(0, 80);
+    if (!list.length) box.append(h("div", { class: "meta", text: "Aucun produit à ajouter." }));
+    list.forEach(function (it) {
+      var cb = h("input", { type: "checkbox", checked: addSel.has(it.id), "aria-label": it.name });
+      cb.addEventListener("change", function () { if (cb.checked) addSel.add(it.id); else addSel.delete(it.id); drawRoomAddBtn(); });
+      box.append(h("label", { class: "pickrow" }, cb, h("span", { text: it.name }), h("small", { class: "meta", text: it.category || "" })));
+    });
+    drawRoomAddBtn();
+  }
+  function drawRoomAddBtn() { $("roomAddOk").textContent = "Ajouter" + (addSel.size ? " (" + addSel.size + ")" : ""); $("roomAddOk").disabled = !addSel.size; }
+  function openRoomAdd() {
+    var room = roomById(state.room); if (!room || readOnly) return;
+    addSel = new Set(); $("roomAddSearch").value = "";
+    $("roomAddTitle").textContent = "Ajouter des produits : " + room.name;
+    drawRoomAdd(); $("roomAddDlg").showModal();
+  }
+  function saveRoomAdd() {
+    var room = state.room;
+    var rows = Array.from(addSel).map(function (id) { var it = items.get(id); return { cabinet_id: cabinetId, salle_id: room, item_id: id, target: Math.max(1, Number(it && it.min) || 2) }; });
+    $("roomAddDlg").close();
+    if (!rows.length) return;
+    enqueue(function () {
+      return sb.from("salle_items").insert(rows).select().then(check).then(function (data) {
+        (data || []).forEach(function (li) { (roomItems[room] = roomItems[room] || []).push(li); });
+        indexRooms(); render();
+        toast(rows.length + " produit" + (rows.length > 1 ? "s" : "") + " ajouté" + (rows.length > 1 ? "s" : "") + " à la salle. Réglez la quantité cible de chacun.");
+      });
+    });
+  }
+  function setRoomTarget(li, v) {
+    var t = Math.max(0, num(v)); li.target = t;
+    enqueue(function () { return sb.from("salle_items").update({ target: t }).eq("id", li.id).then(check); });
+    render();
+  }
+  function removeRoomItem(li) {
+    roomItems[li.salle_id] = (roomItems[li.salle_id] || []).filter(function (x) { return x.id !== li.id; });
+    indexRooms();
+    enqueue(function () { return sb.from("salle_items").delete().eq("id", li.id).then(check); });
+    render();
+  }
+  function renderRoomsSetup(box) {
+    var st = state.setup = state.setup || { n: 3, bloc: true, ortho: false, steri: false };
+    var card = h("div", { class: "table setupcard" });
+    if (!isAdmin) {
+      card.append(h("div", { class: "empty" }, h("h2", { text: "Aucune salle configurée" }), h("div", { text: "Demandez à un administrateur du cabinet de configurer les salles : nombre de salles de soins, bloc, salle d'orthodontie…" })));
+      box.append(card); return;
+    }
+    var nOut = h("b", { class: "setupn", text: String(st.n) });
+    var chk = function (k, label) {
+      var cb = h("input", { type: "checkbox", checked: !!st[k], id: "su_" + k });
+      cb.addEventListener("change", function () { st[k] = cb.checked; });
+      return h("label", { class: "setupchk", for: "su_" + k }, cb, " " + label);
+    };
+    card.append(h("div", { class: "setupin" },
+      h("h2", { text: "Configurez les salles de votre cabinet" }),
+      h("p", { class: "meta", text: "Chaque salle aura sa couleur, sa liste de produits et son réassort. Vous pourrez tout modifier ensuite." }),
+      h("div", { class: "setuprow" }, h("span", { text: "Salles de soins" }),
+        h("div", { class: "ostep" },
+          h("button", { class: "step", type: "button", "aria-label": "Une salle de soins de moins", onclick: function () { st.n = Math.max(0, st.n - 1); nOut.textContent = String(st.n); }, text: "−" }), nOut,
+          h("button", { class: "step", type: "button", "aria-label": "Une salle de soins de plus", onclick: function () { st.n = Math.min(12, st.n + 1); nOut.textContent = String(st.n); }, text: "+" }))),
+      chk("bloc", "Un bloc"), chk("ortho", "Une salle d'orthodontie"), chk("steri", "Une salle de stérilisation"),
+      h("div", { class: "dlg-actions" }, h("button", { class: "btn primary", type: "button", onclick: function () { createRooms(st); }, text: "Créer mes salles" }))));
+    box.append(card);
+  }
+  function renderRooms(box) {
+    if (!sallesOk) {
+      box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Salles non activées" }), h("div", { text: "Lancez le script SQL « ajout-salles-controles » dans Supabase pour gérer le stock par salle et les contrôles." }))));
+      return;
+    }
+    if (!rooms.length) { renderRoomsSetup(box); return; }
+    if (!state.room || !roomById(state.room)) state.room = rooms[0].id;
+    var room = roomById(state.room), sel = room.id;
+    var chips = h("div", { class: "roomchips" });
+    rooms.forEach(function (r) {
+      chips.append(h("button", { class: "roomchip" + (r.id === sel ? " on" : ""), type: "button", style: "--rc:" + r.color, "aria-pressed": r.id === sel ? "true" : "false", onclick: function () { state.room = r.id; render(); } }, h("i"), r.name));
+    });
+    if (isAdmin) chips.append(h("button", { class: "btn sm", type: "button", onclick: openRoomCfg, text: "⚙ Gérer les salles" }));
+    box.append(chips);
+    var lines = (roomItems[sel] || []).map(function (li) { return { li: li, it: items.get(li.item_id) }; }).filter(function (x) { return x.it; })
+      .sort(function (a, b) { return byNameItem(a.it, b.it); });
+    var last = restocks[sel];
+    var panel = h("div", { class: "roompanel", style: "--rc:" + room.color });
+    panel.append(h("div", { class: "roomhead" },
+      h("div", null, h("h3", { text: room.name }),
+        h("div", { class: "meta", text: ROOM_KINDS[room.kind] + " · " + (last ? "dernier réassort " + agoText(last.done_at) + (last.done_by ? " par " + String(last.done_by).split("@")[0] : "") : "jamais réapprovisionnée") + " · " + lines.length + " produit" + (lines.length > 1 ? "s" : "") })),
+      h("div", { class: "roomact" },
+        readOnly ? null : h("button", { class: "btn sm", type: "button", onclick: openRoomAdd, text: "＋ Ajouter des produits" }),
+        lines.length ? h("button", { class: "btn sm", type: "button", onclick: function () { roomSheet(room, lines); }, text: "Feuille de réassort (PDF)" }) : null)));
+    if (!lines.length) {
+      panel.append(h("div", { class: "empty" }, h("div", { text: "Aucun produit dans cette salle. Ajoutez ceux que vous gardez dans ses tiroirs, avec la quantité qu'il doit y avoir quand elle est pleine." })));
+      box.append(panel); return;
+    }
+    state.rc = state.rc || {};
+    var head = h("div", { class: "rline head" }, h("div", { text: "Produit" }), h("div", { class: "num", text: "Cible" }), h("div", { class: "num", text: "Compté" }), h("div", { class: "num", text: "À apporter" }), h("div", { class: "num", text: "Stock central" }), h("div"));
+    var tbl = h("div", { class: "rtable" }); tbl.append(head);
+    var cells = [];
+    var go = h("button", { class: "btn primary", type: "button", disabled: true, text: "Valider le réassort" });
+    var refresh = function () {
+      var n = 0, tot = 0;
+      cells.forEach(function (c) {
+        var v = state.rc[c.key];
+        if (v === undefined || v === "") { c.need.textContent = "—"; c.need.className = "num bring"; c.cen.className = "num"; return; }
+        var bring = Math.max(0, (Number(c.li.target) || 0) - num(v)); n++; tot += bring;
+        c.need.textContent = fmt(bring); c.need.className = "num bring" + (bring > 0 ? " on" : "");
+        c.cen.className = "num" + (bring > (Number(c.it.qty) || 0) ? " short" : "");
+      });
+      go.disabled = readOnly || !n;
+      go.textContent = n ? "Valider le réassort (" + n + " produit" + (n > 1 ? "s" : "") + ", " + fmt(r2(tot)) + " à sortir du stock)" : "Valider le réassort";
+    };
+    lines.forEach(function (x) {
+      var key = sel + "|" + x.it.id;
+      var tIn = h("input", { class: "oqty", type: "number", min: "0", step: "any", value: String(Number(x.li.target) || 0), disabled: readOnly, "aria-label": "Quantité cible : " + x.it.name, onchange: function (e) { setRoomTarget(x.li, e.target.value); } });
+      var cIn = h("input", { class: "oqty", type: "number", min: "0", step: "any", inputmode: "decimal", placeholder: x.li.counted_qty != null ? fmt(x.li.counted_qty) : "", value: state.rc[key] != null ? String(state.rc[key]) : "", disabled: readOnly, "aria-label": "Quantité comptée dans la salle : " + x.it.name });
+      cIn.addEventListener("input", function () { state.rc[key] = cIn.value; refresh(); });
+      var need = h("div", { class: "num bring", text: "—" }), cen = h("div", { class: "num", text: fmt(x.it.qty) + (x.it.unit ? " " + x.it.unit : "") });
+      cells.push({ key: key, li: x.li, it: x.it, need: need, cen: cen });
+      tbl.append(h("div", { class: "rline" },
+        h("div", null, h("div", { class: "item-name", text: x.it.name }), h("div", { class: "meta", text: [x.it.ref ? "réf. " + x.it.ref : "", x.li.counted_at ? "compté " + agoText(x.li.counted_at) : ""].filter(Boolean).join(" · ") })),
+        h("div", { class: "num" }, tIn), h("div", { class: "num" }, cIn), need, cen,
+        readOnly ? h("div") : h("button", { class: "dots", type: "button", "aria-label": "Retirer " + x.it.name + " de la salle", title: "Retirer de la salle", onclick: function () { removeRoomItem(x.li); }, text: "×" })));
+    });
+    go.addEventListener("click", function () { validateRestock(room, cells); });
+    panel.append(tbl);
+    panel.append(h("div", { class: "dnote", text: "Comptez ce qu'il reste dans les tiroirs de la salle : l'appli calcule ce qu'il faut apporter pour revenir à la quantité cible, et le sort du stock central quand vous validez." }));
+    if (!readOnly) panel.append(h("div", { class: "roomgo" }, go));
+    box.append(panel);
+    refresh();
+  }
+  function validateRestock(room, cells) {
+    if (readOnly) return;
+    var work = cells.filter(function (c) { var v = state.rc[c.key]; return v !== undefined && v !== ""; }).map(function (c) {
+      var counted = Math.max(0, num(state.rc[c.key]));
+      return { li: c.li, it: items.get(c.it.id) || c.it, counted: counted, bring: Math.max(0, (Number(c.li.target) || 0) - counted) };
+    });
+    if (!work.length) { toast("Saisissez ce que vous avez compté dans les tiroirs de la salle."); return; }
+    var moved = 0, short = [], now = new Date().toISOString();
+    work.forEach(function (w) {
+      var avail = Number(w.it.qty) || 0, give = Math.min(w.bring, avail);
+      if (w.bring > avail) short.push(w.it.name + " (il manque " + fmt(r2(w.bring - avail)) + ")");
+      if (give > 0) { adjustQty(w.it, -give, "Réassort · " + room.name, null, { reason: "restock", noUndo: true }); moved += give; }
+      w.li.counted_qty = w.counted; w.li.counted_at = now;
+      var id = w.li.id, cq = w.counted;
+      enqueue(function () { return sb.from("salle_items").update({ counted_qty: cq, counted_at: now }).eq("id", id).then(check); });
+    });
+    var rec = { cabinet_id: cabinetId, salle_id: room.id, done_by: myEmail, done_at: now, lines: work.length, units: r2(moved) };
+    enqueue(function () { return sb.from("salle_reassorts").insert(rec).then(check); });
+    restocks[room.id] = rec;
+    Object.keys(state.rc).forEach(function (k) { if (k.indexOf(room.id + "|") === 0) delete state.rc[k]; });
+    render();
+    toast("Réassort de « " + room.name + " » : " + work.length + " produit" + (work.length > 1 ? "s" : "") + ", " + fmt(r2(moved)) + " sorti" + (moved > 1 ? "s" : "") + " du stock central." + (short.length ? " Stock central insuffisant : " + short.slice(0, 3).join(", ") + (short.length > 3 ? "…" : "") + "." : ""));
+  }
+  function buildRoomSheetPdf(JsPDF, o) {
+    var doc = new JsPDF({ unit: "mm", format: "a4" }), W = 210, M = 15, y = 0;
+    var rgb = String(o.color || "#2F67FF").replace("#", "").match(/../g).map(function (x) { return parseInt(x, 16); });
+    var X = { name: M + 1.5, target: M + 128, count: M + 132, bring: M + 160 };
+    function header() {
+      doc.setFillColor(rgb[0], rgb[1], rgb[2]); doc.rect(0, 0, W, 12, "F");
+      doc.setTextColor(0); doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.text(o.room, M, 26);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(12); doc.text("Feuille de réassort · " + o.cabinet, M, 33);
+      doc.setFontSize(10); doc.text("Date : " + o.date, W - M, 26, { align: "right" });
+      doc.text("Comptez ce qu'il reste dans les tiroirs, puis notez ce qu'il faut apporter (cible − compté).", M, 40);
+      y = 50;
+    }
+    function tableHead() {
+      doc.setFillColor(rgb[0], rgb[1], rgb[2]); doc.rect(M, y - 5, W - 2 * M, 8, "F");
+      doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(9.5);
+      doc.text("Produit", X.name, y); doc.text("Cible", X.target, y, { align: "right" }); doc.text("Compté", X.count + 8, y, { align: "center" }); doc.text("À apporter", X.bring + 10, y, { align: "center" });
+      doc.setTextColor(0); doc.setFont("helvetica", "normal"); y += 9;
+    }
+    header(); tableHead(); doc.setFontSize(10);
+    o.lines.forEach(function (l, i) {
+      var nameLines = doc.splitTextToSize(String(l.name || ""), 105), h2 = Math.max(nameLines.length * 4.6, 6) + 4;
+      if (y + h2 > 278) { doc.addPage(); header(); tableHead(); doc.setFontSize(10); }
+      if (i % 2 === 0) { doc.setFillColor(244, 247, 252); doc.rect(M, y - 4.5, W - 2 * M, h2, "F"); }
+      doc.setTextColor(0); doc.text(nameLines, X.name, y);
+      doc.text(String(l.target) + (l.unit ? " " + l.unit : ""), X.target, y, { align: "right" });
+      doc.setDrawColor(150); doc.rect(X.count, y - 4.2, 16, 6.4); doc.rect(X.bring, y - 4.2, 20, 6.4);
+      y += h2;
+    });
+    var n = doc.getNumberOfPages();
+    for (var p = 1; p <= n; p++) { doc.setPage(p); doc.setFontSize(8); doc.setTextColor(120); doc.text("Page " + p + " / " + n + " · SimSimStock", W / 2, 290, { align: "center" }); }
+    return doc;
+  }
+  function roomSheet(room, lines) {
+    var lib = window.jspdf && window.jspdf.jsPDF;
+    if (!lib) { toast("Le PDF n'a pas pu être créé : vérifiez votre accès à internet, puis rechargez la page."); return; }
+    var doc = buildRoomSheetPdf(lib, { cabinet: cabinetName, room: room.name, color: room.color, date: new Date().toLocaleDateString("fr-FR"), lines: lines.map(function (x) { return { name: x.it.name, target: fmt(Number(x.li.target) || 0), unit: x.it.unit || "" }; }) });
+    doc.save("reassort-" + bkSlug(room.name) + "-" + new Date().toISOString().slice(0, 10) + ".pdf");
+    toast("Feuille de réassort créée : regardez dans vos téléchargements.");
+  }
+
+  // ---------- contrôles : trousse d'urgence et contrôles périodiques ----------
+  var ctlOk = false, ctlList = [], ctlItems = {}, ctlLogs = {};
+  var CTL_CATS = { urgence: "Trousse d'urgence", equipement: "Équipement", hygiene: "Hygiène et stérilisation", radioprotection: "Radioprotection", dechets: "Déchets", autre: "Autre" };
+  var CTL_EVERY = [[7, "Toutes les semaines"], [15, "Tous les 15 jours"], [30, "Tous les mois"], [60, "Tous les 2 mois"], [90, "Tous les 3 mois"], [180, "Tous les 6 mois"], [365, "Tous les ans"], [730, "Tous les 2 ans"]];
+  var CTL_TEMPLATES = [["Test de l'autoclave", "hygiene", 7], ["Nettoyage des circuits d'eau des units", "hygiene", 7], ["Vidange du séparateur d'amalgame", "dechets", 180], ["Enlèvement des déchets de soins (DASRI)", "dechets", 90], ["Contrôle du compresseur et de l'aspiration", "equipement", 90], ["Contrôle des extincteurs", "equipement", 365], ["Contrôle de radioprotection", "radioprotection", 365], ["Vérification de l'appareil de radiologie", "radioprotection", 365]];
+  var URG_SUGGEST = ["Adrénaline", "Salbutamol", "Trinitrine", "Glucose", "Aspirine", "Ballon et masque", "Oxymètre", "Tensiomètre", "Défibrillateur (électrodes et piles)"];
+  function loadControls() {
+    if (!sb || !cabinetId) return;
+    var cid = cabinetId;
+    Promise.all([
+      sb.from("controles").select("*").eq("cabinet_id", cid).order("created_at"),
+      fetchAll(function () { return sb.from("controle_items").select("*").eq("cabinet_id", cid).order("id"); }),
+      sb.from("controle_logs").select("*").eq("cabinet_id", cid).order("done_at", { ascending: false }).limit(400)
+    ]).then(function (r) {
+      if (cid !== cabinetId) return;
+      if (r[0].error) { ctlOk = false; return; }
+      ctlOk = true; ctlList = r[0].data || [];
+      ctlItems = {}; (r[1].data || []).forEach(function (li) { (ctlItems[li.controle_id] = ctlItems[li.controle_id] || []).push(li); });
+      ctlLogs = {}; (r[2].data || []).forEach(function (l) { (ctlLogs[l.controle_id] = ctlLogs[l.controle_id] || []).push(l); });
+      render();
+    }).catch(function () { ctlOk = false; });
+  }
+  function ctlDue(c) { var base = c.last_done_at || c.created_at; return base ? Date.parse(base) + (Number(c.every_days) || 30) * 86400000 : null; }
+  function ctlStatus(c) {
+    var due = ctlDue(c); if (due === null) return "ok";
+    var d = (due - Date.now()) / 86400000;
+    return d < 0 ? "late" : d <= ((Number(c.every_days) || 30) >= 60 ? 15 : 3) ? "soon" : "ok";
+  }
+  function expStatus(li) {
+    if (!li.expiry) return "ok";
+    var d = (Date.parse(li.expiry) - Date.now()) / 86400000;
+    return d < 0 ? "late" : d <= 60 ? "soon" : "ok";
+  }
+  function ctlProblems() {
+    var n = 0;
+    ctlList.forEach(function (c) { if (ctlStatus(c) === "late") n++; (ctlItems[c.id] || []).forEach(function (li) { if (expStatus(li) === "late") n++; }); });
+    return n;
+  }
+  function frDateMs(ms) { return new Date(ms).toLocaleDateString("fr-FR"); }
+  function ctlChip(c) {
+    var st = ctlStatus(c), due = ctlDue(c);
+    var txt = st === "late" ? "En retard depuis le " + frDateMs(due) : st === "soon" ? "À faire avant le " + frDateMs(due) : "À jour · prochain le " + frDateMs(due);
+    return h("span", { class: "cchip cs-" + st, text: txt });
+  }
+  function expChip(li) {
+    if (!li.expiry) return h("span", { class: "cchip cs-ok", text: "sans péremption" });
+    var st = expStatus(li);
+    return h("span", { class: "cchip cs-" + st, text: (st === "late" ? "Périmé le " : "Périme le ") + isoToFr(li.expiry) });
+  }
+  function ctlSave(c, patch) {
+    Object.assign(c, patch);
+    enqueue(function () { return sb.from("controles").update(patch).eq("id", c.id).then(check); });
+  }
+  function createControl(row, after) {
+    var rec = Object.assign({ cabinet_id: cabinetId, kind: "periodique", category: "autre", every_days: 30 }, row);
+    enqueue(function () {
+      return sb.from("controles").insert(rec).select().single().then(check).then(function (c) { ctlList.push(c); render(); if (after) after(c); });
+    });
+  }
+  function deleteControl(c) {
+    if (!window.confirm("Supprimer « " + c.name + " » et son historique ?")) return;
+    ctlList = ctlList.filter(function (x) { return x.id !== c.id; }); delete ctlItems[c.id]; delete ctlLogs[c.id];
+    enqueue(function () { return sb.from("controles").delete().eq("id", c.id).then(check); });
+    render();
+  }
+  function addUrgItem(c, label) {
+    label = (label || "").trim(); if (!label) return;
+    var row = { cabinet_id: cabinetId, controle_id: c.id, label: label, qty: 1, position: (ctlItems[c.id] || []).length + 1 };
+    enqueue(function () {
+      return sb.from("controle_items").insert(row).select().single().then(check).then(function (li) { (ctlItems[c.id] = ctlItems[c.id] || []).push(li); render(); });
+    });
+  }
+  function saveUrgItem(li, patch) {
+    Object.assign(li, patch);
+    enqueue(function () { return sb.from("controle_items").update(patch).eq("id", li.id).then(check); });
+    render();
+  }
+  function deleteUrgItem(li) {
+    ctlItems[li.controle_id] = (ctlItems[li.controle_id] || []).filter(function (x) { return x.id !== li.id; });
+    enqueue(function () { return sb.from("controle_items").delete().eq("id", li.id).then(check); });
+    render();
+  }
+  function markDone(c, dateStr, note, ok) {
+    var when = dateStr ? new Date(dateStr + "T12:00:00").toISOString() : new Date().toISOString();
+    var log = { cabinet_id: cabinetId, controle_id: c.id, done_at: when, done_by: myEmail, ok: ok !== false, note: note || "" };
+    c.last_done_at = when; c.last_done_by = myEmail; c.last_note = note || "";
+    (ctlLogs[c.id] = ctlLogs[c.id] || []).unshift(Object.assign({ id: "tmp" + Date.now() }, log));
+    enqueue(function () {
+      return sb.from("controles").update({ last_done_at: when, last_done_by: myEmail, last_note: note || "" }).eq("id", c.id).then(check).then(function () { return sb.from("controle_logs").insert(log).then(check); });
+    });
+    render();
+  }
+  function logLines(c, n) {
+    var logs = (ctlLogs[c.id] || []).slice(0, n || 4);
+    if (!logs.length) return h("div", { class: "meta", text: "Jamais effectué." });
+    var ul = h("ul", { class: "clogs" });
+    logs.forEach(function (l) {
+      ul.append(h("li", { text: new Date(l.done_at).toLocaleDateString("fr-FR") + (l.done_by ? " · " + String(l.done_by).split("@")[0] : "") + " · " + (l.ok === false ? "⚠ " : "✓ ") + (l.note || (l.ok === false ? "anomalie" : "conforme")) }));
+    });
+    return ul;
+  }
+  // fenêtres des contrôles
+  var ctlEditing = null, doneFor = null, checkFor = null, checkRows = [];
+  function openCtl(c, tpl) {
+    if (readOnly) return;
+    ctlEditing = c || null;
+    $("ctlTitle").textContent = c ? "Modifier le contrôle" : "Ajouter un contrôle";
+    var rs = $("ctlRoom"); rs.textContent = ""; rs.append(h("option", { value: "", text: "Aucune salle en particulier" }));
+    rooms.forEach(function (r) { rs.append(h("option", { value: r.id, text: r.name })); });
+    var cs = $("ctlCat"); cs.textContent = "";
+    Object.keys(CTL_CATS).filter(function (k) { return k !== "urgence"; }).forEach(function (k) { cs.append(h("option", { value: k, text: CTL_CATS[k] })); });
+    var es = $("ctlEvery"); es.textContent = "";
+    CTL_EVERY.forEach(function (e) { es.append(h("option", { value: String(e[0]), text: e[1] })); });
+    $("ctlName").value = c ? c.name : (tpl ? tpl[0] : "");
+    cs.value = c ? c.category : (tpl ? tpl[1] : "autre"); if (!cs.value) cs.value = "autre";
+    var ev = c ? c.every_days : (tpl ? tpl[2] : 30);
+    if (!CTL_EVERY.some(function (e) { return e[0] === Number(ev); })) es.append(h("option", { value: String(ev), text: "Tous les " + ev + " jours" }));
+    es.value = String(ev);
+    rs.value = c && c.salle_id ? c.salle_id : "";
+    $("ctlErr").textContent = "";
+    var tp = $("ctlTpl"); tp.textContent = "";
+    if (!c) CTL_TEMPLATES.forEach(function (t) { tp.append(h("button", { type: "button", class: "btn sm", onclick: function () { $("ctlName").value = t[0]; $("ctlCat").value = t[1]; $("ctlEvery").value = String(t[2]); }, text: t[0] })); });
+    $("ctlDel").classList.toggle("hidden", !c || !isAdmin);
+    $("ctlDlg").showModal();
+  }
+  function saveCtl() {
+    var name = $("ctlName").value.trim();
+    if (name.length < 2) { $("ctlErr").textContent = "Donnez un nom au contrôle."; return; }
+    var row = { name: name, category: $("ctlCat").value, every_days: Number($("ctlEvery").value) || 30, salle_id: $("ctlRoom").value || null };
+    $("ctlDlg").close();
+    if (ctlEditing) { ctlSave(ctlEditing, row); render(); } else createControl(row);
+  }
+  function openDone(c) {
+    if (readOnly) return;
+    doneFor = c; $("ctlDoneTitle").textContent = c.name;
+    $("ctlDoneDate").value = new Date().toISOString().slice(0, 10); $("ctlDoneDate").max = new Date().toISOString().slice(0, 10);
+    $("ctlDoneNote").value = ""; $("ctlDoneDlg").showModal();
+  }
+  function openCheck(c) {
+    if (readOnly) return;
+    checkFor = c; checkRows = [];
+    var box = $("ctlCheckList"); box.textContent = "";
+    var its = (ctlItems[c.id] || []).slice();
+    if (!its.length) { toast("Ajoutez d'abord les éléments de la trousse."); return; }
+    its.forEach(function (li) {
+      var ok = h("input", { type: "checkbox", checked: expStatus(li) !== "late", "aria-label": "Présent et conforme : " + li.label });
+      var qty = h("input", { type: "number", min: "0", step: "any", value: String(Number(li.qty) || 0), class: "oqty", "aria-label": "Quantité : " + li.label });
+      var exp = h("input", { type: "date", value: li.expiry || "", "aria-label": "Péremption : " + li.label });
+      checkRows.push({ li: li, ok: ok, qty: qty, exp: exp });
+      box.append(h("div", { class: "checkrow" }, ok, h("span", { class: "cl", text: li.label }), qty, exp));
+    });
+    $("ctlCheckNote").value = ""; $("ctlCheckDlg").showModal();
+  }
+  function saveCheck() {
+    var c = checkFor; if (!c) return;
+    var bad = [];
+    checkRows.forEach(function (r) {
+      var patch = {}, q = Math.max(0, num(r.qty.value)), ex = r.exp.value || null;
+      if (q !== Number(r.li.qty)) patch.qty = q;
+      if ((ex || null) !== (r.li.expiry || null)) patch.expiry = ex;
+      if (Object.keys(patch).length) { Object.assign(r.li, patch); var li = r.li; enqueue(function () { return sb.from("controle_items").update(patch).eq("id", li.id).then(check); }); }
+      if (!r.ok.checked || expStatus(r.li) === "late") bad.push(r.li.label);
+    });
+    var extra = $("ctlCheckNote").value.trim();
+    var note = (bad.length ? "À remplacer ou à compléter : " + bad.join(", ") + "." : "Tout est conforme.") + (extra ? " " + extra : "");
+    $("ctlCheckDlg").close();
+    markDone(c, "", note, !bad.length);
+    toast(bad.length ? "Contrôle enregistré : " + bad.length + " élément" + (bad.length > 1 ? "s" : "") + " à remplacer." : "Contrôle enregistré : tout est conforme.");
+  }
+  function renderControls(box) {
+    if (!ctlOk) {
+      box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Contrôles non activés" }), h("div", { text: "Lancez le script SQL « ajout-salles-controles » dans Supabase pour suivre la trousse d'urgence et les contrôles périodiques." }))));
+      return;
+    }
+    var urg = ctlList.find(function (c) { return c.kind === "urgence"; });
+    var sec = h("div", { class: "ctlsec" }, h("h3", { text: "Trousse d'urgence" }));
+    if (!urg) {
+      sec.append(h("div", { class: "meta", text: "Suivez chaque élément de la trousse (quantité et péremption) avec un contrôle mensuel signé." }));
+      if (!readOnly) sec.append(h("div", { class: "ctlact" }, h("button", { class: "btn primary", type: "button", onclick: function () { createControl({ name: "Trousse d'urgence", kind: "urgence", category: "urgence", every_days: 30 }); }, text: "Créer la trousse d'urgence" })));
+    } else {
+      var its = (ctlItems[urg.id] || []).slice().sort(function (a, b) { return (a.position || 0) - (b.position || 0); });
+      sec.append(h("div", { class: "ctlhead" }, ctlChip(urg), readOnly ? null : h("button", { class: "btn primary", type: "button", disabled: !its.length, onclick: function () { openCheck(urg); }, text: "Contrôle du mois" })));
+      if (!its.length) sec.append(h("div", { class: "meta", text: "Aucun élément pour le moment. Ajoutez ceux de votre trousse, à adapter à votre protocole et aux recommandations en vigueur." }));
+      var tbl = h("div", { class: "ctable" });
+      its.forEach(function (li) {
+        tbl.append(h("div", { class: "crow" },
+          h("div", { class: "cl", text: li.label }),
+          h("input", { class: "oqty", type: "number", min: "0", step: "any", value: String(Number(li.qty) || 0), disabled: readOnly, "aria-label": "Quantité : " + li.label, onchange: function (e) { saveUrgItem(li, { qty: Math.max(0, num(e.target.value)) }); } }),
+          h("input", { type: "date", value: li.expiry || "", disabled: readOnly, "aria-label": "Péremption : " + li.label, onchange: function (e) { saveUrgItem(li, { expiry: e.target.value || null }); } }),
+          expChip(li),
+          readOnly ? h("div") : h("button", { class: "dots", type: "button", "aria-label": "Retirer " + li.label, title: "Retirer", onclick: function () { deleteUrgItem(li); }, text: "×" })));
+      });
+      sec.append(tbl);
+      if (!readOnly) {
+        var inp = h("input", { id: "urgNew", placeholder: "Ajouter un élément (ex. Adrénaline)", maxlength: "80", autocomplete: "off" });
+        var add = h("button", { class: "btn sm", type: "button", text: "Ajouter", onclick: function () { addUrgItem(urg, inp.value); } });
+        inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); addUrgItem(urg, inp.value); } });
+        sec.append(h("div", { class: "urgadd" }, inp, add));
+        var have = its.map(function (x) { return norm(x.label); });
+        var sug = h("div", { class: "urgsug" });
+        URG_SUGGEST.filter(function (s) { return have.indexOf(norm(s)) === -1; }).forEach(function (s) { sug.append(h("button", { class: "btn sm", type: "button", onclick: function () { addUrgItem(urg, s); }, text: "+ " + s })); });
+        if (sug.children.length) { sec.append(h("div", { class: "meta", text: "Suggestions (à adapter à votre protocole) :" })); sec.append(sug); }
+      }
+      sec.append(h("details", { class: "chist" }, h("summary", { text: "Historique des contrôles" }), logLines(urg, 8)));
+    }
+    box.append(sec);
+    var sec2 = h("div", { class: "ctlsec" }, h("h3", { text: "Contrôles périodiques" }));
+    var per = ctlList.filter(function (c) { return c.kind !== "urgence"; }).sort(function (a, b) { return (ctlDue(a) || 0) - (ctlDue(b) || 0); });
+    if (!per.length) sec2.append(h("div", { class: "meta", text: "Aucun contrôle pour le moment : autoclave, déchets, radioprotection, compresseur… Ajoutez ceux de votre cabinet, avec leur fréquence. Les idées proposées sont à adapter à vos obligations réelles." }));
+    per.forEach(function (c) {
+      var room = c.salle_id ? roomById(c.salle_id) : null;
+      sec2.append(h("div", { class: "ctlrow" },
+        h("div", { class: "cmain" },
+          h("div", { class: "cname" }, room ? h("i", { class: "cdot", style: "background:" + room.color, title: room.name }) : null, c.name),
+          h("div", { class: "meta", text: [CTL_CATS[c.category] || "", (CTL_EVERY.find(function (e) { return e[0] === Number(c.every_days); }) || [0, "Tous les " + c.every_days + " jours"])[1].toLowerCase(), room ? room.name : "", c.last_done_at ? "dernier : " + frDateMs(Date.parse(c.last_done_at)) + (c.last_done_by ? " par " + String(c.last_done_by).split("@")[0] : "") : "jamais effectué"].filter(Boolean).join(" · ") }),
+          h("details", { class: "chist" }, h("summary", { text: "Historique" }), logLines(c, 6))),
+        ctlChip(c),
+        readOnly ? null : h("div", { class: "cact" },
+          h("button", { class: "btn sm", type: "button", onclick: function () { openDone(c); }, text: "Marquer comme fait" }),
+          dotsBtn(function () { var e = [["Modifier", function () { openCtl(c); }]]; if (isAdmin) e.push(["Supprimer", function () { deleteControl(c); }]); return e; }, "Plus d'actions pour " + c.name))));
+    });
+    if (!readOnly) sec2.append(h("div", { class: "ctlact" }, h("button", { class: "btn", type: "button", onclick: function () { openCtl(null); }, text: "＋ Ajouter un contrôle" })));
+    box.append(sec2);
+  }
+
   function updateSelBar() {
     var n = state.sel.size;
     $("selbar").classList.toggle("hidden", !(state.select && state.tab === "inventaire"));
@@ -2222,6 +2911,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function renderAlerts() {
     var all = Array.from(items.values());
     var bas = 0, rupt = 0, exp = 0, total = 0, soon = 0, flagged = 0;
+    var ctlN = ctlOk ? ctlProblems() : 0;
+    $("ctlBadge").textContent = ctlN ? " (" + ctlN + ")" : "";
     all.forEach(function (it) {
       if (it.flag_at && it.tracked !== false && !(it.ordered_qty > 0)) flagged++;
       var s = statusOf(it);
@@ -2234,7 +2925,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var home = state.tab === "inventaire" && isHome();
     $("stockValue").textContent = (home && all.length) ? "Valeur du stock (hors équipement) : " + money(total) + " HT · " + money(total * (1 + TVA / 100)) + " TTC (TVA " + TVA + " %)" : "";
     var box = $("alerts"); box.textContent = "";
-    box.classList.toggle("hidden", !home || (!bas && !rupt && !exp && !soon && !flagged));
+    box.classList.toggle("hidden", !home || (!bas && !rupt && !exp && !soon && !flagged && !ctlN));
     var mk = function (n, label, filter, cls) {
       if (!n) return;
       box.append(h("button", { class: "alert " + cls, onclick: function () { state.filter = filter; state.cat = ""; render(); } },
@@ -2246,6 +2937,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (soon) box.append(h("button", { class: "alert a-bas", onclick: function () { state.filter = "all"; state.cat = ""; state.f.status = "soon"; state.f.sort = "autonomie"; render(); } },
       h("strong", { text: String(soon) }), " bientôt en rupture (moins de 15 jours de stock)"));
     if (flagged) box.append(h("button", { class: "alert a-bas", onclick: function () { goTab("commande"); } }, h("strong", { text: String(flagged) }), " signalé" + (flagged > 1 ? "s" : "") + " « presque plus »"));
+    if (ctlN) box.append(h("button", { class: "alert a-rupt", onclick: function () { goTab("controles"); } }, h("strong", { text: String(ctlN) }), " contrôle" + (ctlN > 1 ? "s" : "") + " en retard ou périmé" + (ctlN > 1 ? "s" : "")));
   }
 
   // Couleur du chiffre : plus de 30 vert, de 10 à 30 orange, sous 10 orange foncé, 0 rouge
@@ -2410,6 +3102,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
             h("button", { class: "star" + (it.favorite ? " on" : ""), title: it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", "aria-label": it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", onclick: function () { toggleFav(it); }, text: it.favorite ? "★" : "☆" }),
             flagBtn(it),
             h("button", { class: "item-name", onclick: function () { openItem(it); }, text: it.name || "(sans nom)" }),
+            roomDots(it),
             it.description ? h("span", { class: "desc", text: it.description }) : null),
           h("div", { class: "meta c-meta", text: meta.join(" · ") })),
         qtyCell(it, unit),
@@ -2908,6 +3601,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     else if (state.tab === "favoris") renderFavorites(box);
     else if (state.tab === "commande") renderOrder(box);
     else if (state.tab === "comptage") renderCount(box);
+    else if (state.tab === "salles") renderRooms(box);
+    else if (state.tab === "controles") renderControls(box);
     else renderHistory(box);
   }
   function syncTabs() {
@@ -4281,6 +4976,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       state.filter = "all";
       syncTabs(); render();
       if (target === "utilisateurs") loadUsers();
+      if (target === "salles") loadRooms();
+      if (target === "controles") loadControls();
     });
   });
   var searchTimer = null;
@@ -4798,6 +5495,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     }).catch(function () { arcOk = false; });
     loadAchats();
     loadConso();
+    loadRooms();
+    loadControls();
     fetchAll(function () { return sb.from("lots").select("*").eq("cabinet_id", cid).order("id"); }).then(function (res) {
       if (cid !== cabinetId) return;
       if (res.error) { lotsOk = false; return; }
@@ -4833,7 +5532,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function stopData() {
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     channels = []; started = false;
-    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] };
+    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
   }
   function showScreen(which) {
     $("login").classList.toggle("hidden", which !== "login");
@@ -4947,6 +5646,20 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   $("seuilDays").addEventListener("change", drawSeuils);
   $("seuilCancel").addEventListener("click", function () { $("seuilDlg").close(); });
   $("seuilApply").addEventListener("click", applySeuils);
+  $("roomCfgClose").addEventListener("click", function () { $("roomCfgDlg").close(); });
+  $("newRoomAdd").addEventListener("click", function () { addRoom($("newRoomName").value, $("newRoomKind").value); $("newRoomName").value = ""; });
+  $("newRoomName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("newRoomAdd").click(); } });
+  $("roomAddSearch").addEventListener("input", drawRoomAdd);
+  $("roomAddCancel").addEventListener("click", function () { $("roomAddDlg").close(); });
+  $("roomAddOk").addEventListener("click", saveRoomAdd);
+  $("ctlOkBtn").addEventListener("click", saveCtl);
+  $("ctlCancel").addEventListener("click", function () { $("ctlDlg").close(); });
+  $("ctlDel").addEventListener("click", function () { var c = ctlEditing; $("ctlDlg").close(); if (c) deleteControl(c); });
+  $("ctlName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); saveCtl(); } });
+  $("ctlDoneCancel").addEventListener("click", function () { $("ctlDoneDlg").close(); });
+  $("ctlDoneOk").addEventListener("click", function () { var c = doneFor; $("ctlDoneDlg").close(); if (c) markDone(c, $("ctlDoneDate").value, $("ctlDoneNote").value.trim(), true); });
+  $("ctlCheckCancel").addEventListener("click", function () { $("ctlCheckDlg").close(); });
+  $("ctlCheckOk").addEventListener("click", saveCheck);
   $("kBtn").addEventListener("click", openPalette);
   $("helpBtn").addEventListener("click", openHelp);
   $("helpClose").addEventListener("click", function () { $("helpDlg").close(); });
