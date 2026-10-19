@@ -818,7 +818,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v63</div>
+            <div class="menu-who"><span id="who"></span> · v64</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -1392,6 +1392,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 
   // ---------- état ----------
   var cfg = window.SIMSIM_CONFIG || {};
+  // Ouvert par le bouton « Ajouter à SimSimStock » depuis une fiche produit : l'adresse se termine par #ajout
+  var incomingAdd = (location.hash === "#ajout"), incomingTimer = null;
+  try { if (incomingAdd) history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
   var TVA = (cfg.tva != null && isFinite(Number(cfg.tva))) ? Number(cfg.tva) : 20;
   var siteName = (cfg.name && String(cfg.name).indexOf("NOM_DU_CABINET") === -1) ? String(cfg.name) : "SimSimStock";
   document.title = siteName;
@@ -3751,6 +3754,68 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     else if (d.debug.prixIncertain) extra.push("La page ne dit pas si le prix est HT ou TTC : vérifiez-le.");
     if (extra.length) setTimeout(function () { $("linkMsg").append(" " + extra.join(" ")); }, 30);
   }
+  // ---------- recevoir un produit envoyé par le bouton du navigateur (depuis la page du fournisseur) ----------
+  function startIncoming() {
+    if (!incomingAdd) return;
+    if (!window.opener) {
+      incomingAdd = false; openItem(null); $("pasteBox").open = true;
+      setTimeout(function () { try { $("pasteText").focus(); } catch (e) {} }, 60);
+      toast("Collez ici le texte de la fiche (Cmd + V) : le bouton l'a copié depuis la page du produit.");
+      return;
+    }
+    var n = 0, say = function () { try { window.opener.postMessage({ simsim: "pret" }, "*"); } catch (e) {} };
+    clearInterval(incomingTimer); say();
+    incomingTimer = setInterval(function () { n++; say(); if (n > 40) clearInterval(incomingTimer); }, 800);
+    toast("Lecture de la fiche produit…");
+  }
+  function ldProduct(arr) {
+    var found = null;
+    (function walk(x) {
+      if (!x || found) return;
+      if (Array.isArray(x)) { x.forEach(walk); return; }
+      if (typeof x !== "object") return;
+      var t = x["@type"];
+      if (t === "Product" || (Array.isArray(t) && t.indexOf("Product") !== -1)) { found = x; return; }
+      if (x["@graph"]) walk(x["@graph"]);
+    })(arr);
+    return found || {};
+  }
+  function strOf(v, max) { return typeof v === "string" || typeof v === "number" ? String(v).replace(/\s+/g, " ").trim().slice(0, max || 200) : ""; }
+  function receiveProduct(p) {
+    p = p && typeof p === "object" ? p : {};
+    var ld = ldProduct(Array.isArray(p.ld) ? p.ld : []), text = strOf(String(p.text || "").slice(0, 40000), 40000);
+    var rawText = String(p.text || "").slice(0, 40000);
+    var ft = parsePastedProduct(rawText), host = "";
+    try { host = new URL(String(p.url || "")).hostname; } catch (e) {}
+    var offer = Array.isArray(ld.offers) ? ld.offers[0] : ld.offers, lp = null;
+    if (offer && typeof offer === "object") { var v = parseFloat(String(offer.price != null ? offer.price : (offer.lowPrice != null ? offer.lowPrice : "")).replace(",", ".")); if (isFinite(v) && v > 0) lp = v; }
+    var brand = ld.brand && typeof ld.brand === "object" ? strOf(ld.brand.name, 60) : strOf(ld.brand, 60);
+    var title = strOf(p.title, 160).replace(/\s*[|\-–—]\s*(?:gacd|boutique.*|achat.*)$/i, "");
+    var d = {
+      ok: true, host: host, url: strOf(p.url, 300),
+      name: strOf(ld.name, 160) || ft.name || title,
+      ref: strOf(ld.sku, 40) || strOf(ld.mpn, 40) || ft.ref,
+      brand: brand || ft.brand,
+      description: strOf(ld.description, 220) || ft.description,
+      price: lp != null ? lp : ft.price, currency: offer && offer.priceCurrency ? strOf(offer.priceCurrency, 5) : "EUR",
+      barcode: strOf(ld.gtin13 || ld.gtin14 || ld.gtin8 || ld.gtin || ft.barcode, 14).replace(/\D/g, ""),
+      debug: { trouve: ["envoyé depuis le navigateur", ld.name ? "json-ld" : "texte de la page"], source: "bouton du navigateur", prixConverti: lp == null && ft.debug && ft.debug.prixConverti, prixIncertain: lp == null && ft.debug && ft.debug.prixIncertain }
+    };
+    var img = typeof p.imageData === "string" && /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(p.imageData) && p.imageData.length < 250000 ? p.imageData : "";
+    if (img) d.imageData = img;
+    clearInterval(incomingTimer); incomingAdd = false;
+    openItem(null);
+    applyLink(d);
+    var note = d.debug.prixConverti ? " Le prix de la page était TTC : converti en HT (TVA " + TVA + " %)." : (d.debug.prixIncertain ? " La page ne dit pas si le prix est HT ou TTC : vérifiez-le." : "");
+    if (note) setTimeout(function () { $("linkMsg").append(note); }, 40);
+    toast("Fiche reçue depuis " + (host || "la page du produit") + " : vérifiez, puis enregistrez.");
+  }
+  window.addEventListener("message", function (e) {
+    var m = e && e.data;
+    if (!m || m.simsim !== "produit" || !window.opener || e.source !== window.opener) return;
+    if (!db || readOnly) { toast(readOnly ? "Votre compte est en lecture seule : impossible d'ajouter un produit." : "Connectez-vous d'abord."); return; }
+    receiveProduct(m.d);
+  });
   function fillFromLink() {
     var url = $("f_link").value.trim();
     if (!/^https?:\/\//i.test(url)) { linkSay("Collez l'adresse complète de la page du produit (elle commence par https://).", true); return; }
@@ -6690,6 +6755,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     state.tab = "inventaire"; state.filter = "all"; state.cat = ""; state.q = ""; state.view = ""; $("search").value = "";
     syncTabs(); showScreen("app"); startData(); render();
     if (welcomePw) { welcomePw = false; toast("Bienvenue ! Choisissez un mot de passe pour vous reconnecter facilement."); openPw(null); }
+    else if (incomingAdd) startIncoming();
     else maybeTour();
   }
   function loadCabinets() {
