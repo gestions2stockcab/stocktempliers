@@ -813,7 +813,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v59</div>
+            <div class="menu-who"><span id="who"></span> · v60</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -3602,7 +3602,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     site_non_autorise: "Ce site n'est pas autorisé : la fonction ne lit que les sites de sa liste (GACD par défaut).",
     pas_une_page: "Cette adresse ne mène pas à une page web.",
     page_trop_grande: "Cette page est trop lourde pour être lue.",
-    trop_de_redirections: "Cette adresse renvoie trop de fois vers d'autres pages."
+    trop_de_redirections: "Cette adresse renvoie trop de fois vers d'autres pages.",
+    non_connecte: "La fonction ne reconnaît pas votre connexion : déconnectez-vous puis reconnectez-vous à SimSimStock, et réessayez."
   };
   function linkErrText(code) {
     code = String(code || "");
@@ -3658,7 +3659,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var base = st === 404 ? "La fonction « produit-depuis-lien » est introuvable (erreur 404) : elle n'est pas déployée, ou son nom est différent dans Supabase."
       : (st === 401 || st === 403) ? "Supabase refuse l'appel (erreur " + st + ") : reconnectez-vous ; si cela continue, c'est la vérification de connexion de la fonction (« Verify JWT ») qui bloque."
       : st >= 500 ? "La fonction plante (erreur " + st + ") : ouvrez ses Logs dans Supabase, il y a sans doute un reste du code d'exemple ou une faute au collage."
-      : /fetcherror|failed to fetch|networkerror|load failed/i.test(name + " " + msg) ? "L'appel n'atteint pas la fonction (réseau, ou fonction absente) : vérifiez qu'elle est bien déployée, avec ce nom exact."
+      : /fetcherror|failed to fetch|networkerror|load failed/i.test(name + " " + msg) ? "L'appel n'atteint pas la fonction. Vérifiez qu'elle est déployée sous le nom exact « produit-depuis-lien », puis, dans ses réglages Supabase, désactivez « Verify JWT » (la fonction vérifie elle-même votre connexion)."
       : "La fonction « produit-depuis-lien » ne répond pas : est-elle installée dans Supabase ? (voir le guide pas à pas)";
     try { $("linkDiagText").textContent = JSON.stringify({ erreur: name || null, statut: st || null, message: msg || null }, null, 2); $("linkDiag").classList.remove("hidden"); } catch (x) {}
     return base;
