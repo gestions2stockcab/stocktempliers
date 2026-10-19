@@ -813,7 +813,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v58</div>
+            <div class="menu-who"><span id="who"></span> · v59</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -3651,6 +3651,18 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       linkSay(txt, !filled.length || !!dup, openBtn);
     });
   }
+  // Dit pourquoi l'appel de la fonction a échoué (introuvable, refusé, plantée, réseau)
+  function linkFnErr(e) {
+    var st = e && e.context && typeof e.context.status === "number" ? e.context.status : 0;
+    var name = (e && e.name) || "", msg = (e && e.message) || "";
+    var base = st === 404 ? "La fonction « produit-depuis-lien » est introuvable (erreur 404) : elle n'est pas déployée, ou son nom est différent dans Supabase."
+      : (st === 401 || st === 403) ? "Supabase refuse l'appel (erreur " + st + ") : reconnectez-vous ; si cela continue, c'est la vérification de connexion de la fonction (« Verify JWT ») qui bloque."
+      : st >= 500 ? "La fonction plante (erreur " + st + ") : ouvrez ses Logs dans Supabase, il y a sans doute un reste du code d'exemple ou une faute au collage."
+      : /fetcherror|failed to fetch|networkerror|load failed/i.test(name + " " + msg) ? "L'appel n'atteint pas la fonction (réseau, ou fonction absente) : vérifiez qu'elle est bien déployée, avec ce nom exact."
+      : "La fonction « produit-depuis-lien » ne répond pas : est-elle installée dans Supabase ? (voir le guide pas à pas)";
+    try { $("linkDiagText").textContent = JSON.stringify({ erreur: name || null, statut: st || null, message: msg || null }, null, 2); $("linkDiag").classList.remove("hidden"); } catch (x) {}
+    return base;
+  }
   function fillFromLink() {
     var url = $("f_link").value.trim();
     if (!/^https?:\/\//i.test(url)) { linkSay("Collez l'adresse complète de la page du produit (elle commence par https://).", true); return; }
@@ -3658,7 +3670,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     $("linkGo").disabled = true; linkSay("Lecture de la page…", false);
     sb.functions.invoke("produit-depuis-lien", { body: { url: url } }).then(function (res) {
       $("linkGo").disabled = false;
-      if (res.error) { linkSay("La fonction « produit-depuis-lien » ne répond pas : est-elle installée dans Supabase ? (voir le guide pas à pas)", true); return; }
+      if (res.error) { linkSay(linkFnErr(res.error), true); return; }
       var d = res.data || {};
       if (!d.ok) { linkSay(linkErrText(d.error), true); return; }
       applyLink(d);
