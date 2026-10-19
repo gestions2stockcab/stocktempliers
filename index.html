@@ -732,6 +732,15 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .addfilters { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0; }
 .addfilters select, .addfilters input { padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); font:inherit; min-width:0; }
 .addfilters input { flex:1 1 160px; }
+
+/* ===== v58 : ajout d'un produit par son lien ===== */
+.linkbox { background:var(--surface-2); border-radius:12px; padding:10px 12px; }
+.linkrow { display:flex; gap:8px; margin-top:4px; }
+.linkrow input { flex:1; min-width:0; }
+#linkMsg { margin-top:6px; }
+#linkMsg.warn { color:var(--warn); }
+#linkDiag { margin-top:6px; font-size:13px; }
+#linkDiagText { white-space:pre-wrap; overflow-wrap:anywhere; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:8px; font-size:12px; max-height:200px; overflow:auto; }
 </style>
 </head>
 <body>
@@ -804,7 +813,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v57</div>
+            <div class="menu-who"><span id="who"></span> · v58</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -877,6 +886,16 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   <div class="dlg">
     <h2 id="itemTitle">Nouvel article</h2>
     <div class="grid">
+      <div class="full linkbox" id="linkBox">
+        <label class="f full">Coller le lien d'un produit (GACD…)
+          <div class="linkrow">
+            <input id="f_link" type="url" inputmode="url" autocomplete="off" placeholder="https://www.gacd.fr/…">
+            <button class="btn sm primary" id="linkGo" type="button">Remplir</button>
+          </div>
+        </label>
+        <div class="sub" id="linkMsg" aria-live="polite"></div>
+        <details class="hidden" id="linkDiag"><summary>Voir ce qui a été lu</summary><pre id="linkDiagText"></pre><button class="btn sm" id="linkDiagCopy" type="button">Copier ce diagnostic</button></details>
+      </div>
       <label class="f full">Nom de l'article
         <input id="f_name" autocomplete="off" placeholder="Ex. Gants nitrile taille M">
       </label>
@@ -917,6 +936,13 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       <details class="full more">
         <summary>Plus de détails (facultatif)</summary>
         <div class="grid">
+          <label class="f">Référence
+            <input id="f_ref" autocomplete="off" placeholder="Ex. 12-135">
+          </label>
+          <label class="f">Fournisseur
+            <input id="f_supplier" list="dl_sup" autocomplete="off" placeholder="Ex. GACD">
+            <datalist id="dl_sup"></datalist>
+          </label>
           <label class="f">Unité
             <input id="f_unit" autocomplete="off" placeholder="boîte, tube, pièce…">
           </label>
@@ -2212,7 +2238,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
   // ---------- aide et visite guidée ----------
   var HELP = {
-    inventaire: ["Stock", "Choisissez un domaine, puis utilisez « − » et « + » pour sortir ou ajouter une unité. Cliquez sur le chiffre pour saisir plusieurs unités (des boutons 1, 2, 5, 10… vont plus vite que le clavier) ou un numéro de lot. Cliquez sur le nom pour ouvrir la fiche de l'article. Sur téléphone, balayez une ligne vers la gauche pour sortir 1, vers la droite pour ajouter 1. Quand des salles sont configurées, les puces au-dessus de la liste (Total, puis une par salle) ouvrent la salle comme un stock à part, avec les mêmes écrans : « − » = utilisé dans la salle, « + » = pris dans le stock central, clic sur le chiffre pour une entrée, une sortie, un comptage ou un déplacement. Le petit onglet ⇄ à droite de la quantité se déplie pour mettre du stock dans une salle (ou le reprendre) en un clic ; la fenêtre qui s'ouvre en cliquant sur le chiffre propose aussi « Déplacer »."],
+    inventaire: ["Stock", "Choisissez un domaine, puis utilisez « − » et « + » pour sortir ou ajouter une unité. Cliquez sur le chiffre pour saisir plusieurs unités (des boutons 1, 2, 5, 10… vont plus vite que le clavier) ou un numéro de lot. Cliquez sur le nom pour ouvrir la fiche de l'article. Sur téléphone, balayez une ligne vers la gauche pour sortir 1, vers la droite pour ajouter 1. Pour ajouter un produit sans tout taper : « + Ajouter », puis collez le lien de sa page chez GACD et cliquez sur « Remplir ». Quand des salles sont configurées, les puces au-dessus de la liste (Total, puis une par salle) ouvrent la salle comme un stock à part, avec les mêmes écrans : « − » = utilisé dans la salle, « + » = pris dans le stock central, clic sur le chiffre pour une entrée, une sortie, un comptage ou un déplacement. Le petit onglet ⇄ à droite de la quantité se déplie pour mettre du stock dans une salle (ou le reprendre) en un clic ; la fenêtre qui s'ouvre en cliquant sur le chiffre propose aussi « Déplacer »."],
     favoris: ["Favoris", "Les produits que vous sortez le plus, en grosses cartes avec « − 1 » et « + 1 ». Pour y ajouter un produit, cliquez sur l'étoile à côté de son nom dans l'onglet Stock."],
     commande: ["À commander", "Les produits sous leur seuil, regroupés par fournisseur. « Marquer comme commandé » les met de côté pour ne pas les recommander ; « Reçu » enregistre l'arrivée du stock."],
     comptage: ["Comptage", "L'écran de l'inventaire : saisissez ce que vous avez compté en rayon, puis « Enregistrer le comptage ». Les écarts sont gardés dans l'Historique."],
@@ -3532,6 +3558,112 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     }
     return roomRemove(it, rid, q, reasonOk ? $("adjReason").value : "", note);
   }
+  // ---------- ajouter un produit depuis un lien (site fournisseur) ----------
+  var SUPPLIER_BY_HOST = { "gacd.fr": "GACD" };
+  function supplierFromHost(host) {
+    host = String(host || "").toLowerCase().replace(/^www\./, "");
+    var keys = Object.keys(SUPPLIER_BY_HOST);
+    for (var i = 0; i < keys.length; i++) if (host === keys[i] || host.slice(-keys[i].length - 1) === "." + keys[i]) return SUPPLIER_BY_HOST[keys[i]];
+    var base = host.split(".").slice(-2, -1)[0] || host;
+    return base.charAt(0).toUpperCase() + base.slice(1);
+  }
+  var CUSTOM_DOM_HINTS = [
+    ["Équipement et instruments", /lampe|photopolym|curing|autoclave|compresseur|pince|miroir|sonde|instrument|contre-angle|turbine|moteur|detartreur|ultrason|camera/],
+    ["Fraises et polissage", /fraise|polissage|polisseur|disque|strip|cupule|brossette|meulette/]
+  ];
+  function guessDomainSmart(name) {
+    var d = guessDomain(name);
+    if (d !== "Consommables") return d;
+    var n = norm(name), known = domainList();
+    for (var i = 0; i < CUSTOM_DOM_HINTS.length; i++) if (CUSTOM_DOM_HINTS[i][1].test(n) && known.indexOf(CUSTOM_DOM_HINTS[i][0]) !== -1) return CUSTOM_DOM_HINTS[i][0];
+    return d;
+  }
+  function makeThumbFromDataUrl(src) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () {
+        var S = 160, c = document.createElement("canvas"); c.width = S; c.height = S;
+        var side = Math.min(img.width, img.height), sx = (img.width - side) / 2, sy = (img.height - side) / 2;
+        c.getContext("2d").drawImage(img, sx, sy, side, side, 0, 0, S, S);
+        resolve(c.toDataURL("image/jpeg", 0.72));
+      };
+      img.onerror = function () { reject(new Error("image")); };
+      img.src = src;
+    });
+  }
+  function fillSupList() {
+    var set = new Set(); items.forEach(function (x) { var v = (x.supplier || "").trim(); if (v) set.add(v); });
+    var dl = $("dl_sup"); dl.textContent = "";
+    Array.from(set).sort(function (a, b) { return norm(a).localeCompare(norm(b)); }).forEach(function (v) { dl.append(h("option", { value: v })); });
+  }
+  var LINK_ERR = {
+    adresse_invalide: "Cette adresse n'est pas valide. Collez l'adresse complète de la page du produit.",
+    https_requis: "L'adresse doit commencer par https://.",
+    site_non_autorise: "Ce site n'est pas autorisé : la fonction ne lit que les sites de sa liste (GACD par défaut).",
+    pas_une_page: "Cette adresse ne mène pas à une page web.",
+    page_trop_grande: "Cette page est trop lourde pour être lue.",
+    trop_de_redirections: "Cette adresse renvoie trop de fois vers d'autres pages."
+  };
+  function linkErrText(code) {
+    code = String(code || "");
+    if (LINK_ERR[code]) return LINK_ERR[code];
+    var m = code.match(/^page_inaccessible_(\d+)$/);
+    if (m) return m[1] === "404" ? "La page n'existe pas (erreur 404) : vérifiez l'adresse." : (m[1] === "401" || m[1] === "403") ? "Le site refuse de montrer cette page (il demande peut-être une connexion)." : "Le site ne répond pas correctement (erreur " + m[1] + ").";
+    return "Lecture impossible" + (code ? " : " + code : ".");
+  }
+  function linkSay(text, warn, extra) {
+    var el = $("linkMsg"); el.textContent = text; el.classList.toggle("warn", !!warn);
+    if (extra) el.append(" ", extra);
+  }
+  function resetLinkBox() {
+    $("f_link").value = ""; $("linkMsg").textContent = ""; $("linkMsg").classList.remove("warn");
+    $("linkDiag").classList.add("hidden"); $("linkDiag").open = false; $("linkDiagText").textContent = "";
+    $("linkBox").classList.toggle("hidden", readOnly);
+  }
+  function applyLink(d) {
+    var filled = [];
+    var readable = !!(d.name || d.ref || d.price != null);
+    var put = function (id, label, v) {
+      if (!readable) return;
+      if (v == null || v === "") return;
+      var el = $(id), cur = String(el.value || "").trim();
+      if (cur !== "" && cur !== "0") return;
+      el.value = v; filled.push(label);
+    };
+    put("f_name", "nom", d.name);
+    put("f_ref", "référence", d.ref);
+    put("f_supplier", "fournisseur", supplierFromHost(d.host));
+    var desc = [d.brand && norm(d.name || "").indexOf(norm(d.brand)) === -1 ? d.brand : "", d.description].filter(Boolean).join(" · ").slice(0, 160);
+    put("f_description", "description", desc);
+    if (d.price != null) put("f_price", "prix", String(d.price));
+    put("f_barcode", "code-barres", d.barcode);
+    if (readable && !state.editing && d.name) { var dom = guessDomainSmart(d.name); if (dom && dom !== "Consommables") { fillDomainSelect(dom); $("f_category").value = dom; fillSubList(); filled.push("domaine"); } }
+    if (filled.some(function (x) { return x === "référence" || x === "fournisseur" || x === "prix" || x === "code-barres"; })) document.querySelector("#itemDlg details.more").open = true;
+    var dup = d.ref ? Array.from(items.values()).find(function (x) { return x.ref && norm(x.ref) === norm(d.ref) && (!state.editing || x.id !== state.editing.id); }) : null;
+    var photoP = (d.imageData && photoOk && !photoDraft) ? makeThumbFromDataUrl(d.imageData).then(function (t) { photoDraft = t; renderPhotoBox(); filled.push("photo"); }, function () {}) : Promise.resolve();
+    photoP.then(function () {
+      var diag = { site: d.host, adresse: d.url, trouve: (d.debug && d.debug.trouve) || [], jsonLd: d.debug && d.debug.jsonLd, produitJsonLd: d.debug && d.debug.produitJsonLd, meta: d.debug && d.debug.meta, titre: d.debug && d.debug.titre, photo: d.imageData ? "lue" : (d.image ? "non rapatriée" : "aucune"), prix: d.price, devise: d.currency };
+      $("linkDiagText").textContent = JSON.stringify(diag, null, 2); $("linkDiag").classList.remove("hidden");
+      var txt = filled.length ? "Lu sur la page : " + filled.join(", ") + ". Vérifiez, complétez, puis enregistrez." : "Rien d'exploitable n'a été trouvé sur cette page (elle demande peut-être une connexion, ou ses informations sont chargées autrement).";
+      if (d.price != null) txt += " Prix lu : " + money(d.price) + (d.currency && d.currency !== "EUR" ? " (" + d.currency + ")" : "") + " : vérifiez qu'il est bien HT.";
+      var openBtn = dup ? h("button", { class: "btn sm", type: "button", onclick: function () { $("itemDlg").close(); openItem(dup); }, text: "Ouvrir « " + dup.name + " »" }) : null;
+      if (dup) txt += " Attention : la référence « " + d.ref + " » existe déjà.";
+      linkSay(txt, !filled.length || !!dup, openBtn);
+    });
+  }
+  function fillFromLink() {
+    var url = $("f_link").value.trim();
+    if (!/^https?:\/\//i.test(url)) { linkSay("Collez l'adresse complète de la page du produit (elle commence par https://).", true); return; }
+    if (!sb.functions || !sb.functions.invoke) { linkSay("Cette version de l'appli ne sait pas appeler la fonction de lecture.", true); return; }
+    $("linkGo").disabled = true; linkSay("Lecture de la page…", false);
+    sb.functions.invoke("produit-depuis-lien", { body: { url: url } }).then(function (res) {
+      $("linkGo").disabled = false;
+      if (res.error) { linkSay("La fonction « produit-depuis-lien » ne répond pas : est-elle installée dans Supabase ? (voir le guide pas à pas)", true); return; }
+      var d = res.data || {};
+      if (!d.ok) { linkSay(linkErrText(d.error), true); return; }
+      applyLink(d);
+    }, function () { $("linkGo").disabled = false; linkSay("Connexion impossible. Vérifiez votre accès à internet.", true); });
+  }
   function updateSelBar() {
     var n = state.sel.size;
     $("selbar").classList.toggle("hidden", !(state.select && state.tab === "inventaire"));
@@ -4445,7 +4577,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
 
   // ---------- boîtes de dialogue ----------
-  var FIELDS = ["name", "category", "location", "unit", "qty", "min", "target", "lot", "expiry", "price", "barcode", "description", "subcategory", "pack"];
+  var FIELDS = ["name", "category", "location", "unit", "qty", "min", "target", "lot", "expiry", "price", "barcode", "description", "subcategory", "pack", "ref", "supplier"];
   function fillDomainSelect(current) {
     var sel = $("f_category");
     var list = DOMAINS.concat([EQUIP]);
@@ -4726,7 +4858,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       el.value = v;
       el.disabled = readOnly;
     });
-    fillSubList();
+    fillSubList(); fillSupList(); resetLinkBox();
     if (!(it && it.pack > 0)) $("f_pack").value = "";
     $("packBox").classList.toggle("hidden", !packOk);
     $("f_fav").checked = !!(it && it.favorite); $("f_fav").disabled = readOnly;
@@ -4744,8 +4876,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     return {
       name: $("f_name").value.trim(),
       category: ($("f_category").value === "__new__" ? $("f_category_new").value : $("f_category").value).trim(),
-      supplier: state.editing ? (state.editing.supplier || "") : "",
-      ref: state.editing ? (state.editing.ref || "") : "",
+      supplier: $("f_supplier").value.trim(),
+      ref: $("f_ref").value.trim(),
       location: $("f_location").value.trim(),
       unit: $("f_unit").value.trim(),
       qty: Math.max(0, num($("f_qty").value)),
@@ -5862,6 +5994,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (f) uploadDoc(f);
   });
   $("itemCancel").addEventListener("click", function () { $("itemDlg").close(); });
+  $("linkGo").addEventListener("click", fillFromLink);
+  $("f_link").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); fillFromLink(); } });
+  $("linkDiagCopy").addEventListener("click", function () { copyText($("linkDiagText").textContent); });
   $("photoAdd").addEventListener("click", function () { $("photoFile").click(); });
   $("photoFile").addEventListener("change", function (e) {
     var f = e.target.files && e.target.files[0]; e.target.value = "";
