@@ -606,7 +606,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 @media (max-width: 760px) { .bottombar .bb-scan span:first-child { background:var(--grad); } }
 @media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }
 
-/* ===== v50 : cabinets de soins et contrôles ===== */
+/* ===== v50 : salles de soins et contrôles ===== */
 .roomdots { display:inline-flex; gap:3px; align-items:center; margin-left:2px; }
 .roomdots i { width:9px; height:9px; border-radius:50%; display:inline-block; }
 .roomchips { display:flex; flex-wrap:wrap; gap:8px; margin:4px 0 14px; align-items:center; }
@@ -701,7 +701,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .btn.danger { background:var(--bad); color:#fff; border-color:var(--bad); }
 .btn.danger:disabled { opacity:.45; cursor:not-allowed; }
 
-/* ===== v52 : vue du stock par cabinet ===== */
+/* ===== v52 : vue du stock par salle ===== */
 #viewBar { margin:0 0 12px; }
 #itemRooms { margin:10px 0 4px; }
 #itemRooms .roomchips { margin:6px 0 0; }
@@ -721,12 +721,12 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .mvdest .roomchip { white-space:nowrap; flex:none; padding:6px 12px 6px 10px; }
 @media (prefers-reduced-motion: reduce) { .rowmove { transition:none; } }
 
-/* ===== v56 : chaque cabinet comme le stock central ===== */
+/* ===== v56 : chaque salle comme le stock central ===== */
 .roomstrip { --rc:#2F67FF; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center; background:var(--surface); border:1px solid var(--line); border-left:6px solid var(--rc); border-radius:14px; padding:10px 14px; margin:0 0 12px; }
 .rs-t { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 .rs-t i { width:12px; height:12px; border-radius:50%; background:var(--rc); flex:none; }
 
-/* ===== v57 : ajouter les produits d'un domaine à un cabinet ===== */
+/* ===== v57 : ajouter les produits d'un domaine à une salle ===== */
 .roomaddsec { margin-top:16px; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:12px 16px; box-shadow:var(--shadow); }
 .roomaddsec .adminhead h3 { font-size:15px; }
 .addfilters { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0; }
@@ -818,7 +818,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v65</div>
+            <div class="menu-who"><span id="who"></span> · v67</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -843,7 +843,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     <button class="tab" role="tab" data-tab="favoris" aria-selected="false"><span class="ti">⭐</span><span class="tl">Favoris</span></button>
     <button class="tab" role="tab" data-tab="commande" aria-selected="false"><span class="ti">🛒</span><span class="tl">À commander</span></button>
     <button class="tab" role="tab" data-tab="comptage" aria-selected="false"><span class="ti">🔢</span><span class="tl">Comptage</span></button>
-    <button class="tab" role="tab" data-tab="salles" aria-selected="false"><span class="ti">🏠</span><span class="tl">Cabinets</span></button>
+    <button class="tab" role="tab" data-tab="salles" aria-selected="false"><span class="ti">🏠</span><span class="tl">Salles</span></button>
     <button class="tab" role="tab" data-tab="controles" aria-selected="false"><span class="ti">✅</span><span class="tl">Contrôles<span id="ctlBadge"></span></span></button>
     <button class="tab" role="tab" data-tab="historique" aria-selected="false"><span class="ti">🕘</span><span class="tl">Historique</span></button>
     <button class="tab" role="tab" data-tab="donnees" aria-selected="false"><span class="ti">📊</span><span class="tl">Données</span></button>
@@ -869,7 +869,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     <button class="btn" id="importBar" title="Importer des articles ou une facture (Excel, CSV ou PDF)">⬆ Importer un fichier</button>
     <button class="btn" id="addBtn">+ Ajouter</button>
   </div>
-  <div class="roomchips hidden" id="viewBar" role="group" aria-label="Vue du stock : total ou par cabinet"></div>
+  <div class="roomchips hidden" id="viewBar" role="group" aria-label="Vue du stock : total ou par salle"></div>
   <div class="filters hidden" id="filters">
     <div class="ftop">
       <button class="btn sm" id="filtersToggle" aria-expanded="false">Filtres</button>
@@ -956,7 +956,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
             <input id="f_unit" autocomplete="off" placeholder="boîte, tube, pièce…">
           </label>
           <label class="f">Emplacement
-            <input id="f_location" autocomplete="off" placeholder="Ex. Cabinet 2, armoire B">
+            <input id="f_location" autocomplete="off" placeholder="Ex. Salle 2, armoire B">
           </label>
           <label class="f">Stock cible après commande
             <input id="f_target" type="number" min="0" step="any" inputmode="decimal">
@@ -989,7 +989,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="sub" id="docHint"></div>
       </div>
       <div class="full hidden" id="itemRooms">
-        <div class="meta">Rangé dans ces cabinets (cliquez pour ajouter ou retirer) :</div>
+        <div class="meta">Rangé dans ces salles (cliquez pour ajouter ou retirer) :</div>
         <div class="roomchips" id="itemRoomChips"></div>
       </div>
       <details class="full" id="histBox">
@@ -1019,6 +1019,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     <div class="login-err" id="pwErr" role="alert"></div>
     <div class="dlg-actions">
       <button class="btn" id="pwCancel">Annuler</button>
+      <button class="btn hidden" id="pwLater" type="button">Me déconnecter</button>
       <button class="btn primary" id="pwSave">Enregistrer</button>
     </div>
   </div>
@@ -1123,13 +1124,13 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 
 <dialog id="roomCfgDlg" class="wide">
   <div class="dlg">
-    <h2>Gérer les cabinets</h2>
-    <div class="sub">Une couleur par cabinet : elle sert à reconnaître le cabinet partout dans l’appli (liste du stock, réassort, contrôles).</div>
+    <h2>Gérer les salles</h2>
+    <div class="sub">Une couleur par salle : elle sert à reconnaître la salle partout dans l’appli (liste du stock, réassort, contrôles).</div>
     <div id="roomCfgList"></div>
     <div class="addroom">
-      <input id="newRoomName" placeholder="Nom du nouveau cabinet" maxlength="60" autocomplete="off" aria-label="Nom du nouveau cabinet">
-      <select id="newRoomKind" aria-label="Type du nouveau cabinet"><option value="soin">Cabinet de soins</option><option value="bloc">Bloc</option><option value="ortho">Cabinet d'orthodontie</option><option value="sterilisation">Stérilisation</option><option value="autre">Autre cabinet</option></select>
-      <button class="btn" id="newRoomAdd" type="button">Ajouter le cabinet</button>
+      <input id="newRoomName" placeholder="Nom de la nouvelle salle" maxlength="60" autocomplete="off" aria-label="Nom de la nouvelle salle">
+      <select id="newRoomKind" aria-label="Type de la nouvelle salle"><option value="soin">Salle de soins</option><option value="bloc">Bloc</option><option value="ortho">Salle d'orthodontie</option><option value="sterilisation">Stérilisation</option><option value="autre">Autre salle</option></select>
+      <button class="btn" id="newRoomAdd" type="button">Ajouter la salle</button>
     </div>
     <div class="dlg-actions"><button class="btn primary" id="roomCfgClose" type="button">Terminer</button></div>
   </div>
@@ -1138,7 +1139,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 <dialog id="roomAddDlg" class="wide">
   <div class="dlg">
     <h2 id="roomAddTitle">Ajouter des produits</h2>
-    <div class="sub">Cochez les produits que vous gardez dans ce cabinet. Vous réglerez ensuite la quantité cible de chacun.</div>
+    <div class="sub">Cochez les produits que vous gardez dans cette salle. Vous réglerez ensuite la quantité cible de chacun.</div>
     <div class="addfilters">
       <select id="roomAddDom" aria-label="Domaine"></select>
       <input id="roomAddSearch" type="search" placeholder="Rechercher un produit" autocomplete="off" aria-label="Rechercher un produit">
@@ -1162,7 +1163,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       <label class="f">Catégorie<select id="ctlCat"></select></label>
       <label class="f">Fréquence<select id="ctlEvery"></select></label>
     </div>
-    <label class="f">Cabinet concerné (facultatif)<select id="ctlRoom"></select></label>
+    <label class="f">Salle concernée (facultatif)<select id="ctlRoom"></select></label>
     <div class="login-err" id="ctlErr" role="alert"></div>
     <div class="dlg-actions">
       <button class="btn hidden" id="ctlDel" type="button">Supprimer</button>
@@ -1340,8 +1341,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     <label class="f hidden" id="adjSrcBox">Provenance
       <select id="adjSrc">
         <option value="central">Du stock central (le stock central baisse)</option>
-        <option value="direct">Livraison directe dans le cabinet</option>
-        <option value="count">Comptage : le cabinet contient exactement…</option>
+        <option value="direct">Livraison directe dans la salle</option>
+        <option value="count">Comptage : la salle contient exactement…</option>
       </select>
     </label>
     <div class="grid">
@@ -1413,7 +1414,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
   var barcodeOk = false, descOk = false, trackedOk = false, subOk = false, favOk = false, lotsOk = false, lotsByItem = {}, ordOk = false, photoOk = false, jrnOk = false, consoOk = false, jrnByNumber = {}, conso = {}, consoDebut = 0, consoAt = 0, reasonOk = false, packOk = false, pertes = { ok: false, rows: [] };
-  var REASONS = { expired: "Périmé", damaged: "Cassé ou abîmé", lost: "Perdu ou introuvable", gift: "Don ou prêt", other: "Autre", restock: "Réassort de cabinet", restock_return: "Retour de cabinet" };
+  var REASONS = { expired: "Périmé", damaged: "Cassé ou abîmé", lost: "Perdu ou introuvable", gift: "Don ou prêt", other: "Autre", restock: "Réassort de salle", restock_return: "Retour de salle" };
   var LOSS = ["expired", "damaged", "lost"];
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false, ownerOk = false;
   var recovering = /type=recovery/.test(location.hash);
@@ -2206,7 +2207,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       ["À commander", "section", function () { goTab("commande"); }], ["Comptage", "section", function () { goTab("comptage"); }],
       ["Historique", "section", function () { goTab("historique"); }], ["Données et prévisions", "section", function () { goTab("donnees"); }],
       ["Corbeille", "section", function () { goTab("corbeille"); }],
-      ["Cabinets et réassort", "section", function () { goTab("salles"); }],
+      ["Salles et réassort", "section", function () { goTab("salles"); }],
       ["Administration (propriétaire)", "section", function () { if (ownerOk) goTab("administration"); else toast("Réservé au propriétaire."); }], ["Contrôles et trousse d'urgence", "section", function () { goTab("controles"); }]
     ];
     if (isAdmin) a.splice(6, 0, ["Utilisateurs et invitations", "section", function () { goTab("utilisateurs"); }]);
@@ -2250,14 +2251,14 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
   // ---------- aide et visite guidée ----------
   var HELP = {
-    inventaire: ["Stock", "Choisissez un domaine, puis utilisez « − » et « + » pour sortir ou ajouter une unité. Cliquez sur le chiffre pour saisir plusieurs unités (des boutons 1, 2, 5, 10… vont plus vite que le clavier) ou un numéro de lot. Cliquez sur le nom pour ouvrir la fiche de l'article. Sur téléphone, balayez une ligne vers la gauche pour sortir 1, vers la droite pour ajouter 1. Pour ajouter un produit sans tout taper : « + Ajouter », puis collez le lien de sa page chez GACD et cliquez sur « Remplir ». Quand des cabinets sont configurés, les puces au-dessus de la liste (Total, puis une par cabinet) ouvrent le cabinet comme un stock à part, avec les mêmes écrans : « − » = utilisé dans le cabinet, « + » = pris dans le stock central, clic sur le chiffre pour une entrée, une sortie, un comptage ou un déplacement. Le petit onglet ⇄ à droite de la quantité se déplie pour mettre du stock dans un cabinet (ou le reprendre) en un clic ; la fenêtre qui s'ouvre en cliquant sur le chiffre propose aussi « Déplacer »."],
+    inventaire: ["Stock", "Choisissez un domaine, puis utilisez « − » et « + » pour sortir ou ajouter une unité. Cliquez sur le chiffre pour saisir plusieurs unités (des boutons 1, 2, 5, 10… vont plus vite que le clavier) ou un numéro de lot. Cliquez sur le nom pour ouvrir la fiche de l'article. Sur téléphone, balayez une ligne vers la gauche pour sortir 1, vers la droite pour ajouter 1. Pour ajouter un produit sans tout taper : « + Ajouter », puis collez le lien de sa page chez GACD et cliquez sur « Remplir ». Quand des salles sont configurées, les puces au-dessus de la liste (Total, puis une par salle) ouvrent la salle comme un stock à part, avec les mêmes écrans : « − » = utilisé dans la salle, « + » = pris dans le stock central, clic sur le chiffre pour une entrée, une sortie, un comptage ou un déplacement. Le petit onglet ⇄ à droite de la quantité se déplie pour mettre du stock dans une salle (ou le reprendre) en un clic ; la fenêtre qui s'ouvre en cliquant sur le chiffre propose aussi « Déplacer »."],
     favoris: ["Favoris", "Les produits que vous sortez le plus, en grosses cartes avec « − 1 » et « + 1 ». Pour y ajouter un produit, cliquez sur l'étoile à côté de son nom dans l'onglet Stock."],
     commande: ["À commander", "Les produits sous leur seuil, regroupés par fournisseur. « Marquer comme commandé » les met de côté pour ne pas les recommander ; « Reçu » enregistre l'arrivée du stock."],
     comptage: ["Comptage", "L'écran de l'inventaire : saisissez ce que vous avez compté en rayon, puis « Enregistrer le comptage ». Les écarts sont gardés dans l'Historique."],
     historique: ["Historique", "Tous les mouvements de stock, avec la personne, l'heure et la note. Pratique pour comprendre une différence."],
     donnees: ["Données et prévisions", "Vos dépenses d'après les factures importées, l'évolution des prix et une estimation des dépenses à venir. Pour les alimenter, importez vos factures PDF."],
     utilisateurs: ["Utilisateurs", "Invitez une personne par e-mail, choisissez son rôle et suivez les invitations en attente. Réservé aux administrateurs du cabinet."],
-    salles: ["Cabinets", "Chaque cabinet a sa couleur et la liste de ce qu'on y range. Pour un réassort : comptez ce qu'il reste dans les tiroirs, saisissez-le dans « Compté », l'appli calcule ce qu'il faut apporter pour atteindre la cible et le sort du stock central quand vous validez. « Feuille de réassort (PDF) » donne une feuille à imprimer pour faire la tournée. Un administrateur règle le nombre de cabinets, leurs noms et leurs couleurs avec « Gérer les cabinets »."],
+    salles: ["Salles", "Chaque salle a sa couleur et la liste de ce qu'on y range. Pour un réassort : comptez ce qu'il reste dans les tiroirs, saisissez-le dans « Compté », l'appli calcule ce qu'il faut apporter pour atteindre la cible et le sort du stock central quand vous validez. « Feuille de réassort (PDF) » donne une feuille à imprimer pour faire la tournée. Un administrateur règle le nombre de salles, leurs noms et leurs couleurs avec « Gérer les salles »."],
     controles: ["Contrôles", "La trousse d'urgence est suivie élément par élément (quantité et péremption), avec un contrôle mensuel qui garde la date et la personne. Les contrôles périodiques (autoclave, déchets, radioprotection…) affichent s'ils sont à jour, à faire bientôt ou en retard. Les fréquences proposées sont des idées : adaptez-les à vos obligations réelles."],
     administration: ["Administration", "Réservée au propriétaire. Cabinets : ouvrir, renommer, supprimer (une copie de sécurité est gardée) ou en créer un. Personnes : voir leurs accès à chaque cabinet, les modifier, donner un mot de passe provisoire, supprimer un compte, ajouter quelqu'un. Invitations : renvoyer ou annuler celles en attente."],
     corbeille: ["Corbeille", "Les articles retirés de la liste. Vous pouvez les restaurer ou les supprimer définitivement. Un import ne les recrée pas."]
@@ -2371,9 +2372,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     });
     render(); toast("Annulé : " + u.label);
   }
-  // ---------- cabinets de soins : stock par cabinet et réassort ----------
+  // ---------- salles de soins : stock par salle et réassort ----------
   var sallesOk = false, rooms = [], roomItems = {}, restocks = {}, roomIdx = {};
-  var ROOM_KINDS = { soin: "Cabinet de soins", bloc: "Bloc", ortho: "Cabinet d'orthodontie", sterilisation: "Stérilisation", autre: "Autre cabinet" };
+  var ROOM_KINDS = { soin: "Salle de soins", bloc: "Bloc", ortho: "Salle d'orthodontie", sterilisation: "Stérilisation", autre: "Autre salle" };
   var ROOM_COLORS = ["#2F67FF", "#12B76A", "#F79009", "#7A5AF8", "#EE46BC", "#06AED4", "#F04438", "#0E9384", "#B54708", "#667085", "#444CE7", "#84CC16"];
   function roomById(id) { return rooms.find(function (r) { return r.id === id; }); }
   function indexRooms() {
@@ -2420,22 +2421,22 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
   function createRooms(st) {
     var specs = [];
-    for (var i = 1; i <= st.n; i++) specs.push(["Cabinet " + i, "soin"]);
+    for (var i = 1; i <= st.n; i++) specs.push(["Salle " + i, "soin"]);
     if (st.bloc) specs.push(["Bloc", "bloc"]);
-    if (st.ortho) specs.push(["Cabinet d'orthodontie", "ortho"]);
+    if (st.ortho) specs.push(["Salle d'orthodontie", "ortho"]);
     if (st.steri) specs.push(["Stérilisation", "sterilisation"]);
-    if (!specs.length) { toast("Choisissez au moins un cabinet."); return; }
+    if (!specs.length) { toast("Choisissez au moins une salle."); return; }
     var rows = specs.map(function (sp, i) { return { cabinet_id: cabinetId, name: sp[0], kind: sp[1], color: ROOM_COLORS[i % ROOM_COLORS.length], position: i + 1 }; });
     enqueue(function () {
       return sb.from("salles").insert(rows).select().then(check).then(function (data) {
         rooms = rooms.concat(data || []); state.room = rooms[0] ? rooms[0].id : ""; indexRooms(); render();
-        toast(rooms.length + " cabinet" + (rooms.length > 1 ? "s" : "") + " créé" + (rooms.length > 1 ? "s" : "") + ". Ajoutez maintenant les produits de chaque cabinet.");
+        toast(rooms.length + " salle" + (rooms.length > 1 ? "s" : "") + " créée" + (rooms.length > 1 ? "s" : "") + ". Ajoutez maintenant les produits de chaque salle.");
       });
     });
   }
   function addRoom(name, kind) {
     name = (name || "").trim();
-    if (!name) { toast("Donnez un nom au cabinet."); return; }
+    if (!name) { toast("Donnez un nom à la salle."); return; }
     var row = { cabinet_id: cabinetId, name: name, kind: kind || "soin", color: nextRoomColor(), position: rooms.length + 1 };
     enqueue(function () {
       return sb.from("salles").insert(row).select().single().then(check).then(function (r) { rooms.push(r); indexRooms(); drawRoomCfg(); render(); });
@@ -2461,9 +2462,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function drawRoomCfg() {
     var box = $("roomCfgList"); box.textContent = "";
     rooms.forEach(function (r, i) {
-      var name = h("input", { value: r.name, maxlength: "60", "aria-label": "Nom du cabinet", class: "cfgname" });
+      var name = h("input", { value: r.name, maxlength: "60", "aria-label": "Nom de la salle", class: "cfgname" });
       name.addEventListener("change", function () { var v = name.value.trim(); if (!v) { name.value = r.name; return; } saveRoom(r, { name: v }); });
-      var kind = h("select", { "aria-label": "Type de cabinet" });
+      var kind = h("select", { "aria-label": "Type de salle" });
       Object.keys(ROOM_KINDS).forEach(function (k) { kind.append(h("option", { value: k, text: ROOM_KINDS[k] })); });
       kind.value = r.kind;
       kind.addEventListener("change", function () { saveRoom(r, { kind: kind.value }); });
@@ -2479,10 +2480,10 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
           h("button", { class: "btn sm", type: "button", disabled: i === rooms.length - 1, "aria-label": "Descendre " + r.name, onclick: function () { moveRoom(r, 1); }, text: "↓" }),
           h("button", { class: "btn sm", type: "button", onclick: function () { deleteRoom(r); }, text: "Supprimer" }))));
     });
-    if (!rooms.length) box.append(h("div", { class: "meta", text: "Aucun cabinet pour le moment." }));
+    if (!rooms.length) box.append(h("div", { class: "meta", text: "Aucune salle pour le moment." }));
   }
   function openRoomCfg() { drawRoomCfg(); $("newRoomName").value = ""; $("roomCfgDlg").showModal(); }
-  // produits d'un cabinet
+  // produits d'une salle
   var addSel = new Set();
   function byNameItem(a, b) { return norm(a.name).localeCompare(norm(b.name)); }
   function drawRoomAdd() {
@@ -2524,7 +2525,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       return sb.from("salle_items").insert(rows).select().then(check).then(function (data) {
         (data || []).forEach(function (li) { (roomItems[room] = roomItems[room] || []).push(li); });
         indexRooms(); render();
-        toast(rows.length + " produit" + (rows.length > 1 ? "s" : "") + " ajouté" + (rows.length > 1 ? "s" : "") + " au cabinet. Réglez la quantité cible de chacun.");
+        toast(rows.length + " produit" + (rows.length > 1 ? "s" : "") + " ajouté" + (rows.length > 1 ? "s" : "") + " à la salle. Réglez la quantité cible de chacun.");
       });
     });
   }
@@ -2543,7 +2544,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var st = state.setup = state.setup || { n: 3, bloc: true, ortho: false, steri: false };
     var card = h("div", { class: "table setupcard" });
     if (!isAdmin) {
-      card.append(h("div", { class: "empty" }, h("h2", { text: "Aucun cabinet configuré" }), h("div", { text: "Demandez à un administrateur de configurer les cabinets : nombre de cabinets de soins, bloc, cabinet d'orthodontie…" })));
+      card.append(h("div", { class: "empty" }, h("h2", { text: "Aucune salle configurée" }), h("div", { text: "Demandez à un administrateur du cabinet de configurer les salles : nombre de salles de soins, bloc, salle d'orthodontie…" })));
       box.append(card); return;
     }
     var nOut = h("b", { class: "setupn", text: String(st.n) });
@@ -2553,19 +2554,19 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       return h("label", { class: "setupchk", for: "su_" + k }, cb, " " + label);
     };
     card.append(h("div", { class: "setupin" },
-      h("h2", { text: "Configurez les cabinets de soins" }),
-      h("p", { class: "meta", text: "Chaque cabinet aura sa couleur, sa liste de produits et son réassort. Vous pourrez tout modifier ensuite." }),
-      h("div", { class: "setuprow" }, h("span", { text: "Cabinets de soins" }),
+      h("h2", { text: "Configurez les salles de votre cabinet" }),
+      h("p", { class: "meta", text: "Chaque salle aura sa couleur, sa liste de produits et son réassort. Vous pourrez tout modifier ensuite." }),
+      h("div", { class: "setuprow" }, h("span", { text: "Salles de soins" }),
         h("div", { class: "ostep" },
-          h("button", { class: "step", type: "button", "aria-label": "Un cabinet de soins de moins", onclick: function () { st.n = Math.max(0, st.n - 1); nOut.textContent = String(st.n); }, text: "−" }), nOut,
-          h("button", { class: "step", type: "button", "aria-label": "Un cabinet de soins de plus", onclick: function () { st.n = Math.min(12, st.n + 1); nOut.textContent = String(st.n); }, text: "+" }))),
-      chk("bloc", "Un bloc"), chk("ortho", "Un cabinet d'orthodontie"), chk("steri", "Un cabinet de stérilisation"),
-      h("div", { class: "dlg-actions" }, h("button", { class: "btn primary", type: "button", onclick: function () { createRooms(st); }, text: "Créer mes cabinets" }))));
+          h("button", { class: "step", type: "button", "aria-label": "Une salle de soins de moins", onclick: function () { st.n = Math.max(0, st.n - 1); nOut.textContent = String(st.n); }, text: "−" }), nOut,
+          h("button", { class: "step", type: "button", "aria-label": "Une salle de soins de plus", onclick: function () { st.n = Math.min(12, st.n + 1); nOut.textContent = String(st.n); }, text: "+" }))),
+      chk("bloc", "Un bloc"), chk("ortho", "Une salle d'orthodontie"), chk("steri", "Une salle de stérilisation"),
+      h("div", { class: "dlg-actions" }, h("button", { class: "btn primary", type: "button", onclick: function () { createRooms(st); }, text: "Créer mes salles" }))));
     box.append(card);
   }
   function renderRooms(box) {
     if (!sallesOk) {
-      box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Cabinets non activés" }), h("div", { text: "Lancez le script SQL « ajout-salles-controles » dans Supabase pour gérer le stock par cabinet et les contrôles." }))));
+      box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Salles non activées" }), h("div", { text: "Lancez le script SQL « ajout-salles-controles » dans Supabase pour gérer le stock par salle et les contrôles." }))));
       return;
     }
     if (!rooms.length) { renderRoomsSetup(box); return; }
@@ -2575,7 +2576,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     rooms.forEach(function (r) {
       chips.append(h("button", { class: "roomchip" + (r.id === sel ? " on" : ""), type: "button", style: "--rc:" + r.color, "aria-pressed": r.id === sel ? "true" : "false", onclick: function () { state.room = r.id; render(); } }, h("i"), r.name));
     });
-    if (isAdmin) chips.append(h("button", { class: "btn sm", type: "button", onclick: openRoomCfg, text: "⚙ Gérer les cabinets" }));
+    if (isAdmin) chips.append(h("button", { class: "btn sm", type: "button", onclick: openRoomCfg, text: "⚙ Gérer les salles" }));
     box.append(chips);
     var lines = (roomItems[sel] || []).map(function (li) { return { li: li, it: items.get(li.item_id) }; }).filter(function (x) { return x.it; })
       .sort(function (a, b) { return byNameItem(a.it, b.it); });
@@ -2583,12 +2584,12 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var panel = h("div", { class: "roompanel", style: "--rc:" + room.color });
     panel.append(h("div", { class: "roomhead" },
       h("div", null, h("h3", { text: room.name }),
-        h("div", { class: "meta", text: ROOM_KINDS[room.kind] + " · " + (last ? "dernier réassort " + agoText(last.done_at) + (last.done_by ? " par " + String(last.done_by).split("@")[0] : "") : "jamais réapprovisionné") + " · " + lines.length + " produit" + (lines.length > 1 ? "s" : "") })),
+        h("div", { class: "meta", text: ROOM_KINDS[room.kind] + " · " + (last ? "dernier réassort " + agoText(last.done_at) + (last.done_by ? " par " + String(last.done_by).split("@")[0] : "") : "jamais réapprovisionnée") + " · " + lines.length + " produit" + (lines.length > 1 ? "s" : "") })),
       h("div", { class: "roomact" },
         readOnly ? null : h("button", { class: "btn sm", type: "button", onclick: openRoomAdd, text: "＋ Ajouter des produits" }),
         lines.length ? h("button", { class: "btn sm", type: "button", onclick: function () { roomSheet(room, lines); }, text: "Feuille de réassort (PDF)" }) : null)));
     if (!lines.length) {
-      panel.append(h("div", { class: "empty" }, h("div", { text: "Aucun produit dans ce cabinet. Ajoutez ceux que vous gardez dans ses tiroirs, avec la quantité qu'il doit y avoir quand elle est pleine." })));
+      panel.append(h("div", { class: "empty" }, h("div", { text: "Aucun produit dans cette salle. Ajoutez ceux que vous gardez dans ses tiroirs, avec la quantité qu'il doit y avoir quand elle est pleine." })));
       box.append(panel); return;
     }
     state.rc = state.rc || {};
@@ -2611,18 +2612,18 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     lines.forEach(function (x) {
       var key = sel + "|" + x.it.id;
       var tIn = h("input", { class: "oqty", type: "number", min: "0", step: "any", value: String(Number(x.li.target) || 0), disabled: readOnly, "aria-label": "Quantité cible : " + x.it.name, onchange: function (e) { setRoomTarget(x.li, e.target.value); } });
-      var cIn = h("input", { class: "oqty", type: "number", min: "0", step: "any", inputmode: "decimal", placeholder: x.li.counted_qty != null ? fmt(x.li.counted_qty) : "", value: state.rc[key] != null ? String(state.rc[key]) : "", disabled: readOnly, "aria-label": "Quantité comptée dans le cabinet : " + x.it.name });
+      var cIn = h("input", { class: "oqty", type: "number", min: "0", step: "any", inputmode: "decimal", placeholder: x.li.counted_qty != null ? fmt(x.li.counted_qty) : "", value: state.rc[key] != null ? String(state.rc[key]) : "", disabled: readOnly, "aria-label": "Quantité comptée dans la salle : " + x.it.name });
       cIn.addEventListener("input", function () { state.rc[key] = cIn.value; refresh(); });
       var need = h("div", { class: "num bring", text: "—" }), cen = h("div", { class: "num", text: fmt(x.it.qty) + (x.it.unit ? " " + x.it.unit : "") });
       cells.push({ key: key, li: x.li, it: x.it, need: need, cen: cen });
       tbl.append(h("div", { class: "rline" },
         h("div", null, h("div", { class: "item-name", text: x.it.name }), h("div", { class: "meta", text: [x.it.ref ? "réf. " + x.it.ref : "", x.li.counted_at ? "compté " + agoText(x.li.counted_at) : ""].filter(Boolean).join(" · ") })),
         h("div", { class: "num" }, tIn), h("div", { class: "num" }, cIn), need, cen,
-        readOnly ? h("div") : h("button", { class: "dots", type: "button", "aria-label": "Retirer " + x.it.name + " du cabinet", title: "Retirer du cabinet", onclick: function () { removeRoomItem(x.li); }, text: "×" })));
+        readOnly ? h("div") : h("button", { class: "dots", type: "button", "aria-label": "Retirer " + x.it.name + " de la salle", title: "Retirer de la salle", onclick: function () { removeRoomItem(x.li); }, text: "×" })));
     });
     go.addEventListener("click", function () { validateRestock(room, cells); });
     panel.append(tbl);
-    panel.append(h("div", { class: "dnote", text: "Comptez ce qu'il reste dans les tiroirs du cabinet : l'appli calcule ce qu'il faut apporter pour revenir à la quantité cible, et le sort du stock central quand vous validez." }));
+    panel.append(h("div", { class: "dnote", text: "Comptez ce qu'il reste dans les tiroirs de la salle : l'appli calcule ce qu'il faut apporter pour revenir à la quantité cible, et le sort du stock central quand vous validez." }));
     if (!readOnly) panel.append(h("div", { class: "roomgo" }, go));
     box.append(panel);
     refresh();
@@ -2633,7 +2634,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       var counted = Math.max(0, num(state.rc[c.key]));
       return { li: c.li, it: items.get(c.it.id) || c.it, counted: counted, bring: Math.max(0, (Number(c.li.target) || 0) - counted) };
     });
-    if (!work.length) { toast("Saisissez ce que vous avez compté dans les tiroirs du cabinet."); return; }
+    if (!work.length) { toast("Saisissez ce que vous avez compté dans les tiroirs de la salle."); return; }
     var moved = 0, short = [], now = new Date().toISOString();
     work.forEach(function (w) {
       var avail = Number(w.it.qty) || 0, give = Math.min(w.bring, avail);
@@ -2797,7 +2798,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (readOnly) return;
     ctlEditing = c || null;
     $("ctlTitle").textContent = c ? "Modifier le contrôle" : "Ajouter un contrôle";
-    var rs = $("ctlRoom"); rs.textContent = ""; rs.append(h("option", { value: "", text: "Aucun cabinet en particulier" }));
+    var rs = $("ctlRoom"); rs.textContent = ""; rs.append(h("option", { value: "", text: "Aucune salle en particulier" }));
     rooms.forEach(function (r) { rs.append(h("option", { value: r.id, text: r.name })); });
     var cs = $("ctlCat"); cs.textContent = "";
     Object.keys(CTL_CATS).filter(function (k) { return k !== "urgence"; }).forEach(function (k) { cs.append(h("option", { value: k, text: CTL_CATS[k] })); });
@@ -2969,7 +2970,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function openAdminDelete(c) {
     adminCabFor = c;
     $("adminDelTitle").textContent = "Supprimer « " + c.name + " » ?";
-    $("adminDelInfo").textContent = "Cela supprime définitivement ses " + fmt(c.nb_articles) + " article" + (c.nb_articles > 1 ? "s" : "") + " suivis, son historique, ses cabinets, ses contrôles, ses sauvegardes et l'accès de ses " + fmt(c.nb_membres) + " personne" + (c.nb_membres > 1 ? "s" : "") + ". Une copie de sécurité (articles, lots, liste des accès) est gardée dans les archives de la base : elle n'est lisible que dans Supabase.";
+    $("adminDelInfo").textContent = "Cela supprime définitivement ses " + fmt(c.nb_articles) + " article" + (c.nb_articles > 1 ? "s" : "") + " suivis, son historique, ses salles, ses contrôles, ses sauvegardes et l'accès de ses " + fmt(c.nb_membres) + " personne" + (c.nb_membres > 1 ? "s" : "") + ". Une copie de sécurité (articles, lots, liste des accès) est gardée dans les archives de la base : elle n'est lisible que dans Supabase.";
     $("adminDelName").value = ""; $("adminDelErr").textContent = ""; $("adminDelOk").disabled = true;
     $("adminDelDlg").showModal(); setTimeout(function () { $("adminDelName").focus(); }, 0);
   }
@@ -3253,7 +3254,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     }
     box.append(sec);
   }
-  // ---------- vue du stock par cabinet ou en total ----------
+  // ---------- vue du stock par salle ou en total ----------
   function renderViewBar() {
     var bar = $("viewBar"), show = state.tab === "inventaire" && sallesOk && rooms.length > 0 && items.size > 0;
     bar.textContent = ""; bar.classList.toggle("hidden", !show);
@@ -3265,7 +3266,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     };
     bar.append(mk("", "Total", null));
     rooms.forEach(function (r) { bar.append(mk(r.id, r.name + " · " + (roomItems[r.id] || []).length, r.color)); });
-    bar.append(h("button", { class: "btn sm", type: "button", onclick: function () { goTab("salles"); }, text: "⚙ Cabinets" }));
+    bar.append(h("button", { class: "btn sm", type: "button", onclick: function () { goTab("salles"); }, text: "⚙ Salles" }));
   }
   function roomBreakdown(it) {
     var ids = roomIdx[it.id];
@@ -3275,7 +3276,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       var r = roomById(rid), li = (roomItems[rid] || []).find(function (x) { return x.item_id === it.id; });
       if (r && li && li.counted_qty != null) { parts.push(r.name + " " + fmt(li.counted_qty)); sum += Number(li.counted_qty) || 0; }
     });
-    return parts.length ? "en cabinets : " + parts.join(", ") + " · total " + fmt(r2((Number(it.qty) || 0) + sum)) : "";
+    return parts.length ? "en salles : " + parts.join(", ") + " · total " + fmt(r2((Number(it.qty) || 0) + sum)) : "";
   }
   function startRestock(room, lines) {
     state.room = room.id; state.rc = state.rc || {};
@@ -3304,7 +3305,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       return sb.from("salle_items").insert(row).select().single().then(check).then(function (li) { (roomItems[r.id] = roomItems[r.id] || []).push(li); indexRooms(); if (state.editing && state.editing.id === it.id) drawItemRooms(it); render(); });
     });
   }
-  // ---------- déplacer du stock : stock central <-> cabinets, ou d'un cabinet à l'autre ----------
+  // ---------- déplacer du stock : stock central <-> salles, ou d'une salle à l'autre ----------
   function roomLine(rid, itemId) { return (roomItems[rid] || []).find(function (x) { return x.item_id === itemId; }); }
   function fillMoveSelects() {
     var it = state.adjusting; if (!it) return;
@@ -3328,7 +3329,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     m.textContent = f === t ? "Choisissez deux endroits différents."
       : !f ? "Le stock central baisse de cette quantité : elle est comptée comme consommée, comme pour un réassort."
       : !t ? "Retour au stock central : il augmente, et la consommation est corrigée d'autant."
-      : "Le stock central ne change pas : seules les quantités des deux cabinets bougent.";
+      : "Le stock central ne change pas : seules les quantités des deux salles bougent.";
   }
   function bumpRoom(rid, it, delta) {
     var li = roomLine(rid, it.id), now = new Date().toISOString();
@@ -3371,7 +3372,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function moveTab(it) {
     if (!moveEligible(it)) return null;
     var open = state.mvId === it.id;
-    var b = h("button", { class: "mvtab" + (open ? " on" : ""), type: "button", title: "Déplacer vers un cabinet ou entre cabinets", "aria-label": "Déplacer " + it.name + " vers un cabinet", "aria-expanded": open ? "true" : "false", text: "⇄" });
+    var b = h("button", { class: "mvtab" + (open ? " on" : ""), type: "button", title: "Déplacer vers une salle ou entre salles", "aria-label": "Déplacer " + it.name + " vers une salle", "aria-expanded": open ? "true" : "false", text: "⇄" });
     b.addEventListener("click", function () { toggleMove(it, b); });
     return b;
   }
@@ -3417,11 +3418,11 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         h("button", { class: "step", type: "button", "aria-label": "Une unité de plus", onclick: function () { state.mvQty = (num(qIn.value) || 0) + 1; fillMovePanel(it, el); }, text: "+" })),
       h("span", { class: "mvlbl", text: "Mettre dans :" }), dest));
   }
-  // ---------- chaque cabinet fonctionne comme le stock central ----------
+  // ---------- chaque salle fonctionne comme le stock central ----------
   var ROOM_FILTER_LABEL = { bas: "À compléter", rupt: "Vides" };
   function roomScope() { return (state.tab === "inventaire" && state.view) ? (roomById(state.view) || null) : null; }
   function R(it) { return it && it._real ? it._real : it; }
-  // Pendant l'affichage d'un cabinet, la liste des articles est remplacée par celle du cabinet : toutes les fonctions du Stock s'y appliquent.
+  // Pendant l'affichage d'une salle, la liste des articles est remplacée par celle de la salle : toutes les fonctions du Stock s'y appliquent.
   function roomVirtual(room) {
     var m = new Map();
     (roomItems[room.id] || []).forEach(function (li) {
@@ -3440,7 +3441,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var real = items; itemsReal = real; items = roomVirtual(room); dupCache = null;
     try { fn(); } finally { items = real; itemsReal = null; dupCache = null; }
   }
-  // produits suivis (d'un domaine) qui ne sont pas encore dans le cabinet
+  // produits suivis (d'un domaine) qui ne sont pas encore dans la salle
   function roomAddables(room, cat) {
     var base = itemsReal || items, have = new Set((roomItems[room.id] || []).map(function (l) { return l.item_id; }));
     return Array.from(base.values()).filter(function (it) { return it.tracked !== false && !have.has(it.id) && (cat == null || (it.category || "Sans domaine") === cat); }).sort(byNameItem);
@@ -3452,7 +3453,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       return sb.from("salle_items").insert(rows).select().then(check).then(function (data) {
         (data || []).forEach(function (li) { (roomItems[room.id] = roomItems[room.id] || []).push(li); });
         indexRooms(); render();
-        toast(rows.length + " produit" + (rows.length > 1 ? "s" : "") + " ajouté" + (rows.length > 1 ? "s" : "") + " à « " + room.name + " ». Utilisez « + » ou le chiffre pour les remplir, et l'onglet Cabinets pour régler leur cible.");
+        toast(rows.length + " produit" + (rows.length > 1 ? "s" : "") + " ajouté" + (rows.length > 1 ? "s" : "") + " à « " + room.name + " ». Utilisez « + » ou le chiffre pour les remplir, et l'onglet Salles pour régler leur cible.");
       });
     });
   }
@@ -3481,15 +3482,15 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var last = restocks[room.id];
     var lines = Array.from(items.values()).map(function (v) { return { li: v._room.li, it: v }; }).sort(function (a, b) { return byNameItem(a.it, b.it); });
     return h("div", { class: "roomstrip", style: "--rc:" + room.color },
-      h("div", { class: "rs-t" }, h("i"), h("b", { text: room.name }), h("span", { class: "meta", text: " · " + ROOM_KINDS[room.kind] + " · " + (last ? "dernier réassort " + agoText(last.done_at) : "jamais réapprovisionné") })),
+      h("div", { class: "rs-t" }, h("i"), h("b", { text: room.name }), h("span", { class: "meta", text: " · " + ROOM_KINDS[room.kind] + " · " + (last ? "dernier réassort " + agoText(last.done_at) : "jamais réapprovisionnée") })),
       h("div", { class: "roomact" },
         (!readOnly && items.size) ? h("button", { class: "btn sm primary", type: "button", onclick: function () { startRestock(room, lines); }, text: "Faire le réassort" }) : null,
         readOnly ? null : h("button", { class: "btn sm", type: "button", onclick: function () { state.room = room.id; openRoomAdd(); }, text: "＋ Ajouter des produits" }),
-        h("button", { class: "btn sm", type: "button", onclick: function () { state.room = room.id; goTab("salles"); }, text: "Ouvrir dans Cabinets" })));
+        h("button", { class: "btn sm", type: "button", onclick: function () { state.room = room.id; goTab("salles"); }, text: "Ouvrir dans Salles" })));
   }
   function roomEmpty(room) {
     return h("div", { class: "table" }, h("div", { class: "empty" },
-      h("h2", { text: "Aucun produit dans ce cabinet" }),
+      h("h2", { text: "Aucun produit dans cette salle" }),
       h("div", { text: "Ajoutez ceux que vous gardez dans ses tiroirs : ils s'afficheront ici comme dans le stock central, avec « − » et « + »." }),
       readOnly ? null : h("div", { class: "actions" }, h("button", { class: "btn primary", type: "button", onclick: function () { state.room = room.id; openRoomAdd(); }, text: "＋ Ajouter des produits" }))));
   }
@@ -3513,7 +3514,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
   function undoRoom(u) {
     var li = roomLine(u.rid, u.itemId);
-    if (!li) { toast("Ce produit n'est plus rangé dans ce cabinet : annulation impossible."); return; }
+    if (!li) { toast("Ce produit n'est plus rangé dans cette salle : annulation impossible."); return; }
     var now = new Date().toISOString();
     li.counted_qty = u.prev; li.counted_at = u.prev == null ? null : now;
     enqueue(function () { return sb.from("salle_items").update({ counted_qty: u.prev, counted_at: li.counted_at }).eq("id", li.id).then(check); });
@@ -4041,7 +4042,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       if (norm(it.category).indexOf("equipement") !== 0) total += (Number(it.qty) || 0) * (Number(it.price) || 0);
     });
     var home = state.tab === "inventaire" && isHome();
-    $("stockValue").textContent = (home && all.length) ? (state.view ? "Valeur dans le cabinet (hors équipement) : " : "Valeur du stock (hors équipement) : ") + money(total) + " HT · " + money(total * (1 + TVA / 100)) + " TTC (TVA " + TVA + " %)" : "";
+    $("stockValue").textContent = (home && all.length) ? (state.view ? "Valeur dans la salle (hors équipement) : " : "Valeur du stock (hors équipement) : ") + money(total) + " HT · " + money(total * (1 + TVA / 100)) + " TTC (TVA " + TVA + " %)" : "";
     var box = $("alerts"); box.textContent = "";
     box.classList.toggle("hidden", !home || (!bas && !rupt && !exp && !soon && !flagged && !ctlN));
     var mk = function (n, label, filter, cls) {
@@ -4121,7 +4122,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         label = us[0] + (n > 1 && !/s$/i.test(us[0]) ? "s" : "") + " · " + o.n + " réf.";
       } else { big = String(o.n); label = "références"; }
       var bigNum = !o.n ? 0 : (us.length === 1 ? Math.round(o.sum[us[0]] * 100) / 100 : o.n);
-      var shown = o.n ? "" : (state.view ? "rien dans le cabinet" : "aucun article");
+      var shown = o.n ? "" : (state.view ? "rien dans la salle" : "aucun article");
       if (o.cat) label += " · " + o.cat + " au catalogue";
       var alertTxt = o.rupt ? o.rupt + (state.view ? (o.rupt > 1 ? " vides" : " vide") : " en rupture") : (o.bas ? o.bas + (state.view ? " à compléter" : " sous le seuil") : (o.exp ? o.exp + " à surveiller" : ""));
       var alertCls = o.rupt ? "t-bad" : (o.bas ? "t-warn" : "t-exp");
@@ -4153,7 +4154,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
   function renderInventory(box) {
     var rsc = roomScope();
-    if (rsc) { box.append(roomHeader(rsc)); if (!items.size && !state.cat) box.append(h("div", { class: "dnote", text: "Ce cabinet est vide. Cliquez sur un domaine pour y ajouter ses produits, ou utilisez « ＋ Ajouter des produits »." })); }
+    if (rsc) { box.append(roomHeader(rsc)); if (!items.size && !state.cat) box.append(h("div", { class: "dnote", text: "Cette salle est vide. Cliquez sur un domaine pour y ajouter ses produits, ou utilisez « ＋ Ajouter des produits »." })); }
     if (!items.size && !rsc) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" },
         h("h2", { text: "Aucun article pour l'instant" }),
@@ -4167,7 +4168,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var list = visibleItems();
     if (!list.length) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" },
-        h("h2", { text: rsc ? "Rien dans ce cabinet pour l'instant" : "Aucun résultat" }),
+        h("h2", { text: rsc ? "Rien dans cette salle pour l'instant" : "Aucun résultat" }),
         h("div", { text: rsc ? "Ajoutez des produits de ce domaine avec les boutons ci-dessous." : "Aucun article ne correspond à ce filtre ou à cette recherche." }))));
       if (rsc) roomAddSection(box, rsc);
       return;
@@ -4723,7 +4724,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     $("importBar").disabled = readOnly || !db;
     var rsc0 = roomScope();
     $("importBar").classList.toggle("hidden", !!rsc0);
-    $("addBtn").textContent = rsc0 ? "＋ Ajouter au cabinet" : "+ Ajouter";
+    $("addBtn").textContent = rsc0 ? "＋ Ajouter à la salle" : "+ Ajouter";
     $("exportBtn").disabled = !items.size;
     $("bar").classList.toggle("hidden", state.tab !== "inventaire");
     if (state.tab === "inventaire") scoped(function () { renderInventory(box); });
@@ -6370,7 +6371,31 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       sb.auth.getSession().then(function (r) { setSession(r && r.data ? r.data.session : null); });
     });
   }
+  // Première connexion par un lien (invitation, « Première connexion ? ») : la personne doit créer son mot de passe
+  var pwWelcome = false;
+  function jwtClaims(tok) {
+    try { var b = String(tok).split(".")[1].replace(/-/g, "+").replace(/_/g, "/"); b += "===".slice((b.length + 3) % 4); return JSON.parse(decodeURIComponent(escape(atob(b)))); } catch (e) { return {}; }
+  }
+  function needsPwSetup(sess) {
+    var meta = (sess && sess.user && sess.user.user_metadata) || {};
+    if (meta.pw_set === true) return false;
+    var amr = jwtClaims(sess && sess.access_token).amr;
+    if (!Array.isArray(amr)) return false;
+    var methods = amr.map(function (a) { return typeof a === "string" ? a : (a && a.method); });
+    if (methods.indexOf("password") !== -1 || methods.indexOf("recovery") !== -1) return false;
+    return ["otp", "magiclink", "invite", "email/signup"].some(function (m) { return methods.indexOf(m) !== -1; });
+  }
+  function openWelcomePw() {
+    pwTarget = null; pwWelcome = true;
+    $("pwTitle").textContent = "Bienvenue ! Créez votre compte";
+    $("pwHint").textContent = "Choisissez votre mot de passe (8 caractères minimum). Vous l'utiliserez avec votre adresse " + myEmail + " pour vous reconnecter, sans attendre d'e-mail.";
+    $("pw1").value = ""; $("pw2").value = ""; $("pwErr").textContent = "";
+    $("pwCancel").classList.add("hidden"); $("pwLater").classList.remove("hidden"); $("pwSave").textContent = "Créer mon compte";
+    if (!$("pwDlg").open) $("pwDlg").showModal();
+    setTimeout(function () { $("pw1").focus(); }, 0);
+  }
   function openPw(target) {
+    pwWelcome = false; $("pwCancel").classList.remove("hidden"); $("pwLater").classList.add("hidden"); $("pwSave").textContent = "Enregistrer";
     pwTarget = target;
     $("pwTitle").textContent = target ? "Mot de passe de " + target.email : "Changer mon mot de passe";
     $("pwHint").textContent = target
@@ -6387,7 +6412,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     $("pwSave").disabled = true; $("pwErr").textContent = "";
     var req = pwTarget
       ? sb.rpc("team_reset_password", { c: cabinetId, p_user: pwTarget.user_id, p_password: a })
-      : sb.auth.updateUser({ password: a });
+      : sb.auth.updateUser({ password: a, data: { pw_set: true } });
     req.then(function (res) {
       $("pwSave").disabled = false;
       if (res.error) {
@@ -6395,7 +6420,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         return;
       }
       $("pwDlg").close();
-      toast("Mot de passe modifié.");
+      if (pwWelcome) { pwWelcome = false; $("pwCancel").classList.remove("hidden"); $("pwLater").classList.add("hidden"); $("pwSave").textContent = "Enregistrer"; toast("Compte créé : vous pouvez maintenant vous connecter avec votre adresse et ce mot de passe."); }
+      else toast("Mot de passe modifié.");
     });
   }
   var ROLE_LABEL = { admin: "Administrateur", member: "Membre (modifie le stock)", viewer: "Lecture seule" };
@@ -6783,7 +6809,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       showPick(false, true);
       var goCab = function () { loadCabinets(); };
       sb.rpc("est_proprietaire").then(function (r0) { ownerOk = !!(r0 && !r0.error && r0.data === true); updateOwnerBtns(); }, function () {});
-      sb.rpc("accept_invitations").then(function (res) { if (res && !res.error && Number(res.data) > 0) welcomePw = true; goCab(); }, goCab);
+      sb.rpc("accept_invitations").then(function () { goCab(); }, goCab);
+      if (needsPwSetup(s)) openWelcomePw();
       loadPrefs();
     } else {
       sessionUser = null; db = null; myEmail = "";
@@ -6884,6 +6911,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   $("rec2").addEventListener("keydown", function (e) { if (e.key === "Enter") doRecover(); });
   $("pwBtn").addEventListener("click", function () { openPw(null); });
   $("pwCancel").addEventListener("click", function () { $("pwDlg").close(); });
+  $("pwLater").addEventListener("click", function () { $("pwDlg").close(); pwWelcome = false; sb.auth.signOut(); });
+  $("pwDlg").addEventListener("cancel", function (e) { if (pwWelcome) e.preventDefault(); });
   $("pwSave").addEventListener("click", savePw);
   $("pw2").addEventListener("keydown", function (e) { if (e.key === "Enter") savePw(); });
   $("teamBtn").addEventListener("click", function () { state.tab = "utilisateurs"; state.filter = "all"; syncTabs(); render(); loadUsers(); });
