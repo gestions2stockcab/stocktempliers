@@ -757,6 +757,17 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .r-warn .recapn { background:#fff1d9; color:#9a5b00; }
 .r-info .recapn { background:#e4ecff; color:#2a55c7; }
 #recapBody { max-height:60vh; overflow:auto; }
+
+/* ===== v70 : comparaison des cabinets ===== */
+.cmpwrap { overflow-x:auto; margin:8px 0; }
+.cmptable { border-collapse:collapse; width:100%; min-width:520px; font-size:14.5px; }
+.cmptable th, .cmptable td { padding:7px 10px; border-bottom:1px solid var(--line); text-align:right; vertical-align:middle; }
+.cmptable th { font-weight:700; vertical-align:bottom; }
+.cmptable th:first-child, .cmptable td.lbl { text-align:left; font-weight:600; color:var(--muted); }
+.cmptable th.cur, .cmptable td.cur { background:var(--surface-2, rgba(47,103,255,.06)); }
+.cmptable td.tot { font-weight:700; }
+.cmptable .v-bad { color:#b4233f; font-weight:700; }
+.cmptable .v-warn { color:#9a5b00; font-weight:700; }
 </style>
 </head>
 <body>
@@ -829,7 +840,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v69</div>
+            <div class="menu-who"><span id="who"></span> · v70</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -1357,12 +1368,15 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       <button id="adjIn" aria-pressed="true">Entrée</button>
       <button id="adjOut" aria-pressed="false">Sortie</button>
       <button id="adjMove" class="hidden" aria-pressed="false">Déplacer</button>
+      <button id="adjXfer" class="hidden" aria-pressed="false">Autre cabinet</button>
     </div>
     <div class="grid hidden" id="adjMoveBox">
       <label class="f">De<select id="adjFrom"></select></label>
       <label class="f">Vers<select id="adjTo"></select></label>
     </div>
     <div class="sub hidden" id="adjMoveInfo"></div>
+    <label class="f hidden" id="adjXferBox">Vers le cabinet<select id="adjXferTo"></select></label>
+    <div class="sub hidden" id="adjXferInfo"></div>
     <label class="f hidden" id="adjSrcBox">Provenance
       <select id="adjSrc">
         <option value="central">Du stock central (le stock central baisse)</option>
@@ -1439,8 +1453,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
   var barcodeOk = false, descOk = false, trackedOk = false, subOk = false, favOk = false, lotsOk = false, lotsByItem = {}, ordOk = false, photoOk = false, jrnOk = false, consoOk = false, jrnByNumber = {}, conso = {}, consoDebut = 0, consoAt = 0, reasonOk = false, packOk = false, pertes = { ok: false, rows: [] };
-  var REASONS = { expired: "Périmé", damaged: "Cassé ou abîmé", lost: "Perdu ou introuvable", gift: "Don ou prêt", other: "Autre", restock: "Réassort de salle", restock_return: "Retour de salle" };
-  var LOSS = ["expired", "damaged", "lost"];
+  var REASONS = { expired: "Périmé", damaged: "Cassé ou abîmé", lost: "Perdu ou introuvable", gift: "Don ou prêt", other: "Autre", restock: "Réassort de salle", restock_return: "Retour de salle", transfer_out: "Transfert vers un autre cabinet", transfer_in: "Transfert depuis un autre cabinet" };
+  var LOSS = ["expired", "damaged", "lost"], TRANSFER = ["transfer_out", "transfer_in"];
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false, ownerOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
@@ -2092,6 +2106,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     sec.append(h("div", { class: "dnote", text: "Valeur estimée au dernier prix connu. Les pertes ne sont pas comptées dans la consommation ni dans les seuils suggérés." }));
   }
   function renderData(box) {
+    renderCompare(box);
+    renderPriceAlerts(box);
     if (!achOk) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Données non activées" }), h("div", { text: "Lancez le script SQL « ajout-donnees-depenses » dans Supabase pour activer le suivi des dépenses." }))));
       return;
@@ -3844,7 +3860,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   });
   // ---------- récap de la semaine (affiché le lundi, ou depuis le menu Plus) ----------
   function recapData() {
-    var d = { rupt: [], bas: [], perim: [], soon: [], flagged: [], waiting: [], order: [], ctlLate: [], ctlSoon: [] };
+    var d = { rupt: [], bas: [], perim: [], soon: [], flagged: [], waiting: [], order: [], ctlLate: [], ctlSoon: [], price: [] };
+    if (alertOk) priceAlerts.forEach(function (a) { if (!a.traitee) d.price.push(priceLine(a)); });
     items.forEach(function (it) {
       if (it.tracked === false) return;
       var st = statusOf(it);
@@ -3872,6 +3889,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       { key: "order", label: "À commander (pas encore commandés)", cls: "info", list: nm(d.order), go: function () { goTab("commande"); } },
       { key: "waiting", label: "Commandés depuis plus de 7 jours, pas reçus", cls: "warn", list: nm(d.waiting), go: function () { goTab("commande"); } },
       { key: "flagged", label: "Signalés « il n'y en a presque plus »", cls: "warn", list: nm(d.flagged), go: function () { goTab("commande"); } },
+      { key: "price", label: "Hausses de prix à vérifier", cls: "warn", list: d.price, go: function () { goTab("donnees"); } },
       { key: "ctlLate", label: "Contrôles en retard", cls: "bad", list: d.ctlLate, go: function () { goTab("controles"); } },
       { key: "ctlSoon", label: "Contrôles à faire bientôt", cls: "info", list: d.ctlSoon, go: function () { goTab("controles"); } }
     ];
@@ -3941,6 +3959,162 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       if (!d.ok) { linkSay(linkErrText(d.error), true); return; }
       applyLink(d);
     }, function () { $("linkGo").disabled = false; linkSay("Connexion impossible. Vérifiez votre accès à internet.", true); });
+  }
+  // ---------- transférer un produit vers un autre cabinet ----------
+  function xferDestinations() { return cabinets.filter(function (c) { return c.id !== cabinetId && (roles[c.id] === "admin" || roles[c.id] === "member"); }); }
+  function fillXferSelect() {
+    var sel = $("adjXferTo"); sel.textContent = "";
+    xferDestinations().forEach(function (c) { sel.append(h("option", { value: c.id, text: c.name })); });
+    xferLookup();
+  }
+  var xferToken = 0;
+  function xferLookup() {
+    var it = state.adjusting, dest = $("adjXferTo").value, info = $("adjXferInfo"), tok = ++xferToken;
+    if (!it || !dest) { info.textContent = ""; return; }
+    var name = ($("adjXferTo").selectedOptions[0] || {}).text || "ce cabinet";
+    info.textContent = "Vérification dans « " + name + " »…";
+    var q = sb.from("items").select("id,name,qty,ref").eq("cabinet_id", dest).limit(3);
+    q = it.ref ? q.eq("ref", it.ref) : q.ilike("name", String(it.name).replace(/[%_\\]/g, "\\$&"));
+    q.then(function (res) {
+      if (tok !== xferToken) return;
+      var f = !res.error && res.data && res.data[0];
+      info.textContent = res.error ? "Le stock de " + name + " n'a pas pu être consulté."
+        : f ? "Dans « " + name + " » : " + fmt(Number(f.qty) || 0) + " en stock. La quantité sera ajoutée à cet article."
+        : "Ce produit n'existe pas encore dans « " + name + " » : il y sera créé (même nom, même référence, même fournisseur, même prix).";
+      info.textContent += " Les lots et les dates de péremption suivent ; la consommation n'est pas modifiée.";
+    }, function () { if (tok === xferToken) info.textContent = ""; });
+  }
+  function xferErr(e) {
+    var m = String((e && e.message) || "");
+    if (/stock_insuffisant/.test(m)) return "Stock insuffisant pour ce transfert.";
+    if (/acces_refuse/.test(m)) return "Vous n'avez pas le droit de modifier l'un des deux cabinets.";
+    if (/meme_cabinet/.test(m)) return "Choisissez un autre cabinet.";
+    if (/article_introuvable/.test(m)) return "Cet article n'existe plus.";
+    if (/quantite_invalide/.test(m)) return "Indiquez une quantité supérieure à zéro.";
+    if (/function .*transferer_stock|could not find|not find the function|schema cache/i.test(m)) return "Lancez d'abord le script SQL « ajout-transferts-comparaison » dans Supabase.";
+    return "Le transfert a échoué : rien n'a été modifié. Vérifiez la connexion et réessayez.";
+  }
+  function doTransfer(q) {
+    var it = state.adjusting, dest = $("adjXferTo").value, name = ($("adjXferTo").selectedOptions[0] || {}).text || "";
+    if (!it || !dest) { toast("Choisissez le cabinet d'arrivée."); return; }
+    if (q > (Number(it.qty) || 0)) { toast("Il n'y en a que " + fmt(Number(it.qty) || 0) + " dans " + cabinetName + "."); return; }
+    $("adjSave").disabled = true;
+    sb.rpc("transferer_stock", { p_from: cabinetId, p_to: dest, p_item: it.id, p_qty: q, p_note: $("adjNote").value.trim() }).then(function (res) {
+      $("adjSave").disabled = false;
+      if (res.error) { toast(xferErr(res.error)); return; }
+      $("adjDlg").close();
+      var back = [sb.from("items").select("*").eq("id", it.id).single().then(function (r) { var row = r && r.data; if (row) items.set(row.id, fromRow(row)); })];
+      if (lotsOk) back.push(sb.from("lots").select("*").eq("item_id", it.id).then(function (r) { lotsByItem[it.id] = (r.data || []).slice().sort(byExpiry); }));
+      Promise.all(back).then(render, render);
+      toast(fmt(q) + " × " + it.name + " transféré" + (q > 1 ? "s" : "") + " vers " + name + (res.data && res.data.created ? " (article créé là-bas)" : "") + ".");
+    }, function (e) { $("adjSave").disabled = false; toast(xferErr(e)); });
+  }
+  // ---------- comparer mes cabinets ----------
+  var cmpData = null, cmpErr = "", cmpDays = 30, cmpStamp = 0, cmpLoading = false;
+  function loadCompare() {
+    if (cabinets.length < 2 || cmpLoading) return;
+    cmpLoading = true; cmpStamp = Date.now();
+    sb.rpc("comparer_cabinets", { p_days: cmpDays }).then(function (res) {
+      cmpLoading = false;
+      if (res.error) { cmpErr = "off"; cmpData = null; } else { cmpErr = ""; cmpData = res.data || []; }
+      if (state.tab === "donnees") render();
+    }, function () { cmpLoading = false; cmpErr = "off"; if (state.tab === "donnees") render(); });
+  }
+  function renderCompare(box) {
+    if (cabinets.length < 2) return;
+    if (!cmpLoading && Date.now() - cmpStamp > 60000) loadCompare();
+    var sec = h("div", { class: "dsec" });
+    var days = h("select", { "aria-label": "Période" });
+    [[30, "30 derniers jours"], [90, "90 derniers jours"]].forEach(function (o) { days.append(h("option", { value: String(o[0]), text: o[1] })); });
+    days.value = String(cmpDays);
+    days.addEventListener("change", function () { cmpDays = Number(days.value) || 30; cmpData = null; cmpStamp = 0; loadCompare(); render(); });
+    sec.append(h("div", { class: "adminhead" }, h("h3", { text: "Comparer mes cabinets" }), days));
+    if (cmpErr) { sec.append(h("div", { class: "meta", text: "Cette fonction n'est pas encore activée : lancez le script SQL « ajout-transferts-comparaison » dans Supabase." })); box.append(sec); return; }
+    if (!cmpData) { sec.append(h("div", { class: "meta", text: "Chargement…" })); box.append(sec); return; }
+    var cols = cmpData.slice().sort(function (a, b) { return String(a.nom).localeCompare(String(b.nom)); });
+    var n = function (x) { return Number(x) || 0; };
+    var tot = function (k) { return cols.reduce(function (a, c) { return a + n(c[k]); }, 0); };
+    var ROWS = [
+      ["Articles suivis", "articles", fmt, true, ""], ["Valeur du stock (HT, hors équipement)", "valeur", money, true, ""],
+      ["En rupture", "ruptures", fmt, true, "bad"], ["Sous le seuil d'alerte", "sous_seuil", fmt, true, "warn"], ["Périmés", "perimes", fmt, true, "bad"], ["Péremption proche", "peremption_proche", fmt, true, "warn"],
+      ["À commander (pas encore commandés)", "a_commander", fmt, true, "warn"], ["Commandés depuis plus de 7 jours, pas reçus", "commandes_attente", fmt, true, "warn"],
+      ["Consommation (valeur HT)", "consommation", money, true, ""], ["Pertes : périmé, cassé, perdu (valeur HT)", "pertes", money, true, "warn"],
+      ["Pertes en % de la consommation", "_pct", null, false, ""], ["Dépenses de factures (HT)", "depenses", money, true, ""], ["Contrôles en retard", "controles_retard", fmt, true, "bad"]
+    ];
+    var table = h("table", { class: "cmptable" });
+    var head = h("tr", null, h("th", { text: "" }));
+    cols.forEach(function (c) {
+      var cab = cabinets.find(function (x) { return x.id === c.cabinet_id; });
+      head.append(h("th", { class: c.cabinet_id === cabinetId ? "cur" : "" }, h("div", { text: c.nom }),
+        c.cabinet_id !== cabinetId && cab ? h("button", { class: "btn sm", type: "button", onclick: function () { enterCabinet(cab); }, text: "Ouvrir" }) : h("span", { class: "meta", text: "ouvert" })));
+    });
+    head.append(h("th", { text: "Total" }));
+    table.append(head);
+    ROWS.forEach(function (r) {
+      var tr = h("tr", null, h("td", { class: "lbl", text: r[0] }));
+      cols.forEach(function (c) {
+        var v = r[1] === "_pct" ? (n(c.consommation) > 0 ? Math.round(n(c.pertes) / n(c.consommation) * 1000) / 10 : null) : n(c[r[1]]);
+        var txt = r[1] === "_pct" ? (v === null ? "—" : String(v).replace(".", ",") + " %") : r[2](v);
+        tr.append(h("td", { class: "num" + (r[4] && v > 0 ? " v-" + r[4] : "") + (c.cabinet_id === cabinetId ? " cur" : ""), text: txt }));
+      });
+      var T = r[1] === "_pct" ? (tot("consommation") > 0 ? Math.round(tot("pertes") / tot("consommation") * 1000) / 10 : null) : tot(r[1]);
+      tr.append(h("td", { class: "num tot", text: r[1] === "_pct" ? (T === null ? "—" : String(T).replace(".", ",") + " %") : (r[3] ? r[2](T) : "") }));
+      table.append(tr);
+    });
+    sec.append(h("div", { class: "cmpwrap" }, table));
+    sec.append(h("div", { class: "meta", text: "Consommation et pertes sont comptées en valeur (prix HT de chaque article) : on ne peut pas additionner des boîtes et des pièces. Les transferts entre cabinets ne comptent pas comme consommation. Vous ne voyez que les cabinets auxquels vous avez accès." }));
+    box.append(sec);
+  }
+  // ---------- hausses de prix des factures ----------
+  var alertOk = false, priceAlerts = [], showTreated = false;
+  function loadPriceAlerts() {
+    var cid = cabinetId;
+    sb.from("alertes_prix").select("*").eq("cabinet_id", cid).order("created_at", { ascending: false }).limit(300).then(function (res) {
+      if (cid !== cabinetId) return;
+      alertOk = !res.error; priceAlerts = alertOk ? (res.data || []) : [];
+      render();
+    }, function () { alertOk = false; });
+  }
+  function logPriceAlerts(list, dm, supplier) {
+    if (!alertOk || readOnly || !list.length) return;
+    var rows = list.map(function (a) { return { cabinet_id: cabinetId, doc_number: (dm && dm.number) || "", doc_date: (dm && dm.date) || null, supplier: supplier || "", ref: a.it.ref || "", name: a.it.name, ancien_prix: a.known, nouveau_prix: a.now, pct: r2(a.pc), qty: Number(a.qty) || 0 }; });
+    enqueue(function () {
+      return sb.from("alertes_prix").insert(rows).select().then(check).then(function (data) { priceAlerts = (data || []).concat(priceAlerts); render(); });
+    });
+  }
+  function priceLine(a) { return a.name + " : " + money(a.ancien_prix) + " → " + money(a.nouveau_prix) + " (+" + String(Math.round(Number(a.pct) * 10) / 10).replace(".", ",") + " %)"; }
+  function renderPriceAlerts(box) {
+    if (!alertOk || !priceAlerts.length) return;
+    var todo = priceAlerts.filter(function (a) { return !a.traitee; }), done = priceAlerts.filter(function (a) { return a.traitee; });
+    var sec = h("div", { class: "dsec" });
+    var extra = todo.reduce(function (s, a) { return s + (Number(a.nouveau_prix) - Number(a.ancien_prix)) * (Number(a.qty) || 0); }, 0);
+    sec.append(h("div", { class: "adminhead" }, h("h3", { text: "Hausses de prix des factures" + (todo.length ? " · " + todo.length + " à vérifier" : "") }),
+      (todo.length && !readOnly) ? h("button", { class: "btn sm", type: "button", onclick: function () { markPrice(todo); }, text: "Tout marquer comme traité" }) : null));
+    if (!todo.length) sec.append(h("div", { class: "meta", text: "Rien à vérifier : toutes les hausses ont été traitées." }));
+    else sec.append(h("div", { class: "meta", text: "Surcoût estimé sur les quantités facturées : +" + money(extra) + " HT. Le prix de comparaison est le dernier prix réellement payé (factures déjà importées)." }));
+    var rowOf = function (a) {
+      var sur = (Number(a.nouveau_prix) - Number(a.ancien_prix)) * (Number(a.qty) || 0);
+      return h("div", { class: "aperson" },
+        h("div", { class: "amain" }, h("div", { class: "aname", text: a.name }),
+          h("div", { class: "meta", text: priceLine(a).replace(a.name + " : ", "") + (Number(a.qty) ? " · " + fmt(Number(a.qty)) + " facturé" + (Number(a.qty) > 1 ? "s" : "") + " : +" + money(sur) : "") }),
+          h("div", { class: "meta", text: [a.supplier, a.doc_number ? "facture " + a.doc_number : "", a.doc_date ? frDate(a.doc_date) : frDate(a.created_at)].filter(Boolean).join(" · ") })),
+        (!a.traitee && !readOnly) ? h("div", { class: "aact" }, h("button", { class: "btn sm", type: "button", onclick: function () { markPrice([a]); }, text: "Traitée" })) : null);
+    };
+    var wrap = h("div", { class: "alist" }); todo.slice(0, 40).forEach(function (a) { wrap.append(rowOf(a)); });
+    if (todo.length > 40) wrap.append(h("div", { class: "meta", text: "… et " + (todo.length - 40) + " autres." }));
+    sec.append(wrap);
+    if (done.length) {
+      sec.append(h("button", { class: "btn sm", type: "button", onclick: function () { showTreated = !showTreated; render(); }, text: (showTreated ? "Masquer" : "Voir") + " les " + done.length + " traitée" + (done.length > 1 ? "s" : "") }));
+      if (showTreated) { var w2 = h("div", { class: "alist" }); done.slice(0, 40).forEach(function (a) { w2.append(rowOf(a)); }); sec.append(w2); }
+    }
+    box.append(sec);
+  }
+  function markPrice(list) {
+    if (readOnly || !list.length) return;
+    var ids = list.map(function (a) { return a.id; }), now = new Date().toISOString();
+    list.forEach(function (a) { a.traitee = true; a.traitee_par = myEmail; });
+    render();
+    enqueue(function () { return sb.from("alertes_prix").update({ traitee: true, traitee_par: myEmail }).in("id", ids).then(check); });
   }
   function updateSelBar() {
     var n = state.sel.size;
@@ -4148,9 +4322,10 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       if (norm(it.category).indexOf("equipement") !== 0) total += (Number(it.qty) || 0) * (Number(it.price) || 0);
     });
     var home = state.tab === "inventaire" && isHome();
+    var priceN = (alertOk && !state.view) ? priceAlerts.filter(function (a) { return !a.traitee; }).length : 0;
     $("stockValue").textContent = (home && all.length) ? (state.view ? "Valeur dans la salle (hors équipement) : " : "Valeur du stock (hors équipement) : ") + money(total) + " HT · " + money(total * (1 + TVA / 100)) + " TTC (TVA " + TVA + " %)" : "";
     var box = $("alerts"); box.textContent = "";
-    box.classList.toggle("hidden", !home || (!bas && !rupt && !exp && !soon && !flagged && !ctlN));
+    box.classList.toggle("hidden", !home || (!bas && !rupt && !exp && !soon && !flagged && !ctlN && !priceN));
     var mk = function (n, label, filter, cls) {
       if (!n) return;
       box.append(h("button", { class: "alert " + cls, onclick: function () { state.filter = filter; state.cat = ""; render(); } },
@@ -4162,6 +4337,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (soon) box.append(h("button", { class: "alert a-bas", onclick: function () { state.filter = "all"; state.cat = ""; state.f.status = "soon"; state.f.sort = "autonomie"; render(); } },
       h("strong", { text: String(soon) }), " bientôt en rupture (moins de 15 jours de stock)"));
     if (flagged) box.append(h("button", { class: "alert a-bas", onclick: function () { goTab("commande"); } }, h("strong", { text: String(flagged) }), " signalé" + (flagged > 1 ? "s" : "") + " « presque plus »"));
+    if (priceN) box.append(h("button", { class: "alert a-bas", onclick: function () { goTab("donnees"); } }, h("strong", { text: String(priceN) }), " hausse" + (priceN > 1 ? "s" : "") + " de prix à vérifier"));
     if (ctlN) box.append(h("button", { class: "alert a-rupt", onclick: function () { goTab("controles"); } }, h("strong", { text: String(ctlN) }), " contrôle" + (ctlN > 1 ? "s" : "") + " en retard ou périmé" + (ctlN > 1 ? "s" : "")));
   }
 
@@ -4948,6 +5124,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       var out = (r.type === "move" && delta < 0) ? -delta : (r.type === "undo" && delta > 0) ? -delta : 0;
       if (r.type === "move" && r.reason === "restock_return" && delta > 0) out = -delta;
       if (!out) return;
+      if (TRANSFER.indexOf(r.reason) !== -1) return;
       var t = Date.parse(r.created_at) || 0, age = (now - t) / 86400000;
       if (LOSS.indexOf(r.reason) !== -1) { if (age <= 90) l90 += out; return; }
       if (age <= 30) d30 += out;
@@ -5183,6 +5360,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       ? "Lots en stock : " + lotsOf(it.id).map(function (l) { return (l.lot || "sans lot") + " " + fmt(l.qty) + (l.expiry ? " (exp. " + isoToFr(l.expiry) + ")" : ""); }).join(" · ") + ". Une sortie prend d'abord le lot qui périme en premier."
       : "";
     $("adjMove").classList.toggle("hidden", !(sallesOk && rooms.length && !readOnly));
+    $("adjXfer").classList.toggle("hidden", !(!vr && xferDestinations().length && !readOnly && it.tracked !== false));
     syncSeg();
     $("adjDlg").showModal();
     setTimeout(function () { $("adjQty").focus(); }, 0);
@@ -5191,10 +5369,13 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     $("adjIn").setAttribute("aria-pressed", state.adjSign > 0 ? "true" : "false");
     $("adjOut").setAttribute("aria-pressed", state.adjSign < 0 ? "true" : "false");
     $("adjMove").setAttribute("aria-pressed", state.adjSign === 0 ? "true" : "false");
+    $("adjXfer").setAttribute("aria-pressed", state.adjSign === 2 ? "true" : "false");
+    $("adjXferBox").classList.toggle("hidden", state.adjSign !== 2);
+    $("adjXferInfo").classList.toggle("hidden", state.adjSign !== 2);
     $("adjMoveBox").classList.toggle("hidden", state.adjSign !== 0);
     $("adjMoveInfo").classList.toggle("hidden", state.adjSign !== 0);
-    $("adjLotBox").classList.toggle("hidden", !(lotsOk && state.adjSign > 0 && !state.adjScope));
-    $("adjSrcBox").classList.toggle("hidden", !(state.adjScope && state.adjSign > 0));
+    $("adjLotBox").classList.toggle("hidden", !(lotsOk && state.adjSign === 1 && !state.adjScope));
+    $("adjSrcBox").classList.toggle("hidden", !(state.adjScope && state.adjSign === 1));
     $("adjReasonBox").classList.toggle("hidden", !(reasonOk && state.adjSign < 0));
   }
 
@@ -5767,7 +5948,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       var known = it.ref ? pm[it.ref] || 0 : 0;   // seulement le dernier prix réellement payé (factures déjà importées)
       if (e.price > 0 && known > 0) {
         var pc = (e.price - known) / known * 100;
-        if (Math.abs(pc) >= 3) out.price.push({ it: it, known: known, now: e.price, pc: pc });
+        if (Math.abs(pc) >= 3) out.price.push({ it: it, known: known, now: e.price, pc: pc, qty: e.qty });
       }
     });
     var sup = norm(supplier || "").trim();
@@ -5793,7 +5974,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (rep.partial.length) chips.push("⚠ " + rep.partial.length + " partielle" + (rep.partial.length > 1 ? "s" : ""));
     if (rep.excess.length) chips.push("⚠ " + rep.excess.length + " en plus");
     if (rep.missing.length) chips.push("⚠ " + rep.missing.length + " absent" + (rep.missing.length > 1 ? "s" : "") + " de la facture");
-    if (rep.price.length) chips.push("⚠ " + rep.price.length + " prix différent" + (rep.price.length > 1 ? "s" : ""));
+    var up = rep.price.filter(function (a) { return a.pc > 0; }), upCost = up.reduce(function (s, a) { return s + (a.now - a.known) * (Number(a.qty) || 0); }, 0);
+    if (up.length) chips.push("⚠ " + up.length + " prix en hausse (+" + money(upCost) + " HT sur cette facture)");
+    if (rep.price.length > up.length) chips.push((rep.price.length - up.length) + " prix en baisse");
     if (rep.unordered.length) chips.push(rep.unordered.length + " sans commande enregistrée");
     box.append(h("div", { class: "sub", text: chips.join(" · ") + ". Les quantités sont comparées telles qu'elles sont écrites sur la facture." }));
     var group = function (cls, title, arr, line, open) {
@@ -5951,7 +6134,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
           });
         });
       }
-      if (!catOnly.checked) recordDocument(dm, fileName, rows, supplier);
+      if (!catOnly.checked) { recordDocument(dm, fileName, rows, supplier); if (!isCredit) logPriceAlerts(repNow.price.filter(function (a) { return a.pc > 0; }), dm, supplier); }
       if (!catOnly.checked && (repNow.ok.length + repNow.partial.length + repNow.excess.length + repNow.missing.length)) enqueue(function () { return appendLog({ type: "import", itemId: "", item: "Réception " + (dm.number || fileName), delta: 0, qty: 0, note: recvSummary(repNow) }); });
       toast(list.length + " nouvel" + (list.length > 1 ? "s" : "") + " article" + (list.length > 1 ? "s" : "") + ", " + nEntries + " entrée" + (nEntries > 1 ? "s" : "") + " de stock." + (!catOnly.checked && repNow.partial.length ? " " + repNow.partial.length + " livraison" + (repNow.partial.length > 1 ? "s" : "") + " partielle" + (repNow.partial.length > 1 ? "s" : "") + " : le reste reste en attente de livraison." : ""));
     };
@@ -5959,7 +6142,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     spendBtn.disabled = !dm.number || !jrnOk || !achOk || readOnly || !db;
     spendBtn.title = !achOk ? "Lancez d'abord le script SQL « ajout-donnees-depenses » dans Supabase." : !dm.number ? "Numéro de facture non reconnu : impossible d'enregistrer la dépense." : "Garde la dépense de cette facture pour les statistiques, sans toucher au stock.";
     spendBtn.onclick = function () {
+      var repS = receiptReport(rows, supplierInput.value, isCredit);
       if (!recordDocument(dm, fileName, rows, supplierInput.value.trim())) return;
+      if (!isCredit) logPriceAlerts(repS.price.filter(function (a) { return a.pc > 0; }), dm, supplierInput.value.trim());
       $("pdfDlg").close();
       toast("Dépense enregistrée : " + (dm.type === "avoir" ? "avoir " : "facture ") + dm.number + ". Le stock n'a pas changé.");
     };
@@ -6415,12 +6600,15 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   $("adjIn").addEventListener("click", function () { state.adjSign = 1; syncSeg(); });
   $("adjOut").addEventListener("click", function () { state.adjSign = -1; syncSeg(); });
   $("adjMove").addEventListener("click", function () { state.adjSign = 0; fillMoveSelects(); syncSeg(); });
+  $("adjXfer").addEventListener("click", function () { state.adjSign = 2; fillXferSelect(); syncSeg(); });
+  $("adjXferTo").addEventListener("change", xferLookup);
   $("adjFrom").addEventListener("change", moveInfo);
   $("adjTo").addEventListener("change", moveInfo);
   $("adjCancel").addEventListener("click", function () { $("adjDlg").close(); });
   $("adjSave").addEventListener("click", function () {
     var q = num($("adjQty").value);
     if (q <= 0) { toast("Indiquez une quantité supérieure à zéro."); $("adjQty").focus(); return; }
+    if (state.adjSign === 2) { doTransfer(q); return; }
     if (state.adjScope && state.adjSign !== 0) { if (roomAdjustSave(q)) $("adjDlg").close(); return; }
     if (state.adjSign === 0) { if (dispatchFromDialog(q)) $("adjDlg").close(); return; }
     var reason = (state.adjSign < 0 && reasonOk) ? $("adjReason").value : "";
@@ -6823,6 +7011,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     loadConso();
     loadRooms();
     loadControls();
+    loadPriceAlerts();
     fetchAll(function () { return sb.from("lots").select("*").eq("cabinet_id", cid).order("id"); }).then(function (res) {
       if (cid !== cabinetId) return;
       if (res.error) { lotsOk = false; return; }
@@ -6926,6 +7115,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     updateOwnerBtns();
     document.querySelector('.tab[data-tab="utilisateurs"]').classList.toggle("hidden", !isAdmin);
     usersData.members = null; usersData.msg = ""; usersData.mail = null;
+    priceAlerts = []; alertOk = false; cmpData = null; cmpErr = ""; cmpStamp = 0;
     loadOrderQty();
     state.tab = "inventaire"; state.filter = "all"; state.cat = ""; state.q = ""; state.view = ""; $("search").value = "";
     syncTabs(); showScreen("app"); startData(); render();
