@@ -741,6 +741,11 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 #linkMsg.warn { color:var(--warn); }
 #linkDiag { margin-top:6px; font-size:13px; }
 #linkDiagText { white-space:pre-wrap; overflow-wrap:anywhere; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:8px; font-size:12px; max-height:200px; overflow:auto; }
+
+/* ===== v62 : texte copié d'une fiche produit ===== */
+.pastebox { margin-top:8px; }
+.pastebox summary { cursor:pointer; color:var(--brand); font-weight:600; font-size:14px; }
+.pastebox textarea { width:100%; box-sizing:border-box; margin:8px 0; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--bg); color:var(--ink); font:inherit; font-size:14px; resize:vertical; }
 </style>
 </head>
 <body>
@@ -813,7 +818,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v61</div>
+            <div class="menu-who"><span id="who"></span> · v62</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -894,6 +899,10 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
           </div>
         </label>
         <div class="sub" id="linkMsg" aria-live="polite"></div>
+        <details class="pastebox" id="pasteBox"><summary>Ou collez le texte copié de la fiche produit</summary>
+          <textarea id="pasteText" rows="6" placeholder="Sur la page du produit : Cmd + A, Cmd + C, puis collez ici (Cmd + V)" aria-label="Texte copié de la fiche produit"></textarea>
+          <button class="btn sm primary" id="pasteGo" type="button">Analyser le texte</button>
+        </details>
         <details class="hidden" id="linkDiag"><summary>Voir ce qui a été lu</summary><pre id="linkDiagText"></pre><button class="btn sm" id="linkDiagCopy" type="button">Copier ce diagnostic</button></details>
       </div>
       <label class="f full">Nom de l'article
@@ -3619,6 +3628,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function resetLinkBox() {
     $("f_link").value = ""; $("linkMsg").textContent = ""; $("linkMsg").classList.remove("warn");
     $("linkDiag").classList.add("hidden"); $("linkDiag").open = false; $("linkDiagText").textContent = "";
+    $("pasteText").value = ""; $("pasteBox").open = false;
     $("linkBox").classList.toggle("hidden", readOnly);
   }
   function applyLink(d) {
@@ -3663,6 +3673,83 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       : "La fonction « produit-depuis-lien » ne répond pas : est-elle installée dans Supabase ? (voir le guide pas à pas)";
     try { $("linkDiagText").textContent = JSON.stringify({ erreur: name || null, statut: st || null, message: msg || null }, null, 2); $("linkDiag").classList.remove("hidden"); } catch (x) {}
     return base;
+  }
+  // ---------- lire le texte copié d'une fiche produit (sans fonction Supabase) ----------
+  function parsePastedProduct(raw) {
+    var text = String(raw || "").replace(/\r/g, "").replace(/[\u00a0\u202f\u2009]/g, " ");
+    var lines = text.split("\n").map(function (l) { return l.replace(/\s+/g, " ").trim(); }).filter(Boolean);
+    var found = [], out = { name: "", ref: "", brand: "", description: "", price: null, currency: "EUR", barcode: "", host: /gacd/i.test(text) ? "gacd.fr" : "", url: "", debug: { trouve: found, source: "texte collé" } };
+    // référence : « Référence GACD » > « Référence » / « Réf. » > « Référence fabricant » > forme 12-135
+    var REF = "([A-Z0-9][A-Z0-9\\-\\._/]{1,24})", cands = [];
+    var rxRef = new RegExp("(r[ée]f(?:[ée]rence)?\\.?|code\\s*(?:article|produit)|sku|mpn)\\s*(gacd|fabricant|fournisseur|constructeur)?\\s*[:#.]?\\s*" + REF, "gi"), m;
+    while ((m = rxRef.exec(text))) {
+      var code = m[3].replace(/[.\-_/]+$/, ""), qual = (m[2] || "").toLowerCase();
+      if (!/\d/.test(code)) continue;
+      cands.push({ code: code, rank: qual === "gacd" ? 0 : (!qual ? 1 : 2) });
+    }
+    if (cands.length) { cands.sort(function (a, b) { return a.rank - b.rank; }); out.ref = cands[0].code; found.push("référence"); }
+    else { var forms = text.match(/\b\d{2,4}-\d{2,6}\b/g); if (forms && new Set(forms).size === 1) { out.ref = forms[0]; found.push("référence"); } }
+    // code-barres
+    var mb = text.match(/(?:ean|gtin|upc|code[\s-]*barres?)\s*(?:13|14|8)?\s*[:#]?\s*(\d{8,14})\b/i);
+    if (mb) { out.barcode = mb[1]; found.push("code-barres"); }
+    // marque
+    var mm = text.match(/(?:^|\n)\s*(?:marque|fabricant|brand)\s*[:#]\s*([^\n|]{2,40})/i);
+    if (mm) { out.brand = mm[1].trim(); found.push("marque"); }
+    // prix : on préfère un prix HT ; un prix TTC seul est converti
+    var prices = [], rxP = /(?:€\s*)?(\d{1,3}(?: \d{3})+|\d+)(?:[.,](\d{1,2}))?\s*(?:€|eur\b|euros?)/gi;
+    while ((m = rxP.exec(text))) {
+      var val = parseFloat(m[1].replace(/ /g, "") + "." + (m[2] || "0"));
+      var ctx = text.slice(Math.max(0, m.index - 24), m.index + m[0].length + 24);
+      var after = text.slice(m.index + m[0].length, m.index + m[0].length + 14), before = text.slice(Math.max(0, m.index - 22), m.index);
+      var ht = /^\s*(?:ht\b|hors\s*taxe)/i.test(after) || /\bht\b[^\n]{0,18}$/i.test(before);
+      var ttc = /^\s*ttc\b/i.test(after) || /\bttc\b[^\n]{0,18}$/i.test(before);
+      if (isFinite(val) && val > 0) prices.push({ v: val, ht: ht && !ttc, ttc: ttc && !ht });
+    }
+    var ph = prices.filter(function (x) { return x.ht; })[0], pn = prices.filter(function (x) { return !x.ht && !x.ttc; })[0], pt = prices.filter(function (x) { return x.ttc; })[0];
+    if (ph) { out.price = ph.v; found.push("prix HT"); }
+    else if (pn) { out.price = pn.v; found.push("prix (HT ou TTC non précisé)"); out.debug.prixIncertain = true; }
+    else if (pt) { out.price = Math.round(pt.v / (1 + TVA / 100) * 100) / 100; found.push("prix TTC converti en HT"); out.debug.prixConverti = true; }
+    // nom : première ligne qui ressemble à un titre de produit
+    var LABELED = /^(?:r[ée]f|code|marque|fabricant|prix|description|conditionnement|disponib|stock|quantit|ean|gtin|livraison|sku|mpn|unit[ée]|tva|total)/i;
+    var NAV = /^(?:accueil|menu|rechercher|recherche|mon compte|connexion|se connecter|inscription|panier|cat[ée]gories?|retour|suivant|pr[ée]c[ée]dent|ajouter|commander|fiche (?:produit|technique)|partager|imprimer|favoris|aide|contact|cookies?|accepter|refuser|fermer|promo|nouveau|en stock|disponible)\b/i;
+    var mn = text.match(/(?:nom du produit|d[ée]signation|libell[ée]|produit)\s*:\s*([^\n]{4,160})/i);
+    if (mn) out.name = mn[1].trim();
+    else {
+      for (var i = 0; i < Math.min(lines.length, 25); i++) {
+        var l = lines[i];
+        if (l.length < 6 || l.length > 160) continue;
+        if ((l.match(/[>›»]/g) || []).length >= 1 || (l.match(/\//g) || []).length >= 2) continue;
+        if (LABELED.test(l) || NAV.test(l) || /€|\bttc\b|\bht\b/i.test(l) || /^\d+([.,]\d+)?$/.test(l) || /^https?:/i.test(l)) continue;
+        if (!/[a-zà-ÿ]{3}/i.test(l)) continue;
+        out.name = l; break;
+      }
+    }
+    if (out.name) { out.name = out.name.replace(/\s*[|\-–—]\s*(?:gacd|boutique.*|achat.*)$/i, "").trim(); found.push("nom"); }
+    // description : après « Description », sinon la ligne descriptive qui suit le nom
+    var md = text.match(/description\s*(?::|\n)\s*([^\n]{15,300})/i);
+    if (md) out.description = md[1].trim();
+    else {
+      var ni = lines.indexOf(out.name);
+      for (var j = ni + 1; j < Math.min(lines.length, ni + 14) && ni >= 0; j++) {
+        var d2 = lines[j];
+        if (d2.length >= 25 && d2.length <= 300 && !LABELED.test(d2) && !NAV.test(d2) && !/€/.test(d2) && !/^https?:/i.test(d2)) { out.description = d2; break; }
+      }
+    }
+    var mc = text.match(/conditionnement\s*[:#]?\s*([^\n|]{2,40})/i);
+    if (mc && out.description.toLowerCase().indexOf(mc[1].trim().toLowerCase()) === -1) out.description = (out.description ? out.description + " · " : "") + mc[1].trim();
+    out.description = out.description.slice(0, 220);
+    if (out.description) found.push("description");
+    return out;
+  }
+  function fillFromText() {
+    var raw = $("pasteText").value;
+    if (String(raw).trim().length < 8) { linkSay("Collez d'abord le texte copié sur la page du produit.", true); return; }
+    var d = parsePastedProduct(raw); d.ok = true;
+    applyLink(d);
+    var extra = [];
+    if (d.debug.prixConverti) extra.push("Le prix de la page était TTC : il a été converti en HT (TVA " + TVA + " %).");
+    else if (d.debug.prixIncertain) extra.push("La page ne dit pas si le prix est HT ou TTC : vérifiez-le.");
+    if (extra.length) setTimeout(function () { $("linkMsg").append(" " + extra.join(" ")); }, 30);
   }
   function fillFromLink() {
     var url = $("f_link").value.trim();
@@ -6644,6 +6731,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   $("supCancel").addEventListener("click", function () { $("supDlg").close(); });
   $("supSave").addEventListener("click", saveSup);
   $("supName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); saveSup(); } });
+  $("pasteGo").addEventListener("click", fillFromText);
   $("seuilDays").addEventListener("change", drawSeuils);
   $("seuilCancel").addEventListener("click", function () { $("seuilDlg").close(); });
   $("seuilApply").addEventListener("click", applySeuils);
