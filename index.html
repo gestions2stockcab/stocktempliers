@@ -813,7 +813,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v60</div>
+            <div class="menu-who"><span id="who"></span> · v61</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -3669,7 +3669,13 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (!/^https?:\/\//i.test(url)) { linkSay("Collez l'adresse complète de la page du produit (elle commence par https://).", true); return; }
     if (!sb.functions || !sb.functions.invoke) { linkSay("Cette version de l'appli ne sait pas appeler la fonction de lecture.", true); return; }
     $("linkGo").disabled = true; linkSay("Lecture de la page…", false);
-    sb.functions.invoke("produit-depuis-lien", { body: { url: url } }).then(function (res) {
+    // La session de la personne voyage dans « x-user-token » ; l'en-tête Authorization porte la clé publique (lisible par la barrière Verify JWT de Supabase).
+    var callFn = function (token) {
+      var opts = { body: { url: url } };
+      if (token && /^eyJ/.test(cfg.key)) opts.headers = { "x-user-token": token, Authorization: "Bearer " + cfg.key };
+      return sb.functions.invoke("produit-depuis-lien", opts);
+    };
+    (sb.auth && sb.auth.getSession ? sb.auth.getSession().then(function (r) { return r && r.data && r.data.session ? r.data.session.access_token : ""; }, function () { return ""; }) : Promise.resolve("")).then(callFn).then(function (res) {
       $("linkGo").disabled = false;
       if (res.error) { linkSay(linkFnErr(res.error), true); return; }
       var d = res.data || {};
