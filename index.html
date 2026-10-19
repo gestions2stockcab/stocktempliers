@@ -746,6 +746,17 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .pastebox { margin-top:8px; }
 .pastebox summary { cursor:pointer; color:var(--brand); font-weight:600; font-size:14px; }
 .pastebox textarea { width:100%; box-sizing:border-box; margin:8px 0; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--bg); color:var(--ink); font:inherit; font-size:14px; resize:vertical; }
+
+/* ===== v69 : récap de la semaine ===== */
+.recaprow { display:flex; gap:12px; align-items:center; width:100%; text-align:left; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px 12px; margin:8px 0; color:var(--ink); font:inherit; cursor:pointer; }
+.recaprow:hover { border-color:var(--brand); }
+.recapn { flex:none; min-width:42px; height:42px; display:inline-grid; place-items:center; border-radius:12px; font-weight:800; font-size:20px; }
+.recapt { display:flex; flex-direction:column; min-width:0; }
+.recapt .meta { white-space:normal; }
+.r-bad .recapn { background:#fde8ec; color:#b4233f; }
+.r-warn .recapn { background:#fff1d9; color:#9a5b00; }
+.r-info .recapn { background:#e4ecff; color:#2a55c7; }
+#recapBody { max-height:60vh; overflow:auto; }
 </style>
 </head>
 <body>
@@ -818,12 +829,13 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v67</div>
+            <div class="menu-who"><span id="who"></span> · v69</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
             <button class="mi" id="jrnBtn">Factures importées</button>
             <button class="mi" id="dupBtn">Doublons possibles</button>
+            <button class="mi" id="recapBtn">Récap de la semaine</button>
             <button class="mi" id="bkBtn">Sauvegardes</button>
             <button class="mi" id="pwBtn">Changer mon mot de passe</button>
             <button class="mi hidden" id="teamBtn">Utilisateurs et invitations</button>
@@ -1002,6 +1014,19 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       <span class="spacer"></span>
       <button class="btn" id="itemCancel">Annuler</button>
       <button class="btn primary" id="itemSave">Enregistrer</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="recapDlg">
+  <div class="dlg">
+    <h2 id="recapTitle">Récap de la semaine</h2>
+    <div class="sub" id="recapSub"></div>
+    <div id="recapBody"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="recapCopy" type="button">Copier</button>
+      <button class="btn" id="recapMail" type="button">Envoyer par e-mail</button>
+      <button class="btn primary" id="recapClose" type="button">Fermer</button>
     </div>
   </div>
 </dialog>
@@ -3817,6 +3842,87 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (!db || readOnly) { toast(readOnly ? "Votre compte est en lecture seule : impossible d'ajouter un produit." : "Connectez-vous d'abord."); return; }
     receiveProduct(m.d);
   });
+  // ---------- récap de la semaine (affiché le lundi, ou depuis le menu Plus) ----------
+  function recapData() {
+    var d = { rupt: [], bas: [], perim: [], soon: [], flagged: [], waiting: [], order: [], ctlLate: [], ctlSoon: [] };
+    items.forEach(function (it) {
+      if (it.tracked === false) return;
+      var st = statusOf(it);
+      if (st === "rupture") d.rupt.push(it); else if (st === "bas") d.bas.push(it); else if (st === "perime") d.perim.push(it); else if (st === "peremption") d.soon.push(it);
+      var fl = packOk && it.flag_at;
+      if (fl) d.flagged.push(it);
+      if ((st === "rupture" || st === "bas" || fl) && !(Number(it.ordered_qty) > 0)) d.order.push(it);
+      if (ordOk && Number(it.ordered_qty) > 0 && it.ordered_at && Date.now() - Date.parse(it.ordered_at) > 7 * 86400000) d.waiting.push(it);
+    });
+    if (ctlOk) ctlList.forEach(function (c) {
+      var st = ctlStatus(c);
+      if (st === "late") d.ctlLate.push(c.name); else if (st === "soon") d.ctlSoon.push(c.name);
+      (ctlItems[c.id] || []).forEach(function (li) { if (expStatus(li) === "late") d.ctlLate.push(li.label + " (trousse d'urgence : périmé)"); });
+    });
+    ["rupt", "bas", "perim", "soon", "flagged", "waiting", "order"].forEach(function (k) { d[k].sort(byNameItem); });
+    return d;
+  }
+  function recapRows(d) {
+    var nm = function (arr) { return arr.map(function (x) { return typeof x === "string" ? x : x.name; }); };
+    var rows = [
+      { key: "rupt", label: "En rupture", cls: "bad", list: nm(d.rupt), go: function () { goTab("inventaire"); state.filter = "rupt"; state.cat = ""; state.q = ""; render(); } },
+      { key: "bas", label: "Sous le seuil d'alerte", cls: "warn", list: nm(d.bas), go: function () { goTab("inventaire"); state.filter = "bas"; state.cat = ""; state.q = ""; render(); } },
+      { key: "perim", label: "Périmés", cls: "bad", list: nm(d.perim), go: function () { goTab("inventaire"); state.filter = "exp"; state.cat = ""; state.q = ""; render(); } },
+      { key: "soon", label: "Péremption proche", cls: "warn", list: nm(d.soon), go: function () { goTab("inventaire"); state.filter = "exp"; state.cat = ""; state.q = ""; render(); } },
+      { key: "order", label: "À commander (pas encore commandés)", cls: "info", list: nm(d.order), go: function () { goTab("commande"); } },
+      { key: "waiting", label: "Commandés depuis plus de 7 jours, pas reçus", cls: "warn", list: nm(d.waiting), go: function () { goTab("commande"); } },
+      { key: "flagged", label: "Signalés « il n'y en a presque plus »", cls: "warn", list: nm(d.flagged), go: function () { goTab("commande"); } },
+      { key: "ctlLate", label: "Contrôles en retard", cls: "bad", list: d.ctlLate, go: function () { goTab("controles"); } },
+      { key: "ctlSoon", label: "Contrôles à faire bientôt", cls: "info", list: d.ctlSoon, go: function () { goTab("controles"); } }
+    ];
+    return rows.filter(function (r) { return r.list.length; });
+  }
+  function recapText(d, rows) {
+    var dt = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    var lines = ["Récap de la semaine · " + cabinetName + " · " + dt, ""];
+    if (!rows.length) lines.push("Rien à signaler : aucun produit en rupture, aucune péremption proche, aucun contrôle en retard.");
+    rows.forEach(function (r) { lines.push(r.label + " (" + r.list.length + ") : " + r.list.slice(0, 8).join(", ") + (r.list.length > 8 ? "… et " + (r.list.length - 8) + " autres" : "")); });
+    lines.push("", "https://stock.simsimstock.fr");
+    return lines.join("\n");
+  }
+  function openRecap() {
+    var d = recapData(), rows = recapRows(d), body = $("recapBody");
+    $("recapTitle").textContent = "Récap de la semaine · " + cabinetName;
+    $("recapSub").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    body.textContent = "";
+    if (!rows.length) body.append(h("div", { class: "empty" }, h("h2", { text: "Rien à signaler" }), h("div", { text: "Aucune rupture, aucune péremption proche, aucun contrôle en retard." })));
+    rows.forEach(function (r) {
+      body.append(h("button", { class: "recaprow r-" + r.cls, type: "button", onclick: function () { $("recapDlg").close(); r.go(); } },
+        h("span", { class: "recapn", text: String(r.list.length) }),
+        h("span", { class: "recapt" }, h("b", { text: r.label }), h("span", { class: "meta", text: r.list.slice(0, 6).join(", ") + (r.list.length > 6 ? "… et " + (r.list.length - 6) + " autres" : "") }))));
+    });
+    $("recapMail").onclick = function () { location.href = "mailto:?subject=" + encodeURIComponent("Récap de la semaine · " + cabinetName) + "&body=" + encodeURIComponent(recapText(d, rows)); };
+    $("recapCopy").onclick = function () {
+      var t = recapText(d, rows);
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { toast("Récap copié."); }, function () { toast("Copie impossible."); });
+      else toast("Copie impossible.");
+    };
+    $("recapDlg").showModal();
+  }
+  function mondayKey() {
+    var n = new Date(); var day = (n.getDay() + 6) % 7;   // lundi = 0
+    var m = new Date(n.getFullYear(), n.getMonth(), n.getDate() - day);
+    return m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0") + "-" + String(m.getDate()).padStart(2, "0");
+  }
+  function maybeRecap() {
+    if (!db || !cabinetId || new Date().getDay() !== 1) return;
+    var key = "simsim_recap_" + (sessionUser || "") + "_" + cabinetId, seen = "";
+    try { seen = localStorage.getItem(key) || ""; } catch (e) {}
+    if (seen === mondayKey()) return;
+    setTimeout(function () {
+      if (document.querySelector("dialog[open]") || !db) return;
+      var rows = recapRows(recapData());
+      try { localStorage.setItem(key, mondayKey()); } catch (e) {}
+      if (rows.length) openRecap();
+    }, 1800);
+  }
+  $("recapBtn").addEventListener("click", openRecap);
+  $("recapClose").addEventListener("click", function () { $("recapDlg").close(); });
   function fillFromLink() {
     var url = $("f_link").value.trim();
     if (!/^https?:\/\//i.test(url)) { linkSay("Collez l'adresse complète de la page du produit (elle commence par https://).", true); return; }
@@ -5499,21 +5605,23 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
   function bkSlug(t) { return String(t || "cabinet").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
   function loadBackups() {
-    sb.from("sauvegardes").select("id,created_at,origine,nb_articles").eq("cabinet_id", cabinetId).order("created_at", { ascending: false }).limit(50).then(function (res) {
+    var q = function (cols) { return sb.from("sauvegardes").select(cols).eq("cabinet_id", cabinetId).order("created_at", { ascending: false }).limit(50); };
+    var extra = true;
+    q("id,created_at,origine,nb_articles,salles,controles").then(function (res) { if (res.error) { extra = false; return q("id,created_at,origine,nb_articles"); } return res; }).then(function (res) {
       if (res.error) { $("bkInfo").textContent = "Cette fonction n'est pas encore activée : lancez le script SQL « ajout-sauvegardes » dans Supabase."; $("bkNow").classList.add("hidden"); return; }
       var rows = res.data || [];
       $("bkInfo").textContent = rows.length
-        ? "Une sauvegarde automatique est faite le 1er de chaque mois ; les 24 dernières sont conservées. Elle contient les articles et les lots (sans les photos)."
+        ? "Une sauvegarde automatique est faite le 1er de chaque mois ; les 24 dernières sont conservées. Elle contient les articles, les lots" + (extra ? ", les salles avec leurs produits et les contrôles" : "") + " (sans les photos)." + (extra ? "" : " Pour y ajouter les salles et les contrôles, lancez le script SQL « ajout-sauvegardes-salles ».")
         : "Aucune sauvegarde pour l'instant.";
       var list = $("bkList"); list.textContent = "";
       rows.forEach(function (r) {
-        var d = new Date(r.created_at);
+        var d = new Date(r.created_at), nS = (r.salles || []).length, nC = (r.controles || []).length;
         list.append(h("div", { class: "trow" },
           h("div", { class: "tbody" },
             h("div", { class: "item-name", text: d.toLocaleDateString("fr-FR") + " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) }),
-            h("div", { class: "meta", text: (r.origine === "auto" ? "automatique" : "manuelle") + " · " + r.nb_articles + " articles" })),
+            h("div", { class: "meta", text: (r.origine === "auto" ? "automatique" : "manuelle") + " · " + r.nb_articles + " articles" + (nS ? " · " + nS + " salle" + (nS > 1 ? "s" : "") : "") + (nC ? " · " + nC + " contrôle" + (nC > 1 ? "s" : "") : "") })),
           h("button", { class: "btn sm", onclick: function () { bkDownload(r.id); }, text: "Télécharger (Excel)" }),
-          isAdmin ? h("button", { class: "btn sm", onclick: function () { bkRecover(r.id); }, text: "Récupérer les articles supprimés" }) : null));
+          isAdmin ? h("button", { class: "btn sm", onclick: function () { bkRecover(r.id); }, text: "Récupérer ce qui a été supprimé" }) : null));
       });
     }).catch(function () { $("bkInfo").textContent = "Les sauvegardes n'ont pas pu être chargées."; });
   }
@@ -5536,16 +5644,57 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       var nameById = {}; (b.items || []).forEach(function (i) { nameById[i.id] = i.name; });
       var lrows = (b.lots || []).map(function (l) { return [nameById[l.item_id] || "", l.lot || "", l.expiry ? isoToFr(l.expiry) : "", Number(l.qty) || 0]; });
       if (lrows.length) X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([["Libellé du produit", "Lot", "Péremption", "Quantité"]].concat(lrows)), "Lots");
+      var rn = {}, cn = {}, itemName = function (id) { return nameById[id] || ""; };
+      (b.salles || []).forEach(function (r) { rn[r.id] = r.name; });
+      (b.controles || []).forEach(function (c) { cn[c.id] = c.name; });
+      var fdate = function (v) { return v ? new Date(v).toLocaleDateString("fr-FR") : ""; };
+      if ((b.salles || []).length) X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([["Salle", "Type", "Couleur", "Ordre"]].concat((b.salles || []).slice().sort(function (x, y) { return (x.position || 0) - (y.position || 0); }).map(function (r) { return [r.name, ROOM_KINDS[r.kind] || r.kind || "", r.color || "", r.position || 0]; }))), "Salles");
+      if ((b.salle_items || []).length) X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([["Salle", "Produit", "Cible", "Quantité comptée", "Comptée le"]].concat((b.salle_items || []).map(function (l) { return [rn[l.salle_id] || "", itemName(l.item_id), Number(l.target) || 0, l.counted_qty == null ? "" : Number(l.counted_qty), fdate(l.counted_at)]; }).sort(function (x, y) { return norm(x[0]).localeCompare(norm(y[0])) || norm(x[1]).localeCompare(norm(y[1])); }))), "Produits par salle");
+      if ((b.controles || []).length) X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([["Contrôle", "Catégorie", "Fréquence (jours)", "Dernier contrôle", "Par", "Note", "Salle"]].concat((b.controles || []).map(function (c) { return [c.name, c.category || "", Number(c.every_days) || 0, fdate(c.last_done_at), c.last_done_by || "", c.last_note || "", rn[c.salle_id] || ""]; }))), "Contrôles");
+      if ((b.controle_items || []).length) X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([["Contrôle", "Élément", "Quantité", "Péremption"]].concat((b.controle_items || []).map(function (li) { return [cn[li.controle_id] || "", li.label, Number(li.qty) || 0, li.expiry ? isoToFr(li.expiry) : ""]; }))), "Trousse d'urgence");
+      if ((b.controle_logs || []).length) X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([["Date", "Contrôle", "Par", "Résultat", "Note"]].concat((b.controle_logs || []).map(function (l) { return [fdate(l.done_at), cn[l.controle_id] || "", l.done_by || "", l.ok === false ? "à revoir" : "conforme", l.note || ""]; }))), "Journal des contrôles");
       X.writeFile(wb, "sauvegarde-" + bkSlug(cabinetName) + "-" + String(b.created_at).slice(0, 10) + ".xlsx");
     }).catch(function () { toast("La sauvegarde n'a pas pu être téléchargée."); });
+  }
+  function bkExtraMissing(b) {
+    return {
+      rooms: sallesOk ? (b.salles || []).filter(function (r) { return !roomById(r.id); }) : [],
+      ctls: ctlOk ? (b.controles || []).filter(function (c) { return !ctlList.some(function (x) { return x.id === c.id; }); }) : []
+    };
+  }
+  // Recrée les salles et les contrôles supprimés (jamais ceux qui existent déjà)
+  function bkRecoverExtra(b, xm) {
+    var chain = Promise.resolve();
+    if (xm.rooms.length) chain = chain.then(function () {
+      var rows = xm.rooms.map(function (r) { return { id: r.id, cabinet_id: cabinetId, name: r.name, kind: r.kind || "soin", color: r.color || "#2F67FF", position: r.position || 0 }; });
+      return sb.from("salles").insert(rows).select().then(check).then(function () {
+        var ids = new Set(xm.rooms.map(function (r) { return r.id; }));
+        var lines = (b.salle_items || []).filter(function (l) { return ids.has(l.salle_id) && items.has(l.item_id); }).map(function (l) { return { cabinet_id: cabinetId, salle_id: l.salle_id, item_id: l.item_id, target: Number(l.target) || 0, counted_qty: l.counted_qty == null ? null : Number(l.counted_qty), counted_at: l.counted_at || null }; });
+        return lines.length ? sb.from("salle_items").insert(lines).select().then(check) : null;
+      }).then(function () { loadRooms(); });
+    });
+    if (xm.ctls.length) chain = chain.then(function () {
+      var ids = new Set(xm.ctls.map(function (c) { return c.id; }));
+      var rows = xm.ctls.map(function (c) { return { id: c.id, cabinet_id: cabinetId, name: c.name, kind: c.kind || "periodique", category: c.category || "autre", every_days: Number(c.every_days) || 30, last_done_at: c.last_done_at || null, last_done_by: c.last_done_by || null, last_note: c.last_note || null, salle_id: c.salle_id && roomById(c.salle_id) ? c.salle_id : (c.salle_id && xm.rooms.some(function (r) { return r.id === c.salle_id; }) ? c.salle_id : null), notes: c.notes || null }; });
+      return sb.from("controles").insert(rows).select().then(check).then(function () {
+        var its = (b.controle_items || []).filter(function (l) { return ids.has(l.controle_id); }).map(function (l) { return { cabinet_id: cabinetId, controle_id: l.controle_id, label: l.label, qty: Number(l.qty) || 1, expiry: l.expiry || null, position: l.position || 0 }; });
+        return its.length ? sb.from("controle_items").insert(its).select().then(check) : null;
+      }).then(function () { loadControls(); });
+    });
+    return chain;
   }
   // Recrée seulement les articles qui n'existent plus (ni dans la liste, ni à la corbeille) ; ne modifie rien d'autre.
   function bkRecover(id) {
     if (!db || readOnly) return;
     sb.from("sauvegardes").select("*").eq("id", id).single().then(function (res) {
       var b = check(res), missing = (b.items || []).filter(function (i) { return !items.has(i.id) && !trash.has(i.id); });
-      if (!missing.length) { toast("Aucun article n'a été supprimé depuis cette sauvegarde : rien à récupérer."); return; }
-      if (!window.confirm("Récupérer " + missing.length + " article" + (missing.length > 1 ? "s" : "") + " supprimé" + (missing.length > 1 ? "s" : "") + " depuis cette sauvegarde ?\n\nIls sont recréés avec leur quantité de l'époque. Les autres articles ne sont pas modifiés.")) return;
+      var xm = bkExtraMissing(b);
+      if (!missing.length && !xm.rooms.length && !xm.ctls.length) { toast("Rien n'a été supprimé depuis cette sauvegarde : rien à récupérer."); return; }
+      var what = [];
+      if (missing.length) what.push(missing.length + " article" + (missing.length > 1 ? "s" : ""));
+      if (xm.rooms.length) what.push(xm.rooms.length + " salle" + (xm.rooms.length > 1 ? "s" : "") + " avec leurs produits");
+      if (xm.ctls.length) what.push(xm.ctls.length + " contrôle" + (xm.ctls.length > 1 ? "s" : ""));
+      if (!window.confirm("Récupérer " + what.join(", ") + " supprimé(s) depuis cette sauvegarde ?\n\nIls sont recréés tels qu'à l'époque (quantités, cibles, dernier contrôle). Tout ce qui existe déjà n'est pas modifié.")) return;
       var lotsBy = {}; (b.lots || []).forEach(function (l) { (lotsBy[l.item_id] = lotsBy[l.item_id] || []).push(l); });
       enqueue(function () {
         var chain = Promise.resolve(), restored = 0;
@@ -5563,9 +5712,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
             });
           });
         })(missing.slice(i, i + 100));
-        return chain.then(function () {
+        return chain.then(function () { return bkRecoverExtra(b, xm); }).then(function () {
           render();
-          toast(restored + " article" + (restored > 1 ? "s" : "") + " récupéré" + (restored > 1 ? "s" : "") + ".");
+          toast(restored + " article" + (restored > 1 ? "s" : "") + " récupéré" + (restored > 1 ? "s" : "") + (xm.rooms.length || xm.ctls.length ? ", " + xm.rooms.length + " salle(s), " + xm.ctls.length + " contrôle(s)" : "") + ".");
           return appendLog({ type: "import", itemId: "", item: "Sauvegarde", delta: 0, qty: 0, note: restored + " articles récupérés depuis la sauvegarde du " + new Date(b.created_at).toLocaleDateString("fr-FR") });
         });
       });
@@ -6782,7 +6931,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     syncTabs(); showScreen("app"); startData(); render();
     if (welcomePw) { welcomePw = false; toast("Bienvenue ! Choisissez un mot de passe pour vous reconnecter facilement."); openPw(null); }
     else if (incomingAdd) startIncoming();
-    else maybeTour();
+    else { maybeTour(); maybeRecap(); }
   }
   function loadCabinets() {
     return sb.from("cabinets").select("id,name").order("name").then(function (res) {
