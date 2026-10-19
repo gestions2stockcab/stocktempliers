@@ -768,6 +768,13 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .cmptable td.tot { font-weight:700; }
 .cmptable .v-bad { color:#b4233f; font-weight:700; }
 .cmptable .v-warn { color:#9a5b00; font-weight:700; }
+
+/* ===== v71 : liens d'invitation ===== */
+.joinbanner { background:var(--brand-soft, #e4ecff); color:var(--brand); border-radius:12px; padding:9px 12px; margin:8px 0; font-weight:600; font-size:14.5px; }
+.joinbanner.bad { background:#fde8ec; color:#b4233f; }
+.linkrow { margin:10px 0; padding:8px 0; border-top:1px solid var(--line); }
+.linkctl { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:4px; }
+.linkfield { flex:1 1 260px; min-width:0; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); font:inherit; font-size:13px; }
 </style>
 </head>
 <body>
@@ -777,17 +784,22 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     <div class="brandmark" aria-hidden="true">📦</div>
     <h1 id="loginTitle">SimSimStock</h1>
     <div class="sub" id="loginHint">Connectez-vous avec votre e-mail et votre mot de passe.</div>
+    <div class="joinbanner hidden" id="joinBanner" role="status"></div>
     <label class="f">Adresse e-mail
       <input id="loginEmail" type="email" autocomplete="username" inputmode="email">
     </label>
     <label class="f" id="pwLabel">Mot de passe
       <input id="loginPw" type="password" autocomplete="current-password">
     </label>
+    <label class="f hidden" id="pw2Label">Confirmer le mot de passe
+      <input id="loginPw2" type="password" autocomplete="new-password">
+    </label>
     <div class="login-err" id="loginErr" role="alert"></div>
     <div class="login-ok" id="loginOk" role="status"></div>
     <button class="btn primary" id="loginBtn">Se connecter</button>
     <button class="linkbtn" id="loginAlt">Mot de passe oublié ?</button>
     <button class="linkbtn" id="loginMagic">Première connexion ? Recevoir un lien par e-mail</button>
+    <button class="linkbtn hidden" id="loginJoin">Je n'ai pas encore de compte : en créer un</button>
     <div class="sub">Accès réservé à l'équipe. Pour obtenir un compte, contactez la personne qui gère l'outil.</div>
   </div>
 </div>
@@ -840,7 +852,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v70</div>
+            <div class="menu-who"><span id="who"></span> · v71</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -3292,6 +3304,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       rows.forEach(function (x) { wrap2.append(adminPersonRowCab(x.p, x.st, c)); });
       if (!rows.length) wrap2.append(h("div", { class: "meta", text: "Personne pour le moment dans ce cabinet." }));
       sec.append(wrap2);
+      box.append(sec);
+      renderInviteLinks(box, c, true);
+      return;
     }
     box.append(sec);
   }
@@ -6626,6 +6641,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     $("liveText").textContent = text;
   }
   function doLogin() {
+    if (loginMode === "join") { doJoinSignup(); return; }
     if (loginMode === "forgot") { doForgot(); return; }
     if (loginMode === "magic") { doMagic(); return; }
     var email = $("loginEmail").value.trim(), pw = $("loginPw").value;
@@ -6644,15 +6660,20 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function setLoginMode(m) {
     loginMode = m;
     $("loginErr").textContent = ""; $("loginOk").textContent = "";
-    var alt = m === "forgot" || m === "magic";
+    var alt = m === "forgot" || m === "magic", join = m === "join";
     $("pwLabel").classList.toggle("hidden", alt);
-    $("loginMagic").classList.toggle("hidden", alt);
-    $("loginBtn").textContent = alt ? "Envoyer le lien" : "Se connecter";
-    $("loginAlt").textContent = alt ? "Retour à la connexion" : "Mot de passe oublié ?";
+    $("pw2Label").classList.toggle("hidden", !join);
+    $("loginPw").setAttribute("autocomplete", join ? "new-password" : "current-password");
+    $("loginMagic").classList.toggle("hidden", alt || join || !!joinToken);
+    $("loginJoin").classList.toggle("hidden", !joinToken || join);
+    $("joinBanner").classList.toggle("hidden", !joinToken);
+    $("loginBtn").textContent = join ? "Créer mon compte et rejoindre" : (alt ? "Envoyer le lien" : "Se connecter");
+    $("loginAlt").textContent = join ? "J'ai déjà un compte" : (alt ? "Retour à la connexion" : "Mot de passe oublié ?");
     $("loginHint").textContent = m === "forgot"
       ? "Saisissez votre adresse e-mail : vous recevrez un lien pour choisir un nouveau mot de passe."
       : m === "magic"
         ? "Saisissez l'adresse e-mail à laquelle on vous a invité(e) : vous recevrez un lien qui vous connecte directement."
+        : join ? "Créez votre compte : votre adresse e-mail et un mot de passe (8 caractères minimum). Vous le saisirez pour vous reconnecter."
         : "Connectez-vous avec votre e-mail et votre mot de passe.";
   }
   function doForgot() {
@@ -6848,6 +6869,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (u.mail) card.append(h("a", { class: "btn sm", style: "margin-top:6px;display:inline-block", href: mailtoInvite(u.mail.email, u.mail.role), text: "Écrire l'e-mail moi-même" }));
     card.append(h("div", { class: "dnote", text: "La personne reçoit un lien : un clic, et elle accède à ce cabinet. Si elle a déjà un compte, elle est ajoutée tout de suite." }));
     box.append(card);
+    renderInviteLinks(box, { id: cabinetId, name: cabinetName }, ownerOk);
     // personnes qui ont accès
     var mem = h("div", { class: "ucard" }, h("h3", { text: "Personnes ayant accès" + (u.members ? " (" + u.members.length + ")" : "") }));
     if (u.err) mem.append(h("div", { class: "umsg bad", text: u.err }));
@@ -7049,12 +7071,155 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     channels = []; started = false;
     items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
   }
+  // ---------- rejoindre un cabinet avec un lien d'invitation (#rejoindre=...) ----------
+  var JOIN_KEY = "simsim_join";
+  var joinToken = "", joinInfo = null, joinBad = false;
+  (function readJoinHash() {
+    var m = /^#rejoindre=([0-9a-fA-F]{20,100})$/.exec(location.hash || "");
+    try {
+      if (m) { localStorage.setItem(JOIN_KEY, m[1].toLowerCase()); history.replaceState(null, "", location.pathname + location.search); }
+      joinToken = localStorage.getItem(JOIN_KEY) || "";
+    } catch (e) { joinToken = m ? m[1].toLowerCase() : ""; }
+  })();
+  function clearJoin() { joinToken = ""; joinInfo = null; joinBad = false; try { localStorage.removeItem(JOIN_KEY); } catch (e) {} }
+  var JOIN_WHY = { inconnu: "Ce lien n'existe pas ou a été mal copié.", revoque: "Ce lien a été annulé par l'administrateur.", expire: "Ce lien a expiré.", utilise: "Ce lien a déjà été utilisé le nombre de fois prévu." };
+  function loadJoinInfo() {
+    if (!joinToken) return;
+    var tok = joinToken, ban = $("joinBanner");
+    ban.textContent = "Vérification de votre invitation…"; ban.classList.remove("hidden");
+    sb.rpc("lien_infos", { p_token: tok }).then(function (res) {
+      if (tok !== joinToken) return;
+      var d = res && res.data;
+      if (res.error || !d) { ban.textContent = "L'invitation n'a pas pu être vérifiée : réessayez dans un instant."; return; }
+      joinBad = !d.ok;
+      if (!d.ok) { ban.textContent = (JOIN_WHY[d.raison] || "Ce lien n'est plus valable.") + " Demandez un nouveau lien à la personne qui vous l'a envoyé."; ban.classList.add("bad"); joinInfo = null; return; }
+      joinInfo = d; ban.classList.remove("bad");
+      ban.textContent = "Vous êtes invité(e) à rejoindre « " + d.cabinet + " » (" + (ROLE_SHORT[d.role] || d.role).toLowerCase() + ").";
+    }, function () { ban.textContent = "Connexion impossible. Vérifiez votre accès à internet."; });
+  }
+  function doJoinSignup() {
+    var email = $("loginEmail").value.trim(), pw = $("loginPw").value, pw2 = $("loginPw2").value;
+    if (joinBad) { $("loginErr").textContent = "Ce lien n'est plus valable : demandez-en un nouveau à la personne qui vous l'a envoyé."; return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $("loginErr").textContent = "Saisissez une adresse e-mail valide."; return; }
+    if (pw.length < 8) { $("loginErr").textContent = "Le mot de passe doit faire 8 caractères au moins."; return; }
+    if (pw !== pw2) { $("loginErr").textContent = "Les deux mots de passe ne sont pas identiques."; return; }
+    $("loginBtn").disabled = true; $("loginErr").textContent = ""; $("loginOk").textContent = "";
+    sb.auth.signUp({ email: email, password: pw, options: { data: { pw_set: true }, emailRedirectTo: location.origin + location.pathname } }).then(function (res) {
+      $("loginBtn").disabled = false;
+      if (res.error) {
+        var m = res.error.message || "";
+        $("loginErr").textContent = /already|registered|exist/i.test(m) ? "Cette adresse a déjà un compte : cliquez sur « J'ai déjà un compte » et connectez-vous, vous serez ajouté(e) au cabinet."
+          : /signups? .*disabled|not allowed/i.test(m) ? "La création de compte est désactivée dans Supabase. Demandez à l'administrateur de l'activer (Authentication, Sign In / Providers, « Allow new users to sign up »)."
+          : /password/i.test(m) ? "Ce mot de passe n'est pas accepté : choisissez-en un plus long ou moins courant."
+          : /rate|limit|too many/i.test(m) ? "Trop de tentatives : réessayez dans quelques minutes."
+          : "Le compte n'a pas pu être créé. Réessayez dans un instant.";
+        return;
+      }
+      $("loginPw").value = ""; $("loginPw2").value = "";
+      if (!(res.data && res.data.session)) $("loginOk").textContent = "Compte créé. Un e-mail de confirmation vient de vous être envoyé : cliquez sur le lien qu'il contient, vous serez ensuite ajouté(e) au cabinet. Regardez aussi dans les courriers indésirables.";
+    }, function () { $("loginBtn").disabled = false; $("loginErr").textContent = "Connexion impossible. Vérifiez votre accès à internet."; });
+  }
+  // après la connexion : on rejoint le cabinet du lien, puis on l'ouvre
+  function joinPending() {
+    if (!joinToken || !db) return Promise.resolve();
+    var tok = joinToken;
+    return sb.rpc("lien_rejoindre", { p_token: tok }).then(function (res) {
+      if (res.error) {
+        var m = String(res.error.message || "");
+        clearJoin();
+        toast(/lien_expire/.test(m) ? "Ce lien a expiré : demandez-en un nouveau." : /lien_revoque/.test(m) ? "Ce lien a été annulé." : /lien_utilise/.test(m) ? "Ce lien a déjà été utilisé le nombre de fois prévu." : /function .*lien_rejoindre|schema cache/i.test(m) ? "Les liens d'invitation ne sont pas encore activés : lancez le script SQL « ajout-liens-invitation »." : "Ce lien n'est pas valable.");
+        return;
+      }
+      var d = res.data || {};
+      clearJoin();
+      if (d.cabinet_id && sessionUser) { try { localStorage.setItem("simsim_cabinet_" + sessionUser, d.cabinet_id); } catch (e) {} }
+      toast(d.deja_membre ? "Vous aviez déjà accès à « " + d.cabinet + " »." : "Bienvenue dans « " + d.cabinet + " » !");
+    }, function () { toast("Connexion impossible : le lien sera réessayé à votre prochaine connexion."); });
+  }
+  // ---------- liens d'invitation : créer, copier, annuler (espace admin) ----------
+  var linksData = {};   // par cabinet : { rows, err, msg }
+  function linkUrl(token) { return location.origin + location.pathname + "#rejoindre=" + token; }
+  function loadLinks(cab) {
+    var cid = cab.id, st = linksData[cid] = linksData[cid] || {};
+    sb.rpc("liens_liste", { p_cabinet: cid }).then(function (res) {
+      if (res.error) { st.err = /function .*liens_liste|schema cache|does not exist/i.test(String(res.error.message)) ? "off" : "bad"; st.rows = []; }
+      else { st.err = ""; st.rows = res.data || []; }
+      if (state.tab === "utilisateurs" || state.tab === "administration") render();
+    }, function () { st.err = "bad"; st.rows = []; });
+  }
+  function linkState(l) {
+    if (l.revoked) return "annulé";
+    if (new Date(l.expires_at) < new Date()) return "expiré";
+    if (l.uses >= l.max_uses) return "utilisé";
+    return "";
+  }
+  function renderInviteLinks(box, cab, canAdminRole) {
+    var st = linksData[cab.id];
+    if (!st) { linksData[cab.id] = {}; loadLinks(cab); st = linksData[cab.id]; }
+    var card = h("div", { class: "ucard" }, h("h3", { text: "Liens d'invitation" }),
+      h("div", { class: "dnote", text: "Créez un lien et envoyez-le par SMS ou messagerie : la personne crée elle-même son compte (e-mail et mot de passe) et rejoint « " + cab.name + " ». Aucun e-mail n'est envoyé par l'appli. Le lien est un secret : limitez sa durée et le nombre de personnes." }));
+    if (st.err === "off") { card.append(h("div", { class: "umsg bad", text: "Lancez le script SQL « ajout-liens-invitation » dans Supabase pour activer les liens d'invitation." })); box.append(card); return; }
+    if (st.err === "bad") card.append(h("div", { class: "umsg bad", text: "Les liens n'ont pas pu être chargés." }));
+    var role = h("select", { "aria-label": "Rôle de la personne" });
+    ["member", "viewer"].concat(canAdminRole ? ["admin"] : []).forEach(function (r) { role.append(h("option", { value: r, text: ROLE_LABEL[r] })); });
+    var days = h("select", { "aria-label": "Durée de validité" });
+    [[1, "1 jour"], [7, "7 jours"], [30, "30 jours"]].forEach(function (o) { days.append(h("option", { value: String(o[0]), text: "Valable " + o[1] })); });
+    days.value = "7";
+    var max = h("select", { "aria-label": "Nombre de personnes" });
+    [[1, "1 personne"], [5, "5 personnes"], [20, "20 personnes"]].forEach(function (o) { max.append(h("option", { value: String(o[0]), text: o[1] })); });
+    var note = h("input", { type: "text", maxlength: "80", placeholder: "Pour qui ? (facultatif)", "aria-label": "Note", autocomplete: "off" });
+    var go = h("button", { class: "btn primary", type: "button", text: "Créer le lien" });
+    go.addEventListener("click", function () {
+      go.disabled = true;
+      sb.rpc("lien_creer", { p_cabinet: cab.id, p_role: role.value, p_jours: Number(days.value), p_max: Number(max.value), p_note: note.value.trim() }).then(function (res) {
+        go.disabled = false;
+        if (res.error) { st.msg = /acces_refuse/.test(res.error.message) ? "Vous n'avez pas le droit de créer un lien pour ce cabinet." : /reserve_proprietaire/.test(res.error.message) ? "Seul le propriétaire peut créer un lien administrateur." : "Le lien n'a pas pu être créé."; st.bad = true; render(); return; }
+        st.msg = "Lien créé : copiez-le ci-dessous et envoyez-le."; st.bad = false; loadLinks(cab);
+      }, function () { go.disabled = false; st.msg = "Connexion impossible."; st.bad = true; render(); });
+    });
+    card.append(h("div", { class: "uform" }, role, days, max, note, go));
+    if (st.msg) card.append(h("div", { class: "umsg" + (st.bad ? " bad" : ""), role: "status", text: st.msg }));
+    var rows = (st.rows || []), live = rows.filter(function (l) { return !linkState(l); }), done = rows.filter(function (l) { return linkState(l); });
+    if (!st.rows && !st.err) card.append(h("div", { class: "sub", text: "Chargement…" }));
+    var line = function (l) {
+      var url = linkUrl(l.token), inp = h("input", { type: "text", readonly: "readonly", value: url, "aria-label": "Lien d'invitation", class: "linkfield" });
+      inp.addEventListener("focus", function () { inp.select(); });
+      var cp = h("button", { class: "btn sm", type: "button", text: "Copier" });
+      cp.addEventListener("click", function () {
+        var ok = function () { cp.textContent = "Copié ✓"; setTimeout(function () { cp.textContent = "Copier"; }, 1800); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, function () { inp.select(); toast("Copiez le lien sélectionné (Cmd + C)."); }); else { inp.select(); toast("Copiez le lien sélectionné (Cmd + C)."); }
+      });
+      var acts = [cp];
+      if (navigator.share) acts.push(h("button", { class: "btn sm", type: "button", text: "Partager", onclick: function () { navigator.share({ title: "Invitation SimSimStock", text: "Voici votre lien pour rejoindre " + cab.name + " :", url: url }).catch(function () {}); } }));
+      var stt = linkState(l);
+      if (!stt) {
+        var rv = h("button", { class: "btn sm danger", type: "button", text: "Annuler le lien" }), armed = false;
+        rv.addEventListener("click", function () {
+          if (!armed) { armed = true; rv.textContent = "Confirmer"; return; }
+          sb.rpc("lien_revoquer", { p_id: l.id }).then(function (res) { st.msg = res.error ? "Le lien n'a pas pu être annulé." : "Lien annulé : il ne marche plus."; st.bad = !!res.error; loadLinks(cab); });
+        });
+        acts.push(rv);
+      }
+      return h("div", { class: "linkrow" },
+        h("div", { class: "meta", text: (ROLE_LABEL[l.role] || l.role) + (l.note ? " · " + l.note : "") + " · " + l.uses + "/" + l.max_uses + " utilisé" + (l.max_uses > 1 ? "s" : "") + " · " + (stt ? stt : "expire le " + frDate(l.expires_at)) + " · créé par " + String(l.created_by || "").split("@")[0] }),
+        h("div", { class: "linkctl" }, inp, h("div", { class: "uact" }, acts)));
+    };
+    live.forEach(function (l) { card.append(line(l)); });
+    if (st.rows && !live.length) card.append(h("div", { class: "sub", text: "Aucun lien actif. Créez-en un ci-dessus." }));
+    if (done.length) {
+      card.append(h("button", { class: "btn sm", type: "button", text: (st.showDone ? "Masquer" : "Voir") + " les " + done.length + " lien" + (done.length > 1 ? "s" : "") + " terminé" + (done.length > 1 ? "s" : ""), onclick: function () { st.showDone = !st.showDone; render(); } }));
+      if (st.showDone) done.slice(0, 20).forEach(function (l) { card.append(line(l)); });
+    }
+    box.append(card);
+  }
   function showScreen(which) {
     $("login").classList.toggle("hidden", which !== "login");
     $("pick").classList.toggle("hidden", which !== "pick");
     $("app").classList.toggle("hidden", which !== "app");
     $("recover").classList.toggle("hidden", which !== "recover");
+    if (which === "login" && joinToken && !joinShown) { joinShown = true; setLoginMode("join"); loadJoinInfo(); }
   }
+  var joinShown = false;
   function updateOwnerBtns() {
     $("newCabBtn").classList.toggle("hidden", !ownerOk);
     $("pickNew").classList.toggle("hidden", !ownerOk);
@@ -7148,7 +7313,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       showPick(false, true);
       var goCab = function () { loadCabinets(); };
       sb.rpc("est_proprietaire").then(function (r0) { ownerOk = !!(r0 && !r0.error && r0.data === true); updateOwnerBtns(); }, function () {});
-      sb.rpc("accept_invitations").then(function () { goCab(); }, goCab);
+      sb.rpc("accept_invitations").then(function () { return joinPending(); }, function () { return joinPending(); }).then(goCab, goCab);
       if (needsPwSetup(s)) openWelcomePw();
       loadPrefs();
     } else {
@@ -7244,7 +7409,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   $("cabName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); createCabinet(); } });
   $("switchBtn").addEventListener("click", function () { stopData(); cabinetId = null; showPick(false); });
   $("pickLogout").addEventListener("click", function () { if (sb) sb.auth.signOut(); });
-  $("loginAlt").addEventListener("click", function () { setLoginMode(loginMode === "in" ? "forgot" : "in"); });
+  $("loginAlt").addEventListener("click", function () { setLoginMode(loginMode === "join" ? "in" : (loginMode === "in" ? "forgot" : "in")); });
+  $("loginJoin").addEventListener("click", function () { setLoginMode("join"); });
   $("loginMagic").addEventListener("click", function () { setLoginMode("magic"); });
   $("recBtn").addEventListener("click", doRecover);
   $("rec2").addEventListener("keydown", function (e) { if (e.key === "Enter") doRecover(); });
