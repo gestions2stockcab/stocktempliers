@@ -364,6 +364,7 @@ details.prd > summary::-webkit-details-marker { display:none; }
 .trow { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; padding:10px 14px; border-top:1px solid var(--line); }
 .trow .tbody { flex:1 1 260px; min-width:0; overflow-wrap:anywhere; }
 .banner.bad { background:var(--bad-bg); color:var(--bad); }
+.banner.ok { background:var(--ok-bg); color:var(--ok); }
 .dupgrp { border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin:10px 0; background:var(--surface); }
 .dupgrp h3 { font-size:15px; margin:0 0 6px; }
 .duprow { display:flex; gap:10px; align-items:flex-start; padding:6px 0; border-top:1px solid var(--line); }
@@ -852,7 +853,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v76</div>
+            <div class="menu-who"><span id="who"></span> · v77</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -5828,12 +5829,12 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var todo = [];
     docs.forEach(function (d) {
       var rows = parseAny(d.lines), dm = docMeta(d.lines), head = d.lines.slice(0, 80).join(" "), sup = guessSupplier(head);
-      var done = !!(dm.number && jrnByNumber[dm.number]), sum = r2(rows.reduce(function (a, r) { return a + (r.ship ? 0 : (Number(r.qty) || 0) * (Number(r.price) || 0)); }, 0));
+      var done = !!(dm.number && jrnByNumber[dm.number]), chk = totalCheck(rows, dm), sum = chk ? chk.sum : r2(rows.reduce(function (a, r) { return a + (r.ship ? 0 : (Number(r.qty) || 0) * (Number(r.price) || 0)); }, 0));
       if (!done && rows.length && dm.number) todo.push({ dm: dm, rows: rows, sup: sup });
       list.append(h("div", { class: "urow" },
         h("div", null,
           h("div", { class: "item-name", text: "Facture " + (dm.number || "?") + (dm.date ? " du " + frDate(dm.date) : "") }),
-          h("div", { class: "meta", text: [sup, rows.length + " ligne" + (rows.length > 1 ? "s" : ""), dm.total != null ? money(dm.total) + " HT" : money(sum) + " HT (lignes)", done ? "déjà enregistrée" : ""].filter(Boolean).join(" · ") })),
+          h("div", { class: "meta", text: [sup, rows.length + " ligne" + (rows.length > 1 ? "s" : ""), dm.total != null ? money(dm.total) + " HT" : money(sum) + " HT (lignes)", chk ? (chk.ok ? "✓ total vérifié" : "⚠ écart avec le total") : "", done ? "déjà enregistrée" : ""].filter(Boolean).join(" · ") })),
         h("div", { class: "uact" }, h("button", { class: "btn sm", type: "button", disabled: !rows.length, onclick: function () { multiCtx.back = true; $("multiDlg").close(); showPdfPreview(fileName, d.lines); }, text: "Contrôler et importer" }))));
     });
     $("multiTitle").textContent = "« " + fileName + " » contient " + docs.length + " factures";
@@ -6257,6 +6258,13 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     group("", "Livré sans commande enregistrée", rep.unordered, function (a) { return a.it.name + " : " + fmt(a.got) + " reçu" + (a.got > 1 ? "s" : ""); }, false);
     return box;
   }
+  // Contrôle du total : les lignes lues doivent refaire le total HT de la facture (écart toléré : arrondis).
+  function totalCheck(rows, dm) {
+    if (!dm || !dm.total || !rows.length) return null;
+    var sum = r2(rows.reduce(function (a, r) { return a + (r.ship ? 0 : (Number(r.qty) || 0) * (Number(r.price) || 0)); }, 0));
+    var diff = r2(sum - dm.total);
+    return { sum: sum, total: dm.total, diff: diff, ok: Math.abs(diff) <= Math.max(1, dm.total * 0.01) };
+  }
   function parseAny(lines) {
     var rows = parseDocLines(lines);
     if (!rows.length) rows = parseLinesB(lines);
@@ -6294,9 +6302,10 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     warns.forEach(function (t) { info.append(h("div", { class: "banner bad", text: t })); });
     if (rows.some(function (r) { return r.service; })) info.append(h("div", { class: "banner", text: "Les lignes de service (déplacement, main d'œuvre, livraison) sont décochées : ce n'est pas du stock. Elles restent comptées dans la dépense de la facture." }));
     if (rows._fmt === "E") info.append(h("div", { class: "banner bad", text: "Format de facture inconnu : les lignes ont été devinées à partir des nombres (quantité × prix = montant). Elles sont décochées : vérifiez chaque ligne, cochez celles qui sont justes, puis importez. Si cette facture revient souvent, transmettez-la à la personne qui gère l'outil pour qu'elle soit lue automatiquement." }));
-    if (dm.total) {   // filet de sécurité : les lignes lues doivent faire le total de la facture
-      var sumHt = r2(rows.reduce(function (a, r) { return a + (r.ship ? 0 : (Number(r.qty) || 0) * (Number(r.price) || 0)); }, 0));
-      if (Math.abs(sumHt - dm.total) > Math.max(1, dm.total * 0.01)) info.append(h("div", { class: "banner bad", text: "Le total des lignes lues (" + money(sumHt) + ") est différent du total HT de la facture (" + money(dm.total) + ") : il manque peut-être une ligne (frais de port, remise globale…). Vérifiez avant d'importer." }));
+    var chk = totalCheck(rows, dm);
+    if (chk) {
+      if (chk.ok) info.append(h("div", { class: "banner ok", role: "status", text: "✓ Total vérifié : les " + rows.length + " lignes lues font " + money(chk.sum) + " HT, comme la facture (" + money(chk.total) + ")" + (Math.abs(chk.diff) >= 0.01 ? " à " + money(Math.abs(chk.diff)) + " près (arrondis)." : ".") }));
+      else info.append(h("div", { class: "banner bad", role: "status", text: "⚠ Le total des lignes lues (" + money(chk.sum) + ") est différent du total HT de la facture (" + money(chk.total) + ") : il manque peut-être une ligne (frais de port, remise globale…). Vérifiez avant d'importer." }));
     }
     if (isCredit) info.append(h("div", { class: "banner", text: "Ce document est un avoir (annulation ou retour) : les lignes sont décochées. Ne les importez pas comme une livraison." }));
     var supplierInput = h("input", { type: "text", value: guessSupplier(head), autocomplete: "off" });
