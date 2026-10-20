@@ -852,7 +852,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v72</div>
+            <div class="menu-who"><span id="who"></span> · v73</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -5653,6 +5653,51 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     });
     return merged;
   }
+  // Factures en tableau (EBP et autres logiciels de gestion, par exemple DMD) :
+  // Code | Description | % Rem | Qté | Unité | P.U. HT | remise unitaire | P.U. net HT | Montant HT | TVA | Montant TTC
+  function parseLinesD(lines) {
+    var NUM = /^-?\d+,\d{2}$/, out = [], last = null;
+    var STOP = /^(r[ée]capitulatif|total\b|taux\b|net [àa] payer|banque|rib\b|iban|bic\b|coordonn[ée]es|prix comptant|en cas de retard|cat[ée]gorie|date d.[ée]ch[ée]ance|siret|document cr[ée]|\d+ sur \d+)/i;
+    for (var i = 0; i < lines.length; i++) {
+      var raw = String(lines[i]).replace(/(^|\s)(\d{1,3}) (\d{3},\d{2})(?=\s|$)/g, "$1$2$3"), t = raw.split(/\s+/), u = -1;
+      for (var k = 2; k < t.length - 3; k++) {
+        if (/^[A-Z][A-Z0-9]{1,3}$/.test(t[k]) && NUM.test(t[k - 1]) && NUM.test(t[k + 1])) { u = k; break; }
+      }
+      if (u < 0) {
+        // la description d'un article peut continuer sur les lignes suivantes
+        if (STOP.test(raw)) last = null;
+        else if (last && last.cont < 3 && raw.length <= 45 && !/\d,\d{2}/.test(raw)) { last.name += " " + raw; last.cont++; }
+        continue;
+      }
+      var nums = t.slice(u + 1);
+      if (nums.length < 4 || nums.length > 7 || !nums.every(function (x) { return NUM.test(x); })) { last = null; continue; }
+      var qty = moneyNum(t[u - 1]), ht = moneyNum(nums[nums.length - 3]);
+      if (!(qty > 0) || !(ht > 0)) { last = null; continue; }   // lignes « Transformé de : … » à zéro
+      var body = t.slice(0, u - 1);
+      if (body.length > 2 && NUM.test(body[body.length - 1])) body.pop();   // le % de remise
+      var k0 = -1;
+      for (var q = 0; q < body.length; q++) if (/[a-zà-ÿ]/.test(body[q])) { k0 = q; break; }
+      var code, desc;
+      if (k0 === 0) { last = null; continue; }   // pas de code : frais de port, texte libre…
+      if (k0 > 0) { code = body.slice(0, k0).join(" "); desc = body.slice(k0).join(" "); }
+      else { code = body[0]; desc = body.slice(1).join(" ") || body[0]; }
+      last = { ref: code, name: desc, qty: qty, price: Math.round(ht / qty * 100) / 100, cont: 0 };
+      out.push(last);
+    }
+    var merged = [], seen = {};
+    out.forEach(function (r) {
+      delete r.cont;
+      var key = norm(r.ref).trim() + "|" + norm(r.name).trim();
+      if (seen[key]) { seen[key].qty += r.qty; return; }
+      seen[key] = r; merged.push(r);
+    });
+    // deux articles différents qui portent le même nom : on ajoute leur code pour ne pas les mélanger
+    var byName = {};
+    merged.forEach(function (r) { var n = norm(r.name).trim(); (byName[n] = byName[n] || []).push(r); });
+    Object.keys(byName).forEach(function (n) { if (byName[n].length > 1) byName[n].forEach(function (r) { r.name += " (" + r.ref + ")"; }); });
+    merged._fmt = "D";
+    return merged;
+  }
   function parseLinesB(lines) {
     var out = [], cur = null;
     var finish = function () {
@@ -5689,7 +5734,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function guessSupplier(text) {
     var known = ["GACD", "Septodont", "Henry Schein", "Dentsply", "Straumann", "Nobel Biocare", "Zimmer", "Biotech Dental", "Pierre Fabre", "Ivoclar", "Kerr"];
     for (var i = 0; i < known.length; i++) if (new RegExp(known[i], "i").test(text || "")) return known[i];
-    return "";
+    var m = /^\s*(?:SAS|SARL|SASU|SA|EURL)\s+([A-Z0-9][A-Za-z0-9&'.-]*(?: [A-Z][A-Za-z0-9&'.-]*){0,2}?)(?=\s+\d|\s+[a-zé]|$)/.exec(text || "");
+    return m ? m[1] : "";
   }
   function applyLotExpiry(it, lot, exp) {
     if (!lot && !exp) return;
@@ -5714,6 +5760,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (/adhes|bonding|etch|silane|vivapen|primer|mordan/.test(n)) return "Colles et adhésifs";
     if (/ciment|cement|nx3|fuji|panavia|scellement/.test(n)) return "Scellement et ciments";
     if (/empreinte|putty|turboflex|dentotemp|provisoire|tenon|dentoclic/.test(n)) return "Prothèse et empreintes";
+    if (/fraise|diamant|diacut|arkansas|carbure|polissoir|tri hawk|hawk|disque|strip/.test(n)) return "Fraises et polissage";
     if (/gant/.test(n)) return "Gants et protection";
     if (/lingette|desinfect|viractis|orotol|instrugerm|steril/.test(n)) return "Désinfection et hygiène";
     if (/capteur|radio|gaine/.test(n)) return "Radiologie";
@@ -5747,7 +5794,15 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       var g = /\b(facture|avoir)\s*(?:n[°o]|num[ée]ro)\s*:?\s*([A-Z0-9][A-Z0-9-]{4,19})/i.exec(t);
       if (g) { out.number = g[2]; out.type = /avoir/i.test(g[1]) ? "avoir" : "facture"; }
     }
-    var ht = /Montant total HT\s+(\d[\d. ]*,\d{2})/i.exec(t);
+    if (!out.number) {
+      var n2 = /\bNum[ée]ro\b.{0,120}?\b([A-Z]{1,4}\d{5,12})\b/.exec(t);
+      if (n2) { out.number = n2[1]; out.type = /\bavoir\b/i.test(t.slice(0, 300)) ? "avoir" : "facture"; }
+    }
+    if (!out.date) {
+      var d2 = /\bDate\s*:\s*(\d{2})[./](\d{2})[./](\d{4})/i.exec(t);
+      if (d2) out.date = d2[3] + "-" + d2[2] + "-" + d2[1];
+    }
+    var ht = /Montant total HT\s+(\d[\d. ]*,\d{2})/i.exec(t) || /\bTotal HT\s+(\d[\d. ]*,\d{2})/i.exec(t);
     if (ht) out.total = parseFloat(ht[1].replace(/[. ]/g, "").replace(",", "."));
     var re = /(ANNULATION|REFACTURATION)\s+FT\s+(\d{6,})/gi, x;
     while ((x = re.exec(t))) { (/^A/i.test(x[1]) ? out.annul : out.refact).push(x[2]); }
@@ -6013,6 +6068,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function showPdfPreview(fileName, lines) {
     var rows = parseDocLines(lines);
     if (!rows.length) rows = parseLinesB(lines);
+    if (!rows.length) rows = parseLinesD(lines);
     if (!rows.length) {
       toast("Aucune ligne d'article reconnue : mise en page non prise en charge, ou PDF scanné. Utilisez plutôt un fichier Excel.");
       return;
@@ -6037,6 +6093,10 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     info.textContent = ""; box.textContent = "";
     info.append(h("div", { class: "sub", text: rows.length + " ligne" + (rows.length > 1 ? "s" : "") + " reconnue" + (rows.length > 1 ? "s" : "") + " dans « " + fileName + " ». Vérifiez et corrigez si besoin. Les articles déjà présents reçoivent une entrée de stock, les autres sont créés." }));
     warns.forEach(function (t) { info.append(h("div", { class: "banner bad", text: t })); });
+    if (rows._fmt === "D" && dm.total) {   // filet de sécurité : les lignes lues doivent faire le total de la facture
+      var sumHt = r2(rows.reduce(function (a, r) { return a + (Number(r.qty) || 0) * (Number(r.price) || 0); }, 0));
+      if (Math.abs(sumHt - dm.total) > Math.max(1, dm.total * 0.01)) info.append(h("div", { class: "banner bad", text: "Le total des lignes lues (" + money(sumHt) + ") est différent du total HT de la facture (" + money(dm.total) + ") : il manque peut-être une ligne (frais de port, remise globale…). Vérifiez avant d'importer." }));
+    }
     if (isCredit) info.append(h("div", { class: "banner", text: "Ce document est un avoir (annulation ou retour) : les lignes sont décochées. Ne les importez pas comme une livraison." }));
     var supplierInput = h("input", { type: "text", value: guessSupplier(head), autocomplete: "off" });
     info.append(h("label", { class: "f" }, "Fournisseur des nouveaux articles (facultatif)", supplierInput));
@@ -6056,6 +6116,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     };
     var opts = DOMAINS.concat([EQUIP]);
     domainList().forEach(function (c) { if (opts.indexOf(c) === -1) opts.push(c); });
+    rows.forEach(function (r) { if (r.domain && opts.indexOf(r.domain) === -1) opts.push(r.domain); });
     var table = h("div");
     table.append(h("div", { class: "prow head" }, h("div"), h("div", { text: "Article" }), h("div", { text: "Qté" }), h("div", { class: "pc-dom", text: "Domaine" }), h("div", { class: "pc-st", text: "Action" })));
     rows.forEach(function (r) {
