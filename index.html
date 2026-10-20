@@ -852,7 +852,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v74</div>
+            <div class="menu-who"><span id="who"></span> · v76</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -1037,6 +1037,18 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       <span class="spacer"></span>
       <button class="btn" id="itemCancel">Annuler</button>
       <button class="btn primary" id="itemSave">Enregistrer</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="multiDlg">
+  <div class="dlg">
+    <h2 id="multiTitle">Plusieurs factures</h2>
+    <div class="sub" id="multiSub"></div>
+    <div id="multiList"></div>
+    <div class="dlg-actions">
+      <button class="btn primary" id="multiAll" type="button">Enregistrer toutes les dépenses</button>
+      <button class="btn" id="multiClose" type="button">Fermer</button>
     </div>
   </div>
 </dialog>
@@ -5755,6 +5767,109 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     merged._fmt = "E";
     return merged;
   }
+  // Factures « Dental Price » et semblables : Référence | Produit | P.U (HT) | P.U (TTC) | TVA | Qté | Total (TTC).
+  // Le nom d'un produit peut tenir sur deux lignes (la ligne des chiffres est au milieu). Les lignes de service sont repérées.
+  function parseLinesF(lines) {
+    var M = "(?:\\d{1,3}(?: \\d{3})+|\\d+),\\d{2}";
+    var TAIL = new RegExp("(^|\\s)(" + M + ") €\\s+(" + M + ") €\\s+(\\d{1,2}(?:[.,]\\d+)?)\\s*%\\s+(\\d+(?:[.,]\\d+)?)\\s+(" + M + ") €\\s*$");
+    var from = -1, to = lines.length;
+    for (var i = 0; i < lines.length; i++) {
+      if (from < 0 && /^R[ée]f[ée]rence\s+Produit\s+P\.U\s*\(HT\)/i.test(lines[i])) from = i + 1;
+      else if (from >= 0 && /^(Nombre de produits|D[ée]tail des taxes|Total \(HT\))/i.test(lines[i])) { to = i; break; }
+    }
+    if (from < 0) return [];
+    var rows = [], frag = [];   // frag : lignes de texte qui ne portent pas de chiffres (suite des noms)
+    for (var j = from; j < to; j++) {
+      var l = lines[j];
+      if (/^Service\s*:/i.test(l)) continue;
+      var m = TAIL.exec(l);
+      if (!m) { frag.push({ idx: j, text: l }); continue; }
+      var head = l.slice(0, m.index).trim().split(/\s+/).filter(Boolean);
+      var ref = head.length ? head[0] : "", name = head.slice(1).join(" ");
+      if (ref === "--") ref = "";
+      rows.push({ idx: j, ref: ref, name: name, qty: moneyNum(m[5]), price: moneyNum(m[2]), tva: moneyNum(m[4]), ttc: moneyNum(m[6]) });
+    }
+    // un nom écrit sur deux lignes : la ligne des chiffres (et de la référence) est au milieu
+    var used = {};
+    rows.forEach(function (r, k) {
+      if (r.name) return;
+      var above = frag.find(function (f) { return f.idx === r.idx - 1 && !used[f.idx]; });
+      var below = frag.find(function (f) { return f.idx === r.idx + 1 && !used[f.idx]; });
+      var parts = [];
+      if (above) { parts.push(above.text); used[above.idx] = 1; }
+      if (below) { parts.push(below.text); used[below.idx] = 1; }
+      r.name = parts.join(" ");
+    });
+    var out = rows.filter(function (r) { return r.name && r.qty > 0 && r.price > 0; }).map(function (r) {
+      var svc = /^service\s*-/i.test(r.name) || /^(DZ\d|MO)$/i.test(r.ref);
+      return { ref: r.ref, name: r.name.replace(/^Service - /i, "").replace(/\s+/g, " ").trim(), qty: r.qty, price: r.price, service: svc };
+    });
+    // frais de livraison facturés
+    var fr = lines.slice(to).map(function (l) { return /^Frais de livraison\s+(\d[\d ]*,\d{2}) €/i.exec(l); }).filter(Boolean)[0];
+    if (fr) { var ttc = moneyNum(fr[1]); out.push({ ref: "", name: "Frais de livraison", qty: 1, price: Math.round(ttc / 1.2 * 100) / 100, service: true, ship: true }); }
+    out._fmt = "F";
+    return out;
+  }
+  // Un même PDF peut contenir plusieurs factures à la suite (et des pages qui n'en sont pas, comme des rapports d'intervention).
+  function splitDocuments(pages) {
+    var docs = [], cur = null, skipping = false;
+    pages.forEach(function (pg) {
+      var num = docMeta(pg).number, report = pg.some(function (l) { return /^Rapport d.intervention/i.test(l); });
+      if (num && (!cur || num !== cur.number)) { cur = { number: num, lines: pg.slice(), pages: 1 }; docs.push(cur); skipping = false; return; }
+      if (report) { skipping = true; return; }
+      if (cur && !skipping) { cur.lines = cur.lines.concat(pg); cur.pages++; }
+    });
+    return docs.length > 1 ? docs : [];
+  }
+  var multiCtx = null;
+  function showMultiDocs(fileName, docs) {
+    multiCtx = { fileName: fileName, docs: docs, back: false };
+    var list = $("multiList"); list.textContent = "";
+    var todo = [];
+    docs.forEach(function (d) {
+      var rows = parseAny(d.lines), dm = docMeta(d.lines), head = d.lines.slice(0, 80).join(" "), sup = guessSupplier(head);
+      var done = !!(dm.number && jrnByNumber[dm.number]), sum = r2(rows.reduce(function (a, r) { return a + (r.ship ? 0 : (Number(r.qty) || 0) * (Number(r.price) || 0)); }, 0));
+      if (!done && rows.length && dm.number) todo.push({ dm: dm, rows: rows, sup: sup });
+      list.append(h("div", { class: "urow" },
+        h("div", null,
+          h("div", { class: "item-name", text: "Facture " + (dm.number || "?") + (dm.date ? " du " + frDate(dm.date) : "") }),
+          h("div", { class: "meta", text: [sup, rows.length + " ligne" + (rows.length > 1 ? "s" : ""), dm.total != null ? money(dm.total) + " HT" : money(sum) + " HT (lignes)", done ? "déjà enregistrée" : ""].filter(Boolean).join(" · ") })),
+        h("div", { class: "uact" }, h("button", { class: "btn sm", type: "button", disabled: !rows.length, onclick: function () { multiCtx.back = true; $("multiDlg").close(); showPdfPreview(fileName, d.lines); }, text: "Contrôler et importer" }))));
+    });
+    $("multiTitle").textContent = "« " + fileName + " » contient " + docs.length + " factures";
+    $("multiSub").textContent = "Importez-en une pour mettre à jour le stock (vous la contrôlez ligne par ligne), ou enregistrez d'un coup les dépenses de toutes les factures qui ne le sont pas encore : le stock n'est alors pas modifié.";
+    $("multiAll").textContent = todo.length ? "Enregistrer les dépenses de " + todo.length + " facture" + (todo.length > 1 ? "s" : "") : "Toutes les dépenses sont déjà enregistrées";
+    $("multiAll").disabled = !todo.length || readOnly || !db;
+    $("multiAll").onclick = function () {
+      var n = 0;
+      todo.forEach(function (t) { t.rows.forEach(function (r) { r.domain = r.domain || (r.service ? "Services" : guessDomain(r.name)); }); if (recordDocument(t.dm, fileName, t.rows, t.sup)) n++; });
+      toast(n ? n + " facture" + (n > 1 ? "s" : "") + " enregistrée" + (n > 1 ? "s" : "") + " dans les dépenses. Le stock n'a pas changé." : "Rien n'a pu être enregistré : lancez d'abord le script SQL « ajout-donnees-depenses » dans Supabase.");
+      showMultiDocs(fileName, docs);
+    };
+    if (!$("multiDlg").open) $("multiDlg").showModal();
+  }
+  $("multiClose").addEventListener("click", function () { multiCtx = null; $("multiDlg").close(); });
+  $("pdfDlg").addEventListener("close", function () {
+    if (multiCtx && multiCtx.back) { var c = multiCtx; c.back = false; setTimeout(function () { if (multiCtx === c) showMultiDocs(c.fileName, c.docs); }, 60); }
+  });
+  // Factures « Méga Dental » : prix avec des points, en TTC ; quantité commandée puis livrée ; remise en % facultative.
+  // Code | Désignation | Qté cdée | Qté livrée | P.U. référence TTC | remise % | P.U. net TTC | Total TTC | TVA %
+  function parseLinesG(lines) {
+    var RX = /^(.+?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+\.\d{2})\s+(?:\d+(?:\.\d+)?%\s+(\d+\.\d{2})\s+)?(\d+\.\d{2})\s+(\d+(?:\.\d+)?)$/;
+    var out = [];
+    for (var i = 0; i < lines.length; i++) {
+      var l = String(lines[i]).replace(/[\u2013\u2014]/g, "-").replace(/\s+/g, " ").trim(), m = RX.exec(l);
+      if (!m) continue;
+      var qty = parseFloat(m[3]), unit = parseFloat(m[5] || m[4]), total = parseFloat(m[6]), tva = parseFloat(m[7]);
+      if (!(qty > 0) || !(total > 0) || Math.abs(qty * unit - total) > 0.05 || tva > 30) continue;
+      var head = m[1].split(" "), code = "", name = m[1];
+      if (head.length > 1 && /^[0-9A-Z]{2,}-[0-9A-Z]+$/.test(head[0])) { code = head[0]; name = head.slice(1).join(" "); }
+      if (!/[A-Za-zÀ-ÿ]{3}/.test(name)) continue;
+      out.push({ ref: code, name: name, qty: qty, price: Math.round(total / (1 + tva / 100) / qty * 100) / 100, service: /\b(port|emball|transport|livraison|frais)\b/i.test(name) && !code });
+    }
+    out._fmt = "G";
+    return out;
+  }
   function parseLinesB(lines) {
     var out = [], cur = null;
     var finish = function () {
@@ -5789,7 +5904,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     return out.map(function (r) { delete r.lots; return r; });
   }
   function guessSupplier(text) {
-    var known = ["GACD", "Septodont", "Henry Schein", "Dentsply", "Straumann", "Nobel Biocare", "Zimmer", "Biotech Dental", "Pierre Fabre", "Ivoclar", "Kerr"];
+    if (/m[ée]ga ?dental/i.test(text || "")) return "Méga Dental";
+    var known = ["GACD", "Dental Price", "Septodont", "Henry Schein", "Dentsply", "Straumann", "Nobel Biocare", "Zimmer", "Biotech Dental", "Pierre Fabre", "Ivoclar", "Kerr"];
     for (var i = 0; i < known.length; i++) if (new RegExp(known[i], "i").test(text || "")) return known[i];
     var m = /^\s*(?:SAS|SARL|SASU|SA|EURL)\s+([A-Z0-9][A-Za-z0-9&'.-]*(?: [A-Z][A-Za-z0-9&'.-]*){0,2}?)(?=\s+\d|\s+[a-zé]|$)/.exec(text || "");
     return m ? m[1] : "";
@@ -5818,6 +5934,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (/ciment|cement|nx3|fuji|panavia|scellement/.test(n)) return "Scellement et ciments";
     if (/empreinte|putty|turboflex|dentotemp|provisoire|tenon|dentoclic/.test(n)) return "Prothèse et empreintes";
     if (/fraise|diamant|diacut|arkansas|carbure|polissoir|tri hawk|hawk|disque|strip/.test(n)) return "Fraises et polissage";
+    if (/revelateur|fixateur/.test(n)) return "Radiologie";
+    if (/autoclave|etiquette.*tracab|tracab.*etiquette|dental ac|dentalzym/.test(n)) return "Désinfection et hygiène";
+    if (/aquafilter|cordon|pompe de vidange|tuyau|kit de ressorts|rfk|set-seringue|capuchon pour filtre|mentonnier|gr\.mot|piezo/.test(n)) return EQUIP;
     if (/gant/.test(n)) return "Gants et protection";
     if (/lingette|desinfect|viractis|orotol|instrugerm|steril/.test(n)) return "Désinfection et hygiène";
     if (/capteur|radio|gaine/.test(n)) return "Radiologie";
@@ -5829,15 +5948,18 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var r = new FileReader();
     r.onload = function () {
       window.pdfjsLib.getDocument({ data: new Uint8Array(r.result) }).promise.then(function (pdf) {
-        var all = [], p = Promise.resolve();
+        var all = [], pages = [], p = Promise.resolve();
         var step = function (i) {
           p = p.then(function () {
-            return pdf.getPage(i).then(function (pg) { return pg.getTextContent(); }).then(function (tc) { all = all.concat(linesFromContent(tc.items)); });
+            return pdf.getPage(i).then(function (pg) { return pg.getTextContent(); }).then(function (tc) { var ln = linesFromContent(tc.items); pages.push(ln); all = all.concat(ln); });
           });
         };
         for (var i = 1; i <= pdf.numPages; i++) step(i);
-        return p.then(function () { return all; });
-      }).then(function (lines) { showPdfPreview(file.name, lines); })
+        return p.then(function () { return { all: all, pages: pages }; });
+      }).then(function (res) {
+        var docs = splitDocuments(res.pages);
+        if (docs.length > 1) showMultiDocs(file.name, docs); else showPdfPreview(file.name, res.all);
+      })
         .catch(function () { toast("Ce PDF n'a pas pu être lu."); });
     };
     r.readAsArrayBuffer(file);
@@ -5859,8 +5981,21 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       var d2 = /\bDate\s*:\s*(\d{2})[./](\d{2})[./](\d{4})/i.exec(t);
       if (d2) out.date = d2[3] + "-" + d2[2] + "-" + d2[1];
     }
-    var ht = /Montant total HT\s+(\d[\d. ]*,\d{2})/i.exec(t) || /\bTotal HT\s+(\d[\d. ]*,\d{2})/i.exec(t);
-    if (ht) out.total = parseFloat(ht[1].replace(/[. ]/g, "").replace(",", "."));
+    if (!out.number) {
+      var n4 = /#1#\d+#(\d{5,10})#(\d{2}) \/ (\d{2}) \/ (\d{4})#/.exec(t);
+      if (n4) { out.number = n4[1]; out.type = "facture"; out.date = n4[4] + "-" + n4[3] + "-" + n4[2]; }
+    }
+    if (!out.number) {
+      var n3 = /Num[ée]ro de facture\D{0,60}?(\d{6,12})\b/i.exec(t);
+      if (n3) { out.number = n3[1]; out.type = /\bavoir\b/i.test(t.slice(0, 300)) ? "avoir" : "facture"; }
+    }
+    if (!out.date) {
+      var d3 = /Date de facturation[\s\S]{0,160}?(\d{2})\/(\d{2})\/(\d{4})/i.exec(t);
+      if (d3) out.date = d3[3] + "-" + d3[2] + "-" + d3[1];
+    }
+    var ht = /Montant total HT\s+(\d[\d. ]*,\d{2})/i.exec(t) || /\bTotal HT\s+(\d[\d. ]*,\d{2})/i.exec(t) || /\bTotal \(HT\)\s+(\d[\d. ]*,\d{2})/i.exec(t);
+    if (!ht) { var hm = /\bBASE H\.T\.[\s\S]{0,160}?(\d+\.\d{2}) \d+ \d+(?:\.\d+)? \d+\.\d{2}\b/.exec(t); if (hm) ht = [null, hm[1]]; }
+    if (ht) out.total = /^\d+\.\d{2}$/.test(ht[1]) ? parseFloat(ht[1]) : parseFloat(ht[1].replace(/[. ]/g, "").replace(",", "."));
     var re = /(ANNULATION|REFACTURATION)\s+FT\s+(\d{6,})/gi, x;
     while ((x = re.exec(t))) { (/^A/i.test(x[1]) ? out.annul : out.refact).push(x[2]); }
     return out;
@@ -6122,11 +6257,17 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     group("", "Livré sans commande enregistrée", rep.unordered, function (a) { return a.it.name + " : " + fmt(a.got) + " reçu" + (a.got > 1 ? "s" : ""); }, false);
     return box;
   }
-  function showPdfPreview(fileName, lines) {
+  function parseAny(lines) {
     var rows = parseDocLines(lines);
     if (!rows.length) rows = parseLinesB(lines);
     if (!rows.length) rows = parseLinesD(lines);
+    if (!rows.length) rows = parseLinesF(lines);
+    if (!rows.length) rows = parseLinesG(lines);
     if (!rows.length) rows = parseLinesE(lines);
+    return rows;
+  }
+  function showPdfPreview(fileName, lines) {
+    var rows = parseAny(lines);
     if (!rows.length) {
       toast("Aucune ligne d'article reconnue : mise en page non prise en charge, ou PDF scanné. Utilisez plutôt un fichier Excel.");
       return;
@@ -6144,16 +6285,17 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     rows.forEach(function (r) {
       r.qty0 = r.qty; r.price0 = r.price;
       r.match = byRef[norm(r.ref).trim()] || byName[norm(r.name).trim()] || null;
-      r.on = !isCredit && !seenBefore && rows._fmt !== "E";
-      r.domain = r.match ? (r.match.category || "") : guessDomain(r.name);
+      r.on = !isCredit && !seenBefore && rows._fmt !== "E" && !r.service;
+      r.domain = r.match ? (r.match.category || "") : (r.service ? "Services" : guessDomain(r.name));
     });
     var info = $("pdfInfo"), box = $("pdfTable"), okBtn = $("pdfOk");
     info.textContent = ""; box.textContent = "";
     info.append(h("div", { class: "sub", text: rows.length + " ligne" + (rows.length > 1 ? "s" : "") + " reconnue" + (rows.length > 1 ? "s" : "") + " dans « " + fileName + " ». Vérifiez et corrigez si besoin. Les articles déjà présents reçoivent une entrée de stock, les autres sont créés." }));
     warns.forEach(function (t) { info.append(h("div", { class: "banner bad", text: t })); });
+    if (rows.some(function (r) { return r.service; })) info.append(h("div", { class: "banner", text: "Les lignes de service (déplacement, main d'œuvre, livraison) sont décochées : ce n'est pas du stock. Elles restent comptées dans la dépense de la facture." }));
     if (rows._fmt === "E") info.append(h("div", { class: "banner bad", text: "Format de facture inconnu : les lignes ont été devinées à partir des nombres (quantité × prix = montant). Elles sont décochées : vérifiez chaque ligne, cochez celles qui sont justes, puis importez. Si cette facture revient souvent, transmettez-la à la personne qui gère l'outil pour qu'elle soit lue automatiquement." }));
     if (dm.total) {   // filet de sécurité : les lignes lues doivent faire le total de la facture
-      var sumHt = r2(rows.reduce(function (a, r) { return a + (Number(r.qty) || 0) * (Number(r.price) || 0); }, 0));
+      var sumHt = r2(rows.reduce(function (a, r) { return a + (r.ship ? 0 : (Number(r.qty) || 0) * (Number(r.price) || 0)); }, 0));
       if (Math.abs(sumHt - dm.total) > Math.max(1, dm.total * 0.01)) info.append(h("div", { class: "banner bad", text: "Le total des lignes lues (" + money(sumHt) + ") est différent du total HT de la facture (" + money(dm.total) + ") : il manque peut-être une ligne (frais de port, remise globale…). Vérifiez avant d'importer." }));
     }
     if (isCredit) info.append(h("div", { class: "banner", text: "Ce document est un avoir (annulation ou retour) : les lignes sont décochées. Ne les importez pas comme une livraison." }));
