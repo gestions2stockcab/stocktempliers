@@ -852,7 +852,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v71</div>
+            <div class="menu-who"><span id="who"></span> · v72</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -895,7 +895,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     <button type="button" id="bbMenu"><span>☰</span><span>Menu</span></button>
   </nav>
 
-  <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.pdf,application/pdf,text/csv,text/plain" class="hidden">
+  <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.txt,.pdf,application/pdf,text/csv,text/plain,text/comma-separated-values,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden">
   <div id="banner"></div>
 
   <div class="bar" id="bar">
@@ -6479,13 +6479,19 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   $("importBtn").addEventListener("click", function () { $("importFile").click(); });
   $("importBar").addEventListener("click", function () { $("importFile").click(); });
   $("exportBtn").addEventListener("click", exportCsv);
-  $("importFile").addEventListener("change", function (e) {
-    var f = e.target.files && e.target.files[0];
-    if (!f) return;
-    if (/\.pdf$/i.test(f.name)) { importPdf(f); e.target.value = ""; return; }
+  // Choix d'un fichier (téléphone ou ordinateur) : on reconnaît le type par le nom OU par le type annoncé par l'appareil
+  function importFileChosen(f) {
+    var name = String(f.name || ""), type = String(f.type || "").toLowerCase();
+    if (!f.size) { toast("Le fichier est vide ou n'a pas pu être lu. Sur téléphone, téléchargez-le d'abord sur l'appareil (pas seulement dans un nuage ou un e-mail), puis réessayez."); return; }
+    var isPdf = /\.pdf$/i.test(name) || type === "application/pdf";
+    var isCsv = /\.(csv|txt)$/i.test(name) || /^text\//.test(type) || /csv/.test(type);
+    var isXls = !isCsv && (/\.xlsx?$/i.test(name) || /spreadsheetml|ms-excel/.test(type));
+    if (isPdf) { importPdf(f); return; }
+    if (!isCsv && !isXls) { toast("Ce type de fichier n'est pas pris en charge : choisissez un PDF (facture), un fichier Excel (.xlsx) ou un fichier CSV."); return; }
     var r = new FileReader();
-    if (/\.xlsx?$/i.test(f.name)) {
-      if (!window.XLSX) { toast("Impossible de lire un fichier Excel : vérifiez votre accès à internet."); e.target.value = ""; return; }
+    r.onerror = function () { toast("Le fichier n'a pas pu être lu. Sur téléphone, téléchargez-le d'abord sur l'appareil, puis réessayez."); };
+    if (isXls) {
+      if (!window.XLSX) { toast("Impossible de lire un fichier Excel : vérifiez votre accès à internet."); return; }
       r.onload = function () {
         try {
           var wb = window.XLSX.read(new Uint8Array(r.result), { type: "array", cellDates: true });
@@ -6497,10 +6503,24 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       };
       r.readAsArrayBuffer(f);
     } else {
-      r.onload = function () { importSheets([{ name: "", rows: parseCsv(String(r.result || "")) }]); };
+      r.onload = function () {
+        var t = String(r.result || "");
+        if (t.indexOf("\uFFFD") !== -1) {   // CSV enregistré par Excel en Windows-1252 : on le relit dans ce codage pour garder les accents
+          var r2 = new FileReader();
+          r2.onload = function () { importSheets([{ name: "", rows: parseCsv(String(r2.result || "")) }]); };
+          r2.onerror = r.onerror;
+          r2.readAsText(f, "windows-1252");
+          return;
+        }
+        importSheets([{ name: "", rows: parseCsv(t) }]);
+      };
       r.readAsText(f, "utf-8");
     }
+  }
+  $("importFile").addEventListener("change", function (e) {
+    var f = e.target.files && e.target.files[0];
     e.target.value = "";
+    if (f) importFileChosen(f);
   });
   $("tplBtn").addEventListener("click", downloadTemplate);
   $("pdfCancel").addEventListener("click", function () { $("pdfDlg").close(); });
