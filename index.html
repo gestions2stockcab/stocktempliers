@@ -782,6 +782,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .wipeopt { margin:12px 0; }
 .wipeopt label { display:block; font-size:15px; }
 .wipeopt .sub { margin:2px 0 0 24px; font-size:13px; }
+
+.pickjoin { margin:12px 0; text-align:left; }
+.pickjoin .btn { margin-top:8px; width:100%; }
 </style>
 </head>
 <body>
@@ -833,6 +836,13 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     <h1 id="pickTitle">Choisissez un cabinet</h1>
     <div class="sub" id="pickHint"></div>
     <div class="tiles" id="pickTiles"></div>
+    <div class="pickjoin hidden" id="pickJoin">
+      <label class="f">J'ai reçu un lien d'invitation
+        <input id="pickJoinInput" type="text" placeholder="Collez ici le lien reçu" autocomplete="off" spellcheck="false">
+      </label>
+      <button class="btn primary" id="pickJoinGo" type="button">Rejoindre le cabinet</button>
+      <div class="umsg bad hidden" id="pickJoinMsg" role="alert"></div>
+    </div>
     <button class="btn primary hidden" id="pickNew">＋ Créer un cabinet</button>
     <button class="btn" id="pickLogout">Se déconnecter</button>
   </div>
@@ -859,7 +869,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v79</div>
+            <div class="menu-who"><span id="who"></span> · v80</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -7482,7 +7492,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (pw.length < 8) { $("loginErr").textContent = "Le mot de passe doit faire 8 caractères au moins."; return; }
     if (pw !== pw2) { $("loginErr").textContent = "Les deux mots de passe ne sont pas identiques."; return; }
     $("loginBtn").disabled = true; $("loginErr").textContent = ""; $("loginOk").textContent = "";
-    sb.auth.signUp({ email: email, password: pw, options: { data: { pw_set: true }, emailRedirectTo: location.origin + location.pathname } }).then(function (res) {
+    sb.auth.signUp({ email: email, password: pw, options: { data: { pw_set: true, join_token: joinToken }, emailRedirectTo: location.origin + location.pathname } }).then(function (res) {
       $("loginBtn").disabled = false;
       if (res.error) {
         var m = res.error.message || "";
@@ -7498,22 +7508,36 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     }, function () { $("loginBtn").disabled = false; $("loginErr").textContent = "Connexion impossible. Vérifiez votre accès à internet."; });
   }
   // après la connexion : on rejoint le cabinet du lien, puis on l'ouvre
+  var joinNote = "";
+  function clearJoinMeta() {
+    try { if (sb.auth && sb.auth.updateUser) sb.auth.updateUser({ data: { join_token: "" } }).then(function () {}, function () {}); } catch (e) {}
+  }
   function joinPending() {
     if (!joinToken || !db) return Promise.resolve();
     var tok = joinToken;
     return sb.rpc("lien_rejoindre", { p_token: tok }).then(function (res) {
       if (res.error) {
         var m = String(res.error.message || "");
-        clearJoin();
-        toast(/lien_expire/.test(m) ? "Ce lien a expiré : demandez-en un nouveau." : /lien_revoque/.test(m) ? "Ce lien a été annulé." : /lien_utilise/.test(m) ? "Ce lien a déjà été utilisé le nombre de fois prévu." : /function .*lien_rejoindre|schema cache/i.test(m) ? "Les liens d'invitation ne sont pas encore activés : lancez le script SQL « ajout-liens-invitation »." : "Ce lien n'est pas valable.");
+        clearJoin(); clearJoinMeta();
+        joinNote = /lien_expire/.test(m) ? "Ce lien a expiré : demandez-en un nouveau." : /lien_revoque/.test(m) ? "Ce lien a été annulé : demandez-en un nouveau." : /lien_utilise/.test(m) ? "Ce lien a déjà été utilisé le nombre de fois prévu : demandez-en un nouveau." : /function .*lien_rejoindre|schema cache/i.test(m) ? "Les liens d'invitation ne sont pas encore activés : lancez le script SQL « ajout-liens-invitation »." : "Ce lien n'est pas valable : demandez-en un nouveau.";
+        toast(joinNote);
         return;
       }
       var d = res.data || {};
-      clearJoin();
+      clearJoin(); clearJoinMeta(); joinNote = "";
       if (d.cabinet_id && sessionUser) { try { localStorage.setItem("simsim_cabinet_" + sessionUser, d.cabinet_id); } catch (e) {} }
       toast(d.deja_membre ? "Vous aviez déjà accès à « " + d.cabinet + " »." : "Bienvenue dans « " + d.cabinet + " » !");
     }, function () { toast("Connexion impossible : le lien sera réessayé à votre prochaine connexion."); });
   }
+  $("pickJoinGo").addEventListener("click", function () {
+    var m = /([0-9a-fA-F]{20,100})\s*$/.exec($("pickJoinInput").value.trim()), msg = $("pickJoinMsg");
+    msg.classList.add("hidden");
+    if (!m) { msg.textContent = "Collez le lien complet reçu : il se termine par un long code."; msg.classList.remove("hidden"); return; }
+    joinToken = m[1].toLowerCase();
+    try { localStorage.setItem(JOIN_KEY, joinToken); } catch (e) {}
+    $("pickJoinGo").disabled = true;
+    joinPending().then(function () { $("pickJoinGo").disabled = false; $("pickJoinInput").value = ""; return loadCabinets(); });
+  });
   // ---------- liens d'invitation : créer, copier, annuler (espace admin) ----------
   var linksData = {};   // par cabinet : { rows, err, msg }
   function linkUrl(token) { return location.origin + location.pathname + "#rejoindre=" + token; }
@@ -7641,8 +7665,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     showScreen("pick");
     $("pickTitle").textContent = loading ? "Chargement…" : (none ? "Aucun cabinet" : "Choisissez un cabinet");
     $("pickHint").textContent = loading ? "" : (none
-      ? "Votre compte n'est rattaché à aucun cabinet. Demandez à la personne qui gère l'outil de vous y rattacher."
+      ? (joinNote ? joinNote + " " : "") + "Votre compte n'est rattaché à aucun cabinet. Si vous avez reçu un lien d'invitation, collez-le ci-dessous ; sinon demandez à la personne qui gère l'outil de vous y rattacher."
       : "Connecté en tant que " + myEmail);
+    $("pickJoin").classList.toggle("hidden", !none || loading);
     updateOwnerBtns();
     var box = $("pickTiles"); box.textContent = "";
     if (!none && !loading) cabinets.forEach(function (c) {
@@ -7696,6 +7721,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       db = sb;
       $("who").textContent = myEmail;
       showPick(false, true);
+      var mt = s.user.user_metadata && s.user.user_metadata.join_token;
+      if (!joinToken && mt && /^[0-9a-f]{20,100}$/i.test(String(mt))) joinToken = String(mt).toLowerCase();
       var goCab = function () { loadCabinets(); };
       sb.rpc("est_proprietaire").then(function (r0) { ownerOk = !!(r0 && !r0.error && r0.data === true); updateOwnerBtns(); }, function () {});
       sb.rpc("accept_invitations").then(function () { return joinPending(); }, function () { return joinPending(); }).then(goCab, goCab);
