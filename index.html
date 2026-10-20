@@ -776,6 +776,12 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .linkrow { margin:10px 0; padding:8px 0; border-top:1px solid var(--line); }
 .linkctl { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:4px; }
 .linkfield { flex:1 1 260px; min-width:0; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); font:inherit; font-size:13px; }
+
+/* ===== v78 : supprimer tout le stock ===== */
+.mi.danger { color:var(--bad); }
+.wipeopt { margin:12px 0; }
+.wipeopt label { display:block; font-size:15px; }
+.wipeopt .sub { margin:2px 0 0 24px; font-size:13px; }
 </style>
 </head>
 <body>
@@ -853,7 +859,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v77</div>
+            <div class="menu-who"><span id="who"></span> · v79</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -866,6 +872,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
             <button class="mi hidden" id="switchBtn">Changer de cabinet</button>
             <button class="mi hidden" id="newCabBtn">Créer un cabinet</button>
             <button class="mi hidden" id="adminBtn">Administration</button>
+            <button class="mi hidden danger" id="wipeBtn">Supprimer tout le stock…</button>
             <button class="mi" id="logoutBtn">Se déconnecter</button>
           </div>
         </div>
@@ -1038,6 +1045,25 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       <span class="spacer"></span>
       <button class="btn" id="itemCancel">Annuler</button>
       <button class="btn primary" id="itemSave">Enregistrer</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="wipeDlg">
+  <div class="dlg">
+    <h2>Supprimer tout le stock</h2>
+    <div class="sub" id="wipeInfo"></div>
+    <div class="wipeopt"><label><input type="radio" name="wipeMode" value="trash" checked> <b>Mettre à la corbeille</b> (récupérable)</label>
+      <div class="sub">Les articles disparaissent de l'appli mais restent dans l'onglet Corbeille : vous pouvez les restaurer un par un, ou annuler tout de suite avec « Annuler ».</div></div>
+    <div class="wipeopt"><label><input type="radio" name="wipeMode" value="purge"> <b>Supprimer définitivement</b> (irréversible)</label>
+      <div class="sub">Les articles, leurs lots et leurs documents sont effacés, y compris dans les salles et la corbeille. Une sauvegarde est faite juste avant : elle permet de les recréer avec « Récupérer ce qui a été supprimé ».</div></div>
+    <label class="f">Pour confirmer, tapez SUPPRIMER
+      <input id="wipeType" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    </label>
+    <div class="umsg bad hidden" id="wipeErr" role="alert"></div>
+    <div class="dlg-actions">
+      <button class="btn danger" id="wipeGo" type="button" disabled>Supprimer tout le stock</button>
+      <button class="btn" id="wipeCancel" type="button">Annuler</button>
     </div>
   </div>
 </dialog>
@@ -1899,6 +1925,61 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       });
     });
   }
+  // ---------- supprimer tout le stock du cabinet (administrateurs) ----------
+  function wipeCount() { return items.size + trash.size; }
+  function openWipe() {
+    if (!db || readOnly || !isAdmin) return;
+    $("moreMenu").classList.add("hidden");
+    var live = Array.from(items.values()), val = r2(live.reduce(function (a, it) { return a + (Number(it.qty) || 0) * (Number(it.price) || 0); }, 0));
+    $("wipeInfo").textContent = "Cabinet « " + cabinetName + " » : " + live.length + " article" + (live.length > 1 ? "s" : "") + (val ? " (stock d'environ " + money(val) + " HT)" : "") + (trash.size ? " et " + trash.size + " à la corbeille" : "") + ". Les dépenses et les factures importées ne sont pas touchées. Cela concerne aussi le stock des salles.";
+    document.querySelector('input[name="wipeMode"][value="trash"]').checked = true;
+    $("wipeType").value = ""; $("wipeGo").disabled = true; $("wipeErr").classList.add("hidden");
+    if (!wipeCount()) { toast("Il n'y a aucun article à supprimer."); return; }
+    $("wipeDlg").showModal(); $("wipeType").focus();
+  }
+  function wipeMode() { return document.querySelector('input[name="wipeMode"]:checked').value; }
+  function wipeForever() {
+    var all = Array.from(items.values()).concat(Array.from(trash.values())), ids = all.map(function (it) { return it.id; });
+    items.clear(); trash.clear(); state.sel.clear(); undoStack.length = 0;
+    Object.keys(docCounts).forEach(function (k) { delete docCounts[k]; });
+    render();
+    enqueue(function () {
+      var chain = Promise.resolve(), chunks = [];
+      for (var i = 0; i < ids.length; i += 100) chunks.push(ids.slice(i, i + 100));
+      chunks.forEach(function (chunk) {
+        if (docsOk) chain = chain.then(function () {
+          return sb.from("documents").select("path").in("item_id", chunk).then(function (res) {
+            var paths = res.error ? [] : (res.data || []).map(function (r) { return r.path; });
+            return (paths.length ? sb.storage.from("docs").remove(paths) : Promise.resolve()).then(function () { return sb.from("documents").delete().in("item_id", chunk); });
+          }).catch(function () {});
+        });
+        chain = chain.then(function () { return sb.from("items").delete().in("id", chunk).eq("cabinet_id", cabinetId).then(check); });
+      });
+      return chain.then(function () {
+        if (sallesOk) loadRooms();
+        return appendLog({ type: "delete", itemId: "", item: "Tout le stock", delta: 0, qty: 0, note: ids.length + " article" + (ids.length > 1 ? "s" : "") + " supprimé" + (ids.length > 1 ? "s" : "") + " définitivement" });
+      });
+    });
+    toast(ids.length + " article" + (ids.length > 1 ? "s" : "") + " supprimé" + (ids.length > 1 ? "s" : "") + " définitivement.");
+  }
+  $("wipeBtn").addEventListener("click", openWipe);
+  $("wipeCancel").addEventListener("click", function () { $("wipeDlg").close(); });
+  $("wipeType").addEventListener("input", function () { $("wipeGo").disabled = $("wipeType").value.trim().toUpperCase() !== "SUPPRIMER"; });
+  $("wipeType").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); if (!$("wipeGo").disabled) $("wipeGo").click(); } });
+  $("wipeGo").addEventListener("click", function () {
+    if ($("wipeType").value.trim().toUpperCase() !== "SUPPRIMER" || !isAdmin || readOnly) return;
+    var mode = wipeMode(), err = $("wipeErr");
+    err.classList.add("hidden");
+    if (mode === "trash" && !arcOk) { err.textContent = "La corbeille n'est pas activée : lancez le script SQL « ajout-catalogue-initial » dans Supabase, ou choisissez la suppression définitive."; err.classList.remove("hidden"); return; }
+    $("wipeGo").disabled = true;
+    // sauvegarde de sécurité d'abord (obligatoire pour une suppression définitive)
+    sb.rpc("sauvegarder_maintenant", { p_cabinet: cabinetId }).then(function (res) { return !res.error; }, function () { return false; }).then(function (okBackup) {
+      if (mode === "purge" && !okBackup) { err.textContent = "La sauvegarde de sécurité n'a pas pu être faite : rien n'a été supprimé. Réessayez dans un instant."; err.classList.remove("hidden"); $("wipeGo").disabled = false; return; }
+      $("wipeDlg").close();
+      if (mode === "trash") archiveItems(Array.from(items.keys()));
+      else wipeForever();
+    });
+  });
   function purgeItems(ids) {
     if (!db || readOnly || !ids.length) return;
     var list = ids.map(function (id) { return trash.get(id); }).filter(Boolean);
@@ -3003,10 +3084,11 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function loadAdmin() {
     if (!sb || !ownerOk) return;
     sb.rpc("admin_overview").then(function (res) {
+      adminData.loading = false;
       if (res.error) { adminData.ok = false; adminData.err = adminErr(res.error); }
       else { var d = res.data || {}; adminData.ok = true; adminData.err = ""; adminData.cabinets = d.cabinets || []; adminData.users = d.users || []; adminData.invitations = d.invitations || []; }
-      if (state.tab === "administration") render();
-    }, function () { adminData.ok = false; adminData.err = "Connexion impossible. Vérifiez votre accès à internet."; if (state.tab === "administration") render(); });
+      if (state.tab === "administration" || state.tab === "utilisateurs") render();
+    }, function () { adminData.loading = false; adminData.ok = false; adminData.err = "Connexion impossible. Vérifiez votre accès à internet."; if (state.tab === "administration" || state.tab === "utilisateurs") render(); });
   }
   function adminCabById(id) { return adminData.cabinets.find(function (c) { return c.id === id; }); }
   function adminOpen(c) {
@@ -3318,11 +3400,13 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       if (!rows.length) wrap2.append(h("div", { class: "meta", text: "Personne pour le moment dans ce cabinet." }));
       sec.append(wrap2);
       box.append(sec);
-      renderInviteLinks(box, c, true);
+      renderInviteLinks(box, c, true, adminLinkChoices());
       return;
     }
     box.append(sec);
+    if (adminData.cabinets.length) renderInviteLinks(box, adminData.cabinets[0], true, adminLinkChoices());
   }
+  function adminLinkChoices() { return adminData.cabinets.map(function (c) { return { id: c.id, name: c.name }; }); }
   // ---------- vue du stock par salle ou en total ----------
   function renderViewBar() {
     var bar = $("viewBar"), show = state.tab === "inventaire" && sallesOk && rooms.length > 0 && items.size > 0;
@@ -7160,7 +7244,10 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (u.mail) card.append(h("a", { class: "btn sm", style: "margin-top:6px;display:inline-block", href: mailtoInvite(u.mail.email, u.mail.role), text: "Écrire l'e-mail moi-même" }));
     card.append(h("div", { class: "dnote", text: "La personne reçoit un lien : un clic, et elle accède à ce cabinet. Si elle a déjà un compte, elle est ajoutée tout de suite." }));
     box.append(card);
-    renderInviteLinks(box, { id: cabinetId, name: cabinetName }, ownerOk);
+    if (ownerOk && adminData.ok === null && !adminData.loading) { adminData.loading = true; loadAdmin(); }
+    var linkChoices = cabinets.filter(function (c) { return roles[c.id] === "admin" || c.id === cabinetId; }).map(function (c) { return { id: c.id, name: c.name }; });
+    if (ownerOk) adminData.cabinets.forEach(function (c) { if (!linkChoices.some(function (x) { return x.id === c.id; })) linkChoices.push({ id: c.id, name: c.name }); });
+    renderInviteLinks(box, { id: cabinetId, name: cabinetName }, ownerOk, linkChoices);
     // personnes qui ont accès
     var mem = h("div", { class: "ucard" }, h("h3", { text: "Personnes ayant accès" + (u.members ? " (" + u.members.length + ")" : "") }));
     if (u.err) mem.append(h("div", { class: "umsg bad", text: u.err }));
@@ -7444,7 +7531,10 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (l.uses >= l.max_uses) return "utilisé";
     return "";
   }
-  function renderInviteLinks(box, cab, canAdminRole) {
+  var linksPick = {};   // carte affichée -> cabinet choisi dans la liste déroulante
+  function renderInviteLinks(box, home, canAdminRole, choices) {
+    choices = (choices && choices.length) ? choices : [home];
+    var cab = choices.filter(function (c) { return c.id === linksPick[home.id]; })[0] || choices.filter(function (c) { return c.id === home.id; })[0] || choices[0];
     var st = linksData[cab.id];
     if (!st) { linksData[cab.id] = {}; loadLinks(cab); st = linksData[cab.id]; }
     var card = h("div", { class: "ucard" }, h("h3", { text: "Liens d'invitation" }),
@@ -7458,17 +7548,20 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     days.value = "7";
     var max = h("select", { "aria-label": "Nombre de personnes" });
     [[1, "1 personne"], [5, "5 personnes"], [20, "20 personnes"]].forEach(function (o) { max.append(h("option", { value: String(o[0]), text: o[1] })); });
-    var note = h("input", { type: "text", maxlength: "80", placeholder: "Pour qui ? (facultatif)", "aria-label": "Note", autocomplete: "off" });
+    var target = h("select", { "aria-label": "Pour quel cabinet" });
+    choices.forEach(function (c) { target.append(h("option", { value: c.id, text: "Cabinet : " + c.name })); });
+    target.value = cab.id;
+    target.addEventListener("change", function () { linksPick[home.id] = target.value; render(); });
     var go = h("button", { class: "btn primary", type: "button", text: "Créer le lien" });
     go.addEventListener("click", function () {
       go.disabled = true;
-      sb.rpc("lien_creer", { p_cabinet: cab.id, p_role: role.value, p_jours: Number(days.value), p_max: Number(max.value), p_note: note.value.trim() }).then(function (res) {
+      sb.rpc("lien_creer", { p_cabinet: cab.id, p_role: role.value, p_jours: Number(days.value), p_max: Number(max.value), p_note: "" }).then(function (res) {
         go.disabled = false;
         if (res.error) { st.msg = /acces_refuse/.test(res.error.message) ? "Vous n'avez pas le droit de créer un lien pour ce cabinet." : /reserve_proprietaire/.test(res.error.message) ? "Seul le propriétaire peut créer un lien administrateur." : "Le lien n'a pas pu être créé."; st.bad = true; render(); return; }
         st.msg = "Lien créé : copiez-le ci-dessous et envoyez-le."; st.bad = false; loadLinks(cab);
       }, function () { go.disabled = false; st.msg = "Connexion impossible."; st.bad = true; render(); });
     });
-    card.append(h("div", { class: "uform" }, role, days, max, note, go));
+    card.append(h("div", { class: "uform" }, role, days, max, target, go));
     if (st.msg) card.append(h("div", { class: "umsg" + (st.bad ? " bad" : ""), role: "status", text: st.msg }));
     var rows = (st.rows || []), live = rows.filter(function (l) { return !linkState(l); }), done = rows.filter(function (l) { return linkState(l); });
     if (!st.rows && !st.err) card.append(h("div", { class: "sub", text: "Chargement…" }));
@@ -7568,6 +7661,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     readOnly = role === "viewer"; isAdmin = role === "admin";
     $("who").textContent = myEmail + " · " + ({ admin: "Administrateur", member: "Membre", viewer: "Lecture seule" }[role] || role);
     $("teamBtn").classList.toggle("hidden", !isAdmin);
+    $("wipeBtn").classList.toggle("hidden", !isAdmin);
     updateOwnerBtns();
     document.querySelector('.tab[data-tab="utilisateurs"]').classList.toggle("hidden", !isAdmin);
     usersData.members = null; usersData.msg = ""; usersData.mail = null;
