@@ -852,7 +852,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v73</div>
+            <div class="menu-who"><span id="who"></span> · v74</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -5698,6 +5698,63 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     merged._fmt = "D";
     return merged;
   }
+  // Lecteur de secours pour une facture inconnue : retrouve les lignes d'articles grâce aux nombres (quantité × prix = montant).
+  // Ses lignes sont décochées par défaut : c'est une aide à la saisie, pas une certitude.
+  function parseLinesE(lines) {
+    var NUMTOK = /^-?\d+(?:[.,]\d+)?$/, UNIT = /^(?:[A-Z][A-Z0-9]{1,3}|u|un|pce|pcs|bte|bt|bo[iî]te|lot|kg|g|ml|l|m)$/i, out = [], last = null;
+    var STOP = /^(r[ée]capitulatif|total\b|sous-total|taux\b|net [àa] payer|banque|rib\b|iban|bic\b|coordonn[ée]es|prix comptant|en cas de retard|cat[ée]gorie|date d.[ée]ch[ée]ance|siret|document cr[ée]|\d+ sur \d+|page \d+|tva\b|base\b|montant\b|code\b|d[ée]signation|libell[ée]|r[ée]f[ée]rence|article\b)/i;
+    var NOTITEM = /\b(total|tva|port|frais|remise globale|escompte|acompte|solde|net [àa] payer|ht|ttc)\b/i;
+    for (var i = 0; i < lines.length; i++) {
+      var raw = String(lines[i]).replace(/€|EUR/g, " ").replace(/(^|\s)(\d{1,3}) (\d{3}[.,]\d{2})(?=\s|$)/g, "$1$2$3").replace(/\s+/g, " ").trim(), t = raw.split(" ");
+      if (!raw) continue;
+      // la « queue » numérique : nombres, %, codes d'unité, jusqu'à la fin de la ligne
+      var f = t.length;
+      while (f > 0 && (NUMTOK.test(t[f - 1]) || t[f - 1] === "%" || (UNIT.test(t[f - 1]) && f - 1 > 0 && /\d/.test(t[f - 2] || "")))) f--;
+      var tail = t.slice(f), nums = [];
+      tail.forEach(function (x) { if (NUMTOK.test(x)) nums.push(moneyNum(x)); });
+      var pre = t.slice(0, f);
+      if (nums.length < 3 || !pre.length || !/[A-Za-zÀ-ÿ]{3}/.test(pre.join(" ")) || STOP.test(raw) || NOTITEM.test(pre.join(" "))) {
+        if (STOP.test(raw)) last = null;
+        else if (last && last.cont < 3 && raw.length <= 45 && !/\d,\d{2}/.test(raw) && !NOTITEM.test(raw)) { last.name += " " + raw; last.cont++; }
+        else if (nums.length >= 3) last = null;
+        continue;
+      }
+      var found = null, n = nums.length;
+      // on cherche quantité × prix = montant ; on garde le montant le plus à droite (le net, après remise)
+      for (var a = 0; a < n; a++) {
+        var q = nums[a];
+        if (!(q > 0) || q > 5000) continue;
+        for (var b = a + 1; b < n; b++) {
+          var p = nums[b];
+          if (!(p > 0)) continue;
+          for (var c = b + 1; c < n; c++) {
+            var tt = nums[c];
+            if (c < n - 4) continue;
+            if (Math.abs(q * p - tt) <= Math.max(0.02, tt * 0.005) && (!found || c > found.c || (c === found.c && a < found.a))) found = { q: q, p: p, t: tt, a: a, c: c };
+          }
+        }
+      }
+      // quantité 1 : le prix et le montant sont identiques
+      if (!found) { last = null; continue; }
+      if (found.q === 1 && found.p !== found.t) { /* prix et montant légèrement différents : on garde le montant */ }
+      var body = pre.slice(), k0 = -1;
+      for (var z = 0; z < body.length; z++) if (/[a-zà-ÿ]/.test(body[z])) { k0 = z; break; }
+      var code = "", desc;
+      if (k0 > 0) { code = body.slice(0, k0).join(" "); desc = body.slice(k0).join(" "); }
+      else if (k0 === 0) { desc = body.join(" "); }
+      else { code = body[0]; desc = body.slice(1).join(" ") || body[0]; }
+      if (!/[A-Za-zÀ-ÿ]{3}/.test(desc)) { last = null; continue; }
+      last = { ref: code, name: desc, qty: found.q, price: Math.round(found.t / found.q * 100) / 100, cont: 0 };
+      out.push(last);
+    }
+    var merged = [], seen = {};
+    out.forEach(function (r) { delete r.cont; var key = norm(r.ref).trim() + "|" + norm(r.name).trim(); if (seen[key]) { seen[key].qty += r.qty; return; } seen[key] = r; merged.push(r); });
+    var byName = {};
+    merged.forEach(function (r) { var nn = norm(r.name).trim(); (byName[nn] = byName[nn] || []).push(r); });
+    Object.keys(byName).forEach(function (nn) { if (byName[nn].length > 1) byName[nn].forEach(function (r) { if (r.ref) r.name += " (" + r.ref + ")"; }); });
+    merged._fmt = "E";
+    return merged;
+  }
   function parseLinesB(lines) {
     var out = [], cur = null;
     var finish = function () {
@@ -6069,6 +6126,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var rows = parseDocLines(lines);
     if (!rows.length) rows = parseLinesB(lines);
     if (!rows.length) rows = parseLinesD(lines);
+    if (!rows.length) rows = parseLinesE(lines);
     if (!rows.length) {
       toast("Aucune ligne d'article reconnue : mise en page non prise en charge, ou PDF scanné. Utilisez plutôt un fichier Excel.");
       return;
@@ -6086,14 +6144,15 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     rows.forEach(function (r) {
       r.qty0 = r.qty; r.price0 = r.price;
       r.match = byRef[norm(r.ref).trim()] || byName[norm(r.name).trim()] || null;
-      r.on = !isCredit && !seenBefore;
+      r.on = !isCredit && !seenBefore && rows._fmt !== "E";
       r.domain = r.match ? (r.match.category || "") : guessDomain(r.name);
     });
     var info = $("pdfInfo"), box = $("pdfTable"), okBtn = $("pdfOk");
     info.textContent = ""; box.textContent = "";
     info.append(h("div", { class: "sub", text: rows.length + " ligne" + (rows.length > 1 ? "s" : "") + " reconnue" + (rows.length > 1 ? "s" : "") + " dans « " + fileName + " ». Vérifiez et corrigez si besoin. Les articles déjà présents reçoivent une entrée de stock, les autres sont créés." }));
     warns.forEach(function (t) { info.append(h("div", { class: "banner bad", text: t })); });
-    if (rows._fmt === "D" && dm.total) {   // filet de sécurité : les lignes lues doivent faire le total de la facture
+    if (rows._fmt === "E") info.append(h("div", { class: "banner bad", text: "Format de facture inconnu : les lignes ont été devinées à partir des nombres (quantité × prix = montant). Elles sont décochées : vérifiez chaque ligne, cochez celles qui sont justes, puis importez. Si cette facture revient souvent, transmettez-la à la personne qui gère l'outil pour qu'elle soit lue automatiquement." }));
+    if (dm.total) {   // filet de sécurité : les lignes lues doivent faire le total de la facture
       var sumHt = r2(rows.reduce(function (a, r) { return a + (Number(r.qty) || 0) * (Number(r.price) || 0); }, 0));
       if (Math.abs(sumHt - dm.total) > Math.max(1, dm.total * 0.01)) info.append(h("div", { class: "banner bad", text: "Le total des lignes lues (" + money(sumHt) + ") est différent du total HT de la facture (" + money(dm.total) + ") : il manque peut-être une ligne (frais de port, remise globale…). Vérifiez avant d'importer." }));
     }
