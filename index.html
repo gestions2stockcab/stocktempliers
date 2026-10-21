@@ -812,6 +812,11 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .secbanner { display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; background:var(--warn-bg); color:var(--warn); padding:8px 14px; font-weight:600; font-size:14px; }
 .secqr { display:block; width:200px; height:200px; margin:8px auto; background:#fff; border-radius:12px; padding:6px; }
 #secSecret { word-break:break-all; user-select:all; }
+
+/* ===== v85 : moins cher ailleurs ===== */
+.banner.cheap { background:var(--warn-bg); color:var(--warn); }
+.banner.cheap summary { cursor:pointer; font-weight:700; }
+.cheapline { margin:4px 0 0 4px; font-size:14px; }
 </style>
 </head>
 <body>
@@ -896,7 +901,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v84</div>
+            <div class="menu-who"><span id="who"></span> · v85</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -2459,6 +2464,21 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       $("ctDlg").close(); toast("Contrat supprimé."); loadContrats();
     });
   });
+  // « Moins cher ailleurs » : pour les produits que vous avez regroupés dans le comparateur, la facture en cours est comparée au dernier prix payé chez les autres fournisseurs
+  function cheaperElsewhere(rows, supplier) {
+    if (!eqvOk || !eqvRows.length || !achOk) return [];
+    var prods = priceProducts(spendRows()), keyGroup = {}, members = {}, sup = norm(supplier || "");
+    eqvRows.forEach(function (r) { var k = prodKey(r.supplier, r.ref, r.name); keyGroup[k] = r.groupe; (members[r.groupe] = members[r.groupe] || []).push(k); });
+    var out = [];
+    rows.forEach(function (r) {
+      if (!r.on || !(r.qty > 0) || !(r.price > 0) || r.service) return;
+      var g = keyGroup[prodKey(supplier, r.ref, r.name)]; if (!g) return;
+      var best = null;
+      members[g].forEach(function (k) { var pr = prods[k]; if (!pr || !(pr.price > 0) || norm(pr.supplier) === sup) return; if (!best || pr.price < best.price) best = pr; });
+      if (best && best.price < r.price * 0.97) out.push({ row: r, group: g, best: best, diff: Math.round((1 - best.price / r.price) * 100), save: r2((r.price - best.price) * r.qty) });
+    });
+    return out.sort(function (a, b) { return b.save - a.save; });
+  }
   // ---------- comparateur de prix entre fournisseurs (onglet Données) ----------
   var EQV_STOP = { des: 1, les: 1, pour: 1, avec: 1, sans: 1, par: 1, sur: 1, aux: 1, the: 1, and: 1 };
   function prodKey(supplier, ref, name) { return norm(supplier || "") + "|" + (ref ? "r:" + norm(ref) : "n:" + norm(name || "").replace(/[^a-z0-9]+/g, " ").trim()); }
@@ -7127,13 +7147,25 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var supplierInput = h("input", { type: "text", value: guessSupplier(head), autocomplete: "off" });
     info.append(h("label", { class: "f" }, "Fournisseur des nouveaux articles (facultatif)", supplierInput));
     var recv = h("div"); info.append(recv);
+    var cheapBox = h("div"); info.append(cheapBox);
     supplierInput.addEventListener("input", function () { refresh(); });
     var anyLot = rows.some(function (r) { return r.match && (r.lot || r.expiry); });
     var updLot = anyLot ? h("input", { type: "checkbox" }) : null;
     var catOnly = h("input", { type: "checkbox" });
     info.append(h("label", { class: "chk" }, catOnly, "Ajouter seulement au catalogue (articles non suivis, sans quantité ni entrée de stock)"));
     if (updLot) info.append(h("label", { class: "chk" }, updLot, "Mettre à jour le lot et la péremption des articles déjà présents (remplace l'ancien lot)"));
+    var drawCheap = function () {
+      cheapBox.textContent = "";
+      var list = isCredit ? [] : cheaperElsewhere(rows, supplierInput.value.trim());
+      if (!list.length) return;
+      var total = r2(list.reduce(function (a, x) { return a + x.save; }, 0)), det = h("details", { class: "banner cheap" });
+      det.append(h("summary", { text: "💡 " + list.length + " produit" + (list.length > 1 ? "s" : "") + " de cette facture " + (list.length > 1 ? "sont" : "est") + " moins cher" + (list.length > 1 ? "s" : "") + " chez un autre fournisseur · économie possible : " + money(total) + " sur cette commande" }));
+      list.forEach(function (x) { det.append(h("div", { class: "cheapline", text: x.row.name + " : " + money(x.row.price) + " ici, " + money(x.best.price) + " chez " + x.best.supplier + " (−" + x.diff + " %) · économie " + money(x.save) })); });
+      det.append(h("div", { class: "meta", text: "D'après les groupes de produits du comparateur (onglet Données). Vérifiez que le conditionnement est le même." }));
+      cheapBox.append(det);
+    };
     var refresh = function () {
+      drawCheap();
       recv.textContent = "";
       var pnl = recvPanel(receiptReport(rows, supplierInput.value, isCredit)); if (pnl) recv.append(pnl);
       var n = rows.filter(function (r) { return r.on && r.qty > 0; }).length;
