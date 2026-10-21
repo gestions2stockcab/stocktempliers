@@ -832,6 +832,15 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .menu-group.hidden { display:none; }
 .menu-title { padding:6px 10px 2px; font-size:11.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
 .menu-group.menu-last { padding-bottom:0; }
+
+/* ===== v89 : menu Plus en onglets ===== */
+.menu { min-width:300px; }
+.menu-tabs { display:flex; gap:4px; padding:6px 4px 4px; overflow-x:auto; border-bottom:1px solid var(--line); }
+.mtab { flex:1 0 auto; border:0; background:var(--surface-2); color:var(--muted); border-radius:8px; padding:7px 10px; font-size:13px; font-weight:600; white-space:nowrap; cursor:pointer; }
+.mtab[aria-selected="true"] { background:var(--brand); color:#fff; }
+.mtab.hidden { display:none; }
+.menu-group[data-mtab] { border-top:0; padding-top:6px; }
+.menu-group[data-mtab] .menu-title { display:none; }
 </style>
 </head>
 <body>
@@ -916,25 +925,31 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v88</div>
-            <div class="menu-group"><div class="menu-title">Catalogue et import</div>
+            <div class="menu-who"><span id="who"></span> · v89</div>
+            <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
+              <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
+              <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
+              <button class="mtab" type="button" role="tab" data-mtab="cabinet" aria-selected="false">🏥 Cabinet</button>
+              <button class="mtab" type="button" role="tab" data-mtab="securite" aria-selected="false">🔒 Sécurité</button>
+            </div>
+            <div class="menu-group" data-mtab="catalogue"><div class="menu-title">Catalogue et import</div>
               <button class="mi" id="catSupBtn">Catalogues fournisseurs</button>
               <button class="mi" id="importBtn">Importer un fichier</button>
               <button class="mi" id="tplBtn">Modèle Excel</button>
               <button class="mi" id="exportBtn">Exporter en CSV</button>
               <button class="mi" id="dupBtn">Doublons possibles</button>
             </div>
-            <div class="menu-group"><div class="menu-title">Factures et suivi</div>
+            <div class="menu-group" data-mtab="factures"><div class="menu-title">Factures et suivi</div>
               <button class="mi" id="jrnBtn">Factures importées</button>
               <button class="mi" id="recapBtn">Récap de la semaine</button>
             </div>
-            <div class="menu-group"><div class="menu-title">Cabinet et équipe</div>
+            <div class="menu-group" data-mtab="cabinet"><div class="menu-title">Cabinet et équipe</div>
               <button class="mi hidden" id="switchBtn">Changer de cabinet</button>
               <button class="mi hidden" id="teamBtn">Utilisateurs et invitations</button>
               <button class="mi hidden" id="newCabBtn">Créer un cabinet</button>
               <button class="mi hidden" id="adminBtn">Administration</button>
             </div>
-            <div class="menu-group"><div class="menu-title">Sauvegarde et sécurité</div>
+            <div class="menu-group" data-mtab="securite"><div class="menu-title">Sauvegarde et sécurité</div>
               <button class="mi" id="bkBtn">Sauvegardes</button>
               <button class="mi" id="secBtn">Sécurité du compte</button>
               <button class="mi" id="pwBtn">Changer mon mot de passe</button>
@@ -8155,19 +8170,36 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   try { var ts = localStorage.getItem("simsim_tilesort"); if (ts) state.tileSort = ts; } catch (e) {}
   try { state.hideCat = localStorage.getItem("simsim_hidecat") === "1"; state.hideDup = localStorage.getItem("simsim_hidedup") === "1"; } catch (e) {}
   function closeMenu() { $("moreMenu").classList.add("hidden"); $("moreBtn").setAttribute("aria-expanded", "false"); }
-  // une rubrique du menu n'apparaît que si au moins un de ses boutons est disponible pour cette personne
+  // Menu Plus en onglets : un onglet n'apparaît que si au moins un de ses boutons est disponible pour cette personne ; seul l'onglet choisi est affiché
+  var menuTab = "";
+  try { menuTab = localStorage.getItem("simsim_menutab") || ""; } catch (e) {}
   function refreshMenuGroups() {
-    Array.prototype.forEach.call($("moreMenu").querySelectorAll(".menu-group"), function (g) {
-      g.classList.toggle("hidden", !g.querySelector(".mi:not(.hidden)"));
+    var avail = [];
+    Array.prototype.forEach.call($("moreMenu").querySelectorAll(".menu-group[data-mtab]"), function (g) {
+      if (g.querySelector(".mi:not(.hidden)")) avail.push(g.getAttribute("data-mtab"));
+    });
+    if (avail.indexOf(menuTab) === -1) menuTab = avail[0] || "";
+    Array.prototype.forEach.call($("moreMenu").querySelectorAll(".menu-group[data-mtab]"), function (g) {
+      g.classList.toggle("hidden", g.getAttribute("data-mtab") !== menuTab);
+    });
+    Array.prototype.forEach.call($("menuTabs").querySelectorAll(".mtab"), function (b) {
+      var k = b.getAttribute("data-mtab");
+      b.classList.toggle("hidden", avail.indexOf(k) === -1);
+      b.setAttribute("aria-selected", k === menuTab ? "true" : "false");
     });
   }
+  $("menuTabs").addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest(".mtab"); if (!b) return;
+    menuTab = b.getAttribute("data-mtab"); try { localStorage.setItem("simsim_menutab", menuTab); } catch (er) {}
+    refreshMenuGroups();
+  });
   $("moreBtn").addEventListener("click", function (e) {
     e.stopPropagation();
     refreshMenuGroups();
     var hidden = $("moreMenu").classList.toggle("hidden");
     $("moreBtn").setAttribute("aria-expanded", hidden ? "false" : "true");
   });
-  $("moreMenu").addEventListener("click", function (e) { if (e.target.closest && e.target.closest("button")) closeMenu(); });
+  $("moreMenu").addEventListener("click", function (e) { if (e.target.closest && e.target.closest(".mtab")) return; if (e.target.closest && e.target.closest("button")) closeMenu(); });
   document.addEventListener("click", function (e) { if (!(e.target.closest && e.target.closest(".menuwrap"))) closeMenu(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeMenu(); });
 
