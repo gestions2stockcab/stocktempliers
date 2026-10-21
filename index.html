@@ -817,6 +817,13 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .banner.cheap { background:var(--warn-bg); color:var(--warn); }
 .banner.cheap summary { cursor:pointer; font-weight:700; }
 .cheapline { margin:4px 0 0 4px; font-size:14px; }
+
+/* ===== v86 : catalogues fournisseurs ===== */
+.catsups { display:flex; flex-wrap:wrap; gap:6px 14px; margin:8px 0; }
+.catsup { display:flex; gap:6px; align-items:center; font-size:14.5px; }
+.catsup.all { width:100%; }
+.catres { max-height:42vh; overflow:auto; margin:8px 0; }
+.catact { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
 </style>
 </head>
 <body>
@@ -901,7 +908,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v85</div>
+            <div class="menu-who"><span id="who"></span> · v86</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -915,6 +922,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
             <button class="mi hidden" id="newCabBtn">Créer un cabinet</button>
             <button class="mi hidden" id="adminBtn">Administration</button>
             <button class="mi hidden danger" id="wipeBtn">Supprimer tout le stock…</button>
+            <button class="mi" id="catSupBtn">Catalogues fournisseurs</button>
             <button class="mi" id="secBtn">Sécurité du compte</button>
             <button class="mi" id="logoutBtn">Se déconnecter</button>
           </div>
@@ -1104,6 +1112,28 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       <button class="btn" id="itemCancel">Annuler</button>
       <button class="btn primary" id="itemSave">Enregistrer</button>
     </div>
+  </div>
+</dialog>
+
+<dialog id="catDlg" class="wide">
+  <div class="dlg">
+    <h2>Catalogues des fournisseurs</h2>
+    <div class="sub" id="catInfo">Cochez les fournisseurs dans lesquels chercher (un seul, plusieurs, ou tous), puis tapez un produit ou une référence.</div>
+    <div id="catSup" class="catsups"></div>
+    <input id="catQ" class="search" type="search" placeholder="Chercher un produit, une marque, une référence ou un code-barres" autocomplete="off" aria-label="Chercher dans les catalogues">
+    <div id="catRes" class="catres"></div>
+    <details id="catOwner" class="more hidden">
+      <summary>Alimenter les catalogues (propriétaire)</summary>
+      <div class="sub">Les catalogues complets (Méga Dental, Doctor Strong, Dentalix, Promodentaire…) ont des dizaines de milliers de références : demandez à votre commercial son <b>tarif ou catalogue au format Excel ou CSV</b>, puis chargez-le ici. Colonnes reconnues : désignation, référence, prix HT (ou TTC), code-barres, famille, conditionnement. Importer deux fois le même fichier ne crée pas de doublons.</div>
+      <label class="f">Fournisseur de ce fichier
+        <input id="catImpSup" list="dl_catsup" type="text" autocomplete="off" placeholder="Ex : Dentalix">
+        <datalist id="dl_catsup"></datalist>
+      </label>
+      <input id="catImpFile" type="file" accept=".xlsx,.xls,.csv,.txt,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+      <div class="catact"><button class="btn primary" id="catImpGo" type="button">Charger le catalogue</button><button class="btn" id="catPast" type="button">Ajouter mes achats passés aux catalogues</button></div>
+      <div class="meta" id="catProg" role="status"></div>
+    </details>
+    <div class="dlg-actions"><button class="btn" id="catClose" type="button">Fermer</button></div>
   </div>
 </dialog>
 
@@ -8377,6 +8407,192 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     }
     box.append(card);
   }
+  // ---------- catalogues des fournisseurs : cases à cocher, recherche, ajout au cabinet ----------
+  var CAT_SUPPLIERS = ["Méga Dental", "Doctor Strong", "Dentalix", "Promodentaire", "GACD", "Dental Price", "DMD", "Septodont"];
+  var catStats = {}, catOk = false, catSel = {}, catSelInit = false, catTimer = null, catSeq = 0, catClear = "";
+  var CATSYN = {
+    name: ["designation", "designation produit", "libelle", "libelle produit", "produit", "article", "nom", "nom du produit", "description"],
+    ref: ["reference", "ref", "ref.", "ref fournisseur", "reference fournisseur", "code", "code article", "sku"],
+    price: ["prix", "prix ht", "tarif", "tarif ht", "pu ht", "prix unitaire ht", "prix unitaire", "prix public ht", "prix catalogue ht"],
+    ttc: ["prix ttc", "tarif ttc", "pu ttc", "prix unitaire ttc"],
+    ean: ["ean", "ean13", "gtin", "code barre", "code-barre", "code barres", "code-barres", "codebarres", "code ean"],
+    category: ["categorie", "famille", "rayon", "univers", "domaine"],
+    unit: ["unite", "conditionnement", "colisage"],
+    supplier: ["fournisseur", "marque"]
+  };
+  function catWords(q) { return norm(q || "").replace(/[^a-z0-9]+/g, " ").split(" ").filter(function (w) { return w.length >= 2; }); }
+  function catNames() {
+    var seen = {}, out = [];
+    var add = function (n) { n = String(n || "").trim(); var k = norm(n).replace(/[^a-z0-9]/g, ""); if (!n || seen[k]) return; seen[k] = 1; out.push(n); };
+    CAT_SUPPLIERS.forEach(add); Object.keys(catStats).sort().forEach(add);
+    return out;
+  }
+  function loadCatStats() {
+    return sb.rpc("catalogue_stats").then(function (r) {
+      if (r.error) { catOk = false; return; }
+      catOk = true; catStats = {}; (r.data || []).forEach(function (x) { catStats[x.supplier] = Number(x.n) || 0; });
+    }, function () { catOk = false; });
+  }
+  function catSelected() { return catNames().filter(function (n) { return catSel[n]; }); }
+  function drawCatSup() {
+    var box = $("catSup"), names = catNames(); box.textContent = "";
+    if (!catSelInit) { names.forEach(function (n) { catSel[n] = true; }); catSelInit = true; }
+    names.forEach(function (n) { if (catSel[n] == null) catSel[n] = true; });
+    var allOn = names.every(function (n) { return catSel[n]; });
+    var all = h("input", { type: "checkbox", "aria-label": "Tous les fournisseurs" }); all.checked = allOn;
+    all.addEventListener("change", function () { names.forEach(function (n) { catSel[n] = all.checked; }); drawCatSup(); catSearch(); });
+    box.append(h("label", { class: "catsup all" }, all, h("b", { text: "Tous les fournisseurs" })));
+    names.forEach(function (n) {
+      var cb = h("input", { type: "checkbox", "aria-label": n }); cb.checked = !!catSel[n];
+      cb.addEventListener("change", function () { catSel[n] = cb.checked; drawCatSup(); catSearch(); });
+      var cnt = catStats[n] || 0;
+      var lab = h("label", { class: "catsup" }, cb, h("span", { text: n }), h("span", { class: "meta", text: cnt ? cnt.toLocaleString("fr-FR") + " produit" + (cnt > 1 ? "s" : "") : "vide" }));
+      if (ownerOk && cnt) {
+        var clr = h("button", { class: "btn sm danger", type: "button", text: "Vider" });
+        clr.addEventListener("click", function (e) {
+          e.preventDefault();
+          if (catClear !== n) { catClear = n; clr.textContent = "Confirmer"; return; }
+          sb.from("catalogue_fournisseurs").delete().eq("supplier", n).then(function (res) { catClear = ""; toast(res.error ? "Le catalogue n'a pas pu être vidé." : "Catalogue « " + n + " » vidé."); loadCatStats().then(function () { drawCatSup(); catSearch(); }); });
+        });
+        lab.append(clr);
+      }
+      box.append(lab);
+    });
+    $("dl_catsup").textContent = ""; names.forEach(function (n) { $("dl_catsup").append(h("option", { value: n })); });
+  }
+  function cabHas(c) {
+    var rk = c.ref ? norm(c.ref).trim() : "", nk = norm(c.name).trim(), found = false;
+    var chk = function (it) { if ((rk && norm(it.ref || "").trim() === rk) || norm(it.name || "").trim() === nk) found = true; };
+    items.forEach(chk); trash.forEach(chk);
+    return found;
+  }
+  function drawCatRes(list, limit) {
+    var box = $("catRes"); box.textContent = "";
+    if (!list.length) { box.append(h("div", { class: "meta", text: "Aucun produit trouvé dans les fournisseurs cochés." })); return; }
+    list.forEach(function (c) {
+      var has = cabHas(c), btn = null;
+      if (has) btn = h("span", { class: "eqb ok", text: "✓ déjà dans le cabinet" });
+      else if (!readOnly) { btn = h("button", { class: "btn sm primary", type: "button", text: "＋ Ajouter" }); btn.addEventListener("click", function () { addCatalogueEntry(c, btn); }); }
+      box.append(h("div", { class: "eqint" },
+        h("div", null, h("div", { class: "item-name", text: c.name }), h("div", { class: "meta", text: [c.supplier, c.ref ? "réf. " + c.ref : "", c.price_ht != null ? money(Number(c.price_ht)) + " HT" : "", c.category].filter(Boolean).join(" · ") })), btn));
+    });
+    if (list.length >= limit) box.append(h("div", { class: "meta", text: "Les " + limit + " premiers résultats : ajoutez un mot pour affiner." }));
+  }
+  function catSearch() {
+    if (!catOk) return;
+    var words = catWords($("catQ").value), sel = catSelected(), names = catNames(), box = $("catRes");
+    if (!sel.length) { box.textContent = ""; box.append(h("div", { class: "meta", text: "Cochez au moins un fournisseur." })); return; }
+    if (!words.length) { box.textContent = ""; box.append(h("div", { class: "meta", text: "Tapez au moins deux lettres d'un produit, d'une marque ou d'une référence." })); return; }
+    var my = ++catSeq;
+    sb.rpc("catalogue_chercher", { p_words: words, p_suppliers: sel.length === names.length ? null : sel, p_limit: 50 }).then(function (res) {
+      if (my !== catSeq) return;
+      if (res.error) { box.textContent = ""; box.append(h("div", { class: "umsg bad", text: "La recherche a échoué. Réessayez." })); return; }
+      drawCatRes(res.data || [], 50);
+    }, function () {});
+  }
+  function addCatalogueEntry(c, btn) {
+    if (readOnly || !db) return;
+    if (!trackedOk) { toast("Lancez d'abord le script SQL « ajout-catalogue » dans Supabase."); return; }
+    var d = { name: c.name, ref: c.ref || "", supplier: c.supplier, category: normDomain(c.category) || guessDomain(c.name), price: Number(c.price_ht) || 0, qty: 0, min: 0, target: 0, unit: c.unit || "", tracked: false, description: "", subcategory: "" };
+    if (barcodeOk && c.ean) { d.barcode = c.ean; d._barcodeKey = true; }
+    btn.disabled = true; btn.textContent = "Ajout…";
+    enqueue(function () {
+      return sb.from("items").insert(toRow(d)).select().then(function (res) {
+        (check(res) || []).forEach(function (x) { items.set(x.id, fromRow(x)); });
+        render(); btn.replaceWith(h("span", { class: "eqb ok", text: "✓ ajouté au catalogue du cabinet" }));
+        return appendLog({ type: "import", itemId: "", item: c.name, delta: 0, qty: 0, note: "Ajouté depuis le catalogue " + c.supplier });
+      });
+    });
+  }
+  function catKey(supplier, ref, name) { return norm(supplier).replace(/[^a-z0-9]/g, "") + "|" + (ref ? norm(ref).replace(/\s+/g, "") : norm(name).replace(/[^a-z0-9]+/g, " ").trim()); }
+  function catRow(e) {
+    return { key: catKey(e.supplier, e.ref, e.name), supplier: e.supplier, ref: e.ref || "", name: e.name, price_ht: e.price_ht != null && isFinite(e.price_ht) ? e.price_ht : null, ean: e.ean || "", category: e.category || "", unit: e.unit || "",
+      search_text: norm(e.name + " " + (e.ref || "") + " " + (e.ean || "")).replace(/[^a-z0-9]+/g, " ").trim(), updated_at: new Date().toISOString() };
+  }
+  function catEntriesFromSheets(sheets, supplier) {
+    var out = [], bad = 0;
+    sheets.forEach(function (sh) {
+      var rows = sh.rows || []; if (rows.length < 2) return;
+      var heads = (rows[0] || []).map(function (c) { return norm(cellText(c)).trim(); }), map = {};
+      Object.keys(CATSYN).forEach(function (f) { var i = heads.findIndex(function (hd) { return CATSYN[f].indexOf(hd) !== -1; }); if (i !== -1) map[f] = i; });
+      if (map.name == null) { bad++; return; }
+      rows.slice(1).forEach(function (r) {
+        var get = function (f) { return map[f] != null ? cellText(r[map[f]]) : ""; };
+        var name = get("name"); if (!name) return;
+        var price = get("price") ? Math.max(0, num(get("price"))) : (get("ttc") ? r2(Math.max(0, num(get("ttc"))) / 1.2) : null);
+        var sup = supplier || get("supplier"); if (!sup) return;
+        out.push({ supplier: sup, ref: get("ref"), name: name, price_ht: price, ean: get("ean").replace(/\s+/g, ""), category: normDomain(get("category")) || "", unit: get("unit") });
+      });
+    });
+    out.bad = bad; return out;
+  }
+  function catUpsert(entries) {
+    var byKey = {};
+    entries.forEach(function (e) { var row = catRow(e); byKey[row.key] = row; });
+    var rows = Object.keys(byKey).map(function (k) { return byKey[k]; }), chain = Promise.resolve(), done = 0;
+    for (var i = 0; i < rows.length; i += 500) (function (chunk) {
+      chain = chain.then(function () {
+        return sb.from("catalogue_fournisseurs").upsert(chunk, { onConflict: "key" }).then(function (res) {
+          if (res.error) throw res.error;
+          done += chunk.length; $("catProg").textContent = "Import en cours : " + done.toLocaleString("fr-FR") + " / " + rows.length.toLocaleString("fr-FR") + "…";
+        });
+      });
+    })(rows.slice(i, i + 500));
+    return chain.then(function () { return rows.length; });
+  }
+  function fileToSheets(file) {
+    return new Promise(function (resolve, reject) {
+      var name = file.name || "", type = String(file.type || "").toLowerCase(), isCsv = /\.(csv|txt)$/i.test(name) || /csv/.test(type) || /^text\//.test(type), r = new FileReader();
+      r.onerror = function () { reject(new Error("lecture")); };
+      if (!isCsv) {
+        if (!window.XLSX) { reject(new Error("xlsx")); return; }
+        r.onload = function () { try { var wb = window.XLSX.read(new Uint8Array(r.result), { type: "array" }); resolve(wb.SheetNames.map(function (n) { return { name: n, rows: window.XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: "" }) }; })); } catch (e) { reject(e); } };
+        r.readAsArrayBuffer(file);
+      } else {
+        r.onload = function () {
+          var t = String(r.result || "");
+          if (t.indexOf("\uFFFD") !== -1) { var r2 = new FileReader(); r2.onload = function () { resolve([{ name: "", rows: parseCsv(String(r2.result || "")) }]); }; r2.onerror = r.onerror; r2.readAsText(file, "windows-1252"); return; }
+          resolve([{ name: "", rows: parseCsv(t) }]);
+        };
+        r.readAsText(file, "utf-8");
+      }
+    });
+  }
+  function catAfterImport(n, sup) { $("catProg").textContent = n.toLocaleString("fr-FR") + " produit" + (n > 1 ? "s" : "") + " enregistré" + (n > 1 ? "s" : "") + (sup ? " pour « " + sup + " »" : "") + "."; toast(n.toLocaleString("fr-FR") + " produits dans les catalogues."); return loadCatStats().then(function () { drawCatSup(); catSearch(); }); }
+  function openCat() {
+    $("moreMenu").classList.add("hidden");
+    $("catOwner").classList.toggle("hidden", !ownerOk); $("catQ").value = ""; $("catRes").textContent = ""; $("catProg").textContent = ""; catClear = "";
+    loadCatStats().then(function () {
+      if (!catOk) { $("catInfo").textContent = "Cette fonction n'est pas encore activée : lancez le script SQL « ajout-catalogues-fournisseurs » dans Supabase."; $("catSup").textContent = ""; $("catQ").classList.add("hidden"); }
+      else { $("catInfo").textContent = "Cochez les fournisseurs dans lesquels chercher (un seul, plusieurs, ou tous), puis tapez un produit ou une référence."; $("catQ").classList.remove("hidden"); drawCatSup(); catSearch(); }
+      $("catDlg").showModal(); if (catOk) $("catQ").focus();
+    });
+  }
+  $("catSupBtn").addEventListener("click", openCat);
+  $("catClose").addEventListener("click", function () { $("catDlg").close(); });
+  $("catQ").addEventListener("input", function () { clearTimeout(catTimer); catTimer = setTimeout(catSearch, 250); });
+  $("catImpGo").addEventListener("click", function () {
+    if (!ownerOk) return;
+    var sup = $("catImpSup").value.trim(), f = $("catImpFile").files && $("catImpFile").files[0];
+    if (!sup) { $("catProg").textContent = "Indiquez le fournisseur de ce fichier."; return; }
+    if (!f) { $("catProg").textContent = "Choisissez le fichier Excel ou CSV du fournisseur."; return; }
+    $("catImpGo").disabled = true; $("catProg").textContent = "Lecture du fichier…";
+    fileToSheets(f).then(function (sheets) {
+      var entries = catEntriesFromSheets(sheets, sup);
+      if (!entries.length) { $("catProg").textContent = entries.bad ? "Colonne « Désignation » (ou « Article », « Produit ») introuvable dans la première ligne du fichier." : "Aucune ligne exploitable dans le fichier."; return; }
+      $("catProg").textContent = entries.length.toLocaleString("fr-FR") + " produits lus. Import en cours…";
+      return catUpsert(entries).then(function (n) { return catAfterImport(n, sup); });
+    }).catch(function (e) { $("catProg").textContent = /xlsx/.test(String(e && e.message)) ? "Impossible de lire un fichier Excel : vérifiez votre accès à internet." : "L'import a échoué. Réessayez, ou découpez le fichier en plusieurs parties."; })
+      .then(function () { $("catImpGo").disabled = false; });
+  });
+  $("catPast").addEventListener("click", function () {
+    if (!ownerOk) return;
+    var prods = priceProducts(spendRows()), entries = Object.keys(prods).map(function (k) { return prods[k]; }).filter(function (p) { return p.supplier; })
+      .map(function (p) { return { supplier: p.supplier, ref: p.ref, name: p.name, price_ht: p.price, category: guessDomain(p.name) }; });
+    if (!entries.length) { $("catProg").textContent = "Aucun achat enregistré : importez d'abord des factures."; return; }
+    $("catPast").disabled = true; $("catProg").textContent = entries.length + " produits achetés…";
+    catUpsert(entries).then(function (n) { return catAfterImport(n, ""); }).catch(function () { $("catProg").textContent = "L'ajout a échoué."; }).then(function () { $("catPast").disabled = false; });
+  });
   // ---------- double authentification : code à 6 chiffres ----------
   var mfaDone = null, mfaOn = false, mfaChecked = false, secFactorId = "";
   function hasMfa() { return !!(sb && sb.auth && sb.auth.mfa); }
