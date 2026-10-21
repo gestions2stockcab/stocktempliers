@@ -785,6 +785,22 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 
 .pickjoin { margin:12px 0; text-align:left; }
 .pickjoin .btn { margin-top:8px; width:100%; }
+
+/* ===== v81 : équipements et comparateur de prix ===== */
+.eqbar { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+.eqcard { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin:10px 0; }
+.eqhead { display:flex; gap:10px; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; }
+.eqbs { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0; }
+.eqb { display:inline-block; font-size:12px; font-weight:700; padding:3px 9px; border-radius:99px; background:var(--surface-2); color:var(--muted); }
+.eqb.ok { background:var(--ok-bg); color:var(--ok); } .eqb.warn { background:var(--warn-bg); color:var(--warn); } .eqb.bad { background:var(--bad-bg); color:var(--bad); }
+.eqalert { background:var(--warn-bg); color:var(--warn); border-radius:10px; padding:8px 12px; margin:6px 0; font-size:14px; font-weight:600; }
+.eqalert.bad { background:var(--bad-bg); color:var(--bad); }
+.eqints { margin-top:8px; border-top:1px solid var(--line); }
+.eqint { display:flex; gap:10px; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+.eqcost { display:flex; gap:8px; align-items:center; }
+.eqform { max-height:62vh; overflow:auto; padding-right:4px; }
+.eqvlist { max-height:36vh; overflow:auto; border:1px solid var(--line); border-radius:10px; margin:8px 0; padding:4px 8px; }
+.eqvrow { display:flex; gap:8px; align-items:flex-start; padding:6px 0; border-bottom:1px solid var(--line); font-size:14px; }
 </style>
 </head>
 <body>
@@ -869,7 +885,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v80</div>
+            <div class="menu-who"><span id="who"></span> · v81</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -898,6 +914,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     <button class="tab" role="tab" data-tab="comptage" aria-selected="false"><span class="ti">🔢</span><span class="tl">Comptage</span></button>
     <button class="tab" role="tab" data-tab="salles" aria-selected="false"><span class="ti">🏠</span><span class="tl">Salles</span></button>
     <button class="tab" role="tab" data-tab="controles" aria-selected="false"><span class="ti">✅</span><span class="tl">Contrôles<span id="ctlBadge"></span></span></button>
+    <button class="tab" role="tab" data-tab="equipements" aria-selected="false"><span class="ti">🔧</span><span class="tl">Équipements</span></button>
     <button class="tab" role="tab" data-tab="historique" aria-selected="false"><span class="ti">🕘</span><span class="tl">Historique</span></button>
     <button class="tab" role="tab" data-tab="donnees" aria-selected="false"><span class="ti">📊</span><span class="tl">Données</span></button>
     <button class="tab hidden" role="tab" data-tab="utilisateurs" aria-selected="false"><span class="ti">👥</span><span class="tl">Utilisateurs</span></button>
@@ -1055,6 +1072,68 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       <span class="spacer"></span>
       <button class="btn" id="itemCancel">Annuler</button>
       <button class="btn primary" id="itemSave">Enregistrer</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="eqDlg">
+  <div class="dlg">
+    <h2 id="eqTitle">Équipement</h2>
+    <div class="eqform">
+      <label class="f">Nom <input id="eqName" type="text" maxlength="80" placeholder="Ex : Fauteuil cabinet 3" autocomplete="off"></label>
+      <label class="f">Type <select id="eqKind"></select></label>
+      <label class="f">Salle ou emplacement <input id="eqRoom" type="text" maxlength="60" placeholder="Ex : Cab 3" autocomplete="off"></label>
+      <label class="f">Marque <input id="eqBrand" type="text" maxlength="60" autocomplete="off"></label>
+      <label class="f">Modèle <input id="eqModel" type="text" maxlength="60" autocomplete="off"></label>
+      <label class="f">N° de série <input id="eqSerial" type="text" maxlength="60" autocomplete="off"></label>
+      <label class="f">Date d'achat ou d'installation <input id="eqBought" type="date"></label>
+      <label class="f">Fin de garantie <input id="eqWarranty" type="date"></label>
+      <label class="f">Prochain contrôle ou maintenance <input id="eqNext" type="date"></label>
+      <label class="f">Société de maintenance <input id="eqMaint" type="text" maxlength="80" autocomplete="off"></label>
+      <label class="f">Notes <input id="eqNotes" type="text" maxlength="200" autocomplete="off"></label>
+    </div>
+    <div class="umsg bad hidden" id="eqErr" role="alert"></div>
+    <div class="dlg-actions">
+      <button class="btn primary" id="eqSave" type="button">Enregistrer</button>
+      <button class="btn" id="eqCancel" type="button">Annuler</button>
+      <button class="btn danger hidden" id="eqDel" type="button">Supprimer</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="intDlg">
+  <div class="dlg">
+    <h2 id="intTitle">Intervention</h2>
+    <div class="eqform">
+      <label class="f">Équipement <select id="intEq"></select></label>
+      <label class="f">Date <input id="intDate" type="date"></label>
+      <label class="f">Type <select id="intKind"></select></label>
+      <label class="f">Objet <input id="intWhat" type="text" maxlength="120" placeholder="Ex : Cordon détartreur cassé" autocomplete="off"></label>
+      <label class="f">Facture importée (facultatif) <select id="intDoc"></select></label>
+      <label class="f">Fournisseur ou technicien <input id="intSup" type="text" maxlength="80" autocomplete="off"></label>
+      <label class="f">Coût HT (€) <input id="intCost" type="number" min="0" step="0.01" inputmode="decimal"></label>
+      <label class="f">Notes <input id="intNotes" type="text" maxlength="300" autocomplete="off"></label>
+    </div>
+    <div class="umsg bad hidden" id="intErr" role="alert"></div>
+    <div class="dlg-actions">
+      <button class="btn primary" id="intSave" type="button">Enregistrer</button>
+      <button class="btn" id="intCancel" type="button">Annuler</button>
+      <button class="btn danger hidden" id="intDel" type="button">Supprimer</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="eqvDlg">
+  <div class="dlg">
+    <h2>Comparer des produits</h2>
+    <div class="sub">Cochez le même produit chez deux fournisseurs (ou plus) : l'appli comparera leurs derniers prix HT. Vérifiez que le conditionnement est le même.</div>
+    <input id="eqvSearch" class="search" type="search" placeholder="Chercher un produit" autocomplete="off" aria-label="Chercher un produit">
+    <div id="eqvList" class="eqvlist"></div>
+    <label class="f">Nom du groupe <input id="eqvName" type="text" maxlength="80" placeholder="Ex : Révélateur de plaques" autocomplete="off"></label>
+    <div class="umsg bad hidden" id="eqvErr" role="alert"></div>
+    <div class="dlg-actions">
+      <button class="btn primary" id="eqvSave" type="button" disabled>Créer le groupe</button>
+      <button class="btn" id="eqvCancel" type="button">Annuler</button>
     </div>
   </div>
 </dialog>
@@ -1935,6 +2014,296 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       });
     });
   }
+  // ---------- équipements : pannes, maintenances, coûts ----------
+  var eqOk = false, eqList = [], eqInts = [], eqOpen = {}, eqvOk = false, eqvRows = [], eqEdit = null, intEdit = null;
+  var EQ_KINDS = [["fauteuil", "Fauteuil / unit"], ["autoclave", "Autoclave, stérilisation"], ["radio", "Radiologie"], ["aspiration", "Aspiration, compresseur"], ["laveur", "Laveur-désinfecteur"], ["info", "Informatique"], ["autre", "Autre"]];
+  var INT_KINDS = [["panne", "Panne, dépannage"], ["maintenance", "Maintenance préventive"], ["controle", "Contrôle réglementaire"], ["installation", "Installation, achat"], ["autre", "Autre"]];
+  function kindLabel(list, k) { var f = list.filter(function (x) { return x[0] === k; })[0]; return f ? f[1] : k; }
+  function todayIso() { return new Date().toISOString().slice(0, 10); }
+  function plusDays(n) { return new Date(Date.now() + n * 86400000).toISOString().slice(0, 10); }
+  function loadEquip() {
+    if (!sb || !cabinetId) return;
+    var cid = cabinetId;
+    sb.from("equipements").select("*").eq("cabinet_id", cid).order("name").then(function (res) {
+      if (cid !== cabinetId) return;
+      if (res.error) { eqOk = false; return; }
+      eqOk = true; eqList = res.data || [];
+      if (state.tab === "equipements") render();
+    }).catch(function () { eqOk = false; });
+    fetchAll(function () { return sb.from("interventions").select("*").eq("cabinet_id", cid).order("on_date", { ascending: false }); }).then(function (res) {
+      if (cid !== cabinetId) return;
+      if (res.error) return;
+      eqInts = res.data || [];
+      if (state.tab === "equipements" || state.tab === "donnees") render();
+    }).catch(function () {});
+    sb.from("equivalences").select("*").eq("cabinet_id", cid).order("groupe").then(function (res) {
+      if (cid !== cabinetId) return;
+      if (res.error) { eqvOk = false; return; }
+      eqvOk = true; eqvRows = res.data || [];
+      if (state.tab === "donnees") render();
+    }).catch(function () { eqvOk = false; });
+  }
+  function eqCosts(id) {
+    var d365 = plusDays(-365), out = { y12: 0, total: 0, n: 0, last: "" };
+    eqInts.forEach(function (i) {
+      if (i.equipement_id !== id) return;
+      var c = Number(i.cost_ht) || 0; out.total += c; out.n++;
+      if (String(i.on_date) >= d365) out.y12 += c;
+      if (String(i.on_date) > out.last) out.last = String(i.on_date);
+    });
+    return out;
+  }
+  function eqBadge(text, tone) { return h("span", { class: "eqb " + (tone || ""), text: text }); }
+  function renderEquip(box) {
+    if (!eqOk) {
+      box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Équipements non activés" }), h("div", { text: "Lancez le script SQL « ajout-equipements-prix » dans Supabase (SQL Editor), puis rechargez la page." }))));
+      return;
+    }
+    var today = todayIso(), in90 = plusDays(90), in30 = plusDays(30), act = eqList.filter(function (e) { return !e.archived; });
+    var cost12 = 0; act.forEach(function (e) { cost12 += eqCosts(e.id).y12; });
+    var warn = act.filter(function (e) { return e.warranty_until && String(e.warranty_until) >= today && String(e.warranty_until) <= in90; });
+    var chk = act.filter(function (e) { return e.next_check && String(e.next_check) <= in30; });
+    var kp = h("div", { class: "kpis dsec" });
+    [["Équipements suivis", String(act.length)], ["Pannes et maintenance, 12 mois", money(cost12) + " HT"], ["Garanties qui se terminent (90 j)", String(warn.length)], ["Contrôles à prévoir (30 j)", String(chk.length)]].forEach(function (k) { kp.append(h("div", { class: "kpi" }, h("b", { text: k[1] }), h("span", { text: k[0] }))); });
+    box.append(kp);
+    if (!readOnly) box.append(h("div", { class: "eqbar" }, h("button", { class: "btn primary", type: "button", onclick: function () { openEqForm(null); }, text: "＋ Ajouter un équipement" }),
+      h("button", { class: "btn", type: "button", disabled: !act.length, onclick: function () { openIntForm(null, act[0] && act[0].id); }, text: "＋ Noter une intervention" })));
+    if (!act.length) {
+      box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Aucun équipement" }), h("div", { text: "Ajoutez vos fauteuils, autoclave, radio, aspiration… puis notez chaque panne ou maintenance : vous verrez ce que chaque équipement vous coûte, et quand sa garantie se termine." }))));
+      return;
+    }
+    if (warn.length || chk.length) {
+      var al = h("div", { class: "dsec" }, h("h3", { text: "À surveiller" }));
+      warn.forEach(function (e) { al.append(h("div", { class: "eqalert" }, "Garantie de « " + e.name + " » : fin le " + frDate(e.warranty_until))); });
+      chk.forEach(function (e) { al.append(h("div", { class: "eqalert bad" }, (String(e.next_check) < today ? "En retard : " : "À prévoir : ") + "contrôle de « " + e.name + " » le " + frDate(e.next_check))); });
+      box.append(al);
+    }
+    var bars = act.map(function (e) { return { k: e.name, v: eqCosts(e.id).y12 }; }).filter(function (r) { return r.v > 0; }).sort(function (a, b) { return b.v - a.v; });
+    if (bars.length) { var bsec = h("div", { class: "dsec" }, h("h3", { text: "Où part l'argent (12 mois)" })); bsec.append(barList(bars, bars.reduce(function (a, r) { return a + r.v; }, 0))); box.append(bsec); }
+    var list = h("div", { class: "dsec" }, h("h3", { text: "Mes équipements" }));
+    act.slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name), "fr"); }).forEach(function (e) { list.append(eqCard(e)); });
+    box.append(list);
+  }
+  function eqCard(e) {
+    var today = todayIso(), c = eqCosts(e.id), open = !!eqOpen[e.id];
+    var badges = h("div", { class: "eqbs" });
+    if (e.warranty_until) badges.append(String(e.warranty_until) >= today ? eqBadge("Sous garantie jusqu'au " + frDate(e.warranty_until), "ok") : eqBadge("Garantie expirée", ""));
+    if (e.next_check) badges.append(eqBadge("Contrôle : " + frDate(e.next_check), String(e.next_check) < today ? "bad" : (String(e.next_check) <= plusDays(30) ? "warn" : "")));
+    var age = ""; if (e.bought_on) { var y = (Date.now() - new Date(e.bought_on).getTime()) / (365.25 * 86400000); age = y >= 1 ? " · " + Math.floor(y) + " an" + (Math.floor(y) > 1 ? "s" : "") : " · moins d'un an"; }
+    var meta = [kindLabel(EQ_KINDS, e.kind), e.room, [e.brand, e.model].filter(Boolean).join(" "), e.serial ? "n° " + e.serial : ""].filter(Boolean).join(" · ");
+    var card = h("div", { class: "eqcard" },
+      h("div", { class: "eqhead" }, h("div", null, h("div", { class: "item-name", text: e.name }), h("div", { class: "meta", text: meta + (e.bought_on ? " · installé le " + frDate(e.bought_on) + age : "") })),
+        h("div", { class: "uact" },
+          readOnly ? null : h("button", { class: "btn sm", type: "button", onclick: function () { openIntForm(null, e.id); }, text: "＋ Intervention" }),
+          readOnly ? null : h("button", { class: "btn sm", type: "button", onclick: function () { openEqForm(e); }, text: "Modifier" }))),
+      badges,
+      h("div", { class: "meta", text: c.n ? c.n + " intervention" + (c.n > 1 ? "s" : "") + " · " + money(c.y12) + " HT sur 12 mois · " + money(c.total) + " HT au total" + (c.last ? " · dernière le " + frDate(c.last) : "") : "Aucune intervention notée." }));
+    if (e.maintenance_by) card.append(h("div", { class: "meta", text: "Maintenance : " + e.maintenance_by }));
+    if (e.notes) card.append(h("div", { class: "meta", text: e.notes }));
+    if (c.n) {
+      card.append(h("button", { class: "btn sm", type: "button", onclick: function () { eqOpen[e.id] = !eqOpen[e.id]; render(); }, text: (open ? "Masquer" : "Voir") + " l'historique" }));
+      if (open) {
+        var ints = h("div", { class: "eqints" });
+        eqInts.filter(function (i) { return i.equipement_id === e.id; }).forEach(function (i) {
+          ints.append(h("div", { class: "eqint" },
+            h("div", null, h("div", { class: "item-name", text: i.title }), h("div", { class: "meta", text: [frDate(i.on_date), kindLabel(INT_KINDS, i.kind), i.supplier, i.doc_number ? "facture " + i.doc_number : "", i.notes].filter(Boolean).join(" · ") })),
+            h("div", { class: "eqcost" }, h("b", { text: money(Number(i.cost_ht) || 0) }), readOnly ? null : h("button", { class: "btn sm", type: "button", onclick: function () { openIntForm(i); }, text: "Modifier" }))));
+        });
+        card.append(ints);
+      }
+    }
+    return card;
+  }
+  function fillSelect(sel, opts, val) { sel.textContent = ""; opts.forEach(function (o) { sel.append(h("option", { value: o[0], text: o[1] })); }); if (val != null) sel.value = val; }
+  function openEqForm(e) {
+    if (readOnly) return;
+    eqEdit = e;
+    $("eqTitle").textContent = e ? "Modifier l'équipement" : "Nouvel équipement";
+    fillSelect($("eqKind"), EQ_KINDS, e ? e.kind : "fauteuil");
+    $("eqName").value = e ? e.name : ""; $("eqRoom").value = e ? e.room || "" : ""; $("eqBrand").value = e ? e.brand || "" : ""; $("eqModel").value = e ? e.model || "" : ""; $("eqSerial").value = e ? e.serial || "" : "";
+    $("eqBought").value = e && e.bought_on ? String(e.bought_on).slice(0, 10) : ""; $("eqWarranty").value = e && e.warranty_until ? String(e.warranty_until).slice(0, 10) : ""; $("eqNext").value = e && e.next_check ? String(e.next_check).slice(0, 10) : "";
+    $("eqMaint").value = e ? e.maintenance_by || "" : ""; $("eqNotes").value = e ? e.notes || "" : "";
+    $("eqErr").classList.add("hidden"); $("eqSave").disabled = false; $("eqDel").classList.toggle("hidden", !e); $("eqDel").textContent = "Supprimer";
+    $("eqDlg").showModal(); $("eqName").focus();
+  }
+  $("eqCancel").addEventListener("click", function () { $("eqDlg").close(); });
+  $("eqSave").addEventListener("click", function () {
+    var name = $("eqName").value.trim(), err = $("eqErr");
+    if (!name) { err.textContent = "Donnez un nom à l'équipement."; err.classList.remove("hidden"); return; }
+    var row = { name: name, kind: $("eqKind").value, room: $("eqRoom").value.trim(), brand: $("eqBrand").value.trim(), model: $("eqModel").value.trim(), serial: $("eqSerial").value.trim(),
+      bought_on: $("eqBought").value || null, warranty_until: $("eqWarranty").value || null, next_check: $("eqNext").value || null, maintenance_by: $("eqMaint").value.trim(), notes: $("eqNotes").value.trim() };
+    $("eqSave").disabled = true;
+    var q = eqEdit ? sb.from("equipements").update(row).eq("id", eqEdit.id) : sb.from("equipements").insert(Object.assign({ cabinet_id: cabinetId }, row));
+    q.then(function (res) {
+      $("eqSave").disabled = false;
+      if (res.error) { err.textContent = "L'équipement n'a pas pu être enregistré."; err.classList.remove("hidden"); return; }
+      $("eqDlg").close(); toast(eqEdit ? "Équipement modifié." : "Équipement ajouté."); loadEquip();
+    }, function () { $("eqSave").disabled = false; err.textContent = "Connexion impossible."; err.classList.remove("hidden"); });
+  });
+  $("eqDel").addEventListener("click", function () {
+    if (!eqEdit) return;
+    if ($("eqDel").textContent !== "Confirmer") { $("eqDel").textContent = "Confirmer"; return; }
+    sb.from("equipements").delete().eq("id", eqEdit.id).then(function (res) {
+      if (res.error) { $("eqErr").textContent = "La suppression a échoué."; $("eqErr").classList.remove("hidden"); return; }
+      $("eqDlg").close(); toast("Équipement supprimé avec son historique."); loadEquip();
+    });
+  });
+  function docTitle(n) {
+    var names = achLines.filter(function (l) { return l.doc_number === n && l.category !== "Services"; }).map(function (l) { return l.name; });
+    return names.slice(0, 2).join(", ") || "";
+  }
+  function openIntForm(i, eqId) {
+    if (readOnly) return;
+    intEdit = i;
+    var act = eqList.filter(function (e) { return !e.archived || (i && e.id === i.equipement_id); });
+    if (!act.length) { toast("Ajoutez d'abord un équipement."); return; }
+    $("intTitle").textContent = i ? "Modifier l'intervention" : "Nouvelle intervention";
+    fillSelect($("intEq"), act.map(function (e) { return [e.id, e.name + (e.room ? " (" + e.room + ")" : "")]; }), i ? i.equipement_id : (eqId || act[0].id));
+    fillSelect($("intKind"), INT_KINDS, i ? i.kind : "panne");
+    var docs = Object.keys(jrnByNumber).map(function (n) { return jrnByNumber[n]; }).sort(function (a, b) { return String(b.doc_date || "") < String(a.doc_date || "") ? -1 : 1; });
+    fillSelect($("intDoc"), [["", "Aucune"]].concat(docs.map(function (d) { return [d.doc_number, d.doc_number + " · " + (d.supplier || "?") + (d.doc_date ? " · " + frDate(d.doc_date) : "") + " · " + money(Number(d.total_ht) || 0) + " HT"]; })), i ? i.doc_number || "" : "");
+    $("intDate").value = i ? String(i.on_date).slice(0, 10) : todayIso(); $("intWhat").value = i ? i.title : ""; $("intSup").value = i ? i.supplier || "" : ""; $("intCost").value = i ? String(Number(i.cost_ht) || 0) : ""; $("intNotes").value = i ? i.notes || "" : "";
+    $("intErr").classList.add("hidden"); $("intSave").disabled = false; $("intDel").classList.toggle("hidden", !i); $("intDel").textContent = "Supprimer";
+    $("intDlg").showModal();
+  }
+  $("intDoc").addEventListener("change", function () {
+    var d = jrnByNumber[$("intDoc").value]; if (!d) return;
+    if (d.doc_date) $("intDate").value = String(d.doc_date).slice(0, 10);
+    if (!$("intSup").value.trim() && d.supplier) $("intSup").value = d.supplier;
+    $("intCost").value = String(Number(d.total_ht) || 0);
+    if (!$("intWhat").value.trim()) $("intWhat").value = docTitle(d.doc_number);
+  });
+  $("intCancel").addEventListener("click", function () { $("intDlg").close(); });
+  $("intSave").addEventListener("click", function () {
+    var what = $("intWhat").value.trim(), err = $("intErr");
+    if (!what) { err.textContent = "Dites en quelques mots ce qui a été fait."; err.classList.remove("hidden"); return; }
+    if (!$("intDate").value) { err.textContent = "Indiquez la date."; err.classList.remove("hidden"); return; }
+    var row = { equipement_id: $("intEq").value, on_date: $("intDate").value, kind: $("intKind").value, title: what, supplier: $("intSup").value.trim(), doc_number: $("intDoc").value, cost_ht: Math.max(0, parseFloat($("intCost").value) || 0), notes: $("intNotes").value.trim() };
+    $("intSave").disabled = true;
+    var q = intEdit ? sb.from("interventions").update(row).eq("id", intEdit.id) : sb.from("interventions").insert(Object.assign({ cabinet_id: cabinetId, created_by: myEmail }, row));
+    q.then(function (res) {
+      $("intSave").disabled = false;
+      if (res.error) { err.textContent = "L'intervention n'a pas pu être enregistrée."; err.classList.remove("hidden"); return; }
+      eqOpen[row.equipement_id] = true; $("intDlg").close(); toast(intEdit ? "Intervention modifiée." : "Intervention notée."); loadEquip();
+    }, function () { $("intSave").disabled = false; err.textContent = "Connexion impossible."; err.classList.remove("hidden"); });
+  });
+  $("intDel").addEventListener("click", function () {
+    if (!intEdit) return;
+    if ($("intDel").textContent !== "Confirmer") { $("intDel").textContent = "Confirmer"; return; }
+    sb.from("interventions").delete().eq("id", intEdit.id).then(function (res) {
+      if (res.error) { $("intErr").textContent = "La suppression a échoué."; $("intErr").classList.remove("hidden"); return; }
+      $("intDlg").close(); toast("Intervention supprimée."); loadEquip();
+    });
+  });
+
+  // ---------- comparateur de prix entre fournisseurs (onglet Données) ----------
+  var EQV_STOP = { des: 1, les: 1, pour: 1, avec: 1, sans: 1, par: 1, sur: 1, aux: 1, the: 1, and: 1 };
+  function prodKey(supplier, ref, name) { return norm(supplier || "") + "|" + (ref ? "r:" + norm(ref) : "n:" + norm(name || "").replace(/[^a-z0-9]+/g, " ").trim()); }
+  function nameTokens(name) { return norm(name || "").replace(/[^a-z0-9]+/g, " ").split(" ").filter(function (t) { return t.length > 2 && !EQV_STOP[t]; }); }
+  function priceProducts(rows) {
+    var d365 = plusDays(-365), map = {};
+    rows.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (r) {
+      if (r.category === "Services" || !(r.price > 0) || !(r.qty > 0)) return;
+      var k = prodKey(r.supplier, r.ref, r.name), p = map[k] = map[k] || { key: k, supplier: r.supplier, ref: r.ref, name: r.name, price: 0, date: "", qty12: 0, n: 0 };
+      p.price = r.price; p.date = r.date; p.name = r.name; p.n++; if (r.date >= d365) p.qty12 += r.qty;
+    });
+    return map;
+  }
+  function eqvIgnored() { try { return JSON.parse(localStorage.getItem("simsim_eqv_ign_" + cabinetId) || "[]"); } catch (e) { return []; } }
+  function eqvIgnore(a, b) { var l = eqvIgnored(); l.push([a, b].sort().join("||")); try { localStorage.setItem("simsim_eqv_ign_" + cabinetId, JSON.stringify(l.slice(-300))); } catch (e) {} }
+  function eqvSuggestions(prods, grouped) {
+    var ign = {}; eqvIgnored().forEach(function (x) { ign[x] = 1; });
+    var list = Object.keys(prods).map(function (k) { return prods[k]; }).filter(function (p) { return !grouped[p.key]; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; }).slice(0, 400);
+    list.forEach(function (p) { p.tok = nameTokens(p.name); });
+    var out = [];
+    for (var i = 0; i < list.length; i++) for (var j = i + 1; j < list.length; j++) {
+      var a = list[i], b = list[j];
+      if (norm(a.supplier) === norm(b.supplier) || ign[[a.key, b.key].sort().join("||")]) continue;
+      var inter = a.tok.filter(function (t) { return b.tok.indexOf(t) !== -1; }).length, den = Math.min(a.tok.length, b.tok.length);
+      if (inter >= 2 && den && inter / den >= 0.75) out.push({ a: a, b: b, score: inter / den + inter / 100 });
+    }
+    return out.sort(function (x, y) { return y.score - x.score; }).slice(0, 5);
+  }
+  function eqvCreate(label, members) {
+    if (!sb || !cabinetId || !members.length) return Promise.resolve(false);
+    var rowsIns = members.map(function (m) { return { cabinet_id: cabinetId, groupe: label, supplier: m.supplier || "", ref: m.ref || "", name: m.name }; });
+    return sb.from("equivalences").insert(rowsIns).then(function (res) { if (res.error) { toast("Le groupe n'a pas pu être créé."); return false; } loadEquip(); return true; }, function () { toast("Connexion impossible."); return false; });
+  }
+  function renderPriceCompare(box) {
+    var rows = spendRows(), prods = priceProducts(rows), all = Object.keys(prods).map(function (k) { return prods[k]; });
+    var sup = {}; all.forEach(function (p) { sup[norm(p.supplier)] = 1; });
+    var groups = {}, grouped = {};
+    eqvRows.forEach(function (r) { var k = prodKey(r.supplier, r.ref, r.name); (groups[r.groupe] = groups[r.groupe] || []).push({ row: r, p: prods[k] || null }); if (prods[k]) grouped[k] = 1; });
+    var names = Object.keys(groups), sugg = eqvOk ? eqvSuggestions(prods, grouped) : [];
+    if (Object.keys(sup).length < 2 && !names.length) return;
+    var sec = h("div", { class: "dsec", id: "priceCmp" }, h("h3", { text: "Prix chez vos fournisseurs" }),
+      h("div", { class: "dnote", text: "Le même produit chez plusieurs fournisseurs : comparez le dernier prix payé (HT) et voyez ce que vous pourriez économiser sur 12 mois. Vérifiez toujours que le conditionnement est le même." }));
+    if (!eqvOk) { sec.append(h("div", { class: "umsg bad", text: "Lancez le script SQL « ajout-equipements-prix » dans Supabase pour activer le comparateur." })); box.append(sec); return; }
+    if (!readOnly) sec.append(h("div", { class: "eqbar" }, h("button", { class: "btn", type: "button", onclick: openEqv, text: "＋ Comparer des produits" })));
+    var totalSave = 0;
+    names.forEach(function (g) {
+      var mem = groups[g], live = mem.filter(function (m) { return m.p; }), best = live.length ? live.reduce(function (a, m) { return m.p.price < a.p.price ? m : a; }) : null, save = 0;
+      if (best) live.forEach(function (m) { if (m !== best) save += (m.p.qty12 || 0) * (m.p.price - best.p.price); });
+      save = Math.max(0, r2(save)); totalSave += save;
+      var card = h("div", { class: "eqcard" }, h("div", { class: "eqhead" }, h("div", null, h("div", { class: "item-name", text: g }),
+        h("div", { class: "meta", text: best && live.length > 1 ? "Meilleur prix : " + best.p.supplier + " à " + money(best.p.price) + (save > 0.5 ? " · économie possible : " + money(save) + " sur 12 mois" : "") : "Un seul prix connu pour le moment" })),
+        readOnly ? null : h("div", { class: "uact" }, h("button", { class: "btn sm danger", type: "button", onclick: function () { sb.from("equivalences").delete().eq("cabinet_id", cabinetId).eq("groupe", g).then(function () { loadEquip(); }); }, text: "Supprimer le groupe" }))));
+      var tb = h("div", { class: "eqints" });
+      mem.sort(function (a, b) { return (a.p ? a.p.price : 1e9) - (b.p ? b.p.price : 1e9); }).forEach(function (m) {
+        var p = m.p, isBest = best && m === best && live.length > 1, diff = p && best && p.price > 0 && best.p.price > 0 ? Math.round((p.price / best.p.price - 1) * 100) : 0;
+        tb.append(h("div", { class: "eqint" },
+          h("div", null, h("div", { class: "item-name", text: m.row.supplier + " · " + m.row.name }), h("div", { class: "meta", text: p ? [p.ref ? "réf. " + p.ref : "", "dernier achat le " + frDate(p.date), p.qty12 ? p.qty12 + " acheté" + (p.qty12 > 1 ? "s" : "") + " en 12 mois" : "rien acheté en 12 mois"].filter(Boolean).join(" · ") : "Pas d'achat enregistré" })),
+          h("div", { class: "eqcost" }, h("b", { text: p ? money(p.price) : "—" }), isBest ? eqBadge("meilleur prix", "ok") : (diff > 0 ? eqBadge("+" + diff + " %", "bad") : null),
+            readOnly ? null : h("button", { class: "btn sm", type: "button", "aria-label": "Retirer ce produit du groupe", onclick: function () { sb.from("equivalences").delete().eq("id", m.row.id).then(function () { loadEquip(); }); }, text: "✕" }))));
+      });
+      card.append(tb); sec.append(card);
+    });
+    if (totalSave > 0.5) sec.insertBefore(h("div", { class: "kpis" }, h("div", { class: "kpi" }, h("b", { text: money(r2(totalSave)) }), h("span", { text: "Économie possible sur 12 mois (en achetant chaque produit au meilleur prix)" }))), sec.children[2] || null);
+    if (!names.length) sec.append(h("div", { class: "meta", text: "Aucun groupe pour le moment. Regroupez un même produit acheté chez deux fournisseurs, ou acceptez une suggestion ci-dessous." }));
+    if (sugg.length && !readOnly) {
+      var sg = h("div", { class: "dsec" }, h("h4", { text: "Ces produits se ressemblent : le même ?" }));
+      sugg.forEach(function (x) {
+        sg.append(h("div", { class: "eqint" },
+          h("div", null, h("div", { class: "item-name", text: x.a.name + "  ≈  " + x.b.name }), h("div", { class: "meta", text: x.a.supplier + " " + money(x.a.price) + "  ·  " + x.b.supplier + " " + money(x.b.price) })),
+          h("div", { class: "uact" }, h("button", { class: "btn sm primary", type: "button", onclick: function () { eqvCreate(x.a.name.length <= x.b.name.length ? x.a.name : x.b.name, [x.a, x.b]); }, text: "Même produit" }),
+            h("button", { class: "btn sm", type: "button", onclick: function () { eqvIgnore(x.a.key, x.b.key); render(); }, text: "Pas le même" }))));
+      });
+      sec.append(sg);
+    }
+    box.append(sec);
+  }
+  var eqvPick = {};
+  function openEqv() {
+    if (readOnly) return;
+    eqvPick = {}; $("eqvSearch").value = ""; $("eqvName").value = ""; $("eqvErr").classList.add("hidden"); $("eqvSave").disabled = true;
+    drawEqvList(); $("eqvDlg").showModal();
+  }
+  function drawEqvList() {
+    var prods = priceProducts(spendRows()), q = norm($("eqvSearch").value || ""), list = Object.keys(prods).map(function (k) { return prods[k]; })
+      .filter(function (p) { return !q || norm(p.name + " " + p.supplier + " " + p.ref).indexOf(q) !== -1; }).sort(function (a, b) { return a.name < b.name ? -1 : 1; });
+    var box = $("eqvList"); box.textContent = "";
+    list.slice(0, 80).forEach(function (p) {
+      var cb = h("input", { type: "checkbox", "aria-label": p.name }); cb.checked = !!eqvPick[p.key];
+      cb.addEventListener("change", function () { if (cb.checked) eqvPick[p.key] = p; else delete eqvPick[p.key]; eqvUpdate(); });
+      box.append(h("label", { class: "eqvrow" }, cb, h("span", null, h("b", { text: p.name }), h("span", { class: "meta", text: " · " + p.supplier + " · " + money(p.price) }))));
+    });
+    if (list.length > 80) box.append(h("div", { class: "meta", text: "Affinez la recherche pour voir les " + (list.length - 80) + " autres produits." }));
+    if (!list.length) box.append(h("div", { class: "meta", text: "Aucun produit." }));
+    eqvUpdate();
+  }
+  function eqvUpdate() {
+    var n = Object.keys(eqvPick).length; $("eqvSave").disabled = n < 2;
+    if (n && !$("eqvName").value.trim()) { var first = eqvPick[Object.keys(eqvPick)[0]]; $("eqvName").placeholder = first ? first.name : ""; }
+  }
+  $("eqvSearch").addEventListener("input", drawEqvList);
+  $("eqvCancel").addEventListener("click", function () { $("eqvDlg").close(); });
+  $("eqvSave").addEventListener("click", function () {
+    var mem = Object.keys(eqvPick).map(function (k) { return eqvPick[k]; });
+    if (mem.length < 2) return;
+    var label = $("eqvName").value.trim() || mem[0].name;
+    $("eqvSave").disabled = true;
+    eqvCreate(label, mem).then(function (ok) { if (ok) { $("eqvDlg").close(); toast("Groupe « " + label + " » créé."); } else $("eqvSave").disabled = false; });
+  });
   // ---------- supprimer tout le stock du cabinet (administrateurs) ----------
   function wipeCount() { return items.size + trash.size; }
   function openWipe() {
@@ -2224,6 +2593,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function renderData(box) {
     renderCompare(box);
     renderPriceAlerts(box);
+    if (achOk) renderPriceCompare(box);
     if (!achOk) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Données non activées" }), h("div", { text: "Lancez le script SQL « ajout-donnees-depenses » dans Supabase pour activer le suivi des dépenses." }))));
       return;
@@ -5141,6 +5511,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     else if (state.tab === "administration") renderAdmin(box);
     else if (state.tab === "salles") renderRooms(box);
     else if (state.tab === "controles") renderControls(box);
+    else if (state.tab === "equipements") renderEquip(box);
     else renderHistory(box);
   }
   function syncTabs() {
@@ -7418,6 +7789,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       if (cid === cabinetId) arcOk = !res.error;
     }).catch(function () { arcOk = false; });
     loadAchats();
+    loadEquip();
     loadConso();
     loadRooms();
     loadControls();
@@ -7457,7 +7829,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function stopData() {
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     channels = []; started = false;
-    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
+    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
   }
   // ---------- rejoindre un cabinet avec un lien d'invitation (#rejoindre=...) ----------
   var JOIN_KEY = "simsim_join";
