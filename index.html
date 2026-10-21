@@ -807,6 +807,11 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .openbtn { border:0; background:transparent; cursor:pointer; font-size:15px; padding:0 4px; line-height:1; }
 .openbox { border:1px dashed var(--line); border-radius:12px; padding:8px 10px; margin:6px 0; }
 .openact { display:flex; gap:8px; margin:6px 0; }
+
+/* ===== v84 : double authentification ===== */
+.secbanner { display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; background:var(--warn-bg); color:var(--warn); padding:8px 14px; font-weight:600; font-size:14px; }
+.secqr { display:block; width:200px; height:200px; margin:8px auto; background:#fff; border-radius:12px; padding:6px; }
+#secSecret { word-break:break-all; user-select:all; }
 </style>
 </head>
 <body>
@@ -891,7 +896,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v83</div>
+            <div class="menu-who"><span id="who"></span> · v84</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -905,12 +910,17 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
             <button class="mi hidden" id="newCabBtn">Créer un cabinet</button>
             <button class="mi hidden" id="adminBtn">Administration</button>
             <button class="mi hidden danger" id="wipeBtn">Supprimer tout le stock…</button>
+            <button class="mi" id="secBtn">Sécurité du compte</button>
             <button class="mi" id="logoutBtn">Se déconnecter</button>
           </div>
         </div>
       </div>
     </div>
   </header>
+  <div class="secbanner hidden" id="secBanner" role="status">
+    <span>🔒 Votre compte propriétaire n'est pas protégé par un code de sécurité.</span>
+    <button class="btn sm" id="secBannerBtn" type="button">Activer la double authentification</button>
+  </div>
 
   <nav class="sidebar" id="sidebar" role="tablist" aria-orientation="vertical" aria-label="Sections de l'application">
     <div class="sb-head"><span class="sb-title">Menu</span><button class="sb-pin" id="sbPin" type="button" aria-pressed="false" title="Garder le menu toujours ouvert">📌</button></div>
@@ -1089,6 +1099,47 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       <button class="btn" id="itemCancel">Annuler</button>
       <button class="btn primary" id="itemSave">Enregistrer</button>
     </div>
+  </div>
+</dialog>
+
+<dialog id="mfaDlg">
+  <div class="dlg">
+    <h2>Code de sécurité</h2>
+    <div class="sub">Ouvrez l'application d'authentification de votre téléphone et saisissez le code à 6 chiffres affiché pour SimSimStock.</div>
+    <label class="f">Code à 6 chiffres
+      <input id="mfaCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="123456">
+    </label>
+    <div class="umsg bad hidden" id="mfaErr" role="alert"></div>
+    <div class="dlg-actions">
+      <button class="btn primary" id="mfaGo" type="button">Valider</button>
+      <button class="btn" id="mfaOut" type="button">Me déconnecter</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="secDlg">
+  <div class="dlg">
+    <h2>Sécurité du compte</h2>
+    <div class="sub" id="secState"></div>
+    <div id="secOffBox" class="hidden">
+      <div class="sub">La double authentification demande, en plus du mot de passe, un code à 6 chiffres qui change toutes les 30 secondes et que seul votre téléphone connaît. Il vous faut une application d'authentification (Google Authenticator, Microsoft Authenticator, Authy, 1Password…).</div>
+      <button class="btn primary" id="secStart" type="button">Activer la double authentification</button>
+    </div>
+    <div id="secEnrollBox" class="hidden">
+      <div class="sub"><b>1.</b> Dans l'application d'authentification, ajoutez un compte et scannez ce code :</div>
+      <img id="secQr" class="secqr" alt="Code QR à scanner avec l'application d'authentification">
+      <div class="sub">Impossible de scanner ? Saisissez cette clé à la main : <code id="secSecret"></code></div>
+      <label class="f"><b>2.</b> Saisissez le code à 6 chiffres affiché
+        <input id="secCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="123456">
+      </label>
+      <button class="btn primary" id="secVerify" type="button">Vérifier et activer</button>
+    </div>
+    <div id="secOnBox" class="hidden">
+      <div class="sub">À chaque connexion, un code à 6 chiffres vous sera demandé, et sans ce code personne ne peut lire ni modifier vos données, même avec votre mot de passe. <b>Si vous perdez votre téléphone</b>, la protection se retire depuis Supabase : Authentication, Users, votre compte, puis supprimer le facteur.</div>
+      <button class="btn danger" id="secOff" type="button">Désactiver</button>
+    </div>
+    <div class="umsg bad hidden" id="secErr" role="alert"></div>
+    <div class="dlg-actions"><button class="btn" id="secClose" type="button">Fermer</button></div>
   </div>
 </dialog>
 
@@ -8294,6 +8345,100 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     }
     box.append(card);
   }
+  // ---------- double authentification : code à 6 chiffres ----------
+  var mfaDone = null, mfaOn = false, mfaChecked = false, secFactorId = "";
+  function hasMfa() { return !!(sb && sb.auth && sb.auth.mfa); }
+  function updateSecBanner() { $("secBanner").classList.toggle("hidden", !(ownerOk && mfaChecked && !mfaOn)); }
+  function loadMfaStatus() {
+    if (!hasMfa()) return Promise.resolve();
+    return sb.auth.mfa.listFactors().then(function (r) {
+      mfaOn = !!(r && r.data && (r.data.totp || []).some(function (f) { return f.status === "verified"; })); mfaChecked = true; updateSecBanner();
+    }, function () {});
+  }
+  // après la connexion par mot de passe : si un code est activé pour ce compte, on le demande avant de charger quoi que ce soit
+  function mfaGate(cb) {
+    if (!hasMfa()) { cb(); return; }
+    sb.auth.mfa.getAuthenticatorAssuranceLevel().then(function (r) {
+      var d = r && r.data;
+      if (d && d.nextLevel === "aal2" && d.currentLevel !== "aal2") askMfaCode(cb); else cb();
+    }, function () { cb(); });
+  }
+  function askMfaCode(cb) {
+    mfaDone = cb; $("mfaCode").value = ""; $("mfaErr").classList.add("hidden"); $("mfaGo").disabled = false;
+    if (!$("mfaDlg").open) $("mfaDlg").showModal();
+    $("mfaCode").focus();
+  }
+  function mfaVerify(factorId, code) {
+    return sb.auth.mfa.challenge({ factorId: factorId }).then(function (c) {
+      if (c.error) return { error: c.error };
+      return sb.auth.mfa.verify({ factorId: factorId, challengeId: c.data.id, code: code });
+    });
+  }
+  function submitMfa() {
+    var code = $("mfaCode").value.replace(/\s+/g, ""), err = $("mfaErr");
+    err.classList.add("hidden");
+    if (!/^\d{6}$/.test(code)) { err.textContent = "Saisissez les 6 chiffres affichés par votre application."; err.classList.remove("hidden"); return; }
+    $("mfaGo").disabled = true;
+    sb.auth.mfa.listFactors().then(function (r) {
+      var f = r && r.data && (r.data.totp || []).filter(function (x) { return x.status === "verified"; })[0];
+      if (!f) throw new Error("nofactor");
+      return mfaVerify(f.id, code);
+    }).then(function (v) {
+      $("mfaGo").disabled = false;
+      if (v.error) { err.textContent = "Code incorrect ou expiré : saisissez le code affiché en ce moment."; err.classList.remove("hidden"); $("mfaCode").value = ""; $("mfaCode").focus(); return; }
+      $("mfaDlg").close(); var cb = mfaDone; mfaDone = null; if (cb) cb();
+    }, function () { $("mfaGo").disabled = false; err.textContent = "La vérification a échoué. Réessayez."; err.classList.remove("hidden"); });
+  }
+  $("mfaGo").addEventListener("click", submitMfa);
+  $("mfaCode").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); submitMfa(); } });
+  $("mfaDlg").addEventListener("cancel", function (e) { e.preventDefault(); });   // impossible de contourner avec Échap
+  $("mfaOut").addEventListener("click", function () { $("mfaDlg").close(); mfaDone = null; $("logoutBtn").click(); });
+  // fenêtre « Sécurité du compte »
+  function drawSec() {
+    $("secOffBox").classList.toggle("hidden", mfaOn || !!secFactorId); $("secEnrollBox").classList.toggle("hidden", !secFactorId); $("secOnBox").classList.toggle("hidden", !mfaOn);
+    $("secState").textContent = mfaOn ? "✓ Double authentification activée." : (secFactorId ? "Activation en cours…" : "Double authentification désactivée : seul le mot de passe protège ce compte.");
+  }
+  function openSec() {
+    if (!hasMfa()) { toast("La double authentification n'est pas disponible dans cette version de la connexion."); return; }
+    $("moreMenu").classList.add("hidden"); secFactorId = ""; $("secErr").classList.add("hidden"); $("secOff").textContent = "Désactiver";
+    loadMfaStatus().then(function () { drawSec(); $("secDlg").showModal(); });
+  }
+  $("secBtn").addEventListener("click", openSec);
+  $("secBannerBtn").addEventListener("click", openSec);
+  $("secClose").addEventListener("click", function () { if (secFactorId) { sb.auth.mfa.unenroll({ factorId: secFactorId }).then(function () {}, function () {}); secFactorId = ""; } $("secDlg").close(); });
+  $("secStart").addEventListener("click", function () {
+    var err = $("secErr"); err.classList.add("hidden"); $("secStart").disabled = true;
+    // on retire d'abord les essais abandonnés
+    sb.auth.mfa.listFactors().then(function (r) {
+      var old = (r && r.data && r.data.all || []).filter(function (f) { return f.factor_type === "totp" && f.status !== "verified"; });
+      return Promise.all(old.map(function (f) { return sb.auth.mfa.unenroll({ factorId: f.id }).then(function () {}, function () {}); }));
+    }).then(function () { return sb.auth.mfa.enroll({ factorType: "totp", friendlyName: "SimSimStock " + new Date().toISOString().slice(0, 10) + " " + Math.floor(Math.random() * 1000) }); }).then(function (res) {
+      $("secStart").disabled = false;
+      if (res.error || !res.data) { err.textContent = /disabled|not enabled/i.test(String(res.error && res.error.message)) ? "La double authentification n'est pas activée dans Supabase : Authentication, Sign In / Providers, Multi-Factor, activez TOTP." : "L'activation n'a pas pu démarrer. Réessayez dans un instant."; err.classList.remove("hidden"); return; }
+      secFactorId = res.data.id; $("secQr").src = res.data.totp.qr_code; $("secSecret").textContent = String(res.data.totp.secret || "").replace(/(.{4})/g, "$1 ").trim(); $("secCode").value = ""; drawSec(); $("secCode").focus();
+    }, function () { $("secStart").disabled = false; err.textContent = "Connexion impossible."; err.classList.remove("hidden"); });
+  });
+  $("secVerify").addEventListener("click", function () {
+    var code = $("secCode").value.replace(/\s+/g, ""), err = $("secErr"); err.classList.add("hidden");
+    if (!/^\d{6}$/.test(code)) { err.textContent = "Saisissez les 6 chiffres affichés par votre application."; err.classList.remove("hidden"); return; }
+    $("secVerify").disabled = true;
+    mfaVerify(secFactorId, code).then(function (v) {
+      $("secVerify").disabled = false;
+      if (v.error) { err.textContent = "Code incorrect ou expiré : saisissez le code affiché en ce moment."; err.classList.remove("hidden"); $("secCode").value = ""; return; }
+      secFactorId = ""; toast("Double authentification activée."); loadMfaStatus().then(drawSec);
+    }, function () { $("secVerify").disabled = false; err.textContent = "La vérification a échoué. Réessayez."; err.classList.remove("hidden"); });
+  });
+  $("secOff").addEventListener("click", function () {
+    if ($("secOff").textContent !== "Confirmer") { $("secOff").textContent = "Confirmer"; return; }
+    sb.auth.mfa.listFactors().then(function (r) {
+      var f = r && r.data && (r.data.totp || [])[0]; if (!f) return { error: { message: "nofactor" } };
+      return sb.auth.mfa.unenroll({ factorId: f.id });
+    }).then(function (res) {
+      $("secOff").textContent = "Désactiver";
+      if (res && res.error) { $("secErr").textContent = "La désactivation a échoué : reconnectez-vous avec votre code, puis réessayez."; $("secErr").classList.remove("hidden"); return; }
+      toast("Double authentification désactivée."); loadMfaStatus().then(drawSec);
+    }, function () { $("secOff").textContent = "Désactiver"; });
+  });
   function showScreen(which) {
     $("login").classList.toggle("hidden", which !== "login");
     $("pick").classList.toggle("hidden", which !== "pick");
@@ -8398,8 +8543,12 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       var mt = s.user.user_metadata && s.user.user_metadata.join_token;
       if (!joinToken && mt && /^[0-9a-f]{20,100}$/i.test(String(mt))) joinToken = String(mt).toLowerCase();
       var goCab = function () { loadCabinets(); };
-      sb.rpc("est_proprietaire").then(function (r0) { ownerOk = !!(r0 && !r0.error && r0.data === true); updateOwnerBtns(); }, function () {});
-      sb.rpc("accept_invitations").then(function () { return joinPending(); }, function () { return joinPending(); }).then(goCab, goCab);
+      mfaChecked = false; mfaOn = false; updateSecBanner();
+      mfaGate(function () {
+        sb.rpc("est_proprietaire").then(function (r0) { ownerOk = !!(r0 && !r0.error && r0.data === true); updateOwnerBtns(); updateSecBanner(); }, function () {});
+        sb.rpc("accept_invitations").then(function () { return joinPending(); }, function () { return joinPending(); }).then(goCab, goCab);
+        loadMfaStatus();
+      });
       if (needsPwSetup(s)) openWelcomePw();
       loadPrefs();
     } else {
