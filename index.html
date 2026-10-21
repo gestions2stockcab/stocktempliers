@@ -822,8 +822,16 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .catsups { display:flex; flex-wrap:wrap; gap:6px 14px; margin:8px 0; }
 .catsup { display:flex; gap:6px; align-items:center; font-size:14.5px; }
 .catsup.all { width:100%; }
-.catres { max-height:42vh; overflow:auto; margin:8px 0; }
+.catres { max-height:46vh; overflow:auto; margin:8px 0; }
+.catmore { text-align:center; padding:10px 0; }
 .catact { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+
+/* ===== v88 : menu Plus par rubriques ===== */
+.menu { max-height:min(82vh, 680px); overflow-y:auto; }
+.menu-group { display:flex; flex-direction:column; padding:4px 0; border-top:1px solid var(--line); }
+.menu-group.hidden { display:none; }
+.menu-title { padding:6px 10px 2px; font-size:11.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+.menu-group.menu-last { padding-bottom:0; }
 </style>
 </head>
 <body>
@@ -908,23 +916,33 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v86</div>
-            <button class="mi" id="importBtn">Importer un fichier</button>
-            <button class="mi" id="tplBtn">Modèle Excel</button>
-            <button class="mi" id="exportBtn">Exporter en CSV</button>
-            <button class="mi" id="jrnBtn">Factures importées</button>
-            <button class="mi" id="dupBtn">Doublons possibles</button>
-            <button class="mi" id="recapBtn">Récap de la semaine</button>
-            <button class="mi" id="bkBtn">Sauvegardes</button>
-            <button class="mi" id="pwBtn">Changer mon mot de passe</button>
-            <button class="mi hidden" id="teamBtn">Utilisateurs et invitations</button>
-            <button class="mi hidden" id="switchBtn">Changer de cabinet</button>
-            <button class="mi hidden" id="newCabBtn">Créer un cabinet</button>
-            <button class="mi hidden" id="adminBtn">Administration</button>
-            <button class="mi hidden danger" id="wipeBtn">Supprimer tout le stock…</button>
-            <button class="mi" id="catSupBtn">Catalogues fournisseurs</button>
-            <button class="mi" id="secBtn">Sécurité du compte</button>
-            <button class="mi" id="logoutBtn">Se déconnecter</button>
+            <div class="menu-who"><span id="who"></span> · v88</div>
+            <div class="menu-group"><div class="menu-title">Catalogue et import</div>
+              <button class="mi" id="catSupBtn">Catalogues fournisseurs</button>
+              <button class="mi" id="importBtn">Importer un fichier</button>
+              <button class="mi" id="tplBtn">Modèle Excel</button>
+              <button class="mi" id="exportBtn">Exporter en CSV</button>
+              <button class="mi" id="dupBtn">Doublons possibles</button>
+            </div>
+            <div class="menu-group"><div class="menu-title">Factures et suivi</div>
+              <button class="mi" id="jrnBtn">Factures importées</button>
+              <button class="mi" id="recapBtn">Récap de la semaine</button>
+            </div>
+            <div class="menu-group"><div class="menu-title">Cabinet et équipe</div>
+              <button class="mi hidden" id="switchBtn">Changer de cabinet</button>
+              <button class="mi hidden" id="teamBtn">Utilisateurs et invitations</button>
+              <button class="mi hidden" id="newCabBtn">Créer un cabinet</button>
+              <button class="mi hidden" id="adminBtn">Administration</button>
+            </div>
+            <div class="menu-group"><div class="menu-title">Sauvegarde et sécurité</div>
+              <button class="mi" id="bkBtn">Sauvegardes</button>
+              <button class="mi" id="secBtn">Sécurité du compte</button>
+              <button class="mi" id="pwBtn">Changer mon mot de passe</button>
+              <button class="mi hidden danger" id="wipeBtn">Supprimer tout le stock…</button>
+            </div>
+            <div class="menu-group menu-last">
+              <button class="mi" id="logoutBtn">Se déconnecter</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1118,7 +1136,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 <dialog id="catDlg" class="wide">
   <div class="dlg">
     <h2>Catalogues des fournisseurs</h2>
-    <div class="sub" id="catInfo">Cochez les fournisseurs dans lesquels chercher (un seul, plusieurs, ou tous), puis tapez un produit ou une référence.</div>
+    <div class="sub" id="catInfo">Cochez les fournisseurs (un seul, plusieurs, ou tous), puis faites défiler la liste ou tapez un produit, une marque ou une référence.</div>
     <div id="catSup" class="catsups"></div>
     <input id="catQ" class="search" type="search" placeholder="Chercher un produit, une marque, une référence ou un code-barres" autocomplete="off" aria-label="Chercher dans les catalogues">
     <div id="catRes" class="catres"></div>
@@ -8137,8 +8155,15 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   try { var ts = localStorage.getItem("simsim_tilesort"); if (ts) state.tileSort = ts; } catch (e) {}
   try { state.hideCat = localStorage.getItem("simsim_hidecat") === "1"; state.hideDup = localStorage.getItem("simsim_hidedup") === "1"; } catch (e) {}
   function closeMenu() { $("moreMenu").classList.add("hidden"); $("moreBtn").setAttribute("aria-expanded", "false"); }
+  // une rubrique du menu n'apparaît que si au moins un de ses boutons est disponible pour cette personne
+  function refreshMenuGroups() {
+    Array.prototype.forEach.call($("moreMenu").querySelectorAll(".menu-group"), function (g) {
+      g.classList.toggle("hidden", !g.querySelector(".mi:not(.hidden)"));
+    });
+  }
   $("moreBtn").addEventListener("click", function (e) {
     e.stopPropagation();
+    refreshMenuGroups();
     var hidden = $("moreMenu").classList.toggle("hidden");
     $("moreBtn").setAttribute("aria-expanded", hidden ? "false" : "true");
   });
@@ -8466,9 +8491,18 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     items.forEach(chk); trash.forEach(chk);
     return found;
   }
-  function drawCatRes(list, limit) {
-    var box = $("catRes"); box.textContent = "";
-    if (!list.length) { box.append(h("div", { class: "meta", text: "Aucun produit trouvé dans les fournisseurs cochés." })); return; }
+  var catPage = 0;
+  function catTotal(sel) { return sel.reduce(function (a, n) { return a + (catStats[n] || 0); }, 0); }
+  function drawCatRes(list, limit, append, browse, sel) {
+    var box = $("catRes"), more = box.querySelector(".catmore"); if (more) more.remove();
+    if (!append) {
+      box.textContent = "";
+      if (browse) {
+        var tot = catTotal(sel);
+        if (!tot) { box.append(h("div", { class: "meta", text: "Les fournisseurs cochés n'ont pas encore de produits. Le propriétaire peut charger leur catalogue (section « Alimenter les catalogues » ci-dessous)." })); return; }
+        box.append(h("div", { class: "meta catcount", text: "Parcours par ordre alphabétique : " + tot.toLocaleString("fr-FR") + " produit" + (tot > 1 ? "s" : "") + " dans les fournisseurs cochés. Tapez un mot pour filtrer." }));
+      } else if (!list.length) { box.append(h("div", { class: "meta", text: "Aucun produit trouvé dans les fournisseurs cochés." })); return; }
+    }
     list.forEach(function (c) {
       var has = cabHas(c), btn = null;
       if (has) btn = h("span", { class: "eqb ok", text: "✓ déjà dans le cabinet" });
@@ -8476,18 +8510,19 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       box.append(h("div", { class: "eqint" },
         h("div", null, h("div", { class: "item-name", text: c.name }), h("div", { class: "meta", text: [c.supplier, c.ref ? "réf. " + c.ref : "", c.price_ht != null ? money(Number(c.price_ht)) + " HT" : "", c.category].filter(Boolean).join(" · ") })), btn));
     });
-    if (list.length >= limit) box.append(h("div", { class: "meta", text: "Les " + limit + " premiers résultats : ajoutez un mot pour affiner." }));
+    if (list.length >= limit) box.append(h("div", { class: "catmore" }, h("button", { class: "btn", type: "button", text: "Voir la suite", onclick: function () { catSearch(true); } })));
   }
-  function catSearch() {
+  function catSearch(append) {
     if (!catOk) return;
     var words = catWords($("catQ").value), sel = catSelected(), names = catNames(), box = $("catRes");
     if (!sel.length) { box.textContent = ""; box.append(h("div", { class: "meta", text: "Cochez au moins un fournisseur." })); return; }
-    if (!words.length) { box.textContent = ""; box.append(h("div", { class: "meta", text: "Tapez au moins deux lettres d'un produit, d'une marque ou d'une référence." })); return; }
-    var my = ++catSeq;
-    sb.rpc("catalogue_chercher", { p_words: words, p_suppliers: sel.length === names.length ? null : sel, p_limit: 50 }).then(function (res) {
+    if (append !== true) catPage = 0;
+    var my = ++catSeq, limit = 50, page = catPage;
+    sb.rpc("catalogue_chercher", { p_words: words, p_suppliers: sel.length === names.length ? null : sel, p_limit: limit, p_offset: page * limit }).then(function (res) {
       if (my !== catSeq) return;
-      if (res.error) { box.textContent = ""; box.append(h("div", { class: "umsg bad", text: "La recherche a échoué. Réessayez." })); return; }
-      drawCatRes(res.data || [], 50);
+      if (res.error) { if (append !== true) { box.textContent = ""; box.append(h("div", { class: "umsg bad", text: "La recherche a échoué. Réessayez." })); } return; }
+      catPage = page + 1;
+      drawCatRes(res.data || [], limit, append === true, !words.length, sel);
     }, function () {});
   }
   function addCatalogueEntry(c, btn) {
@@ -8564,7 +8599,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     $("catOwner").classList.toggle("hidden", !ownerOk); $("catQ").value = ""; $("catRes").textContent = ""; $("catProg").textContent = ""; catClear = "";
     loadCatStats().then(function () {
       if (!catOk) { $("catInfo").textContent = "Cette fonction n'est pas encore activée : lancez le script SQL « ajout-catalogues-fournisseurs » dans Supabase."; $("catSup").textContent = ""; $("catQ").classList.add("hidden"); }
-      else { $("catInfo").textContent = "Cochez les fournisseurs dans lesquels chercher (un seul, plusieurs, ou tous), puis tapez un produit ou une référence."; $("catQ").classList.remove("hidden"); drawCatSup(); catSearch(); }
+      else { $("catInfo").textContent = "Cochez les fournisseurs (un seul, plusieurs, ou tous), puis faites défiler la liste ou tapez un produit, une marque ou une référence."; $("catQ").classList.remove("hidden"); drawCatSup(); catSearch(); }
+      $("catOwner").open = !!(ownerOk && catOk && !Object.keys(catStats).length);
       $("catDlg").showModal(); if (catOk) $("catQ").focus();
     });
   }
