@@ -802,6 +802,11 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .ctchk { display:flex; gap:8px; align-items:center; }
 .eqvlist { max-height:36vh; overflow:auto; border:1px solid var(--line); border-radius:10px; margin:8px 0; padding:4px 8px; }
 .eqvrow { display:flex; gap:8px; align-items:flex-start; padding:6px 0; border-bottom:1px solid var(--line); font-size:14px; }
+
+/* ===== v83 : produits ouverts ===== */
+.openbtn { border:0; background:transparent; cursor:pointer; font-size:15px; padding:0 4px; line-height:1; }
+.openbox { border:1px dashed var(--line); border-radius:12px; padding:8px 10px; margin:6px 0; }
+.openact { display:flex; gap:8px; margin:6px 0; }
 </style>
 </head>
 <body>
@@ -886,7 +891,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v82</div>
+            <div class="menu-who"><span id="who"></span> · v83</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -991,6 +996,16 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       <label class="f full">Description courte (facultatif)
         <input id="f_description" autocomplete="off" placeholder="Ex. composite, putty, lime rotative">
       </label>
+      <div class="full openbox hidden" id="openBox">
+        <label class="f">Durée d'utilisation après ouverture (jours)
+          <input id="f_open_days" type="number" min="1" max="3650" step="1" inputmode="numeric" placeholder="Ex : 90 (vide si sans objet)">
+        </label>
+        <label class="f">Ouvert le
+          <input id="f_opened_at" type="date">
+        </label>
+        <div class="openact"><button class="btn sm" id="openToday" type="button">Ouvert aujourd'hui</button><button class="btn sm" id="openClear" type="button">Effacer la date</button></div>
+        <div class="sub">Pour un bonding, une solution ou un désinfectant : l'appli affiche le temps restant et vous prévient dans le récap quand la durée est dépassée.</div>
+      </div>
       <label class="f full">Domaine
         <select id="f_category"></select>
         <input id="f_category_new" class="hidden" autocomplete="off" placeholder="Nom du nouveau domaine">
@@ -1191,6 +1206,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     <div id="multiList"></div>
     <div class="dlg-actions">
       <button class="btn primary" id="multiAll" type="button">Enregistrer toutes les dépenses</button>
+      <button class="btn hidden" id="multiAttach" type="button">Joindre ce PDF aux factures déjà enregistrées</button>
       <button class="btn" id="multiClose" type="button">Fermer</button>
     </div>
   </div>
@@ -1619,6 +1635,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   var docCounts = {};
   var docsOk = false;
   var cabinets = [], cabinetId = null, cabinetName = "", sessionUser = null;
+  var jrnFileOk = false, openOk = false;
   var barcodeOk = false, descOk = false, trackedOk = false, subOk = false, favOk = false, lotsOk = false, lotsByItem = {}, ordOk = false, photoOk = false, jrnOk = false, consoOk = false, jrnByNumber = {}, conso = {}, consoDebut = 0, consoAt = 0, reasonOk = false, packOk = false, pertes = { ok: false, rows: [] };
   var REASONS = { expired: "Périmé", damaged: "Cassé ou abîmé", lost: "Perdu ou introuvable", gift: "Don ou prêt", other: "Autre", restock: "Réassort de salle", restock_return: "Retour de salle", transfer_out: "Transfert vers un autre cabinet", transfer_in: "Transfert depuis un autre cabinet" };
   var LOSS = ["expired", "damaged", "lost"], TRANSFER = ["transfer_out", "transfer_in"];
@@ -1691,7 +1708,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       target: Number(r.target) || 0, lot: r.lot || "", expiry: r.expiry || "", price: Number(r.price) || 0,
       barcode: r.barcode || "", description: r.description || "", tracked: r.tracked !== false || (Number(r.qty) || 0) > 0 || (Number(r.min) || 0) > 0, subcategory: r.subcategory || "", favorite: r.favorite === true, archived: r.archived === true,
       ordered_qty: Number(r.ordered_qty) || 0, ordered_at: r.ordered_at || "", photo: r.photo || "",
-      pack: Number(r.pack_size) || 0, flag_at: r.low_flag_at || "", flag_by: r.low_flag_by || ""
+      pack: Number(r.pack_size) || 0, flag_at: r.low_flag_at || "", flag_by: r.low_flag_by || "",
+      open_days: Number(r.open_days) || null, opened_at: r.opened_at || ""
     };
   }
   // Lit toutes les lignes par pages de 1000 (limite de l'API), dans un ordre stable.
@@ -1722,6 +1740,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (subOk) row.subcategory = d.subcategory || null;
     if (favOk) row.favorite = !!d.favorite;
     if (photoOk) row.photo = d.photo || null;
+    if (openOk) { row.open_days = d.open_days || null; row.opened_at = d.opened_at || null; }
     if (packOk && "pack" in d) row.pack_size = d.pack > 0 ? d.pack : null;
     return row;
   }
@@ -2229,6 +2248,31 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     });
   });
 
+  // ---------- produits ouverts : durée d'utilisation après ouverture ----------
+  function openLeft(it) { if (!(it.open_days > 0) || !it.opened_at) return null; return daysTo(shiftIso(it.opened_at, it.open_days, 0)); }
+  function openBadge(it) {
+    var left = openLeft(it); if (left === null) return null;
+    var until = frDate(shiftIso(it.opened_at, it.open_days, 0)), t = "Ouvert le " + frDate(it.opened_at) + " · à utiliser avant le " + until;
+    if (left < 0) return h("span", { class: "eqb bad", title: t, text: "Ouvert : à jeter" });
+    return h("span", { class: "eqb " + (left <= 7 ? "warn" : "ok"), title: t, text: "Ouvert · reste " + left + " j" });
+  }
+  function openBtn(it) {
+    if (!openOk || readOnly || it._room || !(it.open_days > 0)) return null;
+    return h("button", { class: "openbtn", type: "button", title: "Ouvert aujourd'hui", "aria-label": "Marquer « " + it.name + " » ouvert aujourd'hui", onclick: function () { markOpened(it.id); }, text: "🔓" });
+  }
+  function markOpened(id) {
+    var it = items.get(id); if (!it || readOnly || !openOk || !(it.open_days > 0)) return;
+    var today = isoOf(new Date()), until = shiftIso(today, it.open_days, 0);
+    it.opened_at = today; render();
+    enqueue(function () {
+      return sb.from("items").update({ opened_at: today, updated_at: new Date().toISOString() }).eq("id", id).then(check).then(function () {
+        return appendLog({ type: "edit", itemId: id, item: it.name, delta: 0, qty: it.qty, note: "Ouvert le " + frDate(today) + " : à utiliser avant le " + frDate(until) });
+      });
+    });
+    toast("« " + it.name + " » ouvert : à utiliser avant le " + frDate(until) + ".");
+  }
+  $("openToday").addEventListener("click", function () { $("f_opened_at").value = isoOf(new Date()); });
+  $("openClear").addEventListener("click", function () { $("f_opened_at").value = ""; });
   // ---------- contrats et abonnements ----------
   var ctOk = false, ctList = [], ctEdit = null, ctShowDone = false;
   var CT_KINDS = [["maintenance", "Maintenance"], ["logiciel", "Logiciel, abonnement"], ["assurance", "Assurance"], ["location", "Location, leasing"], ["autre", "Autre"]];
@@ -4520,7 +4564,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   });
   // ---------- récap de la semaine (affiché le lundi, ou depuis le menu Plus) ----------
   function recapData() {
-    var d = { rupt: [], bas: [], perim: [], soon: [], flagged: [], waiting: [], order: [], ctlLate: [], ctlSoon: [], price: [] };
+    var d = { rupt: [], bas: [], perim: [], soon: [], flagged: [], waiting: [], order: [], ctlLate: [], ctlSoon: [], price: [], openLate: [], openSoon: [] };
     if (alertOk) priceAlerts.forEach(function (a) { if (!a.traitee) d.price.push(priceLine(a)); });
     items.forEach(function (it) {
       if (it.tracked === false) return;
@@ -4530,13 +4574,14 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       if (fl) d.flagged.push(it);
       if ((st === "rupture" || st === "bas" || fl) && !(Number(it.ordered_qty) > 0)) d.order.push(it);
       if (ordOk && Number(it.ordered_qty) > 0 && it.ordered_at && Date.now() - Date.parse(it.ordered_at) > 7 * 86400000) d.waiting.push(it);
+      var ol = openOk ? openLeft(it) : null; if (ol !== null) { if (ol < 0) d.openLate.push(it); else if (ol <= 7) d.openSoon.push(it); }
     });
     if (ctlOk) ctlList.forEach(function (c) {
       var st = ctlStatus(c);
       if (st === "late") d.ctlLate.push(c.name); else if (st === "soon") d.ctlSoon.push(c.name);
       (ctlItems[c.id] || []).forEach(function (li) { if (expStatus(li) === "late") d.ctlLate.push(li.label + " (trousse d'urgence : périmé)"); });
     });
-    ["rupt", "bas", "perim", "soon", "flagged", "waiting", "order"].forEach(function (k) { d[k].sort(byNameItem); });
+    ["rupt", "bas", "perim", "soon", "flagged", "waiting", "order", "openLate", "openSoon"].forEach(function (k) { d[k].sort(byNameItem); });
     var ma = maintAlerts(); d.eqLate = ma.eqLate; d.eqSoon = ma.eqSoon; d.eqWarr = ma.eqWarr; d.ctNotice = ma.ctNotice; d.ctRenew = ma.ctRenew;
     return d;
   }
@@ -4553,6 +4598,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       { key: "price", label: "Hausses de prix à vérifier", cls: "warn", list: d.price, go: function () { goTab("donnees"); } },
       { key: "ctlLate", label: "Contrôles en retard", cls: "bad", list: d.ctlLate, go: function () { goTab("controles"); } },
       { key: "ctlSoon", label: "Contrôles à faire bientôt", cls: "info", list: d.ctlSoon, go: function () { goTab("controles"); } },
+      { key: "openLate", label: "Produits ouverts : durée d'utilisation dépassée", cls: "bad", list: nm(d.openLate || []), go: function () { goTab("inventaire"); state.filter = "all"; state.cat = ""; state.q = ""; render(); } },
+      { key: "openSoon", label: "Produits ouverts : à renouveler sous 7 jours", cls: "warn", list: nm(d.openSoon || []), go: function () { goTab("inventaire"); state.filter = "all"; state.cat = ""; state.q = ""; render(); } },
       { key: "eqLate", label: "Équipements : contrôle en retard", cls: "bad", list: d.eqLate || [], go: function () { goTab("equipements"); } },
       { key: "eqSoon", label: "Équipements : contrôle à prévoir (30 jours)", cls: "info", list: d.eqSoon || [], go: function () { goTab("equipements"); } },
       { key: "eqWarr", label: "Équipements : garantie qui se termine (90 jours)", cls: "warn", list: d.eqWarr || [], go: function () { goTab("equipements"); } },
@@ -5177,7 +5224,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
               onchange: function (e) { if (e.target.checked) state.sel.add(it.id); else state.sel.delete(it.id); updateSelBar(); } }) : null,
             h("button", { class: "star" + (it.favorite ? " on" : ""), title: it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", "aria-label": it.favorite ? "Retirer des favoris" : "Ajouter aux favoris", onclick: function () { toggleFav(it); }, text: it.favorite ? "★" : "☆" }),
             flagBtn(it),
+            openBtn(it),
             h("button", { class: "item-name", onclick: function () { openItem(R(it)); }, text: it.name || "(sans nom)" }),
+            openBadge(it),
             roomDots(it),
             it.description ? h("span", { class: "desc", text: it.description }) : null),
           h("div", { class: "meta c-meta", text: meta.join(" · ") })),
@@ -5698,7 +5747,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   }
 
   // ---------- boîtes de dialogue ----------
-  var FIELDS = ["name", "category", "location", "unit", "qty", "min", "target", "lot", "expiry", "price", "barcode", "description", "subcategory", "pack", "ref", "supplier"];
+  var FIELDS = ["name", "category", "location", "unit", "qty", "min", "target", "lot", "expiry", "price", "barcode", "description", "subcategory", "pack", "ref", "supplier", "open_days", "opened_at"];
   function fillDomainSelect(current) {
     var sel = $("f_category");
     var list = DOMAINS.concat([EQUIP]);
@@ -5983,6 +6032,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     fillSubList(); fillSupList(); resetLinkBox();
     if (!(it && it.pack > 0)) $("f_pack").value = "";
     $("packBox").classList.toggle("hidden", !packOk);
+    $("openBox").classList.toggle("hidden", !openOk);
     $("f_fav").checked = !!(it && it.favorite); $("f_fav").disabled = readOnly;
     initLotsBox(it);
     photoDraft = it && it.photo ? it.photo : ""; renderPhotoBox();
@@ -6011,6 +6061,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       price: Math.max(0, num($("f_price").value)),
       barcode: $("f_barcode").value.trim(),
       description: $("f_description").value.trim(),
+      open_days: Math.max(0, parseInt($("f_open_days").value, 10) || 0) || null,
+      opened_at: $("f_opened_at").value || "",
       tracked: $("f_tracked").checked,
       subcategory: $("f_subcategory").value.trim(),
       favorite: $("f_fav").checked,
@@ -6453,28 +6505,31 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   // Un même PDF peut contenir plusieurs factures à la suite (et des pages qui n'en sont pas, comme des rapports d'intervention).
   function splitDocuments(pages) {
     var docs = [], cur = null, skipping = false;
-    pages.forEach(function (pg) {
+    pages.forEach(function (pg, pi) {
       var num = docMeta(pg).number, report = pg.some(function (l) { return /^Rapport d.intervention/i.test(l); });
-      if (num && (!cur || num !== cur.number)) { cur = { number: num, lines: pg.slice(), pages: 1 }; docs.push(cur); skipping = false; return; }
+      if (num && (!cur || num !== cur.number)) { cur = { number: num, lines: pg.slice(), pages: 1, startPage: pi + 1 }; docs.push(cur); skipping = false; return; }
       if (report) { skipping = true; return; }
       if (cur && !skipping) { cur.lines = cur.lines.concat(pg); cur.pages++; }
     });
     return docs.length > 1 ? docs : [];
   }
   var multiCtx = null;
-  function showMultiDocs(fileName, docs) {
-    multiCtx = { fileName: fileName, docs: docs, back: false };
+  function showMultiDocs(fileName, docs, file) {
+    multiCtx = { fileName: fileName, docs: docs, file: file, back: false };
     var list = $("multiList"); list.textContent = "";
-    var todo = [];
+    var todo = [], attachable = [];
     docs.forEach(function (d) {
       var rows = parseAny(d.lines), dm = docMeta(d.lines), head = d.lines.slice(0, 80).join(" "), sup = guessSupplier(head);
       var done = !!(dm.number && jrnByNumber[dm.number]), chk = totalCheck(rows, dm), sum = chk ? chk.sum : r2(rows.reduce(function (a, r) { return a + (r.ship ? 0 : (Number(r.qty) || 0) * (Number(r.price) || 0)); }, 0));
-      if (!done && rows.length && dm.number) todo.push({ dm: dm, rows: rows, sup: sup });
+      if (!done && rows.length && dm.number) todo.push({ dm: dm, rows: rows, sup: sup, page: d.startPage });
+      if (done && dm.number && !jrnByNumber[dm.number].file_path) attachable.push({ number: dm.number, page: d.startPage });
       list.append(h("div", { class: "urow" },
         h("div", null,
           h("div", { class: "item-name", text: "Facture " + (dm.number || "?") + (dm.date ? " du " + frDate(dm.date) : "") }),
           h("div", { class: "meta", text: [sup, rows.length + " ligne" + (rows.length > 1 ? "s" : ""), dm.total != null ? money(dm.total) + " HT" : money(sum) + " HT (lignes)", chk ? (chk.ok ? "✓ total vérifié" : "⚠ écart avec le total") : "", done ? "déjà enregistrée" : ""].filter(Boolean).join(" · ") })),
-        h("div", { class: "uact" }, h("button", { class: "btn sm", type: "button", disabled: !rows.length, onclick: function () { multiCtx.back = true; $("multiDlg").close(); showPdfPreview(fileName, d.lines); }, text: "Contrôler et importer" }))));
+        h("div", { class: "uact" },
+          done && dm.number && jrnByNumber[dm.number].file_path ? h("button", { class: "btn sm", type: "button", onclick: function () { openInvoicePdf(jrnByNumber[dm.number]); }, text: "PDF" }) : null,
+          h("button", { class: "btn sm", type: "button", disabled: !rows.length, onclick: function () { multiCtx.back = true; $("multiDlg").close(); showPdfPreview(fileName, d.lines, { file: file, page: d.startPage }); }, text: "Contrôler et importer" }))));
     });
     $("multiTitle").textContent = "« " + fileName + " » contient " + docs.length + " factures";
     $("multiSub").textContent = "Importez-en une pour mettre à jour le stock (vous la contrôlez ligne par ligne), ou enregistrez d'un coup les dépenses de toutes les factures qui ne le sont pas encore : le stock n'est alors pas modifié.";
@@ -6482,15 +6537,26 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     $("multiAll").disabled = !todo.length || readOnly || !db;
     $("multiAll").onclick = function () {
       var n = 0;
-      todo.forEach(function (t) { t.rows.forEach(function (r) { r.domain = r.domain || (r.service ? "Services" : guessDomain(r.name)); }); if (recordDocument(t.dm, fileName, t.rows, t.sup)) n++; });
+      todo.forEach(function (t) { t.rows.forEach(function (r) { r.domain = r.domain || (r.service ? "Services" : guessDomain(r.name)); }); if (recordDocument(t.dm, fileName, t.rows, t.sup, { file: file, page: t.page })) n++; });
       toast(n ? n + " facture" + (n > 1 ? "s" : "") + " enregistrée" + (n > 1 ? "s" : "") + " dans les dépenses. Le stock n'a pas changé." : "Rien n'a pu être enregistré : lancez d'abord le script SQL « ajout-donnees-depenses » dans Supabase.");
-      showMultiDocs(fileName, docs);
+      showMultiDocs(fileName, docs, file);
+    };
+    $("multiAttach").classList.toggle("hidden", !(attachable.length && jrnFileOk && !readOnly && file));
+    $("multiAttach").textContent = "Joindre ce PDF aux " + attachable.length + " facture" + (attachable.length > 1 ? "s" : "") + " déjà enregistrée" + (attachable.length > 1 ? "s" : "");
+    $("multiAttach").onclick = function () {
+      $("multiAttach").disabled = true;
+      uploadInvoicePdf(file).then(function (path) {
+        if (!path) { toast("Le PDF n'a pas pu être envoyé."); $("multiAttach").disabled = false; return; }
+        var chain = Promise.resolve(), n = 0;
+        attachable.forEach(function (x) { chain = chain.then(function () { return setInvoicePdf(x.number, path, x.page).then(function (ok) { if (ok) n++; }); }); });
+        return chain.then(function () { $("multiAttach").disabled = false; toast("PDF joint à " + n + " facture" + (n > 1 ? "s" : "") + "."); showMultiDocs(fileName, docs, file); });
+      });
     };
     if (!$("multiDlg").open) $("multiDlg").showModal();
   }
   $("multiClose").addEventListener("click", function () { multiCtx = null; $("multiDlg").close(); });
   $("pdfDlg").addEventListener("close", function () {
-    if (multiCtx && multiCtx.back) { var c = multiCtx; c.back = false; setTimeout(function () { if (multiCtx === c) showMultiDocs(c.fileName, c.docs); }, 60); }
+    if (multiCtx && multiCtx.back) { var c = multiCtx; c.back = false; setTimeout(function () { if (multiCtx === c) showMultiDocs(c.fileName, c.docs, c.file); }, 60); }
   });
   // Factures « Méga Dental » : prix avec des points, en TTC ; quantité commandée puis livrée ; remise en % facultative.
   // Code | Désignation | Qté cdée | Qté livrée | P.U. référence TTC | remise % | P.U. net TTC | Total TTC | TVA %
@@ -6598,7 +6664,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         return p.then(function () { return { all: all, pages: pages }; });
       }).then(function (res) {
         var docs = splitDocuments(res.pages);
-        if (docs.length > 1) showMultiDocs(file.name, docs); else showPdfPreview(file.name, res.all);
+        if (docs.length > 1) showMultiDocs(file.name, docs, file); else showPdfPreview(file.name, res.all, { file: file, page: 1 });
       })
         .catch(function () { toast("Ce PDF n'a pas pu être lu."); });
     };
@@ -6650,6 +6716,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       jrnOk = true; jrnByNumber = {};
       (res.data || []).forEach(function (d) { jrnByNumber[d.doc_number] = d; });
     }).catch(function () { jrnOk = false; });
+    sb.from("imported_docs").select("file_path").eq("cabinet_id", cid).limit(1).then(function (res) { if (cid === cabinetId) jrnFileOk = !res.error; }).catch(function () { jrnFileOk = false; });
     fetchAll(function () { return sb.from("achat_lignes").select("*").eq("cabinet_id", cid).order("id"); }).then(function (res) {
       if (cid !== cabinetId) return;
       if (res.error) { achOk = false; return; }
@@ -6658,9 +6725,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     }).catch(function () { achOk = false; });
   }
   // Enregistre un document (facture ou avoir) dans le journal et ses lignes dans les achats, sans toucher au stock.
-  function recordDocument(dm, fileName, rows, supplier) {
+  function recordDocument(dm, fileName, rows, supplier, fileCtx) {
     if (!jrnOk || !dm.number) return false;
-    var already = !!jrnByNumber[dm.number], type = dm.type || "facture";
+    var already = !!jrnByNumber[dm.number], hadFile = already && !!jrnByNumber[dm.number].file_path, type = dm.type || "facture";
     var meta = { doc_number: dm.number, doc_type: type, doc_date: dm.date || null, supplier: supplier || "", total_ht: dm.total, file_name: fileName, nb_lines: rows.length,
       user_email: myEmail, created_at: new Date().toISOString(), annule_de: dm.annul.join(","), remplace: dm.refact.join(",") };
     jrnByNumber[dm.number] = Object.assign({}, meta, jrnByNumber[dm.number] || {});
@@ -6675,16 +6742,68 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       achLines = achLines.concat(lines);
     }
     enqueue(function () {
-      var row = { cabinet_id: cabinetId, doc_number: dm.number, doc_type: type, doc_date: dm.date || null, supplier: supplier || "", total_ht: dm.total, file_name: fileName, nb_lines: rows.length, user_email: myEmail };
-      if (achOk) { row.annule_de = dm.annul.join(","); row.remplace = dm.refact.join(","); }
-      var p = already ? Promise.resolve() : sb.from("imported_docs").insert(row).then(function (res) { if (res.error && !/duplicate|unique/i.test(res.error.message || "")) throw res.error; });
-      return p.then(function () {
-        var chain = Promise.resolve();
-        for (var i = 0; i < lines.length; i += 200) (function (chunk) { chain = chain.then(function () { return sb.from("achat_lignes").insert(chunk).then(check); }); })(lines.slice(i, i + 200));
-        return chain;
+      var up = fileCtx && fileCtx.file ? uploadInvoicePdf(fileCtx.file) : Promise.resolve(""), pg = (fileCtx && fileCtx.page) || null;
+      return up.then(function (path) {
+        var row = { cabinet_id: cabinetId, doc_number: dm.number, doc_type: type, doc_date: dm.date || null, supplier: supplier || "", total_ht: dm.total, file_name: fileName, nb_lines: rows.length, user_email: myEmail };
+        if (achOk) { row.annule_de = dm.annul.join(","); row.remplace = dm.refact.join(","); }
+        if (path && !hadFile) { row.file_path = path; row.file_page = pg; if (jrnByNumber[dm.number]) { jrnByNumber[dm.number].file_path = path; jrnByNumber[dm.number].file_page = pg; } }
+        var p = already
+          ? (path && !hadFile ? sb.from("imported_docs").update({ file_path: path, file_page: pg }).eq("cabinet_id", cabinetId).eq("doc_number", dm.number).then(function (res) { if (res.error) throw res.error; }) : Promise.resolve())
+          : sb.from("imported_docs").insert(row).then(function (res) { if (res.error && !/duplicate|unique/i.test(res.error.message || "")) throw res.error; });
+        return p.then(function () {
+          var chain = Promise.resolve();
+          for (var i = 0; i < lines.length; i += 200) (function (chunk) { chain = chain.then(function () { return sb.from("achat_lignes").insert(chunk).then(check); }); })(lines.slice(i, i + 200));
+          return chain;
+        });
       });
     });
     return true;
+  }
+  // ---------- garder le PDF des factures ----------
+  var pdfUp = new WeakMap();   // fichier -> promesse du chemin envoyé (un seul envoi même si le PDF contient plusieurs factures)
+  function uploadInvoicePdf(file) {
+    if (!file) return Promise.resolve("");
+    if (pdfUp.has(file)) return pdfUp.get(file);
+    var p;
+    if (!jrnFileOk || !db || file.size > 25 * 1024 * 1024) p = Promise.resolve("");
+    else {
+      try {
+        var safe = String(file.name || "facture.pdf").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9._-]+/g, "_"), path = cabinetId + "/factures/" + Date.now() + "-" + safe;
+        p = sb.storage.from("docs").upload(path, file, { contentType: "application/pdf", upsert: false }).then(function (up) {
+          if (up && up.error) { toast("Le PDF n'a pas pu être gardé (la facture est quand même enregistrée)."); return ""; }
+          return path;
+        }).catch(function () { return ""; });
+      } catch (e) { p = Promise.resolve(""); }
+    }
+    pdfUp.set(file, p); return p;
+  }
+  function openInvoicePdf(d) {
+    if (!d || !d.file_path) return;
+    var w = null; try { w = window.open("", "_blank"); } catch (e) {}
+    sb.storage.from("docs").createSignedUrl(d.file_path, 600).then(function (res) {
+      if (res.error || !res.data) { if (w) w.close(); toast("Le PDF n'a pas pu être ouvert."); return; }
+      var url = res.data.signedUrl + (d.file_page > 1 ? "#page=" + d.file_page : "");
+      if (w) w.location.href = url; else window.location.href = url;
+    }).catch(function () { if (w) w.close(); toast("Le PDF n'a pas pu être ouvert."); });
+  }
+  function setInvoicePdf(number, path, page) {
+    return sb.from("imported_docs").update({ file_path: path, file_page: page || null }).eq("cabinet_id", cabinetId).eq("doc_number", number).then(function (res) {
+      if (res.error) return false;
+      if (jrnByNumber[number]) { jrnByNumber[number].file_path = path; jrnByNumber[number].file_page = page || null; }
+      return true;
+    }, function () { return false; });
+  }
+  function pickAndAttach(d, done) {
+    var inp = document.createElement("input"); inp.type = "file"; inp.accept = "application/pdf,.pdf";
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0]; if (!f) return;
+      if (f.type && f.type !== "application/pdf" && !/\.pdf$/i.test(f.name)) { toast("Choisissez un fichier PDF."); return; }
+      uploadInvoicePdf(f).then(function (path) {
+        if (!path) { toast("Le PDF n'a pas pu être envoyé."); return; }
+        return setInvoicePdf(d.doc_number, path, 1).then(function (ok) { toast(ok ? "PDF joint à la facture " + d.doc_number + "." : "Le PDF n'a pas pu être rattaché."); if (ok && done) done(); });
+      });
+    };
+    inp.click();
   }
   function bkSlug(t) { return String(t || "cabinet").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
   function loadBackups() {
@@ -6819,12 +6938,19 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
           h("div", { text: (d.doc_type === "avoir" ? "Avoir " : "") + d.doc_number }),
           h("div", { class: "meta", text: [d.supplier, (d.user_email || "").split("@")[0] + " le " + frDate(d.created_at), d.nb_lines + " ligne" + (d.nb_lines > 1 ? "s" : "")].filter(Boolean).join(" · ") }),
           h("div", { text: d.total_ht != null ? money(Number(d.total_ht)) : "—" }),
-          isAdmin ? h("button", { class: "btn sm", title: "Retirer du journal pour pouvoir la réimporter", onclick: function () {
-            enqueue(function () {
-              return sb.from("achat_lignes").delete().eq("cabinet_id", cabinetId).eq("doc_number", d.doc_number).then(function () { return sb.from("imported_docs").delete().eq("id", d.id).then(check); })
-                .then(function () { delete jrnByNumber[d.doc_number]; achLines = achLines.filter(function (l) { return l.doc_number !== d.doc_number; }); openJrn(); });
-            });
-          }, text: "Retirer" }) : h("span")));
+          h("div", { class: "uact" },
+            d.file_path ? h("button", { class: "btn sm", type: "button", title: "Ouvrir le PDF de la facture", onclick: function () { openInvoicePdf(d); }, text: "PDF" })
+              : (jrnFileOk && !readOnly ? h("button", { class: "btn sm", type: "button", title: "Joindre le PDF de cette facture", onclick: function () { pickAndAttach(d, openJrn); }, text: "Joindre le PDF" }) : null),
+            isAdmin ? h("button", { class: "btn sm", title: "Retirer du journal pour pouvoir la réimporter", onclick: function () {
+              enqueue(function () {
+                return sb.from("achat_lignes").delete().eq("cabinet_id", cabinetId).eq("doc_number", d.doc_number).then(function () { return sb.from("imported_docs").delete().eq("id", d.id).then(check); })
+                  .then(function () {
+                    delete jrnByNumber[d.doc_number]; achLines = achLines.filter(function (l) { return l.doc_number !== d.doc_number; });
+                    if (d.file_path && !rows.some(function (x) { return x.id !== d.id && x.file_path === d.file_path; })) sb.storage.from("docs").remove([d.file_path]).then(function () {}, function () {});
+                    openJrn();
+                  });
+              });
+            }, text: "Retirer" }) : null)));
       });
     }).catch(function () { $("jrnInfo").textContent = "Le journal n'a pas pu être chargé."; });
   }
@@ -6913,7 +7039,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (!rows.length) rows = parseLinesE(lines);
     return rows;
   }
-  function showPdfPreview(fileName, lines) {
+  function showPdfPreview(fileName, lines, fileCtx) {
     var rows = parseAny(lines);
     if (!rows.length) {
       toast("Aucune ligne d'article reconnue : mise en page non prise en charge, ou PDF scanné. Utilisez plutôt un fichier Excel.");
@@ -7059,7 +7185,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
           });
         });
       }
-      if (!catOnly.checked) { recordDocument(dm, fileName, rows, supplier); if (!isCredit) logPriceAlerts(repNow.price.filter(function (a) { return a.pc > 0; }), dm, supplier); }
+      if (!catOnly.checked) { recordDocument(dm, fileName, rows, supplier, fileCtx); if (!isCredit) logPriceAlerts(repNow.price.filter(function (a) { return a.pc > 0; }), dm, supplier); }
       if (!catOnly.checked && (repNow.ok.length + repNow.partial.length + repNow.excess.length + repNow.missing.length)) enqueue(function () { return appendLog({ type: "import", itemId: "", item: "Réception " + (dm.number || fileName), delta: 0, qty: 0, note: recvSummary(repNow) }); });
       toast(list.length + " nouvel" + (list.length > 1 ? "s" : "") + " article" + (list.length > 1 ? "s" : "") + ", " + nEntries + " entrée" + (nEntries > 1 ? "s" : "") + " de stock." + (!catOnly.checked && repNow.partial.length ? " " + repNow.partial.length + " livraison" + (repNow.partial.length > 1 ? "s" : "") + " partielle" + (repNow.partial.length > 1 ? "s" : "") + " : le reste reste en attente de livraison." : ""));
     };
@@ -7068,7 +7194,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     spendBtn.title = !achOk ? "Lancez d'abord le script SQL « ajout-donnees-depenses » dans Supabase." : !dm.number ? "Numéro de facture non reconnu : impossible d'enregistrer la dépense." : "Garde la dépense de cette facture pour les statistiques, sans toucher au stock.";
     spendBtn.onclick = function () {
       var repS = receiptReport(rows, supplierInput.value, isCredit);
-      if (!recordDocument(dm, fileName, rows, supplierInput.value.trim())) return;
+      if (!recordDocument(dm, fileName, rows, supplierInput.value.trim(), fileCtx)) return;
       if (!isCredit) logPriceAlerts(repS.price.filter(function (a) { return a.pc > 0; }), dm, supplierInput.value.trim());
       $("pdfDlg").close();
       toast("Dépense enregistrée : " + (dm.type === "avoir" ? "avoir " : "facture ") + dm.number + ". Le stock n'a pas changé.");
@@ -7932,6 +8058,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       (res.data || []).forEach(function (d) { docCounts[d.item_id] = (docCounts[d.item_id] || 0) + 1; });
       render();
     }).catch(function () { docsOk = false; });
+    sb.from("items").select("open_days").eq("cabinet_id", cid).limit(1).then(function (res) { if (cid === cabinetId) { openOk = !res.error; render(); } }).catch(function () { openOk = false; });
     sb.from("items").select("barcode").eq("cabinet_id", cid).limit(1).then(function (res) {
       if (cid === cabinetId) barcodeOk = !res.error;
     }).catch(function () { barcodeOk = false; });
@@ -8004,7 +8131,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function stopData() {
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     channels = []; started = false;
-    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; ctOk = false; ctList = []; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
+    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; ctOk = false; ctList = []; jrnFileOk = false; openOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
   }
   // ---------- rejoindre un cabinet avec un lien d'invitation (#rejoindre=...) ----------
   var JOIN_KEY = "simsim_join";
