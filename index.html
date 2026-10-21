@@ -799,6 +799,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .eqint { display:flex; gap:10px; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); flex-wrap:wrap; }
 .eqcost { display:flex; gap:8px; align-items:center; }
 .eqform { max-height:62vh; overflow:auto; padding-right:4px; }
+.ctchk { display:flex; gap:8px; align-items:center; }
 .eqvlist { max-height:36vh; overflow:auto; border:1px solid var(--line); border-radius:10px; margin:8px 0; padding:4px 8px; }
 .eqvrow { display:flex; gap:8px; align-items:flex-start; padding:6px 0; border-bottom:1px solid var(--line); font-size:14px; }
 </style>
@@ -885,7 +886,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v81</div>
+            <div class="menu-who"><span id="who"></span> · v82</div>
             <button class="mi" id="importBtn">Importer un fichier</button>
             <button class="mi" id="tplBtn">Modèle Excel</button>
             <button class="mi" id="exportBtn">Exporter en CSV</button>
@@ -1072,6 +1073,32 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       <span class="spacer"></span>
       <button class="btn" id="itemCancel">Annuler</button>
       <button class="btn primary" id="itemSave">Enregistrer</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="ctDlg">
+  <div class="dlg">
+    <h2 id="ctTitle">Contrat</h2>
+    <div class="eqform">
+      <label class="f">Nom <input id="ctName" type="text" maxlength="80" placeholder="Ex : Maintenance autoclave" autocomplete="off"></label>
+      <label class="f">Type <select id="ctKind"></select></label>
+      <label class="f">Fournisseur <input id="ctSup" type="text" maxlength="80" autocomplete="off"></label>
+      <label class="f">Équipement concerné (facultatif) <select id="ctEq"></select></label>
+      <label class="f">Montant HT (€) <input id="ctAmount" type="number" min="0" step="0.01" inputmode="decimal"></label>
+      <label class="f">Facturé <select id="ctPeriod"></select></label>
+      <label class="f">Début du contrat <input id="ctStart" type="date"></label>
+      <label class="f">Prochaine échéance (renouvellement) <input id="ctRenews" type="date"></label>
+      <label class="f">Préavis de résiliation (jours) <input id="ctNotice" type="number" min="0" max="730" step="1" inputmode="numeric" placeholder="Ex : 90"></label>
+      <label class="f ctchk"><input id="ctAuto" type="checkbox" checked> Se renouvelle automatiquement</label>
+      <label class="f ctchk"><input id="ctArch" type="checkbox"> Contrat terminé (ne plus le suivre)</label>
+      <label class="f">Notes <input id="ctNotes" type="text" maxlength="300" autocomplete="off"></label>
+    </div>
+    <div class="umsg bad hidden" id="ctErr" role="alert"></div>
+    <div class="dlg-actions">
+      <button class="btn primary" id="ctSave" type="button">Enregistrer</button>
+      <button class="btn" id="ctCancel" type="button">Annuler</button>
+      <button class="btn danger hidden" id="ctDel" type="button">Supprimer</button>
     </div>
   </div>
 </dialog>
@@ -2057,6 +2084,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function renderEquip(box) {
     if (!eqOk) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Équipements non activés" }), h("div", { text: "Lancez le script SQL « ajout-equipements-prix » dans Supabase (SQL Editor), puis rechargez la page." }))));
+      renderContracts(box);
       return;
     }
     var today = todayIso(), in90 = plusDays(90), in30 = plusDays(30), act = eqList.filter(function (e) { return !e.archived; });
@@ -2070,10 +2098,14 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       h("button", { class: "btn", type: "button", disabled: !act.length, onclick: function () { openIntForm(null, act[0] && act[0].id); }, text: "＋ Noter une intervention" })));
     if (!act.length) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Aucun équipement" }), h("div", { text: "Ajoutez vos fauteuils, autoclave, radio, aspiration… puis notez chaque panne ou maintenance : vous verrez ce que chaque équipement vous coûte, et quand sa garantie se termine." }))));
+      renderContracts(box);
       return;
     }
-    if (warn.length || chk.length) {
+    var mal = maintAlerts();
+    if (warn.length || chk.length || mal.ctNotice.length || mal.ctRenew.length) {
       var al = h("div", { class: "dsec" }, h("h3", { text: "À surveiller" }));
+      mal.ctNotice.forEach(function (t) { al.append(h("div", { class: "eqalert bad" }, "Contrat : " + t)); });
+      mal.ctRenew.forEach(function (t) { al.append(h("div", { class: "eqalert" }, "Contrat : " + t)); });
       warn.forEach(function (e) { al.append(h("div", { class: "eqalert" }, "Garantie de « " + e.name + " » : fin le " + frDate(e.warranty_until))); });
       chk.forEach(function (e) { al.append(h("div", { class: "eqalert bad" }, (String(e.next_check) < today ? "En retard : " : "À prévoir : ") + "contrôle de « " + e.name + " » le " + frDate(e.next_check))); });
       box.append(al);
@@ -2083,6 +2115,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     var list = h("div", { class: "dsec" }, h("h3", { text: "Mes équipements" }));
     act.slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name), "fr"); }).forEach(function (e) { list.append(eqCard(e)); });
     box.append(list);
+    renderContracts(box);
   }
   function eqCard(e) {
     var today = todayIso(), c = eqCosts(e.id), open = !!eqOpen[e.id];
@@ -2196,6 +2229,141 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     });
   });
 
+  // ---------- contrats et abonnements ----------
+  var ctOk = false, ctList = [], ctEdit = null, ctShowDone = false;
+  var CT_KINDS = [["maintenance", "Maintenance"], ["logiciel", "Logiciel, abonnement"], ["assurance", "Assurance"], ["location", "Location, leasing"], ["autre", "Autre"]];
+  var CT_PERIODS = [["mensuel", "chaque mois"], ["trimestriel", "chaque trimestre"], ["semestriel", "chaque semestre"], ["annuel", "chaque année"]];
+  var CT_MONTHS = { mensuel: 1, trimestriel: 3, semestriel: 6, annuel: 12 };
+  function daysTo(iso) {
+    if (!iso) return null;
+    var p = String(iso).slice(0, 10).split("-"); if (p.length !== 3) return null;
+    var d = new Date(+p[0], +p[1] - 1, +p[2]), t = new Date(); t.setHours(0, 0, 0, 0);
+    return Math.round((d.getTime() - t.getTime()) / 86400000);
+  }
+  function isoOf(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function shiftIso(iso, days, months) { var p = String(iso).slice(0, 10).split("-"), d = new Date(+p[0], +p[1] - 1, +p[2]); if (months) d.setMonth(d.getMonth() + months); if (days) d.setDate(d.getDate() + days); return isoOf(d); }
+  function ctPerYear(c) { return (Number(c.amount_ht) || 0) * (12 / (CT_MONTHS[c.period] || 12)); }
+  // état d'un contrat : « notice » (dernier moment pour résilier), « missed » (préavis dépassé, il se renouvellera), « renew » (échéance proche), « past » (date dépassée)
+  function ctState(c) {
+    var d = daysTo(c.renews_on), n = Number(c.notice_days) || 0;
+    if (d === null) return { kind: "none" };
+    var noticeIso = shiftIso(c.renews_on, -n, 0), nd = d - n;
+    if (d < 0) return { kind: "past", days: d };
+    if (c.auto_renew && n > 0 && nd >= 0 && nd <= 30) return { kind: "notice", days: nd, noticeIso: noticeIso };
+    if (c.auto_renew && n > 0 && nd < 0) return { kind: "missed", days: d, noticeIso: noticeIso };
+    if (d <= 30) return { kind: "renew", days: d };
+    return { kind: "ok", days: d, noticeIso: noticeIso };
+  }
+  // ce qui demande de l'attention (utilisé par l'onglet Équipements et par le récap de la semaine)
+  function maintAlerts() {
+    var o = { eqLate: [], eqSoon: [], eqWarr: [], ctNotice: [], ctRenew: [] };
+    if (eqOk) eqList.forEach(function (e) {
+      if (e.archived) return;
+      var dc = daysTo(e.next_check), dw = daysTo(e.warranty_until);
+      if (dc !== null && dc < 0) o.eqLate.push(e.name + " · prévu le " + frDate(e.next_check));
+      else if (dc !== null && dc <= 30) o.eqSoon.push(e.name + " · le " + frDate(e.next_check));
+      if (dw !== null && dw >= 0 && dw <= 90) o.eqWarr.push(e.name + " · fin le " + frDate(e.warranty_until));
+    });
+    if (ctOk) ctList.forEach(function (c) {
+      if (c.archived || !c.renews_on) return;
+      var st = ctState(c);
+      if (st.kind === "notice") o.ctNotice.push(c.name + " · résiliation possible jusqu'au " + frDate(st.noticeIso));
+      else if (st.kind === "past") o.ctRenew.push(c.name + " · échéance dépassée (" + frDate(c.renews_on) + ")");
+      else if (st.kind === "missed" && st.days <= 30) o.ctRenew.push(c.name + " · se renouvelle le " + frDate(c.renews_on) + " (préavis dépassé)");
+      else if (st.kind === "renew") o.ctRenew.push(c.name + " · échéance le " + frDate(c.renews_on));
+    });
+    return o;
+  }
+  function loadContrats() {
+    if (!sb || !cabinetId) return;
+    var cid = cabinetId;
+    sb.from("contrats").select("*").eq("cabinet_id", cid).order("renews_on").then(function (res) {
+      if (cid !== cabinetId) return;
+      if (res.error) { ctOk = false; return; }
+      ctOk = true; ctList = res.data || [];
+      if (state.tab === "equipements") render();
+    }).catch(function () { ctOk = false; });
+  }
+  function renderContracts(box) {
+    var sec = h("div", { class: "dsec", id: "ctSec" }, h("h3", { text: "Contrats et abonnements" }));
+    if (!ctOk) { sec.append(h("div", { class: "umsg bad", text: "Lancez le script SQL « ajout-contrats » dans Supabase pour activer le suivi des contrats." })); box.append(sec); return; }
+    var act = ctList.filter(function (c) { return !c.archived; }), done = ctList.filter(function (c) { return c.archived; });
+    var yearly = act.reduce(function (a, c) { return a + ctPerYear(c); }, 0);
+    var next = act.filter(function (c) { var d = daysTo(c.renews_on); return d !== null && d >= 0; }).sort(function (a, b) { return String(a.renews_on) < String(b.renews_on) ? -1 : 1; })[0];
+    var m = maintAlerts(), todo = m.ctNotice.length + m.ctRenew.length;
+    var kp = h("div", { class: "kpis" });
+    [["Contrats suivis", String(act.length)], ["Coût par an", money(r2(yearly)) + " HT"], ["Prochaine échéance", next ? frDate(next.renews_on) + " · " + next.name : "—"], ["À traiter (30 jours)", String(todo)]].forEach(function (k) { kp.append(h("div", { class: "kpi" }, h("b", { text: k[1] }), h("span", { text: k[0] }))); });
+    sec.append(kp);
+    if (!readOnly) sec.append(h("div", { class: "eqbar" }, h("button", { class: "btn primary", type: "button", onclick: function () { openCtForm(null); }, text: "＋ Ajouter un contrat" })));
+    if (!act.length) sec.append(h("div", { class: "meta", text: "Aucun contrat. Notez vos contrats de maintenance, logiciels, assurances, locations : l'appli vous prévient avant la date limite de résiliation et avant chaque échéance." }));
+    var card = function (c) {
+      var st = ctState(c), badges = h("div", { class: "eqbs" }), eq = eqList.filter(function (e) { return e.id === c.equipement_id; })[0];
+      if (st.kind === "notice") badges.append(eqBadge("Résiliation possible jusqu'au " + frDate(st.noticeIso) + " (" + (st.days === 0 ? "aujourd'hui" : "dans " + st.days + " j") + ")", st.days <= 7 ? "bad" : "warn"));
+      else if (st.kind === "missed") badges.append(eqBadge("Préavis dépassé : renouvelé le " + frDate(c.renews_on), ""));
+      else if (st.kind === "renew") badges.append(eqBadge("Échéance dans " + st.days + " j", "warn"));
+      else if (st.kind === "past") badges.append(eqBadge("Échéance dépassée : à mettre à jour", "bad"));
+      else if (st.kind === "ok") badges.append(eqBadge("Échéance le " + frDate(c.renews_on), "ok"));
+      var meta = [kindLabel(CT_KINDS, c.kind), c.supplier, money(Number(c.amount_ht) || 0) + " HT " + kindLabel(CT_PERIODS, c.period) + (c.period !== "annuel" ? " (≈ " + money(r2(ctPerYear(c))) + "/an)" : ""), eq ? "pour " + eq.name : "", c.auto_renew ? "renouvellement automatique" : "sans renouvellement automatique", Number(c.notice_days) > 0 ? "préavis " + c.notice_days + " j" : ""].filter(Boolean).join(" · ");
+      var el = h("div", { class: "eqcard" },
+        h("div", { class: "eqhead" }, h("div", null, h("div", { class: "item-name", text: c.name }), h("div", { class: "meta", text: meta })),
+          readOnly ? null : h("div", { class: "uact" },
+            c.archived ? null : h("button", { class: "btn sm", type: "button", onclick: function () { renewContract(c); }, text: "Renouvelé" }),
+            h("button", { class: "btn sm", type: "button", onclick: function () { openCtForm(c); }, text: "Modifier" }))),
+        badges);
+      if (c.notes) el.append(h("div", { class: "meta", text: c.notes }));
+      return el;
+    };
+    act.slice().sort(function (a, b) { return String(a.renews_on || "9999") < String(b.renews_on || "9999") ? -1 : 1; }).forEach(function (c) { sec.append(card(c)); });
+    if (done.length) {
+      sec.append(h("button", { class: "btn sm", type: "button", onclick: function () { ctShowDone = !ctShowDone; render(); }, text: (ctShowDone ? "Masquer" : "Voir") + " les " + done.length + " contrat" + (done.length > 1 ? "s" : "") + " terminé" + (done.length > 1 ? "s" : "") }));
+      if (ctShowDone) done.forEach(function (c) { sec.append(card(c)); });
+    }
+    box.append(sec);
+  }
+  function renewContract(c) {
+    if (readOnly || !c.renews_on) return;
+    var nxt = shiftIso(c.renews_on, 0, CT_MONTHS[c.period] || 12);
+    sb.from("contrats").update({ renews_on: nxt }).eq("id", c.id).then(function (res) {
+      if (res.error) { toast("Le renouvellement n'a pas pu être enregistré."); return; }
+      toast("« " + c.name + " » renouvelé : prochaine échéance le " + frDate(nxt) + "."); loadContrats();
+    }, function () { toast("Connexion impossible."); });
+  }
+  function openCtForm(c) {
+    if (readOnly) return;
+    ctEdit = c;
+    $("ctTitle").textContent = c ? "Modifier le contrat" : "Nouveau contrat";
+    fillSelect($("ctKind"), CT_KINDS, c ? c.kind : "maintenance");
+    fillSelect($("ctPeriod"), CT_PERIODS, c ? c.period : "annuel");
+    fillSelect($("ctEq"), [["", "Aucun"]].concat(eqList.filter(function (e) { return !e.archived || (c && c.equipement_id === e.id); }).map(function (e) { return [e.id, e.name]; })), c && c.equipement_id ? c.equipement_id : "");
+    $("ctName").value = c ? c.name : ""; $("ctSup").value = c ? c.supplier || "" : ""; $("ctAmount").value = c ? String(Number(c.amount_ht) || 0) : "";
+    $("ctStart").value = c && c.start_on ? String(c.start_on).slice(0, 10) : ""; $("ctRenews").value = c && c.renews_on ? String(c.renews_on).slice(0, 10) : "";
+    $("ctNotice").value = c ? String(c.notice_days || 0) : "90"; $("ctAuto").checked = c ? !!c.auto_renew : true; $("ctArch").checked = c ? !!c.archived : false; $("ctNotes").value = c ? c.notes || "" : "";
+    $("ctErr").classList.add("hidden"); $("ctSave").disabled = false; $("ctDel").classList.toggle("hidden", !c); $("ctDel").textContent = "Supprimer";
+    $("ctDlg").showModal(); $("ctName").focus();
+  }
+  $("ctCancel").addEventListener("click", function () { $("ctDlg").close(); });
+  $("ctSave").addEventListener("click", function () {
+    var name = $("ctName").value.trim(), err = $("ctErr");
+    if (!name) { err.textContent = "Donnez un nom au contrat."; err.classList.remove("hidden"); return; }
+    if (!$("ctRenews").value) { err.textContent = "Indiquez la prochaine échéance : c'est elle qui déclenche les alertes."; err.classList.remove("hidden"); return; }
+    var row = { name: name, kind: $("ctKind").value, supplier: $("ctSup").value.trim(), equipement_id: $("ctEq").value || null, amount_ht: Math.max(0, parseFloat($("ctAmount").value) || 0), period: $("ctPeriod").value,
+      start_on: $("ctStart").value || null, renews_on: $("ctRenews").value, notice_days: Math.min(730, Math.max(0, parseInt($("ctNotice").value, 10) || 0)), auto_renew: $("ctAuto").checked, archived: $("ctArch").checked, notes: $("ctNotes").value.trim() };
+    $("ctSave").disabled = true;
+    var q = ctEdit ? sb.from("contrats").update(row).eq("id", ctEdit.id) : sb.from("contrats").insert(Object.assign({ cabinet_id: cabinetId }, row));
+    q.then(function (res) {
+      $("ctSave").disabled = false;
+      if (res.error) { err.textContent = "Le contrat n'a pas pu être enregistré."; err.classList.remove("hidden"); return; }
+      $("ctDlg").close(); toast(ctEdit ? "Contrat modifié." : "Contrat ajouté."); loadContrats();
+    }, function () { $("ctSave").disabled = false; err.textContent = "Connexion impossible."; err.classList.remove("hidden"); });
+  });
+  $("ctDel").addEventListener("click", function () {
+    if (!ctEdit) return;
+    if ($("ctDel").textContent !== "Confirmer") { $("ctDel").textContent = "Confirmer"; return; }
+    sb.from("contrats").delete().eq("id", ctEdit.id).then(function (res) {
+      if (res.error) { $("ctErr").textContent = "La suppression a échoué."; $("ctErr").classList.remove("hidden"); return; }
+      $("ctDlg").close(); toast("Contrat supprimé."); loadContrats();
+    });
+  });
   // ---------- comparateur de prix entre fournisseurs (onglet Données) ----------
   var EQV_STOP = { des: 1, les: 1, pour: 1, avec: 1, sans: 1, par: 1, sur: 1, aux: 1, the: 1, and: 1 };
   function prodKey(supplier, ref, name) { return norm(supplier || "") + "|" + (ref ? "r:" + norm(ref) : "n:" + norm(name || "").replace(/[^a-z0-9]+/g, " ").trim()); }
@@ -4369,6 +4537,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       (ctlItems[c.id] || []).forEach(function (li) { if (expStatus(li) === "late") d.ctlLate.push(li.label + " (trousse d'urgence : périmé)"); });
     });
     ["rupt", "bas", "perim", "soon", "flagged", "waiting", "order"].forEach(function (k) { d[k].sort(byNameItem); });
+    var ma = maintAlerts(); d.eqLate = ma.eqLate; d.eqSoon = ma.eqSoon; d.eqWarr = ma.eqWarr; d.ctNotice = ma.ctNotice; d.ctRenew = ma.ctRenew;
     return d;
   }
   function recapRows(d) {
@@ -4383,7 +4552,12 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       { key: "flagged", label: "Signalés « il n'y en a presque plus »", cls: "warn", list: nm(d.flagged), go: function () { goTab("commande"); } },
       { key: "price", label: "Hausses de prix à vérifier", cls: "warn", list: d.price, go: function () { goTab("donnees"); } },
       { key: "ctlLate", label: "Contrôles en retard", cls: "bad", list: d.ctlLate, go: function () { goTab("controles"); } },
-      { key: "ctlSoon", label: "Contrôles à faire bientôt", cls: "info", list: d.ctlSoon, go: function () { goTab("controles"); } }
+      { key: "ctlSoon", label: "Contrôles à faire bientôt", cls: "info", list: d.ctlSoon, go: function () { goTab("controles"); } },
+      { key: "eqLate", label: "Équipements : contrôle en retard", cls: "bad", list: d.eqLate || [], go: function () { goTab("equipements"); } },
+      { key: "eqSoon", label: "Équipements : contrôle à prévoir (30 jours)", cls: "info", list: d.eqSoon || [], go: function () { goTab("equipements"); } },
+      { key: "eqWarr", label: "Équipements : garantie qui se termine (90 jours)", cls: "warn", list: d.eqWarr || [], go: function () { goTab("equipements"); } },
+      { key: "ctNotice", label: "Contrats : dernier moment pour résilier (30 jours)", cls: "warn", list: d.ctNotice || [], go: function () { goTab("equipements"); } },
+      { key: "ctRenew", label: "Contrats à renouveler ou à mettre à jour", cls: "info", list: d.ctRenew || [], go: function () { goTab("equipements"); } }
     ];
     return rows.filter(function (r) { return r.list.length; });
   }
@@ -7790,6 +7964,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     }).catch(function () { arcOk = false; });
     loadAchats();
     loadEquip();
+    loadContrats();
     loadConso();
     loadRooms();
     loadControls();
@@ -7829,7 +8004,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function stopData() {
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     channels = []; started = false;
-    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
+    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; ctOk = false; ctList = []; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
   }
   // ---------- rejoindre un cabinet avec un lien d'invitation (#rejoindre=...) ----------
   var JOIN_KEY = "simsim_join";
