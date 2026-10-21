@@ -841,6 +841,16 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .mtab.hidden { display:none; }
 .menu-group[data-mtab] { border-top:0; padding-top:6px; }
 .menu-group[data-mtab] .menu-title { display:none; }
+
+/* ===== v90 : catalogues = onglet du menu principal ===== */
+.catbody { max-width:980px; }
+.catcards { display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:10px; margin:10px 0; }
+.catcards .catsup.all { grid-column:1 / -1; }
+.catcard { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 12px; display:flex; flex-direction:column; gap:4px; }
+.catcard.empty { opacity:.65; }
+.catcardhead { display:flex; gap:8px; align-items:center; font-size:15px; }
+.catcardact { display:flex; gap:8px; margin-top:4px; flex-wrap:wrap; }
+.catres { max-height:none; overflow:visible; }
 </style>
 </head>
 <body>
@@ -925,7 +935,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v89</div>
+            <div class="menu-who"><span id="who"></span> · v90</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -972,6 +982,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     <div class="sb-head"><span class="sb-title">Menu</span><button class="sb-pin" id="sbPin" type="button" aria-pressed="false" title="Garder le menu toujours ouvert">📌</button></div>
     <button class="tab" role="tab" data-tab="inventaire" aria-selected="true"><span class="ti">📦</span><span class="tl">Stock</span></button>
     <button class="tab" role="tab" data-tab="favoris" aria-selected="false"><span class="ti">⭐</span><span class="tl">Favoris</span></button>
+    <button class="tab" role="tab" data-tab="catalogues" aria-selected="false"><span class="ti">📚</span><span class="tl">Catalogues</span></button>
     <button class="tab" role="tab" data-tab="commande" aria-selected="false"><span class="ti">🛒</span><span class="tl">À commander</span></button>
     <button class="tab" role="tab" data-tab="comptage" aria-selected="false"><span class="ti">🔢</span><span class="tl">Comptage</span></button>
     <button class="tab" role="tab" data-tab="salles" aria-selected="false"><span class="ti">🏠</span><span class="tl">Salles</span></button>
@@ -1148,27 +1159,29 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   </div>
 </dialog>
 
-<dialog id="catDlg" class="wide">
-  <div class="dlg">
+<div id="catHome" class="hidden">
+  <div id="catBody" class="catbody">
     <h2>Catalogues des fournisseurs</h2>
     <div class="sub" id="catInfo">Cochez les fournisseurs (un seul, plusieurs, ou tous), puis faites défiler la liste ou tapez un produit, une marque ou une référence.</div>
-    <div id="catSup" class="catsups"></div>
+    <div id="catSup" class="catcards"></div>
     <input id="catQ" class="search" type="search" placeholder="Chercher un produit, une marque, une référence ou un code-barres" autocomplete="off" aria-label="Chercher dans les catalogues">
     <div id="catRes" class="catres"></div>
     <details id="catOwner" class="more hidden">
-      <summary>Alimenter les catalogues (propriétaire)</summary>
+      <summary>Charger un catalogue (propriétaire)</summary>
       <div class="sub">Les catalogues complets (Méga Dental, Doctor Strong, Dentalix, Promodentaire…) ont des dizaines de milliers de références : demandez à votre commercial son <b>tarif ou catalogue au format Excel ou CSV</b>, puis chargez-le ici. Colonnes reconnues : désignation, référence, prix HT (ou TTC), code-barres, famille, conditionnement. Importer deux fois le même fichier ne crée pas de doublons.</div>
-      <label class="f">Fournisseur de ce fichier
-        <input id="catImpSup" list="dl_catsup" type="text" autocomplete="off" placeholder="Ex : Dentalix">
+      <label class="f">Fournisseur (le nom seul : GACD, Méga Dental…)
+        <input id="catImpSup" list="dl_catsup" type="text" autocomplete="off" placeholder="Ex : GACD">
         <datalist id="dl_catsup"></datalist>
+      </label>
+      <label class="f">Nom du catalogue (facultatif)
+        <input id="catImpLabel" type="text" autocomplete="off" placeholder="Ex : GACD 2026">
       </label>
       <input id="catImpFile" type="file" accept=".xlsx,.xls,.csv,.txt,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
       <div class="catact"><button class="btn primary" id="catImpGo" type="button">Charger le catalogue</button><button class="btn" id="catPast" type="button">Ajouter mes achats passés aux catalogues</button></div>
       <div class="meta" id="catProg" role="status"></div>
     </details>
-    <div class="dlg-actions"><button class="btn" id="catClose" type="button">Fermer</button></div>
   </div>
-</dialog>
+</div>
 
 <dialog id="mfaDlg">
   <div class="dlg">
@@ -3076,7 +3089,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
   function goTab(t) { var b = document.querySelector('.tab[data-tab="' + t + '"]'); if (b) b.click(); }
   function kActions() {
     var a = [
-      ["Stock", "section", function () { goTab("inventaire"); }], ["Favoris", "section", function () { goTab("favoris"); }],
+      ["Stock", "section", function () { goTab("inventaire"); }], ["Favoris", "section", function () { goTab("favoris"); }], ["Catalogues fournisseurs", "section", function () { goTab("catalogues"); }],
       ["À commander", "section", function () { goTab("commande"); }], ["Comptage", "section", function () { goTab("comptage"); }],
       ["Historique", "section", function () { goTab("historique"); }], ["Données et prévisions", "section", function () { goTab("donnees"); }],
       ["Corbeille", "section", function () { goTab("corbeille"); }],
@@ -5848,7 +5861,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     $("dupBtn").textContent = "Doublons possibles" + (nd ? " (" + nd + ")" : "");
     var bn = $("banner"); bn.textContent = "";
     if (db && readOnly) bn.append(h("div", { class: "banner", text: "Accès en lecture seule : vous pouvez consulter le stock, mais pas le modifier." }));
-    var box = $("content"); box.textContent = "";
+    var box = $("content"); parkCatalogues(); box.textContent = "";
     $("addBtn").disabled = readOnly || !db;
     $("scanBtn").disabled = !db;
     $("importBtn").disabled = readOnly || !db;
@@ -5863,6 +5876,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     else if (state.tab === "donnees") renderData(box);
     else if (state.tab === "corbeille") renderTrash(box);
     else if (state.tab === "favoris") renderFavorites(box);
+    else if (state.tab === "catalogues") renderCatalogues(box);
     else if (state.tab === "commande") renderOrder(box);
     else if (state.tab === "comptage") renderCount(box);
     else if (state.tab === "administration") renderAdmin(box);
@@ -8478,19 +8492,30 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     supplier: ["fournisseur", "marque"]
   };
   function catWords(q) { return norm(q || "").replace(/[^a-z0-9]+/g, " ").split(" ").filter(function (w) { return w.length >= 2; }); }
+  function supKey(n) { return norm(n || "").replace(/[^a-z0-9]/g, ""); }
+  // « GACD 2026 », « Gacd » ou « GACD catalogue » comptent pour le fournisseur « GACD »
+  function supGroup(sname) {
+    var k = supKey(sname), f = CAT_SUPPLIERS.filter(function (n) { var fk = supKey(n); return k === fk || (fk.length >= 4 && k.indexOf(fk) === 0); })[0];
+    return f || String(sname || "").trim();
+  }
   function catNames() {
     var seen = {}, out = [];
-    var add = function (n) { n = String(n || "").trim(); var k = norm(n).replace(/[^a-z0-9]/g, ""); if (!n || seen[k]) return; seen[k] = 1; out.push(n); };
-    CAT_SUPPLIERS.forEach(add); Object.keys(catStats).sort().forEach(add);
+    var add = function (n) { n = String(n || "").trim(); var k = supKey(n); if (!n || seen[k]) return; seen[k] = 1; out.push(n); };
+    CAT_SUPPLIERS.forEach(add); Object.keys(catStats).map(supGroup).sort().forEach(add);
     return out;
   }
+  function catCount(name) { var k = supKey(name), t = 0; Object.keys(catStats).forEach(function (sn) { if (supKey(supGroup(sn)) === k) t += catStats[sn]; }); return t; }
+  function catVariants(name) { var k = supKey(name), out = [name]; Object.keys(catStats).forEach(function (sn) { if (supKey(supGroup(sn)) === k && out.indexOf(sn) === -1) out.push(sn); }); return out; }
+  var catSources = [], catLoadedAt = 0;
   function loadCatStats() {
     return sb.rpc("catalogue_stats").then(function (r) {
       if (r.error) { catOk = false; return; }
       catOk = true; catStats = {}; (r.data || []).forEach(function (x) { catStats[x.supplier] = Number(x.n) || 0; });
+      return sb.from("catalogue_sources").select("*").order("loaded_at", { ascending: false }).then(function (res) { catSources = res.error ? [] : (res.data || []); }, function () { catSources = []; });
     }, function () { catOk = false; });
   }
   function catSelected() { return catNames().filter(function (n) { return catSel[n]; }); }
+  function catOnly(name) { catNames().forEach(function (n) { catSel[n] = (n === name); }); drawCatSup(); $("catQ").value = ""; catSearch(); try { $("catRes").scrollIntoView({ block: "start", behavior: "smooth" }); } catch (e) {} }
   function drawCatSup() {
     var box = $("catSup"), names = catNames(); box.textContent = "";
     if (!catSelInit) { names.forEach(function (n) { catSel[n] = true; }); catSelInit = true; }
@@ -8502,18 +8527,25 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     names.forEach(function (n) {
       var cb = h("input", { type: "checkbox", "aria-label": n }); cb.checked = !!catSel[n];
       cb.addEventListener("change", function () { catSel[n] = cb.checked; drawCatSup(); catSearch(); });
-      var cnt = catStats[n] || 0;
-      var lab = h("label", { class: "catsup" }, cb, h("span", { text: n }), h("span", { class: "meta", text: cnt ? cnt.toLocaleString("fr-FR") + " produit" + (cnt > 1 ? "s" : "") : "vide" }));
+      var cnt = catCount(n), vars = catVariants(n);
+      var src = catSources.filter(function (x) { return supKey(supGroup(x.supplier)) === supKey(n); });
+      var last = src[0];
+      var meta = cnt ? [last && last.label ? "Catalogue « " + last.label + " »" : "Catalogue chargé", last && (last.loaded_at || last.created_at) ? "chargé le " + frDate(last.loaded_at || last.created_at) : "", cnt.toLocaleString("fr-FR") + " produit" + (cnt > 1 ? "s" : "")].filter(Boolean).join(" · ") : "Pas encore de catalogue chargé";
+      var card = h("div", { class: "catcard" + (cnt ? "" : " empty") },
+        h("label", { class: "catcardhead" }, cb, h("b", { text: n })), h("div", { class: "meta", text: meta }));
+      var acts = h("div", { class: "catcardact" });
+      if (cnt) { var only = h("button", { class: "btn sm", type: "button", text: "Voir ce catalogue" }); only.addEventListener("click", function () { catOnly(n); }); acts.append(only); }
       if (ownerOk && cnt) {
         var clr = h("button", { class: "btn sm danger", type: "button", text: "Vider" });
-        clr.addEventListener("click", function (e) {
-          e.preventDefault();
+        clr.addEventListener("click", function () {
           if (catClear !== n) { catClear = n; clr.textContent = "Confirmer"; return; }
-          sb.from("catalogue_fournisseurs").delete().eq("supplier", n).then(function (res) { catClear = ""; toast(res.error ? "Le catalogue n'a pas pu être vidé." : "Catalogue « " + n + " » vidé."); loadCatStats().then(function () { drawCatSup(); catSearch(); }); });
+          var list = vars; var chain = Promise.resolve();
+          list.forEach(function (v) { chain = chain.then(function () { return sb.from("catalogue_fournisseurs").delete().eq("supplier", v); }).then(function () { return sb.from("catalogue_sources").delete().eq("supplier", v).then(function () {}, function () {}); }); });
+          chain.then(function () { catClear = ""; toast("Catalogue « " + n + " » vidé."); return loadCatStats(); }).then(function () { drawCatSup(); catSearch(); });
         });
-        lab.append(clr);
+        acts.append(clr);
       }
-      box.append(lab);
+      card.append(acts); box.append(card);
     });
     $("dl_catsup").textContent = ""; names.forEach(function (n) { $("dl_catsup").append(h("option", { value: n })); });
   }
@@ -8524,7 +8556,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     return found;
   }
   var catPage = 0;
-  function catTotal(sel) { return sel.reduce(function (a, n) { return a + (catStats[n] || 0); }, 0); }
+  function catTotal(sel) { return sel.reduce(function (a, n) { return a + catCount(n); }, 0); }
   function drawCatRes(list, limit, append, browse, sel) {
     var box = $("catRes"), more = box.querySelector(".catmore"); if (more) more.remove();
     if (!append) {
@@ -8550,7 +8582,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     if (!sel.length) { box.textContent = ""; box.append(h("div", { class: "meta", text: "Cochez au moins un fournisseur." })); return; }
     if (append !== true) catPage = 0;
     var my = ++catSeq, limit = 50, page = catPage;
-    sb.rpc("catalogue_chercher", { p_words: words, p_suppliers: sel.length === names.length ? null : sel, p_limit: limit, p_offset: page * limit }).then(function (res) {
+    sb.rpc("catalogue_chercher", { p_words: words, p_suppliers: sel.length === names.length ? null : sel.reduce(function (acc, n) { return acc.concat(catVariants(n)); }, []), p_limit: limit, p_offset: page * limit }).then(function (res) {
       if (my !== catSeq) return;
       if (res.error) { if (append !== true) { box.textContent = ""; box.append(h("div", { class: "umsg bad", text: "La recherche a échoué. Réessayez." })); } return; }
       catPage = page + 1;
@@ -8626,37 +8658,49 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     });
   }
   function catAfterImport(n, sup) { $("catProg").textContent = n.toLocaleString("fr-FR") + " produit" + (n > 1 ? "s" : "") + " enregistré" + (n > 1 ? "s" : "") + (sup ? " pour « " + sup + " »" : "") + "."; toast(n.toLocaleString("fr-FR") + " produits dans les catalogues."); return loadCatStats().then(function () { drawCatSup(); catSearch(); }); }
-  function openCat() {
-    $("moreMenu").classList.add("hidden");
-    $("catOwner").classList.toggle("hidden", !ownerOk); $("catQ").value = ""; $("catRes").textContent = ""; $("catProg").textContent = ""; catClear = "";
+  function catOnShow() {
+    catLoadedAt = Date.now();
+    $("catOwner").classList.toggle("hidden", !ownerOk);
     loadCatStats().then(function () {
-      if (!catOk) { $("catInfo").textContent = "Cette fonction n'est pas encore activée : lancez le script SQL « ajout-catalogues-fournisseurs » dans Supabase."; $("catSup").textContent = ""; $("catQ").classList.add("hidden"); }
-      else { $("catInfo").textContent = "Cochez les fournisseurs (un seul, plusieurs, ou tous), puis faites défiler la liste ou tapez un produit, une marque ou une référence."; $("catQ").classList.remove("hidden"); drawCatSup(); catSearch(); }
-      $("catOwner").open = !!(ownerOk && catOk && !Object.keys(catStats).length);
-      $("catDlg").showModal(); if (catOk) $("catQ").focus();
+      if (!catOk) { $("catInfo").textContent = "Cette fonction n'est pas encore activée : lancez le script SQL « ajout-catalogues-fournisseurs » dans Supabase."; $("catSup").textContent = ""; $("catQ").classList.add("hidden"); $("catRes").textContent = ""; }
+      else {
+        $("catInfo").textContent = "Cochez les fournisseurs (un seul, plusieurs, ou tous), puis faites défiler la liste ou tapez un produit, une marque ou une référence.";
+        $("catQ").classList.remove("hidden"); drawCatSup(); catSearch();
+        $("catOwner").open = !!(ownerOk && !Object.keys(catStats).length);
+      }
     });
   }
-  $("catSupBtn").addEventListener("click", openCat);
-  $("catClose").addEventListener("click", function () { $("catDlg").close(); });
+  var catBodyEl = $("catBody"), catHome = $("catHome");
+  var catPrevTab = "";
+  function parkCatalogues() { if (catBodyEl.parentNode !== catHome) catHome.append(catBodyEl); if (state.tab !== "catalogues") catPrevTab = state.tab; }
+  function renderCatalogues(box) {
+    box.append(catBodyEl);
+    var entering = catPrevTab !== "catalogues"; catPrevTab = "catalogues";
+    if (entering || !catOk) catOnShow();
+  }
+  $("catSupBtn").addEventListener("click", function () { $("moreMenu").classList.add("hidden"); catPrevTab = ""; goTab("catalogues"); });
   $("catQ").addEventListener("input", function () { clearTimeout(catTimer); catTimer = setTimeout(catSearch, 250); });
   $("catImpGo").addEventListener("click", function () {
     if (!ownerOk) return;
-    var sup = $("catImpSup").value.trim(), f = $("catImpFile").files && $("catImpFile").files[0];
-    if (!sup) { $("catProg").textContent = "Indiquez le fournisseur de ce fichier."; return; }
+    var rawSup = $("catImpSup").value.trim(), f = $("catImpFile").files && $("catImpFile").files[0];
+    if (!rawSup) { $("catProg").textContent = "Indiquez le fournisseur de ce fichier."; return; }
+    var sup = supGroup(rawSup), label = $("catImpLabel").value.trim() || (f ? String(f.name).replace(/\.[a-z0-9]+$/i, "").replace(/^catalogue[-_ ]*/i, "").replace(/[-_]+/g, " ").trim() : "") || rawSup;
     if (!f) { $("catProg").textContent = "Choisissez le fichier Excel ou CSV du fournisseur."; return; }
     $("catImpGo").disabled = true; $("catProg").textContent = "Lecture du fichier…";
     fileToSheets(f).then(function (sheets) {
       var entries = catEntriesFromSheets(sheets, sup);
       if (!entries.length) { $("catProg").textContent = entries.bad ? "Colonne « Désignation » (ou « Article », « Produit ») introuvable dans la première ligne du fichier." : "Aucune ligne exploitable dans le fichier."; return; }
       $("catProg").textContent = entries.length.toLocaleString("fr-FR") + " produits lus. Import en cours…";
-      return catUpsert(entries).then(function (n) { return catAfterImport(n, sup); });
+      return catUpsert(entries).then(function (n) {
+        return sb.from("catalogue_sources").insert({ supplier: sup, label: label, file_name: f.name, nb: n, loaded_by: myEmail }).then(function () {}, function () {}).then(function () { return catAfterImport(n, sup); });
+      });
     }).catch(function (e) { $("catProg").textContent = /xlsx/.test(String(e && e.message)) ? "Impossible de lire un fichier Excel : vérifiez votre accès à internet." : "L'import a échoué. Réessayez, ou découpez le fichier en plusieurs parties."; })
       .then(function () { $("catImpGo").disabled = false; });
   });
   $("catPast").addEventListener("click", function () {
     if (!ownerOk) return;
     var prods = priceProducts(spendRows()), entries = Object.keys(prods).map(function (k) { return prods[k]; }).filter(function (p) { return p.supplier; })
-      .map(function (p) { return { supplier: p.supplier, ref: p.ref, name: p.name, price_ht: p.price, category: guessDomain(p.name) }; });
+      .map(function (p) { return { supplier: supGroup(p.supplier), ref: p.ref, name: p.name, price_ht: p.price, category: guessDomain(p.name) }; });
     if (!entries.length) { $("catProg").textContent = "Aucun achat enregistré : importez d'abord des factures."; return; }
     $("catPast").disabled = true; $("catProg").textContent = entries.length + " produits achetés…";
     catUpsert(entries).then(function (n) { return catAfterImport(n, ""); }).catch(function () { $("catProg").textContent = "L'ajout a échoué."; }).then(function () { $("catPast").disabled = false; });
