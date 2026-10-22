@@ -940,6 +940,64 @@ body.salle-tablette .roomchips { display:flex; }
   html.is-touch .sb-scan { flex-direction:column; justify-content:center; gap:4px; text-align:center; padding:10px 2px; min-height:64px; font-size:10.5px; }
   html.is-touch .sb-scan .ti { font-size:24px; width:auto; }
 }
+
+/* ===== v96 : catalogue total ===== */
+.tile-total { display:block; margin-top:6px; font-size:12.5px; font-weight:600; color:var(--brand); }
+.totalcat { margin-top:14px; }
+.totalhead { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; padding:12px 14px; background:var(--surface-2); border-bottom:1px solid var(--line); }
+.totalchips { display:flex; gap:6px; flex-wrap:wrap; margin-left:auto; }
+.trow { display:flex; gap:12px; align-items:center; justify-content:space-between; padding:10px 14px; border-top:1px solid var(--line); opacity:.92; }
+.trow-main { min-width:0; }
+.trow .item-name { font-weight:600; }
+
+/* ===== v97 : messagerie de l'équipe ===== */
+.msgbadge { display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:var(--bad, #d93025); color:#fff; font-size:12px; font-weight:700; margin-left:6px; }
+.msgbadge.hidden { display:none; }
+.bottombar #bbMenu.has-unread span:first-child { position:relative; }
+.bottombar #bbMenu.has-unread span:first-child::after { content:""; position:absolute; top:-2px; right:-4px; width:10px; height:10px; border-radius:50%; background:var(--bad, #d93025); }
+.msgwrap { display:grid; grid-template-columns:300px 1fr; gap:14px; height:calc(100vh - 230px); min-height:440px; }
+.msglist { background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:auto; padding:6px; display:flex; flex-direction:column; gap:2px; }
+.msgconv { display:flex; align-items:center; gap:10px; width:100%; text-align:left; border:0; background:transparent; color:var(--ink); padding:10px; border-radius:10px; cursor:pointer; font:inherit; }
+.msgconv:hover, .msgconv.on { background:var(--surface-2); }
+.msgconv.on { box-shadow:inset 3px 0 0 var(--brand); }
+.mc-av { width:40px; height:40px; border-radius:50%; background:var(--grad); color:var(--brand-ink); display:grid; place-items:center; font-weight:700; font-size:18px; flex:none; }
+.mc-main { display:flex; flex-direction:column; min-width:0; flex:1; }
+.mc-name { font-weight:700; }
+.mc-prev { color:var(--muted); font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mc-side { display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex:none; }
+.mc-time { color:var(--muted); font-size:12px; }
+.mc-solo { padding:10px; }
+.msgpane { background:var(--surface); border:1px solid var(--line); border-radius:14px; display:flex; flex-direction:column; min-height:0; }
+.msghead { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--line); }
+.mh-title { font-weight:700; font-size:17px; }
+.msgback { display:none; }
+.msgs { flex:1; overflow:auto; padding:14px 16px; display:flex; flex-direction:column; gap:8px; }
+.bday { align-self:center; color:var(--muted); font-size:12.5px; font-weight:600; margin:8px 0 2px; text-transform:capitalize; }
+.bubble { max-width:min(78%, 560px); background:var(--surface-2); border-radius:14px 14px 14px 4px; padding:8px 12px; align-self:flex-start; }
+.bubble.mine { align-self:flex-end; background:var(--brand); color:var(--brand-ink); border-radius:14px 14px 4px 14px; }
+.bubble.task { border:2px solid var(--warn, #b26a00); }
+.bwho { font-weight:700; font-size:13px; margin-bottom:2px; }
+.btext { white-space:pre-wrap; overflow-wrap:anywhere; }
+.btask { display:flex; align-items:center; gap:8px; font-weight:700; margin-bottom:4px; }
+.bitem { display:block; margin-top:6px; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:10px; padding:6px 10px; font:inherit; font-size:14px; cursor:pointer; text-align:left; }
+.bmeta { display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center; margin-top:4px; font-size:12px; opacity:.75; }
+.bdel { border:0; background:transparent; color:inherit; text-decoration:underline; font:inherit; font-size:12px; cursor:pointer; padding:0; }
+.msgcomposer { border-top:1px solid var(--line); padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
+.msgcomposer.hidden { display:none; }
+.msgta { width:100%; resize:vertical; min-height:56px; max-height:180px; border:1px solid var(--line); border-radius:12px; padding:10px 12px; font:inherit; background:var(--surface); color:var(--ink); }
+.msgtools { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.msgnote { color:var(--muted); font-size:12.5px; flex:1; min-width:120px; }
+.msgattach { display:flex; gap:10px; align-items:center; font-size:14px; background:var(--surface-2); border-radius:10px; padding:6px 10px; }
+.msgattach.hidden, .msgpick.hidden { display:none; }
+.msgpick { display:flex; flex-direction:column; gap:6px; }
+.msgpickres { display:flex; flex-wrap:wrap; gap:6px; }
+@media (max-width: 760px) {
+  .msgwrap { grid-template-columns:1fr; height:calc(100vh - 260px); }
+  .msgwrap .msgpane { display:none; }
+  .msgwrap.show-thread .msglist { display:none; }
+  .msgwrap.show-thread .msgpane { display:flex; }
+  .msgback { display:inline-flex; }
+}
 </style>
 </head>
 <body>
@@ -1024,7 +1082,7 @@ body.salle-tablette .roomchips { display:flex; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v95</div>
+            <div class="menu-who"><span id="who"></span> · v97</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1073,6 +1131,7 @@ body.salle-tablette .roomchips { display:flex; }
     <button type="button" class="sb-scan" id="sbScan"><span class="ti">📷</span><span class="tl">Scanner</span></button>
     <button class="tab" role="tab" data-tab="inventaire" aria-selected="true"><span class="ti">📦</span><span class="tl">Stock</span></button>
     <button class="tab" role="tab" data-tab="favoris" aria-selected="false"><span class="ti">⭐</span><span class="tl">Favoris</span></button>
+    <button class="tab" role="tab" data-tab="messages" aria-selected="false"><span class="ti">💬</span><span class="tl">Messages <span class="msgbadge hidden" id="msgBadge" aria-label="messages non lus"></span></span></button>
     <button class="tab" role="tab" data-tab="catalogues" aria-selected="false"><span class="ti">📚</span><span class="tl">Catalogues</span></button>
     <button class="tab" role="tab" data-tab="commande" aria-selected="false"><span class="ti">🛒</span><span class="tl">À commander</span></button>
     <button class="tab" role="tab" data-tab="comptage" aria-selected="false"><span class="ti">🔢</span><span class="tl">Comptage</span></button>
@@ -1108,7 +1167,8 @@ body.salle-tablette .roomchips { display:flex; }
   <div class="filters hidden" id="filters">
     <div class="ftop">
       <button class="btn sm" id="filtersToggle" aria-expanded="false">Filtres</button>
-      <button class="btn sm toggle" id="hideCatBtn" aria-pressed="false">Masquer le catalogue</button>
+      <button class="btn sm toggle" id="hideCatBtn" aria-pressed="false">Masquer le catalogue déjà commandé</button>
+      <button class="btn sm toggle" id="hideTotalBtn" aria-pressed="true">✓ Catalogue total masqué</button>
       <button class="btn sm toggle" id="hideDupBtn" aria-pressed="false">Masquer les doublons</button>
       <button class="btn sm toggle" id="selToggle" aria-pressed="false">Sélectionner</button>
       <span class="sub" id="filtersSummary"></span>
@@ -1893,7 +1953,7 @@ body.salle-tablette .roomchips { display:flex; }
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false, ownerOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
-  var state = { tab: "inventaire", filter: "all", q: "", cat: "", hideCat: false, collapsed: {}, tileSort: "usuel", limit: 60, limitSig: "", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
+  var state = { tab: "inventaire", filter: "all", q: "", cat: "", msgThread: "equipe", msgView: "list", msgAttach: null, msgTask: false, hideCat: false, hideTotal: true, totalSup: {}, totalLimit: 60, totalSig: "", collapsed: {}, tileSort: "usuel", limit: 60, limitSig: "", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
   var chain = Promise.resolve();
 
@@ -3239,7 +3299,7 @@ body.salle-tablette .roomchips { display:flex; }
   function goTab(t) { var b = document.querySelector('.tab[data-tab="' + t + '"]'); if (b) b.click(); }
   function kActions() {
     var a = [
-      ["Stock", "section", function () { goTab("inventaire"); }], ["Favoris", "section", function () { goTab("favoris"); }], ["Catalogues fournisseurs", "section", function () { goTab("catalogues"); }],
+      ["Stock", "section", function () { goTab("inventaire"); }], ["Favoris", "section", function () { goTab("favoris"); }], ["Messages de l'équipe", "section", function () { goTab("messages"); }], ["Catalogues fournisseurs", "section", function () { goTab("catalogues"); }],
       ["À commander", "section", function () { goTab("commande"); }], ["Comptage", "section", function () { goTab("comptage"); }],
       ["Historique", "section", function () { goTab("historique"); }], ["Données et prévisions", "section", function () { goTab("donnees"); }],
       ["Corbeille", "section", function () { goTab("corbeille"); }],
@@ -5289,7 +5349,10 @@ body.salle-tablette .roomchips { display:flex; }
     var nCatAll = 0; items.forEach(function (it) { if (it.tracked === false) nCatAll++; });
     var nDup = dupHiddenIds().size;
     $("hideCatBtn").setAttribute("aria-pressed", state.hideCat ? "true" : "false");
-    $("hideCatBtn").textContent = state.hideCat ? "✓ Catalogue masqué (" + nCatAll + ")" : "Masquer le catalogue" + (nCatAll ? " (" + nCatAll + ")" : "");
+    $("hideCatBtn").textContent = state.hideCat ? "✓ Catalogue déjà commandé masqué (" + nCatAll + ")" : "Masquer le catalogue déjà commandé" + (nCatAll ? " (" + nCatAll + ")" : "");
+    var nTot = TOTAL.ok ? TOTAL.entries.length : 0;
+    $("hideTotalBtn").setAttribute("aria-pressed", state.hideTotal ? "true" : "false");
+    $("hideTotalBtn").textContent = state.hideTotal ? "✓ Catalogue total masqué" + (nTot ? " (" + nTot.toLocaleString("fr-FR") + ")" : "") : "Masquer le catalogue total" + (nTot ? " (" + nTot.toLocaleString("fr-FR") + ")" : "");
     $("hideCatBtn").disabled = !nCatAll && !state.hideCat;
     $("hideDupBtn").setAttribute("aria-pressed", state.hideDup ? "true" : "false");
     $("hideDupBtn").textContent = state.hideDup ? "✓ Doublons masqués (" + nDup + ")" : "Masquer les doublons" + (nDup ? " (" + nDup + ")" : "");
@@ -5406,6 +5469,8 @@ body.salle-tablette .roomchips { display:flex; }
     });
     box.append(h("div", { class: "tilebar" }, h("label", { for: "tileSort", text: "Trier les domaines :" }), sel));
     var grid = h("div", { class: "tiles" });
+    var tc = (!state.hideTotal && TOTAL.ok && !roomScope()) ? totalCounts() : null;
+    if (!state.hideTotal && !TOTAL.ok && !TOTAL.loading && !TOTAL.failed && !roomScope()) loadTotal();
     order.forEach(function (c) {
       var o = stats[c] || { n: 0, sum: {}, bas: 0, rupt: 0, exp: 0, cat: 0, hid: 0 };
       if (!o.n && !o.cat && o.hid > 0) return;
@@ -5427,7 +5492,8 @@ body.salle-tablette .roomchips { display:flex; }
         h("span", { class: "tile-name", text: c }),
         h("span", { class: "tile-num " + (state.view && !o.n ? "q-none" : qtyClass(bigNum)), text: big }),
         shown ? h("span", { class: "tile-unit", text: shown }) : null,
-        alertTxt ? h("span", { class: "tile-alert " + alertCls, text: alertTxt }) : null));
+        alertTxt ? h("span", { class: "tile-alert " + alertCls, text: alertTxt }) : null,
+        tc && tc[c] ? h("span", { class: "tile-total", text: "+ " + tc[c].toLocaleString("fr-FR") + " au catalogue total" }) : null));
     });
     box.append(grid);
   }
@@ -5447,6 +5513,281 @@ body.salle-tablette .roomchips { display:flex; }
       h("button", { class: "step", "aria-label": "Ajouter 1 " + it.name, disabled: readOnly, onclick: function () { if (hasLots(it)) openAdjust(it); else adjustQty(it, 1, "Entrée rapide"); }, text: "+" }),
       moveTab(it));
   }
+  // ---------- catalogue total (fichiers du dossier « catalogues » du site) : GACD, Méga Dental… ----------
+  var TOTAL = { ok: false, loading: false, failed: false, entries: [], sorted: [], byDomain: {}, cats: [], waiters: [] };
+  function loadTotal(done) {
+    if (done) TOTAL.waiters.push(done);
+    var fin = function () { var w = TOTAL.waiters; TOTAL.waiters = []; w.forEach(function (f) { try { f(); } catch (e) {} }); };
+    if (TOTAL.ok || TOTAL.failed) { fin(); return; }
+    if (TOTAL.loading) return;
+    if (typeof fetch !== "function") { TOTAL.failed = true; fin(); return; }
+    TOTAL.loading = true;
+    fetch("catalogues/index.json", { cache: "no-cache" }).then(function (r) { if (!r.ok) throw new Error("index"); return r.json(); }).then(function (idx) {
+      var cats = (idx && idx.catalogues) || [];
+      return Promise.all(cats.map(function (c) { return fetch("catalogues/" + c.file).then(function (r) { if (!r.ok) throw new Error(c.file); return r.json(); }).then(function (j) { return { c: c, j: j }; }); }));
+    }).then(function (all) {
+      var entries = [], by = {}, cats = [];
+      all.forEach(function (x) {
+        var sup = x.c.supplier || x.j.supplier || "", label = x.c.label || x.j.label || sup, rows = x.j.items || [];
+        cats.push({ supplier: sup, label: label, count: rows.length, updated: x.c.updated || "", note: x.c.note || "" });
+        rows.forEach(function (a) {
+          var e = { supplier: sup, label: label, ref: String(a[0] || ""), name: String(a[1] || ""), price_ht: a[2] != null ? Number(a[2]) : null, page: a[3] || 0 };
+          e.domain = guessDomain(e.name); e.s = norm(e.name + " " + e.ref); entries.push(e); (by[e.domain] = by[e.domain] || []).push(e);
+        });
+      });
+      var byName = function (a, b) { return a.s < b.s ? -1 : a.s > b.s ? 1 : 0; };
+      Object.keys(by).forEach(function (k) { by[k].sort(byName); });
+      TOTAL.entries = entries; TOTAL.sorted = entries.slice().sort(byName); TOTAL.byDomain = by; TOTAL.cats = cats; TOTAL.ok = true; TOTAL.loading = false;
+      fin(); render();
+    }).catch(function () { TOTAL.loading = false; TOTAL.failed = true; fin(); if (!state.hideTotal) { toast("Le catalogue total n'a pas pu être chargé : le dossier « catalogues » est-il sur le site ?"); render(); } });
+  }
+  function haveRefs() {
+    var s = new Set(); items.forEach(function (it) { if (it.ref) s.add(norm(it.ref).trim()); }); trash.forEach(function (it) { if (it.ref) s.add(norm(it.ref).trim()); });
+    return s;
+  }
+  function totalSupOn(sup) { return state.totalSup[sup] !== false; }
+  function totalCounts() {
+    var have = haveRefs(), out = {};
+    TOTAL.entries.forEach(function (e) { if (!totalSupOn(e.supplier)) return; if (e.ref && have.has(norm(e.ref).trim())) return; out[e.domain] = (out[e.domain] || 0) + 1; });
+    return out;
+  }
+  function totalSection() {
+    if (state.hideTotal || roomScope() || state.filter !== "all" || filtersActive()) return null;
+    if (!TOTAL.ok) {
+      if (!TOTAL.loading && !TOTAL.failed) loadTotal();
+      return h("div", { class: "dnote", text: TOTAL.failed ? "Le catalogue total n'a pas pu être chargé : le dossier « catalogues » (fichiers gacd-2026.json…) n'est pas sur le site." : "Chargement du catalogue total…" });
+    }
+    var tsig = [state.cat, state.q, JSON.stringify(state.totalSup)].join("|");
+    if (tsig !== state.totalSig) { state.totalSig = tsig; state.totalLimit = 60; }
+    var dom = state.cat || "", words = norm(state.q).split(/\s+/).filter(Boolean), have = haveRefs(), src = dom ? (TOTAL.byDomain[dom] || []) : TOTAL.sorted, list = [];
+    for (var i = 0; i < src.length; i++) {
+      var e = src[i];
+      if (!totalSupOn(e.supplier)) continue;
+      if (words.length && !words.every(function (w) { return e.s.indexOf(w) !== -1; })) continue;
+      if (e.ref && have.has(norm(e.ref).trim())) continue;
+      list.push(e);
+    }
+    var chips = h("div", { class: "totalchips" });
+    TOTAL.cats.forEach(function (c) {
+      var on = totalSupOn(c.supplier);
+      chips.append(h("button", { class: "btn sm toggle", type: "button", "aria-pressed": on ? "true" : "false", text: (on ? "✓ " : "") + c.supplier, onclick: function () { state.totalSup[c.supplier] = !on; render(); } }));
+    });
+    var sec = h("div", { class: "table totalcat" },
+      h("div", { class: "totalhead" }, h("strong", { text: "Catalogue total" }), h("span", { class: "meta", text: list.length.toLocaleString("fr-FR") + " produit" + (list.length > 1 ? "s" : "") + (dom ? " dans « " + dom + " »" : "") + " pas encore dans votre stock" }), chips));
+    if (!list.length) { sec.append(h("div", { class: "empty", text: words.length ? "Aucun produit du catalogue total ne correspond à cette recherche." : "Tout le catalogue de ce domaine est déjà dans votre stock." })); return sec; }
+    list.slice(0, state.totalLimit).forEach(function (e) {
+      var btn = h("button", { class: "btn sm", type: "button", disabled: readOnly || !db, text: "＋ Ajouter" });
+      btn.addEventListener("click", function () { addCatalogueEntry({ name: e.name, ref: e.ref, supplier: e.supplier, category: e.domain, price_ht: e.price_ht, ean: "", unit: "" }, btn); });
+      sec.append(h("div", { class: "trow" },
+        h("div", { class: "trow-main" }, h("div", { class: "item-name", text: e.name }),
+          h("div", { class: "meta", text: [e.supplier, e.ref ? "réf. " + e.ref : "", e.price_ht != null ? money(e.price_ht) + " HT" : "", e.page ? "cat. p." + e.page : ""].filter(Boolean).join(" · ") })), btn));
+    });
+    if (list.length > state.totalLimit) sec.append(h("div", { class: "morebar" }, h("button", { class: "btn", type: "button", text: "Voir la suite (" + (list.length - state.totalLimit).toLocaleString("fr-FR") + ")", onclick: function () { state.totalLimit += 60; render(); } })));
+    return sec;
+  }
+  // ---------- messagerie de l'équipe : canal du cabinet, messages privés, tâches ----------
+  var msgOk = false, msgs = [], msgPeople = [], msgReads = {}, msgDraft = {}, msgEls = null, msgFocus = null;
+  function personName(email) { var n = String(email || "").split("@")[0].replace(/[._-]+/g, " ").trim(); return n ? n.charAt(0).toUpperCase() + n.slice(1) : "?"; }
+  function msgPerson(id) { return msgPeople.filter(function (p) { return p.user_id === id; })[0]; }
+  function msgThreadOf(m) { return !m.to_user_id ? "equipe" : (m.author_id === sessionUser ? m.to_user_id : m.author_id); }
+  function msgThreadTitle(t) { return t === "equipe" ? "Équipe du cabinet" : personName((msgPerson(t) || {}).email || ""); }
+  function msgThreads() { return ["equipe"].concat(msgPeople.filter(function (p) { return p.user_id !== sessionUser; }).map(function (p) { return p.user_id; })); }
+  function msgUnread(t) {
+    var lu = msgReads[t] || "", n = 0;
+    msgs.forEach(function (m) { if (m.author_id !== sessionUser && msgThreadOf(m) === t && (!lu || m.created_at > lu)) n++; });
+    return n;
+  }
+  function msgLast(t) { var last = null; msgs.forEach(function (m) { if (msgThreadOf(m) === t) last = m; }); return last; }
+  function msgClock(iso) {
+    var d = new Date(iso); if (isNaN(d)) return "";
+    var now = new Date(), same = d.toDateString() === now.toDateString(), y = new Date(now.getTime() - 86400000).toDateString() === d.toDateString();
+    var hm = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    return same ? hm : y ? "Hier " + hm : d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " " + hm;
+  }
+  function msgDay(iso) {
+    var d = new Date(iso), now = new Date();
+    if (d.toDateString() === now.toDateString()) return "Aujourd'hui";
+    if (new Date(now.getTime() - 86400000).toDateString() === d.toDateString()) return "Hier";
+    return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  }
+  function updateMsgBadge() {
+    var n = 0; if (msgOk) msgThreads().forEach(function (t) { n += msgUnread(t); });
+    var b = $("msgBadge"); b.textContent = n > 99 ? "99+" : String(n); b.classList.toggle("hidden", !n);
+    $("bbMenu").classList.toggle("has-unread", n > 0);
+    document.title = (n ? "(" + n + ") " : "") + "SimSimStock";
+  }
+  function msgErrText(e) {
+    var m = String((e && e.message) || "");
+    if (/relation|does not exist|schema cache/i.test(m)) return "La messagerie n'est pas encore activée : lancez le script SQL « ajout-messages » dans Supabase.";
+    if (/row-level security|violates|permission/i.test(m)) return "Message refusé : votre accès est en lecture seule, ou cette personne n'est pas dans ce cabinet.";
+    return "Le message n'a pas pu être envoyé : réessayez.";
+  }
+  function loadMessages() {
+    if (!sb || !cabinetId || !db) return;
+    var cid = cabinetId;
+    Promise.all([
+      sb.from("messages").select("*").eq("cabinet_id", cid).order("created_at", { ascending: false }).limit(400),
+      sb.rpc("equipe_cabinet", { c: cid }),
+      sb.from("message_lus").select("*").eq("cabinet_id", cid)
+    ]).then(function (rs) {
+      if (cid !== cabinetId) return;
+      if (rs[0].error) { msgOk = false; updateMsgBadge(); if (state.tab === "messages") render(); return; }
+      msgOk = true; msgs = (rs[0].data || []).slice().reverse(); msgPeople = rs[1].error ? [] : (rs[1].data || []);
+      msgReads = {}; (rs[2].data || []).forEach(function (r) { msgReads[r.thread] = r.lu_at; });
+      updateMsgBadge(); if (state.tab === "messages") render();
+    }).catch(function () { msgOk = false; });
+  }
+  function markRead(t) {
+    if (!db || !msgOk) return;
+    var now = new Date().toISOString(); msgReads[t] = now; updateMsgBadge();
+    sb.from("message_lus").upsert({ user_id: sessionUser, cabinet_id: cabinetId, thread: t, lu_at: now }, { onConflict: "user_id,cabinet_id,thread" }).then(function () {}, function () {});
+  }
+  function addMessage(m, mine) {
+    if (msgs.some(function (x) { return x.id === m.id; })) return;
+    msgs.push(m); msgs.sort(function (a, b) { return a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0; });
+    var t = msgThreadOf(m), viewing = state.tab === "messages" && state.msgThread === t && (state.msgView === "thread" || window.innerWidth > 760);
+    if (!mine) {
+      if (viewing && document.visibilityState !== "hidden") markRead(t);
+      else toast("💬 " + personName(m.author_email) + (t === "equipe" ? " (équipe)" : "") + " : " + String(m.body).replace(/\s+/g, " ").slice(0, 70));
+    }
+    updateMsgBadge();
+    if (state.tab === "messages") render();
+  }
+  function sendMessage() {
+    if (!msgEls) return;
+    var ta = msgEls.ta, body = ta.value.trim(), t = state.msgThread;
+    if (!body || readOnly || !db) return;
+    if (body.length > 2000) { toast("Message trop long : 2 000 caractères au maximum."); return; }
+    var row = { cabinet_id: cabinetId, to_user_id: t === "equipe" ? null : t, body: body, kind: state.msgTask ? "tache" : "message", item_id: state.msgAttach ? state.msgAttach.id : null, item_name: state.msgAttach ? state.msgAttach.name : "" };
+    msgEls.send.disabled = true;
+    sb.from("messages").insert(row).select().then(function (res) {
+      msgEls.send.disabled = false;
+      if (res.error || !res.data || !res.data[0]) { toast(msgErrText(res.error)); return; }
+      ta.value = ""; msgDraft[t] = ""; state.msgAttach = null; state.msgTask = false;
+      addMessage(res.data[0], true); markRead(t); render();
+      try { msgEls.scroll.scrollTop = msgEls.scroll.scrollHeight; ta.focus(); } catch (e) {}
+    }, function () { msgEls.send.disabled = false; toast("Connexion impossible : le message n'a pas été envoyé."); });
+  }
+  function msgToggleDone(m, on) {
+    sb.rpc("message_marquer_fait", { p_id: m.id, p_fait: on }).then(function (res) {
+      if (res.error) { toast("La tâche n'a pas pu être mise à jour."); render(); return; }
+      m.done_at = on ? new Date().toISOString() : null; m.done_by = on ? myEmail : ""; render();
+    }, function () { toast("Connexion impossible."); render(); });
+  }
+  var msgDelAsk = "";
+  function msgDelete(m, btn) {
+    if (msgDelAsk !== m.id) { msgDelAsk = m.id; btn.textContent = "Confirmer"; return; }
+    msgDelAsk = "";
+    sb.from("messages").delete().eq("id", m.id).then(function (res) {
+      if (res.error) { toast("Le message n'a pas pu être supprimé."); return; }
+      msgs = msgs.filter(function (x) { return x.id !== m.id; }); updateMsgBadge(); render();
+    }, function () { toast("Connexion impossible."); });
+  }
+  function msgBubble(m) {
+    var mine = m.author_id === sessionUser, canDel = mine || (!m.to_user_id && isAdmin);
+    var wrap = h("div", { class: "bubble" + (mine ? " mine" : "") + (m.kind === "tache" ? " task" : "") });
+    if (!mine) wrap.append(h("div", { class: "bwho", text: personName(m.author_email) }));
+    if (m.kind === "tache") {
+      var cb = h("input", { type: "checkbox", checked: !!m.done_at, disabled: readOnly, "aria-label": "Tâche faite" });
+      cb.addEventListener("change", function () { msgToggleDone(m, cb.checked); });
+      wrap.append(h("label", { class: "btask" }, cb, h("span", { class: "btag", text: m.done_at ? "Fait" : "À faire" })));
+    }
+    wrap.append(h("div", { class: "btext", text: m.body }));
+    if (m.item_id) {
+      var it = items.get(m.item_id);
+      wrap.append(h("button", { class: "bitem", type: "button", title: it ? "Ouvrir la fiche de l'article" : "Cet article n'existe plus",
+        onclick: function () { var x = items.get(m.item_id); if (x) openItem(R(x)); else toast("Cet article n'existe plus."); } },
+        "📦 " + (it ? it.name : (m.item_name || "article")) + (it && it.tracked !== false ? " · stock " + fmt(it.qty) : "")));
+    }
+    var meta = h("div", { class: "bmeta" }, h("span", { text: msgClock(m.created_at) }));
+    if (m.kind === "tache" && m.done_at) meta.append(h("span", { text: " · fait par " + personName(m.done_by) + " " + msgClock(m.done_at) }));
+    if (canDel && !readOnly) { var del = h("button", { class: "bdel", type: "button", text: "Supprimer", "aria-label": "Supprimer ce message" }); del.addEventListener("click", function () { msgDelete(m, del); }); meta.append(del); }
+    wrap.append(meta);
+    return wrap;
+  }
+  function buildMsgUi() {
+    var list = h("div", { class: "msglist", role: "navigation", "aria-label": "Conversations" });
+    var head = h("div", { class: "msghead" });
+    var scroll = h("div", { class: "msgs", role: "log", "aria-live": "polite" });
+    var ta = h("textarea", { class: "msgta", rows: "2", maxlength: "2000", placeholder: "Écrire un message…", "aria-label": "Votre message" });
+    var attachRow = h("div", { class: "msgattach hidden" }), pick = h("div", { class: "msgpick hidden" });
+    var btnItem = h("button", { class: "btn sm", type: "button", text: "📦 Article" });
+    var btnTask = h("button", { class: "btn sm toggle", type: "button", "aria-pressed": "false", text: "☑ Tâche" });
+    var send = h("button", { class: "btn primary", type: "button", text: "Envoyer" });
+    var tools = h("div", { class: "msgtools" }, btnItem, btnTask, h("span", { class: "msgnote", text: "Ni nom de patient, ni information de santé." }), send);
+    var composer = h("div", { class: "msgcomposer" }, attachRow, pick, ta, tools);
+    var pane = h("div", { class: "msgpane" }, head, scroll, composer);
+    var root = h("div", { class: "msgwrap" }, list, pane);
+    ta.addEventListener("input", function () { msgDraft[state.msgThread] = ta.value; });
+    ta.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey && !document.documentElement.classList.contains("is-touch") && window.innerWidth > 760) { e.preventDefault(); sendMessage(); } });
+    send.addEventListener("click", sendMessage);
+    btnTask.addEventListener("click", function () { state.msgTask = !state.msgTask; render(); });
+    btnItem.addEventListener("click", function () { pick.classList.toggle("hidden"); if (!pick.classList.contains("hidden")) fillPick(""); });
+    function fillPick(q) {
+      pick.textContent = "";
+      var inp = h("input", { type: "search", placeholder: "Chercher un article à joindre", autocomplete: "off", "aria-label": "Chercher un article" }), res = h("div", { class: "msgpickres" });
+      var draw = function () {
+        res.textContent = ""; var qn = norm(inp.value);
+        Array.from(items.values()).filter(function (x) { return !qn || norm(x.name + " " + (x.ref || "")).indexOf(qn) !== -1; })
+          .sort(function (a, b) { return norm(a.name).localeCompare(norm(b.name)); }).slice(0, 8).forEach(function (x) {
+            res.append(h("button", { class: "btn sm", type: "button", text: x.name, onclick: function () { state.msgAttach = { id: x.id, name: x.name }; pick.classList.add("hidden"); render(); } }));
+          });
+      };
+      inp.addEventListener("input", draw); pick.append(inp, res); draw();
+    }
+    return { root: root, list: list, head: head, scroll: scroll, ta: ta, send: send, btnTask: btnTask, btnItem: btnItem, attachRow: attachRow, pick: pick, composer: composer };
+  }
+  function parkMessages() {
+    msgFocus = null;
+    if (msgEls && document.activeElement === msgEls.ta) msgFocus = { a: msgEls.ta.selectionStart, b: msgEls.ta.selectionEnd };
+  }
+  function renderMessages(box) {
+    if (!msgEls) msgEls = buildMsgUi();
+    var E = msgEls;
+    if (!msgOk) { box.append(h("div", { class: "dnote", text: "La messagerie n'est pas encore activée : lancez le script SQL « ajout-messages » dans Supabase (voir le guide)." })); return; }
+    var threads = msgThreads(); if (threads.indexOf(state.msgThread) === -1) state.msgThread = "equipe";
+    var t = state.msgThread, prevThread = E.root.getAttribute("data-thread");
+    E.root.setAttribute("data-thread", t); E.root.classList.toggle("show-thread", state.msgView === "thread");
+    // liste des conversations
+    E.list.textContent = "";
+    var order = threads.slice(1).sort(function (a, b) { var la = msgLast(a), lb = msgLast(b); return (lb ? lb.created_at : "") < (la ? la.created_at : "") ? -1 : (lb ? lb.created_at : "") > (la ? la.created_at : "") ? 1 : msgThreadTitle(a).localeCompare(msgThreadTitle(b)); });
+    ["equipe"].concat(order).forEach(function (th) {
+      var last = msgLast(th), n = msgUnread(th), btn = h("button", { class: "msgconv" + (th === t ? " on" : ""), type: "button", "aria-current": th === t ? "true" : "false",
+        onclick: function () { state.msgThread = th; state.msgView = "thread"; state.msgAttach = null; state.msgTask = false; markRead(th); render(); } },
+        h("span", { class: "mc-av", text: th === "equipe" ? "👥" : personName((msgPerson(th) || {}).email).charAt(0) }),
+        h("span", { class: "mc-main" }, h("span", { class: "mc-name", text: msgThreadTitle(th) }),
+          h("span", { class: "mc-prev", text: last ? (last.author_id === sessionUser ? "Vous : " : (th === "equipe" ? personName(last.author_email) + " : " : "")) + String(last.body).replace(/\s+/g, " ").slice(0, 60) : (th === "equipe" ? "Tout le cabinet" : "Message privé") })),
+        h("span", { class: "mc-side" }, last ? h("span", { class: "mc-time", text: msgClock(last.created_at) }) : null, n ? h("span", { class: "msgbadge", text: String(n) }) : null));
+      E.list.append(btn);
+    });
+    if (threads.length === 1) E.list.append(h("div", { class: "meta mc-solo", text: "Les autres personnes du cabinet apparaîtront ici dès qu'elles auront rejoint l'équipe." }));
+    // en-tête
+    E.head.textContent = "";
+    E.head.append(h("button", { class: "btn sm msgback", type: "button", text: "← Conversations", onclick: function () { state.msgView = "list"; render(); } }),
+      h("div", null, h("div", { class: "mh-title", text: msgThreadTitle(t) }), h("div", { class: "meta", text: t === "equipe" ? "Visible par toute l'équipe de « " + cabinetName + " »" : "Message privé : seuls vous deux le voyez" })));
+    // messages
+    var atBottom = E.scroll.scrollHeight - E.scroll.scrollTop - E.scroll.clientHeight < 80 || prevThread !== t;
+    E.scroll.textContent = "";
+    var mine = msgs.filter(function (m) { return msgThreadOf(m) === t; }), lastDay = "";
+    if (!mine.length) E.scroll.append(h("div", { class: "empty", text: "Aucun message pour l'instant. Écrivez le premier ci-dessous." }));
+    mine.forEach(function (m) {
+      var day = new Date(m.created_at).toDateString();
+      if (day !== lastDay) { lastDay = day; E.scroll.append(h("div", { class: "bday", text: msgDay(m.created_at) })); }
+      E.scroll.append(msgBubble(m));
+    });
+    // zone d'écriture
+    E.composer.classList.toggle("hidden", readOnly);
+    if (readOnly) E.scroll.append(h("div", { class: "dnote", text: "Accès en lecture seule : vous lisez les messages mais vous ne pouvez pas en écrire." }));
+    E.ta.placeholder = t === "equipe" ? "Écrire à toute l'équipe…" : "Écrire à " + msgThreadTitle(t) + "…";
+    if (prevThread !== t || E.ta.value !== (msgDraft[t] || "")) { if (document.activeElement !== E.ta || prevThread !== t) E.ta.value = msgDraft[t] || ""; }
+    E.btnTask.setAttribute("aria-pressed", state.msgTask ? "true" : "false"); E.btnTask.textContent = (state.msgTask ? "✓ " : "☑ ") + "Tâche";
+    E.attachRow.textContent = ""; E.attachRow.classList.toggle("hidden", !state.msgAttach);
+    if (state.msgAttach) E.attachRow.append(h("span", { text: "📦 " + state.msgAttach.name }), h("button", { class: "bdel", type: "button", text: "Retirer", onclick: function () { state.msgAttach = null; render(); } }));
+    box.append(E.root);
+    if (atBottom) E.scroll.scrollTop = E.scroll.scrollHeight;
+    if (state.msgView === "thread" || window.innerWidth > 760) { if ((msgReads[t] || "") < ((msgLast(t) || {}).created_at || "") && document.visibilityState !== "hidden") markRead(t); }
+    if (msgFocus) { try { E.ta.focus(); E.ta.setSelectionRange(msgFocus.a, msgFocus.b); } catch (e) {} msgFocus = null; }
+  }
   function renderInventory(box) {
     var rsc = roomScope();
     if (rsc) { box.append(roomHeader(rsc)); if (!items.size && !state.cat) box.append(h("div", { class: "dnote", text: "Cette salle est vide. Cliquez sur un domaine pour y ajouter ses produits, ou utilisez « ＋ Ajouter des produits »." })); }
@@ -5460,7 +5801,8 @@ body.salle-tablette .roomchips { display:flex; }
       return;
     }
     if (isHome()) { renderTiles(box); return; }
-    var list = visibleItems();
+    var list = visibleItems(), totalNode = totalSection();
+    if (!list.length && totalNode) { box.append(totalNode); return; }
     if (!list.length) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" },
         h("h2", { text: rsc ? "Rien dans cette salle pour l'instant" : "Aucun résultat" }),
@@ -5540,6 +5882,7 @@ body.salle-tablette .roomchips { display:flex; }
       var left = list.length - shownList.length;
       box.append(h("div", { class: "morebar" }, h("button", { class: "btn", type: "button", onclick: function () { state.limit += 60; render(); }, text: "Voir la suite (" + left + " restant" + (left > 1 ? "s" : "") + ")" })));
     }
+    if (totalNode) box.append(totalNode);
     if (rsc) roomAddSection(box, rsc);
   }
 
@@ -6014,7 +6357,7 @@ body.salle-tablette .roomchips { display:flex; }
     $("dupBtn").textContent = "Doublons possibles" + (nd ? " (" + nd + ")" : "");
     var bn = $("banner"); bn.textContent = "";
     if (db && readOnly) bn.append(h("div", { class: "banner", text: "Accès en lecture seule : vous pouvez consulter le stock, mais pas le modifier." }));
-    var box = $("content"); parkCatalogues(); box.textContent = "";
+    var box = $("content"); parkCatalogues(); parkMessages(); box.textContent = "";
     $("addBtn").disabled = readOnly || !db;
     $("scanBtn").disabled = !db; $("fabScan").disabled = !db; $("sbScan").disabled = !db;
     $("importBtn").disabled = readOnly || !db;
@@ -6029,6 +6372,7 @@ body.salle-tablette .roomchips { display:flex; }
     else if (state.tab === "donnees") renderData(box);
     else if (state.tab === "corbeille") renderTrash(box);
     else if (state.tab === "favoris") renderFavorites(box);
+    else if (state.tab === "messages") renderMessages(box);
     else if (state.tab === "catalogues") renderCatalogues(box);
     else if (state.tab === "commande") renderOrder(box);
     else if (state.tab === "comptage") renderCount(box);
@@ -8286,6 +8630,12 @@ body.salle-tablette .roomchips { display:flex; }
   $("ordDlg").addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); $("ordSave").click(); } });
   document.addEventListener("visibilitychange", function () { if (!document.hidden && db && Date.now() - consoAt > 300000) loadConso(); });
   setInterval(function () { if (db && !document.hidden && Date.now() - consoAt > 900000) loadConso(); }, 60000);
+  $("hideTotalBtn").addEventListener("click", function () {
+    state.hideTotal = !state.hideTotal;
+    try { localStorage.setItem("simsim_hidetotal", state.hideTotal ? "1" : "0"); } catch (e) {}
+    if (!state.hideTotal && !TOTAL.ok && !TOTAL.loading) { TOTAL.failed = false; loadTotal(); }
+    render();
+  });
   $("hideCatBtn").addEventListener("click", function () {
     state.hideCat = !state.hideCat;
     try { localStorage.setItem("simsim_hidecat", state.hideCat ? "1" : "0"); } catch (e) {}
@@ -8694,7 +9044,7 @@ body.salle-tablette .roomchips { display:flex; }
   });
   (function () { var t = "recept"; try { t = localStorage.getItem("simsim_theme") || "recept"; } catch (e) {} applyTheme(t); })();
   try { var ts = localStorage.getItem("simsim_tilesort"); if (ts) state.tileSort = ts; } catch (e) {}
-  try { state.hideCat = localStorage.getItem("simsim_hidecat") === "1"; state.hideDup = localStorage.getItem("simsim_hidedup") === "1"; } catch (e) {}
+  try { state.hideCat = localStorage.getItem("simsim_hidecat") === "1"; state.hideDup = localStorage.getItem("simsim_hidedup") === "1"; state.hideTotal = localStorage.getItem("simsim_hidetotal") !== "0"; } catch (e) {}
   function closeMenu() { $("moreMenu").classList.add("hidden"); $("moreBtn").setAttribute("aria-expanded", "false"); }
   // Menu Plus en onglets : un onglet n'apparaît que si au moins un de ses boutons est disponible pour cette personne ; seul l'onglet choisi est affiché
   var menuTab = "";
@@ -8789,6 +9139,7 @@ body.salle-tablette .roomchips { display:flex; }
     loadEquip();
     loadContrats();
     loadSettings();
+    loadMessages();
     loadConso();
     loadRooms();
     loadControls();
@@ -8810,6 +9161,12 @@ body.salle-tablette .roomchips { display:flex; }
         render();
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "movements" }, function (p) { if (p.new && p.new.cabinet_id === cabinetId) addLogRow(p.new); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, function (p) {
+        if (p.eventType === "DELETE") { msgs = msgs.filter(function (m) { return m.id !== (p.old && p.old.id); }); updateMsgBadge(); if (state.tab === "messages") render(); return; }
+        if (!p.new || p.new.cabinet_id !== cabinetId) return;
+        if (p.eventType === "INSERT") addMessage(p.new, p.new.author_id === sessionUser);
+        else { var cur = msgs.filter(function (m) { return m.id === p.new.id; })[0]; if (cur) { Object.assign(cur, p.new); if (state.tab === "messages") render(); } }
+      })
       .on("postgres_changes", { event: "*", schema: "public", table: "lots" }, function (p) {
         if (p.eventType === "DELETE") {
           Object.keys(lotsByItem).forEach(function (k) { lotsByItem[k] = lotsByItem[k].filter(function (l) { return l.id !== p.old.id; }); });
@@ -8828,7 +9185,7 @@ body.salle-tablette .roomchips { display:flex; }
   function stopData() {
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     channels = []; started = false;
-    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; ctOk = false; ctList = []; jrnFileOk = false; openOk = false; recoFn = ""; settings = {}; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
+    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; ctOk = false; ctList = []; jrnFileOk = false; openOk = false; recoFn = ""; settings = {}; msgOk = false; msgs = []; msgPeople = []; msgReads = {}; msgDraft = {}; updateMsgBadge(); descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
   }
   // ---------- rejoindre un cabinet avec un lien d'invitation (#rejoindre=...) ----------
   var JOIN_KEY = "simsim_join";
@@ -9045,10 +9402,11 @@ body.salle-tablette .roomchips { display:flex; }
   function catNames() {
     var seen = {}, out = [];
     var add = function (n) { n = String(n || "").trim(); var k = supKey(n); if (!n || seen[k]) return; seen[k] = 1; out.push(n); };
-    CAT_SUPPLIERS.forEach(add); Object.keys(catStats).map(supGroup).sort().forEach(add);
+    CAT_SUPPLIERS.forEach(add); (TOTAL.cats || []).forEach(function (c) { add(supGroup(c.supplier)); }); Object.keys(catStats).map(supGroup).sort().forEach(add);
     return out;
   }
   function catCount(name) { var k = supKey(name), t = 0; Object.keys(catStats).forEach(function (sn) { if (supKey(supGroup(sn)) === k) t += catStats[sn]; }); return t; }
+  function catStaticCount(name) { var k = supKey(name), t = 0; (TOTAL.cats || []).forEach(function (c) { if (supKey(supGroup(c.supplier)) === k) t += c.count; }); return t; }
   function catVariants(name) { var k = supKey(name), out = [name]; Object.keys(catStats).forEach(function (sn) { if (supKey(supGroup(sn)) === k && out.indexOf(sn) === -1) out.push(sn); }); return out; }
   var catSources = [], catLoadedAt = 0;
   function loadCatStats() {
@@ -9071,15 +9429,15 @@ body.salle-tablette .roomchips { display:flex; }
     names.forEach(function (n) {
       var cb = h("input", { type: "checkbox", "aria-label": n }); cb.checked = !!catSel[n];
       cb.addEventListener("change", function () { catSel[n] = cb.checked; drawCatSup(); catSearch(); });
-      var cnt = catCount(n), vars = catVariants(n);
+      var cntDb = catCount(n), cntSt = catStaticCount(n), cnt = cntDb + cntSt, vars = catVariants(n);
       var src = catSources.filter(function (x) { return supKey(supGroup(x.supplier)) === supKey(n); });
-      var last = src[0];
-      var meta = cnt ? [last && last.label ? "Catalogue « " + last.label + " »" : "Catalogue chargé", last && (last.loaded_at || last.created_at) ? "chargé le " + frDate(last.loaded_at || last.created_at) : "", cnt.toLocaleString("fr-FR") + " produit" + (cnt > 1 ? "s" : "")].filter(Boolean).join(" · ") : "Pas encore de catalogue chargé";
+      var last = src[0], st = (TOTAL.cats || []).filter(function (c) { return supKey(supGroup(c.supplier)) === supKey(n); })[0];
+      var meta = cnt ? [st ? "Catalogue « " + st.label + " » (intégré à l'appli)" : (last && last.label ? "Catalogue « " + last.label + " »" : "Catalogue chargé"), !st && last && (last.loaded_at || last.created_at) ? "chargé le " + frDate(last.loaded_at || last.created_at) : "", cnt.toLocaleString("fr-FR") + " produit" + (cnt > 1 ? "s" : "")].filter(Boolean).join(" · ") : "Pas encore de catalogue chargé";
       var card = h("div", { class: "catcard" + (cnt ? "" : " empty") },
         h("label", { class: "catcardhead" }, cb, h("b", { text: n })), h("div", { class: "meta", text: meta }));
       var acts = h("div", { class: "catcardact" });
       if (cnt) { var only = h("button", { class: "btn sm", type: "button", text: "Voir ce catalogue" }); only.addEventListener("click", function () { catOnly(n); }); acts.append(only); }
-      if (ownerOk && cnt) {
+      if (ownerOk && cntDb) {
         var clr = h("button", { class: "btn sm danger", type: "button", text: "Vider" });
         clr.addEventListener("click", function () {
           if (catClear !== n) { catClear = n; clr.textContent = "Confirmer"; return; }
@@ -9100,8 +9458,8 @@ body.salle-tablette .roomchips { display:flex; }
     return found;
   }
   var catPage = 0;
-  function catTotal(sel) { return sel.reduce(function (a, n) { return a + catCount(n); }, 0); }
-  function drawCatRes(list, limit, append, browse, sel) {
+  function catTotal(sel) { return sel.reduce(function (a, n) { return a + catCount(n) + catStaticCount(n); }, 0); }
+  function drawCatRes(list, limit, append, browse, sel, more) {
     var box = $("catRes"), more = box.querySelector(".catmore"); if (more) more.remove();
     if (!append) {
       box.textContent = "";
@@ -9118,19 +9476,35 @@ body.salle-tablette .roomchips { display:flex; }
       box.append(h("div", { class: "eqint" },
         h("div", null, h("div", { class: "item-name", text: c.name }), h("div", { class: "meta", text: [c.supplier, c.ref ? "réf. " + c.ref : "", c.price_ht != null ? money(Number(c.price_ht)) + " HT" : "", c.category].filter(Boolean).join(" · ") })), btn));
     });
-    if (list.length >= limit) box.append(h("div", { class: "catmore" }, h("button", { class: "btn", type: "button", text: "Voir la suite", onclick: function () { catSearch(true); } })));
+    if (more != null ? more : list.length >= limit) box.append(h("div", { class: "catmore" }, h("button", { class: "btn", type: "button", text: "Voir la suite", onclick: function () { catSearch(true); } })));
+  }
+  function catStaticRows(words, sel, page, limit) {
+    if (!TOTAL.ok) return [];
+    var ks = {}, out = [], skip = page * limit; sel.forEach(function (n) { ks[supKey(n)] = 1; });
+    for (var i = 0; i < TOTAL.sorted.length && out.length < limit; i++) {
+      var e = TOTAL.sorted[i];
+      if (!ks[supKey(supGroup(e.supplier))]) continue;
+      if (words.length && !words.every(function (w) { return e.s.indexOf(w) !== -1; })) continue;
+      if (skip > 0) { skip--; continue; }
+      out.push({ id: "t:" + e.supplier + ":" + e.ref, supplier: e.supplier, ref: e.ref, name: e.name, price_ht: e.price_ht, ean: "", category: e.domain, unit: "" });
+    }
+    return out;
   }
   function catSearch(append) {
-    if (!catOk) return;
+    if (!catOk && !TOTAL.ok) return;
     var words = catWords($("catQ").value), sel = catSelected(), names = catNames(), box = $("catRes");
     if (!sel.length) { box.textContent = ""; box.append(h("div", { class: "meta", text: "Cochez au moins un fournisseur." })); return; }
     if (append !== true) catPage = 0;
-    var my = ++catSeq, limit = 50, page = catPage;
-    sb.rpc("catalogue_chercher", { p_words: words, p_suppliers: sel.length === names.length ? null : sel.reduce(function (acc, n) { return acc.concat(catVariants(n)); }, []), p_limit: limit, p_offset: page * limit }).then(function (res) {
+    var my = ++catSeq, limit = 50, page = catPage, sRows = catStaticRows(words, sel, page, limit);
+    var dbp = catOk ? sb.rpc("catalogue_chercher", { p_words: words, p_suppliers: sel.length === names.length ? null : sel.reduce(function (acc, n) { return acc.concat(catVariants(n)); }, []), p_limit: limit, p_offset: page * limit }) : Promise.resolve({ data: [] });
+    dbp.then(function (res) {
       if (my !== catSeq) return;
-      if (res.error) { if (append !== true) { box.textContent = ""; box.append(h("div", { class: "umsg bad", text: "La recherche a échoué. Réessayez." })); } return; }
+      if (res.error && !sRows.length) { if (append !== true) { box.textContent = ""; box.append(h("div", { class: "umsg bad", text: "La recherche a échoué. Réessayez." })); } return; }
+      var dbRows = (res.error ? [] : (res.data || [])), seenK = {};
+      sRows.forEach(function (r) { seenK[supKey(r.supplier) + "|" + norm(r.ref)] = 1; });
+      var rows = sRows.concat(dbRows.filter(function (r) { return !seenK[supKey(supGroup(r.supplier)) + "|" + norm(r.ref)]; }));
       catPage = page + 1;
-      drawCatRes(res.data || [], limit, append === true, !words.length, sel);
+      drawCatRes(rows, limit, append === true, !words.length, sel, sRows.length >= limit || dbRows.length >= limit);
     }, function () {});
   }
   function addCatalogueEntry(c, btn) {
@@ -9205,12 +9579,12 @@ body.salle-tablette .roomchips { display:flex; }
   function catOnShow() {
     catLoadedAt = Date.now();
     $("catOwner").classList.toggle("hidden", !ownerOk);
-    loadCatStats().then(function () {
-      if (!catOk) { $("catInfo").textContent = "Cette fonction n'est pas encore activée : lancez le script SQL « ajout-catalogues-fournisseurs » dans Supabase."; $("catSup").textContent = ""; $("catQ").classList.add("hidden"); $("catRes").textContent = ""; }
+    Promise.all([loadCatStats(), new Promise(function (res) { loadTotal(res); })]).then(function () {
+      if (!catOk && !TOTAL.ok) { $("catInfo").textContent = "Cette fonction n'est pas encore activée : lancez le script SQL « ajout-catalogues-fournisseurs » dans Supabase."; $("catSup").textContent = ""; $("catQ").classList.add("hidden"); $("catRes").textContent = ""; }
       else {
         $("catInfo").textContent = "Cochez les fournisseurs (un seul, plusieurs, ou tous), puis faites défiler la liste ou tapez un produit, une marque ou une référence.";
         $("catQ").classList.remove("hidden"); drawCatSup(); catSearch();
-        $("catOwner").open = !!(ownerOk && !Object.keys(catStats).length);
+        $("catOwner").open = !!(ownerOk && !Object.keys(catStats).length && !TOTAL.ok);
       }
     });
   }
