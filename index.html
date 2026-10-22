@@ -8000,7 +8000,10 @@ body.salle-tablette .roomchips { display:flex; }
         qrbox: function (w, h2) { return { width: Math.floor(w * 0.85), height: Math.floor(Math.min(h2, w) * 0.55) }; }
       }, onScan, function () {});
     }).catch(function () {
-      $("scanStatus").textContent = "La caméra n'a pas pu démarrer. Autorisez l'accès à la caméra dans votre navigateur, puis réessayez.";
+      var apple = /iPad|iPhone|Macintosh/.test(navigator.userAgent || "") && (navigator.maxTouchPoints || 0) > 1;
+      $("scanStatus").className = "sub scanbad";
+      $("scanStatus").textContent = !window.isSecureContext ? "La caméra ne fonctionne que sur une adresse sécurisée (https). Ouvrez l'appli par son adresse habituelle."
+        : "La caméra n'a pas pu démarrer. " + (apple ? "Sur iPad : Réglages, Safari, Caméra, choisissez « Autoriser », puis rouvrez l'appli. " : "Autorisez l'accès à la caméra dans votre navigateur, puis réessayez. ") + "Vous pouvez aussi utiliser « Photo du code-barres ».";
     });
   }
   function openScan(mode) {
