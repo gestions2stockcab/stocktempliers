@@ -922,6 +922,24 @@ body.salle-tablette .roomchips { display:flex; }
 .scanphotos { display:flex; gap:8px; flex-wrap:wrap; }
 .scanphotos .btn { flex:1 1 auto; }
 .item-name.big { font-size:20px; }
+
+/* ===== v94 : lecture des scans ===== */
+.ocrbar { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(20px + env(safe-area-inset-bottom, 0px)); z-index:60; background:var(--ink); color:#fff; padding:10px 18px; border-radius:999px; font-weight:600; font-size:15px; box-shadow:0 6px 24px rgba(0,0,0,.25); }
+.ocrbar.hidden { display:none; }
+
+/* ===== v95 : scanner accessible partout sur tablette ===== */
+.fab-scan, .sb-scan { display:none; }
+@media (min-width: 761px) {
+  html.is-touch .fab-scan { display:inline-flex; position:fixed; right:22px; bottom:calc(22px + env(safe-area-inset-bottom, 0px)); z-index:39; height:64px; padding:0 26px; border-radius:32px; background:var(--grad); color:var(--brand-ink); border:0; font:inherit; font-weight:700; font-size:18px; align-items:center; gap:10px; box-shadow:0 8px 24px rgba(20,40,120,.35); cursor:pointer; }
+  html.is-touch .fab-scan span:first-child { font-size:26px; line-height:1; }
+  html.is-touch .fab-scan:disabled { opacity:.5; }
+  html.is-touch .sb-scan { display:flex; align-items:center; gap:10px; width:100%; margin:2px 0 8px; min-height:56px; padding:12px 14px; border:0; border-radius:12px; background:var(--grad); color:var(--brand-ink); font:inherit; font-weight:700; font-size:16px; cursor:pointer; }
+  html.is-touch .sb-scan .ti { font-size:21px; width:28px; text-align:center; }
+}
+@media (min-width: 761px) and (max-width: 940px) {
+  html.is-touch .sb-scan { flex-direction:column; justify-content:center; gap:4px; text-align:center; padding:10px 2px; min-height:64px; font-size:10.5px; }
+  html.is-touch .sb-scan .ti { font-size:24px; width:auto; }
+}
 </style>
 </head>
 <body>
@@ -1006,7 +1024,7 @@ body.salle-tablette .roomchips { display:flex; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v93</div>
+            <div class="menu-who"><span id="who"></span> · v95</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1016,6 +1034,7 @@ body.salle-tablette .roomchips { display:flex; }
             <div class="menu-group" data-mtab="catalogue"><div class="menu-title">Catalogue et import</div>
               <button class="mi" id="catSupBtn">Catalogues fournisseurs</button>
               <button class="mi" id="importBtn">Importer un fichier</button>
+              <button class="mi" id="photoInvBtn">Photographier une facture</button>
               <button class="mi" id="tplBtn">Modèle Excel</button>
               <button class="mi" id="exportBtn">Exporter en CSV</button>
               <button class="mi" id="dupBtn">Doublons possibles</button>
@@ -1051,6 +1070,7 @@ body.salle-tablette .roomchips { display:flex; }
 
   <nav class="sidebar" id="sidebar" role="tablist" aria-orientation="vertical" aria-label="Sections de l'application">
     <div class="sb-head"><span class="sb-title">Menu</span><button class="sb-pin" id="sbPin" type="button" aria-pressed="false" title="Garder le menu toujours ouvert">📌</button></div>
+    <button type="button" class="sb-scan" id="sbScan"><span class="ti">📷</span><span class="tl">Scanner</span></button>
     <button class="tab" role="tab" data-tab="inventaire" aria-selected="true"><span class="ti">📦</span><span class="tl">Stock</span></button>
     <button class="tab" role="tab" data-tab="favoris" aria-selected="false"><span class="ti">⭐</span><span class="tl">Favoris</span></button>
     <button class="tab" role="tab" data-tab="catalogues" aria-selected="false"><span class="ti">📚</span><span class="tl">Catalogues</span></button>
@@ -1066,6 +1086,7 @@ body.salle-tablette .roomchips { display:flex; }
     <button class="tab tab-trash" role="tab" data-tab="corbeille" aria-selected="false" title="Articles supprimés"><span class="ti">🗑</span><span class="tl">Corbeille<span id="trashCount"></span></span></button>
   </nav>
   <div class="sb-backdrop" id="sbBackdrop"></div>
+  <button type="button" class="fab-scan" id="fabScan" aria-label="Scanner un code-barres"><span aria-hidden="true">📷</span><span>Scanner</span></button>
   <nav class="bottombar" id="bottombar" aria-label="Navigation rapide">
     <button type="button" data-go="inventaire"><span>📦</span><span>Stock</span></button>
     <button type="button" data-go="favoris"><span>⭐</span><span>Favoris</span></button>
@@ -1074,7 +1095,7 @@ body.salle-tablette .roomchips { display:flex; }
     <button type="button" id="bbMenu"><span>☰</span><span>Menu</span></button>
   </nav>
 
-  <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.txt,.pdf,application/pdf,text/csv,text/plain,text/comma-separated-values,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden">
+  <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.txt,.pdf,application/pdf,text/csv,text/plain,text/comma-separated-values,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*,.jpg,.jpeg,.png,.webp" class="hidden">
   <div id="banner"></div>
 
   <div class="bar" id="bar">
@@ -1253,6 +1274,9 @@ body.salle-tablette .roomchips { display:flex; }
     </details>
   </div>
 </div>
+
+<input type="file" id="importPhoto" accept="image/*" capture="environment" class="hidden" aria-label="Photo de la facture">
+<div id="ocrBar" class="ocrbar hidden" role="status"></div>
 
 <dialog id="tabDlg">
   <div class="dlg">
@@ -5992,7 +6016,7 @@ body.salle-tablette .roomchips { display:flex; }
     if (db && readOnly) bn.append(h("div", { class: "banner", text: "Accès en lecture seule : vous pouvez consulter le stock, mais pas le modifier." }));
     var box = $("content"); parkCatalogues(); box.textContent = "";
     $("addBtn").disabled = readOnly || !db;
-    $("scanBtn").disabled = !db;
+    $("scanBtn").disabled = !db; $("fabScan").disabled = !db; $("sbScan").disabled = !db;
     $("importBtn").disabled = readOnly || !db;
     $("importBar").disabled = readOnly || !db;
     var rsc0 = roomScope();
@@ -6783,7 +6807,7 @@ body.salle-tablette .roomchips { display:flex; }
   function splitDocuments(pages) {
     var docs = [], cur = null, skipping = false;
     pages.forEach(function (pg, pi) {
-      var num = docMeta(pg).number, report = pg.some(function (l) { return /^Rapport d.intervention/i.test(l); });
+      var num = docMeta(pg, true).number, report = pg.some(function (l) { return /^Rapport d.intervention/i.test(l); });
       if (num && (!cur || num !== cur.number)) { cur = { number: num, lines: pg.slice(), pages: 1, startPage: pi + 1 }; docs.push(cur); skipping = false; return; }
       if (report) { skipping = true; return; }
       if (cur && !skipping) { cur.lines = cur.lines.concat(pg); cur.pages++; }
@@ -6888,7 +6912,7 @@ body.salle-tablette .roomchips { display:flex; }
   }
   function guessSupplier(text) {
     if (/m[ée]ga ?dental/i.test(text || "")) return "Méga Dental";
-    var known = ["GACD", "Dental Price", "Septodont", "Henry Schein", "Dentsply", "Straumann", "Nobel Biocare", "Zimmer", "Biotech Dental", "Pierre Fabre", "Ivoclar", "Kerr"];
+    var known = ["Komet", "GACD", "Dental Price", "Septodont", "Henry Schein", "Dentsply", "Straumann", "Nobel Biocare", "Zimmer", "Biotech Dental", "Pierre Fabre", "Ivoclar", "Kerr"];
     for (var i = 0; i < known.length; i++) if (new RegExp(known[i], "i").test(text || "")) return known[i];
     var m = /^\s*(?:SAS|SARL|SASU|SA|EURL)\s+([A-Z0-9][A-Za-z0-9&'.-]*(?: [A-Z][A-Za-z0-9&'.-]*){0,2}?)(?=\s+\d|\s+[a-zé]|$)/.exec(text || "");
     return m ? m[1] : "";
@@ -6916,7 +6940,7 @@ body.salle-tablette .roomchips { display:flex; }
     if (/adhes|bonding|etch|silane|vivapen|primer|mordan/.test(n)) return "Colles et adhésifs";
     if (/ciment|cement|nx3|fuji|panavia|scellement/.test(n)) return "Scellement et ciments";
     if (/empreinte|putty|turboflex|dentotemp|provisoire|tenon|dentoclic/.test(n)) return "Prothèse et empreintes";
-    if (/fraise|diamant|diacut|arkansas|carbure|polissoir|tri hawk|hawk|disque|strip/.test(n)) return "Fraises et polissage";
+    if (/fraise|diamant|diacut|arkansas|carbure|polissoir|tri hawk|hawk|disque|strip|dia\.-|tungst|tung-|deep purple|procodile|black.{0,3}white|instr\.ceram/.test(n)) return "Fraises et polissage";
     if (/revelateur|fixateur/.test(n)) return "Radiologie";
     if (/autoclave|etiquette.*tracab|tracab.*etiquette|dental ac|dentalzym/.test(n)) return "Désinfection et hygiène";
     if (/aquafilter|cordon|pompe de vidange|tuyau|kit de ressorts|rfk|set-seringue|capuchon pour filtre|mentonnier|gr\.mot|piezo/.test(n)) return EQUIP;
@@ -6925,10 +6949,152 @@ body.salle-tablette .roomchips { display:flex; }
     if (/capteur|radio|gaine/.test(n)) return "Radiologie";
     return "Consommables";
   }
+  // ---------- scans et photos de factures : lecture du texte par reconnaissance de caractères (OCR) ----------
+  var OCR_BASE = "https://cdn.jsdelivr.net/npm/", ocrPromise = null;
+  function ocrStatus(t) { var b = $("ocrBar"); if (!t) { b.classList.add("hidden"); b.textContent = ""; return; } b.textContent = t; b.classList.remove("hidden"); }
+  function loadOcr() {
+    if (ocrPromise) return ocrPromise;
+    ocrPromise = new Promise(function (resolve, reject) {
+      var go = function () {
+        try {
+          window.Tesseract.createWorker("fra", 1, {
+            workerPath: OCR_BASE + "tesseract.js@5.1.1/dist/worker.min.js", corePath: OCR_BASE + "tesseract.js-core@5.1.1", langPath: OCR_BASE + "@tesseract.js-data/fra@1.0.0/4.0.0_best_int",
+            logger: function (m) { if (m && m.status === "recognizing text" && typeof m.progress === "number") ocrStatus((ocrStatus.pre || "Lecture du scan") + " : " + Math.round(m.progress * 100) + " %"); }
+          }).then(function (w) { return w.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1" }).then(function () { resolve(w); }); }).catch(reject);
+        } catch (e) { reject(e); }
+      };
+      if (window.Tesseract) { go(); return; }
+      var sc = document.createElement("script"); sc.src = OCR_BASE + "tesseract.js@5.1.1/dist/tesseract.min.js"; sc.onload = go; sc.onerror = function () { reject(new Error("chargement")); };
+      document.head.append(sc);
+    });
+    ocrPromise.catch(function () { ocrPromise = null; });
+    return ocrPromise;
+  }
+  function ocrLines(data) {
+    var ln = String((data && data.text) || "").split("\n").map(function (l) { return l.replace(/[|¦]/g, " ").replace(/\s+/g, " ").trim(); }).filter(Boolean);
+    window.__lastOcr = (window.__lastOcr || []).concat([ln]).slice(-6);
+    return ln;
+  }
+  function ocrFail(e) {
+    ocrStatus("");
+    toast(e && e.message === "chargement" ? "Le lecteur de scans n'a pas pu être chargé : vérifiez votre accès à internet." : "Ce scan n'a pas pu être lu : reprenez-le bien à plat, bien éclairé, ou utilisez un fichier Excel.");
+  }
+  // lit les pages d'un PDF scanné (une image par page)
+  function ocrPdf(pdf, file) {
+    var n = Math.min(pdf.numPages, 30), pages = [];
+    return loadOcr().then(function (worker) {
+      var p = Promise.resolve();
+      var step = function (i) {
+        p = p.then(function () {
+          ocrStatus.pre = "Lecture du scan, page " + i + "/" + n;
+          return pdf.getPage(i).then(function (pg) {
+            var v1 = pg.getViewport({ scale: 1 }), sc = Math.min(3.5, 1700 / v1.width), vp = pg.getViewport({ scale: sc }), cv = document.createElement("canvas");
+            cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+            return pg.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise.then(function () { return worker.recognize(cv); });
+          }).then(function (r) { pages.push(ocrLines(r.data)); });
+        });
+      };
+      for (var i = 1; i <= n; i++) step(i);
+      return p;
+    }).then(function () { ocrStatus(""); return pages; });
+  }
+  // réduit une photo (téléphone : 12 millions de pixels) avant de la lire
+  function shrinkImage(file, max) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        var k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); resolve(c);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("image")); };
+      img.src = url;
+    });
+  }
+  function importImage(file) {
+    toast("Lecture de la photo…"); ocrStatus("Chargement du lecteur de scans…");
+    Promise.all([loadOcr(), shrinkImage(file, 2400)]).then(function (a) {
+      ocrStatus.pre = "Lecture de la photo";
+      return a[0].recognize(a[1]);
+    }).then(function (r) {
+      ocrStatus("");
+      showPdfPreview(file.name, ocrLines(r.data), { file: file, page: 1 });
+    }).catch(function (e) { ocrFail(e && e.message === "image" ? new Error("image") : e); });
+  }
+  $("photoInvBtn").addEventListener("click", function () { $("moreMenu").classList.add("hidden"); $("importPhoto").click(); });
+  $("importPhoto").addEventListener("change", function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; if (f) importFileChosen(f); });
+
+  // ---------- factures Komet : Article | STE | Désignation | Qté | Prix U. | Remise | P.U. net | Montant HT ----------
+  function kNum(t) { return parseFloat(String(t).replace(/\s/g, "").replace(/\.(?=\d{3},)/g, "").replace(",", ".")); }
+  var K_AMT = /\d{1,3}(?:\.\d{3})*,\d{2}/g;
+  var RE_H = /^(?:\S{1,3}\s+)?([A-Z0-9]{2,12}(?:[.,][A-Z0-9]{3}){1,2})(?:\s+STE)?\s+(.+?)\s+(\d{1,4})\s+([\d.,]{3,9})\s+(?:([\d.,]{3,6})\s?%?\s+)?([\d.,]{3,9})\s+((?:\d{1,3}\.)?\d{1,3}[.,]\d{2})$/;
+  function isKomet(lines) {
+    var t = lines.slice(0, 80).join(" ");
+    return /komet/i.test(t) || (/P\.?\s?U\.?\s?net/i.test(t) && /Montant\s*HT/i.test(t) && /Qt[ée]/i.test(t) && /Prix\s*U/i.test(t));
+  }
+  function parseLinesH(lines) {
+    var out = [], skip = false, last = null;
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i];
+      if (/restent?\s+.{0,6}vous\s+livrer/i.test(l)) { skip = true; continue; }
+      if (/^Page\s*\d\s*\/\s*\d/i.test(l) || /Facture\s*N/i.test(l)) skip = false;
+      if (skip) continue;
+      var lot = /^(?:\S{1,2}\s+)?Lot\s*[-]?\s*N?[°o]?\s*(\d{4,10})\b/i.exec(l);
+      if (lot) { if (last && !last.lot) last.lot = lot[1]; continue; }
+      var m = RE_H.exec(l);
+      if (!m) continue;
+      var ref = m[1].replace(",", ".").toUpperCase(), qty = parseInt(m[3], 10), amount = kNum(m[7]), unitNet = kNum(m[6]);
+      if (!(qty > 0)) continue;
+      var price = amount > 0 ? Math.round(amount / qty * 100) / 100 : (unitNet < 1000 ? unitNet : 0);
+      var name = m[2].replace(/\s+/g, " ").replace(/"+/g, '"').trim();
+      var row = { ref: ref, name: name + " " + ref, qty: qty, price: price || 0 };
+      out.push(row); last = row;
+    }
+    var merged = [], seen = {};
+    out.forEach(function (r) { var k = r.ref; if (seen[k]) { var t = seen[k]; t.price = Math.round(((t.qty * t.price) + (r.qty * r.price)) / (t.qty + r.qty) * 100) / 100; t.qty += r.qty; return; } seen[k] = r; merged.push(r); });
+    merged._fmt = "H";
+    return merged;
+  }
+  function kometMeta(lines, base) {
+    var t = lines.join("\n"), m = /Facture\s*N\S{0,2}\s*[:;.,]?\s*(VK\s*\/\s*\d{6,10})/i.exec(t) || /\b(VK\s*\/\s*\d{8})\b/.exec(t);
+    if (!m) return null;
+    var out = { number: m[1].replace(/\s+/g, "").toUpperCase(), type: "facture", date: "", total: null, annul: [], refact: [], gross: null, remise: null, totNet: null };
+    var d = /\bDate\s*:\s*(\d{2})[\/.](\d{2})[\/.](\d{4})/.exec(t); if (d) out.date = d[3] + "-" + d[2] + "-" + d[1];
+    var pg = {}, n = 1, re = /Page\s*(\d)\s*\/\s*(\d)/gi, x;
+    while ((x = re.exec(t))) { pg[x[1]] = 1; n = Math.max(n, parseInt(x[2], 10)); }
+    var seen = Object.keys(pg).map(Number).sort();
+    // totaux : première ligne d'au moins trois montants sous « Total Quantités … Tot Net H.T. »
+    var tryTotals = function (l) {
+      var a = (l.match(K_AMT) || []).map(kNum), tri = null;
+      if (a.length < 3) return false;
+      for (var p1 = 0; p1 < a.length && !tri; p1++) for (var p2 = 0; p2 < a.length && !tri; p2++) for (var p3 = 0; p3 < a.length && !tri; p3++) if (p1 !== p2 && p2 !== p3 && p1 !== p3 && a[p3] > 0 && Math.abs(a[p1] - a[p2] - a[p3]) <= 0.05) tri = [a[p1], a[p2], a[p3]];
+      if (!tri) return false;
+      out.gross = tri[0]; out.remise = tri[1]; out.totNet = tri[2]; return true;
+    };
+    var at = -1; lines.forEach(function (l, i) { if (at < 0 && /Total\s*Quantit/i.test(l)) at = i; });
+    if (at >= 0) { for (var i = at; i < Math.min(lines.length, at + 5); i++) if (tryTotals(lines[i])) break; }
+    // l'en-tête n'a pas toujours été lu : on cherche alors la dernière ligne faite uniquement de chiffres avec trois montants (total, remise, net)
+    if (out.totNet == null) { for (var j = lines.length - 1; j >= 0; j--) if (/^[\d\s.,]+$/.test(lines[j]) && tryTotals(lines[j])) break; }
+    var carry = null, cm = /[àa]\s*reporter\s+((?:\d{1,3}\.)?\d{1,3},\d{2})/i.exec(t); if (cm) carry = kNum(cm[1]);
+    if (out.totNet != null) out.total = Math.round((out.totNet - (carry != null && seen.length && seen.length < n ? carry : 0)) * 100) / 100;
+    else if (carry != null) out.total = carry;
+    if (!base && n > 1 && seen.length < n) out.number += " p." + seen.join("+") + "/" + n;
+    return out;
+  }
+  // remise globale (code promo) : les lignes sont au prix brut, le total net est plus bas : on répartit la remise sur les prix
+  function kometAdjust(rows, dm) {
+    if (rows._fmt !== "H" || dm.gross == null || dm.totNet == null || !(dm.remise > 0.02) || !(dm.gross > 0)) return "";
+    var sum = r2(rows.reduce(function (a, r) { return a + r.qty * r.price; }, 0));
+    if (Math.abs(sum - dm.gross) > Math.max(0.5, dm.gross * 0.005)) return "";
+    var k = dm.totNet / dm.gross;
+    rows.forEach(function (r) { r.price = r2(r.price * k); });
+    return "Remise globale de " + Math.round((1 - k) * 100) + " % (code promo) : elle est répartie sur les lignes, les prix affichés sont les prix nets payés.";
+  }
   function importPdf(file) {
     if (!window.pdfjsLib) { toast("Impossible de lire un PDF : vérifiez votre accès à internet."); return; }
     toast("Lecture du PDF…");
-    var r = new FileReader();
+    var r = new FileReader(), tried = false;
     r.onload = function () {
       window.pdfjsLib.getDocument({ data: new Uint8Array(r.result) }).promise.then(function (pdf) {
         var all = [], pages = [], p = Promise.resolve();
@@ -6938,16 +7104,23 @@ body.salle-tablette .roomchips { display:flex; }
           });
         };
         for (var i = 1; i <= pdf.numPages; i++) step(i);
-        return p.then(function () { return { all: all, pages: pages }; });
+        return p.then(function () {
+          // un PDF sans écriture (ou presque, et sans aucune ligne d'article) est un scan
+          if (all.length > 0 && (all.length >= 12 || parseAny(all).length)) return { all: all, pages: pages };
+          // aucune écriture exploitable dans le fichier : c'est un scan, on le lit comme une image
+          tried = true; ocrStatus("Chargement du lecteur de scans…"); toast("Ce PDF est un scan : lecture par reconnaissance de caractères…");
+          return ocrPdf(pdf, file).then(function (opages) { return { all: [].concat.apply([], opages), pages: opages, ocr: true }; });
+        });
       }).then(function (res) {
         var docs = splitDocuments(res.pages);
         if (docs.length > 1) showMultiDocs(file.name, docs, file); else showPdfPreview(file.name, res.all, { file: file, page: 1 });
       })
-        .catch(function () { toast("Ce PDF n'a pas pu être lu."); });
+        .catch(function (e) { if (tried) { ocrFail(e); return; } toast("Ce PDF n'a pas pu être lu."); });
     };
     r.readAsArrayBuffer(file);
   }
-  function docMeta(lines) {
+  function docMeta(lines, base) {
+    if (isKomet(lines)) { var km = kometMeta(lines, base); if (km) return km; }
     var t = lines.slice(0, 160).join(" ");
     var out = { number: "", type: "", date: "", total: null, annul: [], refact: [] };
     var m = /\b(Ma facture|Mon avoir|Facture|Avoir)\s+(?:n[°o]\s*)?(\d{6,12})\s+du\s+(\d{2})[./](\d{2})[./](\d{4})/i.exec(t);
@@ -7046,8 +7219,8 @@ body.salle-tablette .roomchips { display:flex; }
     else {
       try {
         var safe = String(file.name || "facture.pdf").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9._-]+/g, "_"), path = cabinetId + "/factures/" + Date.now() + "-" + safe;
-        p = sb.storage.from("docs").upload(path, file, { contentType: "application/pdf", upsert: false }).then(function (up) {
-          if (up && up.error) { toast("Le PDF n'a pas pu être gardé (la facture est quand même enregistrée)."); return ""; }
+        p = sb.storage.from("docs").upload(path, file, { contentType: file.type || "application/pdf", upsert: false }).then(function (up) {
+          if (up && up.error) { toast("Le fichier n'a pas pu être gardé (la facture est quand même enregistrée)."); return ""; }
           return path;
         }).catch(function () { return ""; });
       } catch (e) { p = Promise.resolve(""); }
@@ -7308,7 +7481,8 @@ body.salle-tablette .roomchips { display:flex; }
     return { sum: sum, total: dm.total, diff: diff, ok: Math.abs(diff) <= Math.max(1, dm.total * 0.01) };
   }
   function parseAny(lines) {
-    var rows = parseDocLines(lines);
+    var rows = isKomet(lines) ? parseLinesH(lines) : [];
+    if (!rows.length) rows = parseDocLines(lines);
     if (!rows.length) rows = parseLinesB(lines);
     if (!rows.length) rows = parseLinesD(lines);
     if (!rows.length) rows = parseLinesF(lines);
@@ -7319,12 +7493,15 @@ body.salle-tablette .roomchips { display:flex; }
   function showPdfPreview(fileName, lines, fileCtx) {
     var rows = parseAny(lines);
     if (!rows.length) {
-      toast("Aucune ligne d'article reconnue : mise en page non prise en charge, ou PDF scanné. Utilisez plutôt un fichier Excel.");
+      var allText = lines.join(" ");
+      toast(/Conditions g[ée]n[ée]rales de vente/i.test(allText) ? "Ce document contient les conditions générales de vente : il n'y a rien à importer."
+        : (isKomet(lines) && /Total\s*Quantit|[àa]\s*reporter|Tot\s*Net/i.test(allText)) ? "Cette page ne contient que les totaux de la facture (aucun article) : rien à importer. Importez la page qui porte les articles."
+        : "Aucune ligne d'article reconnue : mise en page non prise en charge. Utilisez plutôt un fichier Excel.");
       return;
     }
     var head = lines.slice(0, 80).join(" ");
     var isCredit = /\bavoir\b/i.test(lines.slice(0, 60).join(" "));
-    var dm = docMeta(lines), warns = [], seenBefore = false;
+    var dm = docMeta(lines), warns = [], seenBefore = false, kNote = kometAdjust(rows, dm);
     var already = dm.number && jrnByNumber[dm.number];
     if (already) { seenBefore = true; warns.push("Cette " + (dm.type === "avoir" ? "avoir" : "facture") + " (n° " + dm.number + ") a déjà été importée le " + frDate(already.created_at) + (already.user_email ? " par " + already.user_email.split("@")[0] : "") + ". Les lignes sont décochées pour éviter une double entrée de stock."); }
     dm.refact.forEach(function (n) { var j = jrnByNumber[n]; if (j) { seenBefore = true; warns.push("Cette facture remplace la n° " + n + ", déjà importée le " + frDate(j.created_at) + ". Les mêmes produits seraient ajoutés une deuxième fois : importez-la seulement si la précédente n'avait pas été importée."); } });
@@ -7342,6 +7519,7 @@ body.salle-tablette .roomchips { display:flex; }
     info.textContent = ""; box.textContent = "";
     info.append(h("div", { class: "sub", text: rows.length + " ligne" + (rows.length > 1 ? "s" : "") + " reconnue" + (rows.length > 1 ? "s" : "") + " dans « " + fileName + " ». Vérifiez et corrigez si besoin. Les articles déjà présents reçoivent une entrée de stock, les autres sont créés." }));
     warns.forEach(function (t) { info.append(h("div", { class: "banner bad", text: t })); });
+    if (kNote) info.append(h("div", { class: "banner", text: kNote }));
     if (rows.some(function (r) { return r.service; })) info.append(h("div", { class: "banner", text: "Les lignes de service (déplacement, main d'œuvre, livraison) sont décochées : ce n'est pas du stock. Elles restent comptées dans la dépense de la facture." }));
     if (rows._fmt === "E") info.append(h("div", { class: "banner bad", text: "Format de facture inconnu : les lignes ont été devinées à partir des nombres (quantité × prix = montant). Elles sont décochées : vérifiez chaque ligne, cochez celles qui sont justes, puis importez. Si cette facture revient souvent, transmettez-la à la personne qui gère l'outil pour qu'elle soit lue automatiquement." }));
     var chk = totalCheck(rows, dm);
@@ -8004,8 +8182,10 @@ body.salle-tablette .roomchips { display:flex; }
     var isPdf = /\.pdf$/i.test(name) || type === "application/pdf";
     var isCsv = /\.(csv|txt)$/i.test(name) || /^text\//.test(type) || /csv/.test(type);
     var isXls = !isCsv && (/\.xlsx?$/i.test(name) || /spreadsheetml|ms-excel/.test(type));
+    var isImg = /^image\//.test(type) || /\.(jpe?g|png|webp|heic|heif|tiff?)$/i.test(name);
     if (isPdf) { importPdf(f); return; }
-    if (!isCsv && !isXls) { toast("Ce type de fichier n'est pas pris en charge : choisissez un PDF (facture), un fichier Excel (.xlsx) ou un fichier CSV."); return; }
+    if (isImg) { importImage(f); return; }
+    if (!isCsv && !isXls) { toast("Ce type de fichier n'est pas pris en charge : choisissez un PDF ou une photo de facture, un fichier Excel (.xlsx) ou un fichier CSV."); return; }
     var r = new FileReader();
     r.onerror = function () { toast("Le fichier n'a pas pu être lu. Sur téléphone, téléchargez-le d'abord sur l'appareil, puis réessayez."); };
     if (isXls) {
@@ -9343,6 +9523,8 @@ body.salle-tablette .roomchips { display:flex; }
     });
   });
   $("bbScan").addEventListener("click", function () { $("scanBtn").click(); });
+  $("fabScan").addEventListener("click", function () { $("scanBtn").click(); });
+  $("sbScan").addEventListener("click", function () { $("scanBtn").click(); });
   $("bbMenu").addEventListener("click", function () { $("menuBtn").click(); });
   document.addEventListener("keydown", function (e) {
     if (!db || $("app").classList.contains("hidden")) return;
