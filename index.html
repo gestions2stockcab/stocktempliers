@@ -1098,7 +1098,7 @@ body.salle-tablette .roomchips { display:flex; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v100</div>
+            <div class="menu-who"><span id="who"></span> · v101</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -5540,11 +5540,16 @@ body.salle-tablette .roomchips { display:flex; }
     if (TOTAL.loading) return;
     if (typeof fetch !== "function") { TOTAL.failed = true; fin(); return; }
     TOTAL.loading = true;
-    var absUrl = function (f) { try { return new URL("catalogues/" + f, location.href).href; } catch (e) { return "catalogues/" + f; } };
+    var absUrl = function (f) { try { return new URL(f, location.href).href; } catch (e) { return f; } };
     var getJson = function (f) { return fetch(absUrl(f), { cache: "no-cache" }).then(function (r) { if (!r.ok) { var er = new Error("http"); er.file = f; er.status = r.status; throw er; } return r.json().catch(function () { var er = new Error("json"); er.file = f; throw er; }); }); };
-    getJson("index.json").then(function (idx) {
+    // le catalogue peut être dans le dossier « catalogues » ou, plus simple à envoyer, à plat à côté de index.html (catalogue-index.json, catalogue-gacd-2026.json…)
+    var mode = "dir", fileOf = function (f) { return mode === "dir" ? "catalogues/" + f : "catalogue-" + f; };
+    getJson("catalogues/index.json").catch(function (e) {
+      if (e.status !== 404) throw e;
+      return getJson("catalogue-index.json").then(function (j) { mode = "flat"; return j; }, function () { e.also = "catalogue-index.json"; throw e; });
+    }).then(function (idx) {
       var cats = (idx && idx.catalogues) || [];
-      return Promise.all(cats.map(function (c) { return getJson(c.file).then(function (j) { return { c: c, j: j }; }); }));
+      return Promise.all(cats.map(function (c) { return getJson(fileOf(c.file)).then(function (j) { return { c: c, j: j }; }); }));
     }).then(function (all) {
       var entries = [], by = {}, cats = [];
       all.forEach(function (x) {
@@ -5561,7 +5566,7 @@ body.salle-tablette .roomchips { display:flex; }
       fin(); render();
     }).catch(function (e) {
       TOTAL.loading = false; TOTAL.failed = true;
-      TOTAL.why = e && e.file ? (e.status ? "Fichier introuvable (erreur " + e.status + ") : " + absUrl(e.file) : "Fichier illisible : " + absUrl(e.file)) : "Connexion impossible.";
+      TOTAL.why = e && e.file ? (e.status ? "Fichier introuvable (erreur " + e.status + ") : " + absUrl(e.file) + (e.also ? " et " + absUrl(e.also) : "") : "Fichier illisible : " + absUrl(e.file)) : "Connexion impossible.";
       fin(); if (!state.hideTotal) { toast("Le catalogue total n'a pas pu être chargé. " + TOTAL.why); render(); }
     });
   }
@@ -5579,7 +5584,7 @@ body.salle-tablette .roomchips { display:flex; }
     if (state.hideTotal || roomScope() || state.filter !== "all" || filtersActive()) return null;
     if (!TOTAL.ok) {
       if (!TOTAL.loading && !TOTAL.failed) loadTotal();
-      return h("div", { class: "dnote", text: TOTAL.failed ? "Le catalogue total n'a pas pu être chargé. " + TOTAL.why + " — le dossier « catalogues » (index.json, gacd-2026.json, megadental-2026.json) doit être sur le site, à côté de index.html." : "Chargement du catalogue total…" });
+      return h("div", { class: "dnote", text: TOTAL.failed ? "Le catalogue total n'a pas pu être chargé. " + TOTAL.why + " — les fichiers du catalogue (catalogue-index.json, catalogue-gacd-2026.json, catalogue-megadental-2026.json) doivent être sur le site, à côté de index.html." : "Chargement du catalogue total…" });
     }
     var tsig = [state.cat, state.q, JSON.stringify(state.totalSup)].join("|");
     if (tsig !== state.totalSig) { state.totalSig = tsig; state.totalLimit = 60; }

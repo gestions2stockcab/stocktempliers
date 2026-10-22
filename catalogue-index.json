@@ -1,0 +1,20 @@
+{
+  "catalogues": [
+    {
+      "supplier": "GACD",
+      "label": "GACD 2026",
+      "file": "gacd-2026.json",
+      "count": 8466,
+      "updated": "2026-10-22",
+      "note": "Prix HT du catalogue"
+    },
+    {
+      "supplier": "Méga Dental",
+      "label": "Méga Dental 2026",
+      "file": "megadental-2026.json",
+      "count": 15905,
+      "updated": "2026-10-22",
+      "note": "Prix du catalogue (TTC) convertis en HT"
+    }
+  ]
+}
