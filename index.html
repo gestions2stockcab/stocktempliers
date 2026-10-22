@@ -1014,6 +1014,35 @@ body.salle-tablette .roomchips { display:flex; }
 .updbar.bad { border-color:var(--bad, #d93025); }
 .updbar.warn { border-color:var(--warn, #b26a00); }
 .updbar span { flex:1 1 220px; }
+
+/* ===== v102 : deux outils (Gestion de stock, Communication interne) et menu en groupes ===== */
+.mod-off { display:none !important; }
+.sidebar { overflow-y:auto; }
+.sb-group { display:flex; flex-direction:column; gap:2px; margin-top:10px; }
+.sb-group.sb-empty { display:none; }
+.sb-group.sb-bottom { margin-top:auto; padding-top:8px; border-top:1px solid var(--line); }
+.sb-label { padding:2px 12px 4px; font-size:11.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); opacity:.85; }
+.tab-trash { margin-top:0; }
+.modsw { display:inline-flex; gap:3px; padding:3px; border-radius:12px; background:var(--surface-2); border:1px solid var(--line); }
+.modbtn { border:0; background:transparent; color:var(--muted); font:inherit; font-weight:700; font-size:14px; padding:6px 12px; border-radius:9px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+.modbtn[aria-selected="true"] { background:var(--brand); color:var(--brand-ink); }
+html.mod-equipe .sb-title { color:var(--brand); }
+.taskbox { margin-bottom:14px; }
+.taskrow { display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border-top:1px solid var(--line); }
+.taskrow input[type=checkbox] { margin-top:4px; width:20px; height:20px; flex:none; }
+.taskrow .trow-main { flex:1; min-width:0; }
+@media (min-width: 761px) and (max-width: 940px) {
+  html.is-touch .sb-label { font-size:0; padding:0; border-top:1px solid var(--line); margin:4px 8px; height:1px; }
+}
+@media (max-width: 760px) { .modbtn { padding:6px 10px; font-size:13px; } }
+
+/* tablette en paysage : le menu doit tenir à l'écran */
+@media (min-width: 761px) and (max-height: 860px) {
+  html.is-touch .tab { min-height:42px; padding-top:7px; padding-bottom:7px; font-size:15.5px; }
+  html.is-touch .sb-scan { min-height:46px; margin-bottom:2px; }
+  html.is-touch .sb-group { margin-top:6px; }
+  html.is-touch .sb-label { padding-bottom:2px; }
+}
 </style>
 </head>
 <body>
@@ -1082,6 +1111,10 @@ body.salle-tablette .roomchips { display:flex; }
     <div class="title-row">
       <div class="title-left"><button class="btn sm" id="menuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="sidebar" title="Menu">☰</button><h1 id="appTitle">SimSimStock</h1></div>
       <div class="who-row">
+        <div class="modsw" id="modSwitch" role="tablist" aria-label="Choisir l'outil">
+          <button type="button" class="modbtn" role="tab" data-module="stock" aria-selected="true" title="Gestion de stock">📦 Stock</button>
+          <button type="button" class="modbtn" role="tab" data-module="equipe" aria-selected="false" title="Communication interne">💬 Équipe <span class="msgbadge hidden" id="modBadge" aria-label="messages non lus"></span></button>
+        </div>
         <button class="btn sm" id="kBtn" type="button" title="Rechercher partout (Ctrl + K)" aria-label="Rechercher partout">⌘K</button>
         <button class="btn sm" id="helpBtn" type="button" title="Aide et raccourcis" aria-label="Aide">?</button>
         <button class="btn sm hidden" id="undoBtn" type="button">↶ Annuler</button>
@@ -1098,7 +1131,7 @@ body.salle-tablette .roomchips { display:flex; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v101</div>
+            <div class="menu-who"><span id="who"></span> · v102</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1144,30 +1177,46 @@ body.salle-tablette .roomchips { display:flex; }
   </div>
 
   <nav class="sidebar" id="sidebar" role="tablist" aria-orientation="vertical" aria-label="Sections de l'application">
-    <div class="sb-head"><span class="sb-title">Menu</span><button class="sb-pin" id="sbPin" type="button" aria-pressed="false" title="Garder le menu toujours ouvert">📌</button></div>
-    <button type="button" class="sb-scan" id="sbScan"><span class="ti">📷</span><span class="tl">Scanner</span></button>
-    <button class="tab" role="tab" data-tab="inventaire" aria-selected="true"><span class="ti">📦</span><span class="tl">Stock</span></button>
-    <button class="tab" role="tab" data-tab="favoris" aria-selected="false"><span class="ti">⭐</span><span class="tl">Favoris</span></button>
-    <button class="tab" role="tab" data-tab="messages" aria-selected="false"><span class="ti">💬</span><span class="tl">Messages <span class="msgbadge hidden" id="msgBadge" aria-label="messages non lus"></span></span></button>
-    <button class="tab" role="tab" data-tab="catalogues" aria-selected="false"><span class="ti">📚</span><span class="tl">Catalogues</span></button>
-    <button class="tab" role="tab" data-tab="commande" aria-selected="false"><span class="ti">🛒</span><span class="tl">À commander</span></button>
-    <button class="tab" role="tab" data-tab="comptage" aria-selected="false"><span class="ti">🔢</span><span class="tl">Comptage</span></button>
-    <button class="tab" role="tab" data-tab="salles" aria-selected="false"><span class="ti">🏠</span><span class="tl">Salles</span></button>
-    <button class="tab" role="tab" data-tab="controles" aria-selected="false"><span class="ti">✅</span><span class="tl">Contrôles<span id="ctlBadge"></span></span></button>
-    <button class="tab" role="tab" data-tab="equipements" aria-selected="false"><span class="ti">🔧</span><span class="tl">Équipements</span></button>
-    <button class="tab" role="tab" data-tab="historique" aria-selected="false"><span class="ti">🕘</span><span class="tl">Historique</span></button>
-    <button class="tab" role="tab" data-tab="donnees" aria-selected="false"><span class="ti">📊</span><span class="tl">Données</span></button>
-    <button class="tab hidden" role="tab" data-tab="utilisateurs" aria-selected="false"><span class="ti">👥</span><span class="tl">Utilisateurs</span></button>
-    <button class="tab hidden" role="tab" data-tab="administration" aria-selected="false"><span class="ti">🛠</span><span class="tl">Administration</span></button>
-    <button class="tab tab-trash" role="tab" data-tab="corbeille" aria-selected="false" title="Articles supprimés"><span class="ti">🗑</span><span class="tl">Corbeille<span id="trashCount"></span></span></button>
+    <div class="sb-head"><span class="sb-title" id="sbTitle">Gestion de stock</span><button class="sb-pin" id="sbPin" type="button" aria-pressed="false" title="Garder le menu toujours ouvert">📌</button></div>
+    <button type="button" class="sb-scan" id="sbScan" data-mod="stock"><span class="ti">📷</span><span class="tl">Scanner</span></button>
+    <div class="sb-group" data-mod="stock"><div class="sb-label">Au quotidien</div>
+      <button class="tab" role="tab" data-tab="inventaire" data-mod="stock" aria-selected="true"><span class="ti">📦</span><span class="tl">Stock</span></button>
+      <button class="tab" role="tab" data-tab="favoris" data-mod="stock" aria-selected="false"><span class="ti">⭐</span><span class="tl">Favoris</span></button>
+      <button class="tab" role="tab" data-tab="commande" data-mod="stock" aria-selected="false"><span class="ti">🛒</span><span class="tl">À commander</span></button>
+      <button class="tab" role="tab" data-tab="comptage" data-mod="stock" aria-selected="false"><span class="ti">🔢</span><span class="tl">Comptage</span></button>
+    </div>
+    <div class="sb-group" data-mod="stock"><div class="sb-label">Salles et matériel</div>
+      <button class="tab" role="tab" data-tab="salles" data-mod="stock" aria-selected="false"><span class="ti">🏠</span><span class="tl">Salles</span></button>
+      <button class="tab" role="tab" data-tab="controles" data-mod="stock" aria-selected="false"><span class="ti">✅</span><span class="tl">Contrôles<span id="ctlBadge"></span></span></button>
+      <button class="tab" role="tab" data-tab="equipements" data-mod="stock" aria-selected="false"><span class="ti">🔧</span><span class="tl">Équipements</span></button>
+    </div>
+    <div class="sb-group" data-mod="stock"><div class="sb-label">Achats et suivi</div>
+      <button class="tab" role="tab" data-tab="catalogues" data-mod="stock" aria-selected="false"><span class="ti">📚</span><span class="tl">Catalogues</span></button>
+      <button class="tab" role="tab" data-tab="historique" data-mod="stock" aria-selected="false"><span class="ti">🕘</span><span class="tl">Historique</span></button>
+      <button class="tab" role="tab" data-tab="donnees" data-mod="stock" aria-selected="false"><span class="ti">📊</span><span class="tl">Données</span></button>
+    </div>
+    <div class="sb-group" data-mod="equipe"><div class="sb-label">Communication</div>
+      <button class="tab" role="tab" data-tab="messages" data-mod="equipe" aria-selected="false"><span class="ti">💬</span><span class="tl">Messages <span class="msgbadge hidden" id="msgBadge" aria-label="messages non lus"></span></span></button>
+      <button class="tab" role="tab" data-tab="taches" data-mod="equipe" aria-selected="false"><span class="ti">☑</span><span class="tl">Tâches <span class="msgbadge hidden" id="taskBadge" aria-label="tâches à faire"></span></span></button>
+    </div>
+    <div class="sb-group" data-mod="equipe"><div class="sb-label">Personnes</div>
+      <button class="tab hidden" role="tab" data-tab="utilisateurs" data-mod="equipe" aria-selected="false"><span class="ti">👥</span><span class="tl">Utilisateurs</span></button>
+    </div>
+    <div class="sb-group sb-bottom">
+      <button class="tab hidden" role="tab" data-tab="administration" data-mod="all" aria-selected="false"><span class="ti">🛠</span><span class="tl">Administration</span></button>
+      <button class="tab tab-trash" role="tab" data-tab="corbeille" data-mod="stock" aria-selected="false" title="Articles supprimés"><span class="ti">🗑</span><span class="tl">Corbeille<span id="trashCount"></span></span></button>
+    </div>
   </nav>
   <div class="sb-backdrop" id="sbBackdrop"></div>
-  <button type="button" class="fab-scan" id="fabScan" aria-label="Scanner un code-barres"><span aria-hidden="true">📷</span><span>Scanner</span></button>
+  <button type="button" class="fab-scan" id="fabScan" data-mod="stock" aria-label="Scanner un code-barres"><span aria-hidden="true">📷</span><span>Scanner</span></button>
   <nav class="bottombar" id="bottombar" aria-label="Navigation rapide">
-    <button type="button" data-go="inventaire"><span>📦</span><span>Stock</span></button>
-    <button type="button" data-go="favoris"><span>⭐</span><span>Favoris</span></button>
-    <button type="button" class="bb-scan" id="bbScan"><span>📷</span><span>Scanner</span></button>
-    <button type="button" data-go="commande"><span>🛒</span><span>À commander</span></button>
+    <button type="button" data-go="inventaire" data-mod="stock"><span>📦</span><span>Stock</span></button>
+    <button type="button" data-go="favoris" data-mod="stock"><span>⭐</span><span>Favoris</span></button>
+    <button type="button" class="bb-scan" id="bbScan" data-mod="stock"><span>📷</span><span>Scanner</span></button>
+    <button type="button" data-go="commande" data-mod="stock"><span>🛒</span><span>À commander</span></button>
+    <button type="button" data-go="messages" data-mod="equipe"><span>💬</span><span>Messages</span></button>
+    <button type="button" data-go="taches" data-mod="equipe"><span>☑</span><span>Tâches</span></button>
+    <button type="button" data-module="stock" data-mod="equipe"><span>📦</span><span>Stock</span></button>
     <button type="button" id="bbMenu"><span>☰</span><span>Menu</span></button>
   </nav>
 
@@ -1971,7 +2020,7 @@ body.salle-tablette .roomchips { display:flex; }
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false, ownerOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
-  var state = { tab: "inventaire", filter: "all", q: "", cat: "", msgThread: "equipe", msgView: "list", msgAttach: null, msgTask: false, msgRename: null, msgRenameVal: "", hideCat: false, hideTotal: true, totalSup: {}, totalLimit: 60, totalSig: "", collapsed: {}, tileSort: "usuel", limit: 60, limitSig: "", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
+  var state = { tab: "inventaire", filter: "all", q: "", cat: "", module: "stock", msgThread: "equipe", msgView: "list", msgAttach: null, msgTask: false, msgRename: null, msgRenameVal: "", hideCat: false, hideTotal: true, totalSup: {}, totalLimit: 60, totalSig: "", collapsed: {}, tileSort: "usuel", limit: 60, limitSig: "", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
   var chain = Promise.resolve();
 
@@ -2877,7 +2926,7 @@ body.salle-tablette .roomchips { display:flex; }
     if (!urlSalle || urlRoomDone) return;
     var k = norm(urlSalle).replace(/[^a-z0-9]/g, ""), r = rooms.filter(function (x) { return x.id === urlSalle || norm(x.name).replace(/[^a-z0-9]/g, "") === k; })[0];
     if (!r) return;
-    urlRoomDone = true; state.tab = "inventaire"; state.view = r.id; state.cat = ""; syncTabs(); keepAwake();
+    urlRoomDone = true; applyModule("stock"); state.tab = "inventaire"; state.view = r.id; state.cat = ""; syncTabs(); keepAwake();
     document.body.classList.add("salle-tablette");
   }
   function roomLink(room) { return location.origin + location.pathname + "?cabinet=" + encodeURIComponent(cabinetId) + "&salle=" + encodeURIComponent(room.name); }
@@ -3314,7 +3363,7 @@ body.salle-tablette .roomchips { display:flex; }
   }
   // ---------- recherche universelle (Ctrl/Cmd + K) ----------
   var kSel = 0, kRes = [];
-  function goTab(t) { var b = document.querySelector('.tab[data-tab="' + t + '"]'); if (b) b.click(); }
+  function goTab(t) { var b = document.querySelector('.tab[data-tab="' + t + '"]'); if (b) b.click(); }   // le clic passe seul dans l'outil qui contient cet onglet
   function kActions() {
     var a = [
       ["Stock", "section", function () { goTab("inventaire"); }], ["Favoris", "section", function () { goTab("favoris"); }], ["Messages de l'équipe", "section", function () { goTab("messages"); }], ["Catalogues fournisseurs", "section", function () { goTab("catalogues"); }],
@@ -5648,6 +5697,7 @@ body.salle-tablette .roomchips { display:flex; }
   function updateMsgBadge() {
     var n = 0; if (msgOk) msgThreads().forEach(function (t) { n += msgUnread(t); });
     var b = $("msgBadge"); b.textContent = n > 99 ? "99+" : String(n); b.classList.toggle("hidden", !n);
+    var mb = $("modBadge"); mb.textContent = n > 99 ? "99+" : String(n); mb.classList.toggle("hidden", !n); updateTaskBadge();
     $("bbMenu").classList.toggle("has-unread", n > 0);
     document.title = (n ? "(" + n + ") " : "") + "SimSimStock";
   }
@@ -5719,7 +5769,7 @@ body.salle-tablette .roomchips { display:flex; }
       else toast("💬 " + personLabel(m.author_id, m.author_email) + (t === "equipe" ? " (équipe)" : "") + " : " + String(m.body).replace(/\s+/g, " ").slice(0, 70));
     }
     updateMsgBadge();
-    if (state.tab === "messages") render();
+    if (state.tab === "messages" || state.tab === "taches") render();
   }
   function sendMessage() {
     if (!msgEls) return;
@@ -5739,7 +5789,7 @@ body.salle-tablette .roomchips { display:flex; }
   function msgToggleDone(m, on) {
     sb.rpc("message_marquer_fait", { p_id: m.id, p_fait: on }).then(function (res) {
       if (res.error) { toast("La tâche n'a pas pu être mise à jour."); render(); return; }
-      m.done_at = on ? new Date().toISOString() : null; m.done_by = on ? myEmail : ""; render();
+      m.done_at = on ? new Date().toISOString() : null; m.done_by = on ? myEmail : ""; updateMsgBadge(); render();
     }, function () { toast("Connexion impossible."); render(); });
   }
   var msgDelAsk = "";
@@ -6457,6 +6507,7 @@ body.salle-tablette .roomchips { display:flex; }
     else if (state.tab === "corbeille") renderTrash(box);
     else if (state.tab === "favoris") renderFavorites(box);
     else if (state.tab === "messages") renderMessages(box);
+    else if (state.tab === "taches") renderTasks(box);
     else if (state.tab === "catalogues") renderCatalogues(box);
     else if (state.tab === "commande") renderOrder(box);
     else if (state.tab === "comptage") renderCount(box);
@@ -6466,10 +6517,70 @@ body.salle-tablette .roomchips { display:flex; }
     else if (state.tab === "equipements") renderEquip(box);
     else renderHistory(box);
   }
+  // ---------- deux outils dans une même appli : Gestion de stock et Communication interne ----------
+  var MODS = { stock: { title: "Gestion de stock", tab: "inventaire" }, equipe: { title: "Communication interne", tab: "messages" } }, lastTabs = {};
+  function tabModule(t) { var b = document.querySelector('.tab[data-tab="' + t + '"]'), m = b && b.getAttribute("data-mod"); return m === "equipe" ? "equipe" : m === "all" ? "all" : "stock"; }
+  function refreshSbGroups() {
+    Array.prototype.forEach.call(document.querySelectorAll("#sidebar .sb-group"), function (g) {
+      var has = !!g.querySelector(".tab:not(.hidden)"); g.classList.toggle("sb-empty", !has);
+    });
+  }
+  function applyModule(m) {
+    if (m !== "stock" && m !== "equipe") m = "stock";
+    state.module = m;
+    try { localStorage.setItem("simsim_module", m); } catch (e) {}
+    document.documentElement.classList.toggle("mod-equipe", m === "equipe");
+    Array.prototype.forEach.call(document.querySelectorAll("[data-mod]"), function (e) { var dm = e.getAttribute("data-mod"); e.classList.toggle("mod-off", dm !== "all" && dm !== m); });
+    Array.prototype.forEach.call(document.querySelectorAll("#modSwitch .modbtn"), function (b) { b.setAttribute("aria-selected", b.getAttribute("data-module") === m ? "true" : "false"); });
+    $("sbTitle").textContent = MODS[m].title;
+    refreshSbGroups();
+  }
+  function setModule(m) {
+    if (m === state.module) return;
+    var from = tabModule(state.tab); if (from === state.module) lastTabs[state.module] = state.tab;
+    applyModule(m);
+    goTab(lastTabs[m] || MODS[m].tab);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-module]"), function (b) { b.addEventListener("click", function () { setModule(b.getAttribute("data-module")); setSidebarOpen(false); }); });
+  // tâches : ce qui m'attend, ce que j'ai demandé, ce qui est fait
+  function taskLists() {
+    var tk = msgs.filter(function (m) { return m.kind === "tache"; }), me = sessionUser;
+    return {
+      todo: tk.filter(function (m) { return !m.done_at && m.author_id !== me; }),
+      sent: tk.filter(function (m) { return !m.done_at && m.author_id === me; }),
+      done: tk.filter(function (m) { return !!m.done_at; }).sort(function (a, b) { return a.done_at < b.done_at ? 1 : -1; }).slice(0, 15)
+    };
+  }
+  function updateTaskBadge() {
+    var n = msgOk ? taskLists().todo.length : 0, b = $("taskBadge"); b.textContent = String(n); b.classList.toggle("hidden", !n);
+  }
+  function renderTasks(box) {
+    if (!msgOk) { box.append(h("div", { class: "dnote", text: "Les tâches utilisent la messagerie : lancez le script SQL « ajout-messages » dans Supabase (voir le guide)." })); return; }
+    var L = taskLists();
+    var section = function (title, list, hint, mineToTick) {
+      var wrap = h("div", { class: "table taskbox" }, h("div", { class: "totalhead" }, h("strong", { text: title }), h("span", { class: "meta", text: list.length ? String(list.length) : hint })));
+      list.forEach(function (m) {
+        var cb = h("input", { type: "checkbox", checked: !!m.done_at, disabled: readOnly, "aria-label": "Tâche faite" });
+        cb.addEventListener("change", function () { msgToggleDone(m, cb.checked); });
+        var who = m.author_id === sessionUser ? (m.to_user_id ? "Pour " + msgThreadTitle(m.to_user_id) : "Pour l'équipe") : "De " + personLabel(m.author_id, m.author_email) + (m.to_user_id ? "" : " (équipe)");
+        var it = m.item_id ? items.get(m.item_id) : null;
+        wrap.append(h("div", { class: "taskrow" }, cb,
+          h("div", { class: "trow-main" }, h("div", { class: "item-name", text: m.body }),
+            h("div", { class: "meta", text: [who, msgClock(m.created_at), m.done_at ? "fait par " + personLabel(null, m.done_by) + " " + msgClock(m.done_at) : ""].filter(Boolean).join(" · ") }),
+            it ? h("button", { class: "bitem", type: "button", text: "📦 " + it.name, onclick: function () { openItem(R(it)); } }) : null),
+          h("button", { class: "btn sm", type: "button", text: "Conversation", onclick: function () { state.msgThread = msgThreadOf(m); state.msgView = "thread"; goTab("messages"); } })));
+      });
+      if (!list.length) wrap.append(h("div", { class: "empty", text: hint }));
+      return wrap;
+    };
+    box.append(section("À faire", L.todo, "Rien à faire pour le moment.", true), section("Demandées par moi, en attente", L.sent, "Aucune tâche en attente chez les autres."), section("Faites récemment", L.done, "Aucune tâche terminée."));
+    box.append(h("div", { class: "dnote", text: "Pour créer une tâche : ouvrez Messages, choisissez une personne, touchez « ☑ Tâche » puis écrivez la demande." }));
+  }
   function syncTabs() {
     document.querySelectorAll(".tab").forEach(function (t) {
       t.setAttribute("aria-selected", t.getAttribute("data-tab") === state.tab ? "true" : "false");
     });
+    refreshSbGroups();
     document.querySelectorAll("#bottombar [data-go]").forEach(function (b) {
       if (b.getAttribute("data-go") === state.tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
@@ -8588,7 +8699,9 @@ body.salle-tablette .roomchips { display:flex; }
     t.addEventListener("click", function (e) {
       setSidebarOpen(false);
       if (e && e.detail > 0) t.blur();
-      var target = t.getAttribute("data-tab");
+      var target = t.getAttribute("data-tab"), tm = tabModule(target);
+      if (tm !== "all" && tm !== state.module) { var fm = tabModule(state.tab); if (fm === state.module) lastTabs[state.module] = state.tab; applyModule(tm); }
+      if (tm !== "all") lastTabs[tm] = target;
       if (target === "inventaire" && state.tab === "inventaire") { state.cat = ""; state.q = ""; $("search").value = ""; }
       state.tab = target;
       state.filter = "all";
@@ -8600,6 +8713,7 @@ body.salle-tablette .roomchips { display:flex; }
       if (target === "controles") loadControls();
     });
   });
+  (function () { var m = "stock"; try { m = localStorage.getItem("simsim_module") || "stock"; } catch (e) {} if (urlSalle) m = "stock"; applyModule(m); if (m === "equipe") { state.tab = "messages"; syncTabs(); } })();
   var searchTimer = null;
   $("search").addEventListener("input", function (e) { var v = e.target.value; clearTimeout(searchTimer); searchTimer = setTimeout(function () { state.q = v; render(); }, 130); });
   $("addBtn").addEventListener("click", function () { var rr = roomScope(); if (rr) { state.room = rr.id; openRoomAdd(); } else openItem(null); });
@@ -9247,10 +9361,10 @@ body.salle-tablette .roomchips { display:flex; }
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "movements" }, function (p) { if (p.new && p.new.cabinet_id === cabinetId) addLogRow(p.new); })
       .on("postgres_changes", { event: "*", schema: "public", table: "equipe_noms" }, function (p) { if ((p.new && p.new.cabinet_id === cabinetId) || (p.old && p.eventType === "DELETE")) loadPeople(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, function (p) {
-        if (p.eventType === "DELETE") { msgs = msgs.filter(function (m) { return m.id !== (p.old && p.old.id); }); updateMsgBadge(); if (state.tab === "messages") render(); return; }
+        if (p.eventType === "DELETE") { msgs = msgs.filter(function (m) { return m.id !== (p.old && p.old.id); }); updateMsgBadge(); if (state.tab === "messages" || state.tab === "taches") render(); return; }
         if (!p.new || p.new.cabinet_id !== cabinetId) return;
         if (p.eventType === "INSERT") addMessage(p.new, p.new.author_id === sessionUser);
-        else { var cur = msgs.filter(function (m) { return m.id === p.new.id; })[0]; if (cur) { Object.assign(cur, p.new); if (state.tab === "messages") render(); } }
+        else { var cur = msgs.filter(function (m) { return m.id === p.new.id; })[0]; if (cur) { Object.assign(cur, p.new); updateMsgBadge(); if (state.tab === "messages" || state.tab === "taches") render(); } }
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "lots" }, function (p) {
         if (p.eventType === "DELETE") {
@@ -9904,7 +10018,7 @@ body.salle-tablette .roomchips { display:flex; }
     usersData.members = null; usersData.msg = ""; usersData.mail = null;
     priceAlerts = []; alertOk = false; cmpData = null; cmpErr = ""; cmpStamp = 0;
     loadOrderQty();
-    state.tab = "inventaire"; state.filter = "all"; state.cat = ""; state.q = ""; state.view = ""; $("search").value = "";
+    state.tab = state.module === "equipe" ? (lastTabs.equipe || "messages") : "inventaire"; state.filter = "all"; state.cat = ""; state.q = ""; state.view = ""; $("search").value = "";
     syncTabs(); showScreen("app"); startData(); render();
     if (welcomePw) { welcomePw = false; toast("Bienvenue ! Choisissez un mot de passe pour vous reconnecter facilement."); openPw(null); }
     else if (incomingAdd) startIncoming();
