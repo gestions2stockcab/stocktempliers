@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SimSimStock</title>
+<meta name="theme-color" content="#2f67ff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SimSimStock">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=DM+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -851,6 +858,59 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 .catcardhead { display:flex; gap:8px; align-items:center; font-size:15px; }
 .catcardact { display:flex; gap:8px; margin-top:4px; flex-wrap:wrap; }
 .catres { max-height:none; overflow:visible; }
+
+/* ===== v91 : tablette (iPad, tablettes Android) ===== */
+html { -webkit-text-size-adjust:100%; }
+button, .tab, .row, .step, .mi, .roomchip, .tile { -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+@media (min-width: 761px) {
+  html.is-touch { --tabw:224px; }
+  html.is-touch body, html.is-touch body.sb-pinned { padding-left:var(--tabw); }
+  html.is-touch .sidebar, html.is-touch .sidebar:hover, html.is-touch .sidebar:focus-within, html.is-touch body.sb-pinned .sidebar { transform:none !important; width:var(--tabw); box-shadow:none; border-right:1px solid var(--line); }
+  html.is-touch .sidebar::after { display:none; }
+  html.is-touch .sb-backdrop, html.is-touch .sb-backdrop.open { display:none !important; }
+  html.is-touch #menuBtn, html.is-touch .sb-pin { display:none !important; }
+  html.is-touch .sb-head { padding-bottom:6px; }
+  html.is-touch .tab { min-height:52px; font-size:16px; padding:12px 14px; }
+  html.is-touch .tab .ti { font-size:21px; width:28px; }
+  html.is-touch .btn { min-height:46px; padding:10px 18px; font-size:16px; }
+  html.is-touch .btn.sm { min-height:42px; padding:8px 14px; font-size:15px; }
+  html.is-touch .step { width:48px; height:48px; font-size:21px; border-radius:12px; }
+  html.is-touch .qty { gap:10px; }
+  html.is-touch .qty .v { min-width:64px; font-size:23px; }
+  html.is-touch .mi { min-height:48px; padding:12px 14px; font-size:16px; }
+  html.is-touch .menu { min-width:360px; }
+  html.is-touch .mtab { min-height:44px; padding:10px 14px; font-size:14.5px; }
+  html.is-touch input, html.is-touch select, html.is-touch textarea { font-size:16px; }
+  html.is-touch input[type=text], html.is-touch input[type=search], html.is-touch input[type=number], html.is-touch input[type=date], html.is-touch input[type=email], html.is-touch input[type=password], html.is-touch select { min-height:46px; }
+  html.is-touch input[type=checkbox], html.is-touch input[type=radio] { width:24px; height:24px; }
+  html.is-touch .search { min-height:50px; }
+  html.is-touch .row { padding-top:15px; padding-bottom:15px; }
+  html.is-touch .item-name { font-size:17px; }
+  html.is-touch .roomchip { min-height:44px; padding:9px 18px; font-size:15px; }
+  html.is-touch .qchips button { min-height:46px; padding:9px 20px; font-size:16px; }
+  html.is-touch dialog { width:min(680px, calc(100vw - 48px)); }
+  html.is-touch dialog.wide { width:min(920px, calc(100vw - 48px)); }
+  html.is-touch .dlg { padding:22px; gap:16px; }
+  html.is-touch .tabsteps { padding-left:20px; display:flex; flex-direction:column; gap:8px; }
+  html.is-touch .star, html.is-touch .flagbtn { padding:13px 11px; margin:-9px -5px; font-size:19px; line-height:1; }
+  html.is-touch .mvtab { width:46px; height:46px; font-size:18px; border-radius:12px; }
+  html.is-touch .qty .v { min-height:46px; display:inline-flex; align-items:center; justify-content:center; }
+  html.is-touch .item-name { padding:8px 0; }
+  html.is-touch #helpBtn { min-width:46px; }
+  html.is-touch .sw { width:32px; height:32px; }
+}
+/* iPad en portrait : menu réduit à une colonne d'icônes pour laisser la place au contenu */
+@media (min-width: 761px) and (max-width: 940px) {
+  html.is-touch { --tabw:104px; }
+  html.is-touch .bar .search { flex:1 1 100%; }
+  html.is-touch .tab .tl { max-width:100%; white-space:normal; word-break:normal; overflow-wrap:normal; }
+  html.is-touch .sb-head { display:none; }
+  html.is-touch .sidebar { padding-left:4px; padding-right:4px; }
+  html.is-touch .tab { flex-direction:column; justify-content:center; text-align:center; gap:4px; padding:10px 2px; min-height:64px; font-size:10.5px; line-height:1.15; letter-spacing:-.1px; }
+  html.is-touch .tab .ti { font-size:24px; width:auto; }
+}
+.tabsteps { margin:0; padding-left:20px; font-size:14.5px; color:var(--muted); }
+body.salle-tablette .roomchips { display:flex; }
 </style>
 </head>
 <body>
@@ -935,7 +995,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v90</div>
+            <div class="menu-who"><span id="who"></span> · v91</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1182,6 +1242,23 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     </details>
   </div>
 </div>
+
+<dialog id="tabDlg">
+  <div class="dlg">
+    <h2>Tablette de la salle</h2>
+    <div class="sub" id="tabRoomName"></div>
+    <label class="f">Lien à ouvrir sur la tablette
+      <input id="tabLink" type="text" readonly>
+    </label>
+    <div class="catact"><button class="btn primary" id="tabCopy" type="button">Copier le lien</button><button class="btn" id="tabOpen" type="button">Essayer ici</button></div>
+    <ol class="tabsteps">
+      <li>Sur la tablette, ouvrez ce lien dans Safari (iPad) ou Chrome (Android), et connectez-vous.</li>
+      <li>Touchez <b>Partager</b>, puis <b>Sur l'écran d'accueil</b> : l'appli s'ouvre ensuite en plein écran, directement sur cette salle.</li>
+      <li>L'écran reste allumé tant que l'appli est ouverte : la tablette peut rester fixée dans la salle.</li>
+    </ol>
+    <div class="dlg-actions"><button class="btn" id="tabClose" type="button">Fermer</button></div>
+  </div>
+</dialog>
 
 <dialog id="mfaDlg">
   <div class="dlg">
@@ -2663,6 +2740,37 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
     $("eqvSave").disabled = true;
     eqvCreate(label, mem).then(function (ok) { if (ok) { $("eqvDlg").close(); toast("Groupe « " + label + " » créé."); } else $("eqvSave").disabled = false; });
   });
+  // ---------- tablette : détection tactile, lien direct vers une salle ----------
+  (function () {
+    var ua = navigator.userAgent || "", mtp = navigator.maxTouchPoints || 0;
+    var coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    var ipadDesktop = /Macintosh/.test(ua) && mtp > 1;
+    if (mtp > 0 && (coarse || ipadDesktop || /iPad|Android|Tablet/i.test(ua))) document.documentElement.classList.add("is-touch");
+  })();
+  var urlParams = new URLSearchParams(location.search), urlSalle = (urlParams.get("salle") || "").trim(), urlCab = (urlParams.get("cabinet") || "").trim(), urlRoomDone = false, wakeLock = null;
+  function keepAwake() {
+    if (!urlSalle || !navigator.wakeLock) return;
+    navigator.wakeLock.request("screen").then(function (l) { wakeLock = l; l.addEventListener("release", function () { wakeLock = null; }); }, function () {});
+  }
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible" && !wakeLock) keepAwake(); });
+  function applyUrlRoom() {
+    if (!urlSalle || urlRoomDone) return;
+    var k = norm(urlSalle).replace(/[^a-z0-9]/g, ""), r = rooms.filter(function (x) { return x.id === urlSalle || norm(x.name).replace(/[^a-z0-9]/g, "") === k; })[0];
+    if (!r) return;
+    urlRoomDone = true; state.tab = "inventaire"; state.view = r.id; state.cat = ""; syncTabs(); keepAwake();
+    document.body.classList.add("salle-tablette");
+  }
+  function roomLink(room) { return location.origin + location.pathname + "?cabinet=" + encodeURIComponent(cabinetId) + "&salle=" + encodeURIComponent(room.name); }
+  function openTabLink(room) {
+    $("tabRoomName").textContent = "Salle « " + room.name + " » du cabinet « " + cabinetName + " ». Ce lien ouvre l'appli directement sur cette salle.";
+    $("tabLink").value = roomLink(room); $("tabCopy").textContent = "Copier le lien"; $("tabDlg").showModal();
+  }
+  $("tabCopy").addEventListener("click", function () {
+    var v = $("tabLink").value, ok = function () { $("tabCopy").textContent = "Copié ✓"; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(ok, function () { $("tabLink").select(); toast("Copiez le lien sélectionné."); }); else { $("tabLink").select(); toast("Copiez le lien sélectionné."); }
+  });
+  $("tabOpen").addEventListener("click", function () { window.open($("tabLink").value, "_blank"); });
+  $("tabClose").addEventListener("click", function () { $("tabDlg").close(); });
   // ---------- supprimer tout le stock du cabinet (administrateurs) ----------
   function wipeCount() { return items.size + trash.size; }
   function openWipe() {
@@ -3284,7 +3392,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       sallesOk = true; rooms = r[0].data || [];
       roomItems = {}; (r[1].data || []).forEach(function (li) { (roomItems[li.salle_id] = roomItems[li.salle_id] || []).push(li); });
       restocks = {}; (r[2].data || []).forEach(function (x) { if (!restocks[x.salle_id]) restocks[x.salle_id] = x; });
-      indexRooms(); render();
+      indexRooms(); applyUrlRoom(); render();
     }).catch(function () { sallesOk = false; });
   }
   function roomDots(it) {
@@ -3473,7 +3581,8 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
         h("div", { class: "meta", text: ROOM_KINDS[room.kind] + " · " + (last ? "dernier réassort " + agoText(last.done_at) + (last.done_by ? " par " + String(last.done_by).split("@")[0] : "") : "jamais réapprovisionnée") + " · " + lines.length + " produit" + (lines.length > 1 ? "s" : "") })),
       h("div", { class: "roomact" },
         readOnly ? null : h("button", { class: "btn sm", type: "button", onclick: openRoomAdd, text: "＋ Ajouter des produits" }),
-        lines.length ? h("button", { class: "btn sm", type: "button", onclick: function () { roomSheet(room, lines); }, text: "Feuille de réassort (PDF)" }) : null)));
+        lines.length ? h("button", { class: "btn sm", type: "button", onclick: function () { roomSheet(room, lines); }, text: "Feuille de réassort (PDF)" }) : null,
+        h("button", { class: "btn sm", type: "button", onclick: function () { openTabLink(room); }, text: "📱 Lien tablette" }))));
     if (!lines.length) {
       panel.append(h("div", { class: "empty" }, h("div", { text: "Aucun produit dans cette salle. Ajoutez ceux que vous gardez dans ses tiroirs, avec la quantité qu'il doit y avoir quand elle est pleine." })));
       box.append(panel); return;
@@ -8902,7 +9011,7 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
       showPick(false, true);
       var mt = s.user.user_metadata && s.user.user_metadata.join_token;
       if (!joinToken && mt && /^[0-9a-f]{20,100}$/i.test(String(mt))) joinToken = String(mt).toLowerCase();
-      var goCab = function () { loadCabinets(); };
+      var goCab = function () { if (urlCab && sessionUser) { try { localStorage.setItem("simsim_cabinet_" + sessionUser, urlCab); } catch (e) {} } loadCabinets(); };
       mfaChecked = false; mfaOn = false; updateSecBanner();
       mfaGate(function () {
         sb.rpc("est_proprietaire").then(function (r0) { ownerOk = !!(r0 && !r0.error && r0.data === true); updateOwnerBtns(); updateSecBanner(); }, function () {});
