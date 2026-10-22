@@ -911,6 +911,17 @@ button, .tab, .row, .step, .mi, .roomchip, .tile { -webkit-tap-highlight-color:t
 }
 .tabsteps { margin:0; padding-left:20px; font-size:14.5px; color:var(--muted); }
 body.salle-tablette .roomchips { display:flex; }
+
+/* ===== v92 : sortie rapide par scan ===== */
+.scanfast { display:flex; gap:8px; align-items:center; font-weight:600; background:var(--surface-2); border-radius:10px; padding:8px 12px; }
+.scanok { color:var(--ok); font-size:20px; font-weight:700; }
+.scanbad { color:var(--bad); font-size:20px; font-weight:700; }
+.scanlog { margin-top:6px; max-height:34vh; overflow:auto; }
+
+/* ===== v93 : photos dans le scanner ===== */
+.scanphotos { display:flex; gap:8px; flex-wrap:wrap; }
+.scanphotos .btn { flex:1 1 auto; }
+.item-name.big { font-size:20px; }
 </style>
 </head>
 <body>
@@ -995,7 +1006,7 @@ body.salle-tablette .roomchips { display:flex; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v91</div>
+            <div class="menu-who"><span id="who"></span> · v93</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1457,6 +1468,13 @@ body.salle-tablette .roomchips { display:flex; }
 <dialog id="scanDlg">
   <div class="dlg">
     <h2 id="scanTitle">Scanner un article</h2>
+    <label class="chk scanfast" id="scanFastRow"><input type="checkbox" id="scanFast"> ⚡ Sortie rapide : chaque scan retire 1 unité et le scanner reste ouvert</label>
+    <div class="scanphotos">
+      <button class="btn" id="scanPhotoBtn" type="button">📷 Photo du code-barres</button>
+      <button class="btn hidden" id="recoBtn" type="button">🧠 Photo du produit (IA)</button>
+      <input id="scanPhoto" type="file" accept="image/*" capture="environment" class="hidden" aria-label="Photo du code-barres">
+      <input id="recoPhoto" type="file" accept="image/*" capture="environment" class="hidden" aria-label="Photo du produit">
+    </div>
     <div id="scanReader" class="scanbox"></div>
     <div class="sub" id="scanStatus"></div>
     <div id="scanPanel"></div>
@@ -4249,10 +4267,12 @@ body.salle-tablette .roomchips { display:flex; }
       sec.append(wrap2);
       box.append(sec);
       renderInviteLinks(box, c, true, adminLinkChoices());
+      renderRecoCard(box);
       return;
     }
     box.append(sec);
     if (adminData.cabinets.length) renderInviteLinks(box, adminData.cabinets[0], true, adminLinkChoices());
+    renderRecoCard(box);
   }
   function adminLinkChoices() { return adminData.cabinets.map(function (c) { return { id: c.id, name: c.name }; }); }
   // ---------- vue du stock par salle ou en total ----------
@@ -7560,7 +7580,198 @@ body.salle-tablette .roomchips { display:flex; }
   }
 
   // ---------- scan de codes-barres et de QR codes ----------
-  var scanner = null, scanMode = "stock", scanBusy = false, lastCode = "", lastAt = 0;
+  var scanner = null, scanMode = "stock", scanBusy = false, lastCode = "", lastAt = 0, scanFast = false, scanLog = [];
+  try { var svf = localStorage.getItem("simsim_scanfast"); scanFast = svf === null ? !!urlSalle : svf === "1"; } catch (e) {}
+  function beep(low) {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      var c = beep.ctx = beep.ctx || new AC(), o = c.createOscillator(), g = c.createGain();
+      o.frequency.value = low ? 220 : 880; g.gain.value = 0.08; o.connect(g); g.connect(c.destination); o.start(); setTimeout(function () { try { o.stop(); } catch (e) {} }, low ? 220 : 90);
+    } catch (e) {}
+  }
+  function feedback(bad) { beep(bad); try { if (navigator.vibrate) navigator.vibrate(bad ? [80, 60, 80] : 60); } catch (e) {} }
+  function scanTitleText() { var rm = roomScope(); return scanMode === "capture" ? "Scanner le code de l'article" : (scanFast ? "Sortie rapide" + (rm ? " · " + rm.name : "") : "Scanner un article"); }
+  function drawScanLog() {
+    var panel = $("scanPanel"); panel.textContent = "";
+    if (!scanLog.length) return;
+    var box = h("div", { class: "scanlog" }, h("div", { class: "meta", text: "Dernières sorties" }));
+    scanLog.forEach(function (e, i) {
+      var cancel = h("button", { class: "btn sm", type: "button", text: "Annuler" });
+      cancel.addEventListener("click", function () { scanCancel(i); });
+      box.append(h("div", { class: "eqint" }, h("div", null, h("div", { class: "item-name", text: "−1 · " + e.name }), h("div", { class: "meta", text: (e.roomName ? e.roomName + " · " : "") + "reste " + fmt(e.rest) })), cancel));
+    });
+    panel.append(box);
+  }
+  function scanCancel(i) {
+    var e = scanLog[i]; if (!e) return;
+    var it = items.get(e.id);
+    if (it) {
+      if (e.room) { var li = roomLine(e.room, e.id), cnt = li && li.counted_qty != null ? Number(li.counted_qty) : 0; roomSetQty(it, e.room, r2(cnt + 1), "Annulation d'une sortie par scan"); }
+      else adjustQty(it, 1, "Annulation d'une sortie par scan", null, { noUndo: true });
+      toast("Sortie annulée : " + e.name);
+    }
+    scanLog.splice(i, 1); drawScanLog();
+  }
+  // sortie rapide : un scan = une unité de moins, sans fenêtre de confirmation ; le scanner continue
+  // retire une unité : du compte de la salle si on est dans une salle, du stock central sinon
+  function quickOut(real, note) {
+    var room = roomScope();
+    if (room) {
+      var li0 = roomLine(room.id, real.id), ok = roomRemove(real, room.id, 1, "", "");
+      return { ok: ok, rest: li0 && li0.counted_qty != null ? r2(Number(li0.counted_qty) - 1) : 0, room: room, msg: ok ? "" : "rien à retirer dans « " + room.name + " »" };
+    }
+    if ((Number(real.qty) || 0) <= 0) return { ok: false, rest: 0, room: null, msg: "déjà à 0 en stock" };
+    adjustQty(real, -1, note || "Sortie rapide (scan)");
+    return { ok: true, rest: r2((Number(real.qty) || 0) - 1), room: null, msg: "" };
+  }
+  function logOut(real, r) {
+    scanLog.unshift({ id: real.id, name: real.name, room: r.room ? r.room.id : "", roomName: r.room ? r.room.name : "", rest: r.rest });
+    scanLog = scanLog.slice(0, 8);
+  }
+  function fastScan(it, key, info) {
+    var st = $("scanStatus");
+    if (!it) { scanBusy = true; stopScanner(); st.textContent = ""; showScanUnknown(key, info); return; }
+    var real = items.get(it.id) || it, r = quickOut(real);
+    if (!r.ok) { feedback(true); st.className = "sub scanbad"; st.textContent = "✗ " + real.name + " : " + r.msg; return; }
+    feedback(false);
+    st.className = "sub scanok"; st.textContent = "✓ −1 · " + real.name + " · reste " + fmt(r.rest);
+    logOut(real, r); drawScanLog();
+  }
+  // ---------- photo du code-barres (quand la lecture en direct n'accroche pas) ----------
+  function scanFromPhoto(file) {
+    if (!file) return;
+    if (!window.Html5Qrcode) { toast("Le scanner n'a pas pu être chargé : vérifiez votre accès à internet."); return; }
+    $("scanStatus").className = "sub"; $("scanStatus").textContent = "Lecture de la photo…";
+    stopScanner().then(function () {
+      var F = window.Html5QrcodeSupportedFormats, tmp = new window.Html5Qrcode("scanReader", { formatsToSupport: [F.QR_CODE, F.EAN_13, F.EAN_8, F.CODE_128, F.CODE_39, F.UPC_A, F.UPC_E, F.DATA_MATRIX, F.ITF], experimentalFeatures: { useBarCodeDetectorIfSupported: true }, verbose: false });
+      var done = function () { try { tmp.clear(); } catch (e) {} };
+      return tmp.scanFile(file, false).then(function (t) { done(); return t; }, function (er) { done(); throw er; });
+    }).then(function (text) {
+      lastCode = ""; scanBusy = false; onScan(text);
+      if (scanFast && scanMode === "stock" && !scanBusy) startScanner();
+    }, function () {
+      $("scanStatus").className = "sub scanbad"; $("scanStatus").textContent = "Aucun code lu sur la photo : rapprochez-vous, évitez les reflets et gardez le code bien à plat.";
+      startScanner();
+    });
+  }
+  // ---------- reconnaissance d'un produit par photo (IA) ----------
+  var recoFn = "", settings = {};
+  function updateScanButtons() { $("recoBtn").classList.toggle("hidden", !recoFn || scanMode !== "stock"); }
+  function loadSettings() {
+    if (!sb || !cabinetId) return;
+    var cid = cabinetId;
+    sb.from("reglages").select("*").then(function (res) {
+      if (cid !== cabinetId || res.error) return;
+      settings = {}; (res.data || []).forEach(function (r) { settings[r.key] = r.value; });
+      recoFn = String(settings.reco_fn || "").trim(); updateScanButtons();
+    }).catch(function () {});
+  }
+  function invokeAuthed(name, body) {
+    return (sb.auth && sb.auth.getSession ? sb.auth.getSession().then(function (r) { return r && r.data && r.data.session ? r.data.session.access_token : ""; }, function () { return ""; }) : Promise.resolve("")).then(function (token) {
+      var opts = { body: body };
+      if (token && /^eyJ/.test(cfg.key)) opts.headers = { "x-user-token": token, Authorization: "Bearer " + cfg.key };
+      return sb.functions.invoke(name, opts);
+    });
+  }
+  function resizeImage(file, max) {
+    return new Promise(function (resolve, reject) {
+      var rd = new FileReader();
+      rd.onerror = function () { reject(new Error("lecture")); };
+      rd.onload = function () {
+        var url = String(rd.result || ""), raw = function () { if (file.size > 4000000) { reject(new Error("image_trop_grande")); return; } resolve({ b64: url.replace(/^data:[^,]*,/, ""), mt: (/^data:(image\/[a-z+.-]+)/i.exec(url) || [0, "image/jpeg"])[1].toLowerCase() }); };
+        try {
+          var img = new Image(), fired = false;
+          var t = setTimeout(function () { if (!fired) { fired = true; raw(); } }, 2500);
+          img.onload = function () {
+            if (fired) return; fired = true; clearTimeout(t);
+            try {
+              var k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement("canvas");
+              c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+              c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+              resolve({ b64: c.toDataURL("image/jpeg", 0.82).replace(/^data:[^,]*,/, ""), mt: "image/jpeg" });
+            } catch (e) { raw(); }
+          };
+          img.onerror = function () { if (!fired) { fired = true; clearTimeout(t); raw(); } };
+          img.src = url;
+        } catch (e) { raw(); }
+      };
+      rd.readAsDataURL(file);
+    });
+  }
+  function recoCandidates() {
+    var rm = roomScope(), list = rm ? (roomItems[rm.id] || []).map(function (li) { return items.get(li.item_id); }).filter(Boolean) : Array.from(items.values()).filter(function (x) { return x.tracked !== false; });
+    return list.slice(0, 800).map(function (x) { return { id: x.id, name: x.name, ref: x.ref || "", supplier: x.supplier || "" }; });
+  }
+  function recoErrText(e, data) {
+    var st = e && e.context && typeof e.context.status === "number" ? e.context.status : 0, code = (data && data.error) || "";
+    if (code === "cle_manquante") return "La clé de l'IA manque dans Supabase (secret ANTHROPIC_API_KEY) : voir le guide d'installation.";
+    if (code === "trop_de_photos") return "Trop de photos pour cette heure (120 maximum). Réessayez un peu plus tard.";
+    if (code === "ia_erreur" || code === "ia_injoignable") return "Le service d'IA ne répond pas pour le moment" + (data && data.statut ? " (erreur " + data.statut + ")" : "") + " : réessayez, ou scannez le code-barres.";
+    if (code === "image_invalide") return "La photo n'a pas pu être lue : reprenez-la.";
+    if (st === 404) return "La fonction « " + recoFn + " » est introuvable : son nom a-t-il changé dans Supabase ? (Administration, Reconnaissance par photo)";
+    if (st === 401 || st === 403 || code === "non_connecte") return "Supabase refuse l'appel : reconnectez-vous.";
+    return "La reconnaissance par photo n'a pas abouti : réessayez, ou scannez le code-barres.";
+  }
+  function recognizePhoto(file) {
+    if (!file) return;
+    if (!recoFn) { toast("La reconnaissance par photo n'est pas encore installée : voir Administration."); return; }
+    var cands = recoCandidates(), st = $("scanStatus"), rm = roomScope();
+    if (!cands.length) { toast("Aucun article à reconnaître dans " + (rm ? "cette salle" : "le stock") + "."); return; }
+    st.className = "sub"; st.textContent = "Analyse de la photo…"; stopScanner();
+    resizeImage(file, 1024).then(function (img) {
+      return invokeAuthed(recoFn, { image: img.b64, media_type: img.mt, candidates: cands, hint: rm ? "Salle " + rm.name : "" });
+    }).then(function (res) {
+      var d = res && res.data || {};
+      if (res.error || !d.ok) { st.className = "sub scanbad"; st.textContent = recoErrText(res.error, d); startScanner(); return; }
+      var byEan = d.ean ? Array.from(items.values()).filter(function (x) { return x.barcode && x.barcode.replace(/\D/g, "").slice(-13) === String(d.ean).slice(-13); })[0] : null;
+      var matches = (d.matches || []).filter(function (m) { return items.get(m.id); });
+      if (byEan && !matches.some(function (m) { return m.id === byEan.id; })) matches.unshift({ id: byEan.id, confidence: 1 });
+      st.className = "sub"; st.textContent = d.read ? "Lu sur la photo : " + d.read : "";
+      drawReco(matches);
+    }, function (e) {
+      st.className = "sub scanbad"; st.textContent = e && e.message === "image_trop_grande" ? "La photo est trop lourde : reprenez-la en qualité normale." : "La reconnaissance par photo n'a pas abouti : réessayez.";
+      startScanner();
+    });
+  }
+  function recoCard(real, conf, alts) {
+    var panel = $("scanPanel"); panel.textContent = "";
+    var rm = roomScope(), li = rm ? roomLine(rm.id, real.id) : null;
+    var stock = rm ? "Dans « " + rm.name + " » : " + (li && li.counted_qty != null ? fmt(li.counted_qty) : "non compté") : "En stock : " + fmt(real.qty) + (real.unit ? " " + real.unit : "");
+    var out = h("button", { class: "btn primary big", type: "button", text: "✓ Retirer 1" });
+    out.addEventListener("click", function () {
+      var r = quickOut(real, "Sortie (photo IA)");
+      if (!r.ok) { feedback(true); $("scanStatus").className = "sub scanbad"; $("scanStatus").textContent = "✗ " + real.name + " : " + r.msg; return; }
+      feedback(false); logOut(real, r); toast("−1 · " + real.name + " · reste " + fmt(r.rest)); resetScan();
+    });
+    var other = h("button", { class: "btn", type: "button", text: "Autre quantité ou entrée" });
+    other.addEventListener("click", function () { showScanItem(real, null); });
+    var no = h("button", { class: "btn", type: "button", text: "Ce n'est pas ça" });
+    no.addEventListener("click", function () { recoPick(alts || []); });
+    var again = h("button", { class: "btn", type: "button", text: "Reprendre le scan", onclick: resetScan });
+    panel.append(h("div", { class: "scanitem" },
+      h("div", { class: "meta", text: conf != null ? "Je pense que c'est (" + Math.round(conf * 100) + " % de certitude) :" : "Produit choisi :" }),
+      h("div", { class: "item-name big", text: labelOf(real) }), h("div", { class: "meta", text: stock }),
+      h("div", { class: "dlg-actions" }, out, other), h("div", { class: "dlg-actions" }, no, again)));
+  }
+  function drawReco(matches) {
+    if (!matches.length) { recoPick([]); $("scanStatus").className = "sub scanbad"; $("scanStatus").textContent = ($("scanStatus").textContent ? $("scanStatus").textContent + " · " : "") + "Aucun produit reconnu : cherchez-le ci-dessous."; return; }
+    var top = items.get(matches[0].id); recoCard(top, matches[0].confidence, matches.slice(1));
+  }
+  function recoPick(alts) {
+    var panel = $("scanPanel"); panel.textContent = "";
+    var search = h("input", { type: "search", placeholder: "Chercher l'article", autocomplete: "off", "aria-label": "Chercher l'article" }), res = h("div", { class: "scanres" });
+    var fill = function () {
+      res.textContent = ""; var qn = norm(search.value);
+      var base = qn ? Array.from(items.values()).filter(function (x) { return norm(x.name).indexOf(qn) !== -1; }) : alts.map(function (m) { return items.get(m.id); }).filter(Boolean);
+      base.sort(function (a, b) { return norm(a.name).localeCompare(norm(b.name)); }).slice(0, 8).forEach(function (x) { res.append(h("button", { class: "btn sm", type: "button", text: x.name, onclick: function () { recoCard(x, null, []); } })); });
+    };
+    search.addEventListener("input", fill); fill();
+    panel.append(h("div", { class: "scanitem" }, h("div", { class: "meta", text: alts.length ? "Autres propositions, ou cherchez :" : "Cherchez l'article :" }), search, res, h("div", { class: "dlg-actions" }, h("button", { class: "btn", type: "button", text: "Reprendre le scan", onclick: resetScan }))));
+  }
+  $("scanPhotoBtn").addEventListener("click", function () { $("scanPhoto").click(); });
+  $("scanPhoto").addEventListener("change", function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; if (f) scanFromPhoto(f); });
+  $("recoBtn").addEventListener("click", function () { $("recoPhoto").click(); });
+  $("recoPhoto").addEventListener("change", function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; if (f) recognizePhoto(f); });
   function parseGs1(raw) {
     var s = String(raw || "").replace(/^\][A-Za-z]\d/, "");
     var out = {}, m;
@@ -7618,9 +7829,10 @@ body.salle-tablette .roomchips { display:flex; }
     if (!window.Html5Qrcode) { toast("Le scanner n'a pas pu être chargé : vérifiez votre accès à internet."); return; }
     if (mode === "stock" && !barcodeOk) { toast("Lancez d'abord le script SQL « ajout-codebarres » dans Supabase."); return; }
     scanMode = mode; scanBusy = false; lastCode = "";
-    $("scanTitle").textContent = mode === "capture" ? "Scanner le code de l'article" : "Scanner un article";
-    $("scanPanel").textContent = "";
-    $("scanStatus").textContent = "Placez le code devant la caméra.";
+    $("scanFastRow").classList.toggle("hidden", mode !== "stock"); $("scanFast").checked = scanFast; updateScanButtons();
+    $("scanTitle").textContent = scanTitleText();
+    $("scanPanel").textContent = ""; if (mode === "stock" && scanFast) drawScanLog();
+    $("scanStatus").className = "sub"; $("scanStatus").textContent = "Placez le code devant la caméra.";
     $("scanDlg").showModal();
     startScanner();
   }
@@ -7629,13 +7841,13 @@ body.salle-tablette .roomchips { display:flex; }
   }
   function resetScan() {
     scanBusy = false; lastCode = "";
-    $("scanPanel").textContent = "";
-    $("scanStatus").textContent = "Placez le code devant la caméra.";
+    $("scanPanel").textContent = ""; if (scanMode === "stock" && scanFast) drawScanLog();
+    $("scanStatus").className = "sub"; $("scanStatus").textContent = "Placez le code devant la caméra.";
     startScanner();
   }
   function onScan(text) {
     var now = Date.now();
-    if (scanBusy || (text === lastCode && now - lastAt < 2500)) return;
+    if (scanBusy || (text === lastCode && now - lastAt < (scanFast && scanMode === "stock" ? 1200 : 2500))) return;
     lastCode = text; lastAt = now;
     var info = parseGs1(text), key = scanKey(text);
     if (scanMode === "capture") {
@@ -7649,8 +7861,9 @@ body.salle-tablette .roomchips { display:flex; }
       toast("Code lu : cliquez sur Enregistrer pour le garder dans la fiche.");
       return;
     }
-    scanBusy = true;
     var it = Array.from(items.values()).find(function (x) { return x.barcode && x.barcode === key; });
+    if (scanFast && scanMode === "stock") { fastScan(it, key, info); return; }
+    scanBusy = true;
     stopScanner();
     $("scanStatus").textContent = "";
     if (it) showScanItem(it, info); else showScanUnknown(key, info);
@@ -7833,6 +8046,13 @@ body.salle-tablette .roomchips { display:flex; }
   $("barScan").addEventListener("click", function () { openScan("capture"); });
   $("scanClose").addEventListener("click", function () { closeScan(); });
   $("scanDlg").addEventListener("close", function () { stopScanner(); scanBusy = false; });
+  $("scanFast").addEventListener("change", function () {
+    scanFast = $("scanFast").checked; try { localStorage.setItem("simsim_scanfast", scanFast ? "1" : "0"); } catch (e) {}
+    $("scanTitle").textContent = scanTitleText(); $("scanPanel").textContent = ""; $("scanStatus").className = "sub";
+    if (scanFast) drawScanLog();
+    $("scanStatus").textContent = scanFast ? "Chaque scan retire 1 unité." : "Placez le code devant la caméra.";
+    if (!scanner) startScanner();
+  });
   $("docAdd").addEventListener("click", function () { $("docFile").click(); });
   $("docFile").addEventListener("change", function (e) {
     var f = e.target.files && e.target.files[0];
@@ -8385,6 +8605,7 @@ body.salle-tablette .roomchips { display:flex; }
     loadAchats();
     loadEquip();
     loadContrats();
+    loadSettings();
     loadConso();
     loadRooms();
     loadControls();
@@ -8424,7 +8645,7 @@ body.salle-tablette .roomchips { display:flex; }
   function stopData() {
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     channels = []; started = false;
-    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; ctOk = false; ctList = []; jrnFileOk = false; openOk = false; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
+    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; ctOk = false; ctList = []; jrnFileOk = false; openOk = false; recoFn = ""; settings = {}; descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
   }
   // ---------- rejoindre un cabinet avec un lien d'invitation (#rejoindre=...) ----------
   var JOIN_KEY = "simsim_join";
@@ -8523,6 +8744,37 @@ body.salle-tablette .roomchips { display:flex; }
     return "";
   }
   var linksPick = {};   // carte affichée -> cabinet choisi dans la liste déroulante
+  function renderRecoCard(box) {
+    var card = h("div", { class: "ucard" }, h("h3", { text: "Reconnaissance de produits par photo (IA)" }),
+      h("div", { class: "dnote", text: "Dans le scanner, le bouton « 🧠 Photo du produit » demande à l'IA de retrouver l'article sur la photo ; on confirme toujours avant de retirer. Il faut installer une fonction dans Supabase (voir le guide), puis indiquer ici son nom exact, tel qu'il s'affiche dans Edge Functions." }));
+    var inp = h("input", { type: "text", value: recoFn, placeholder: "Ex : hyper-function", autocomplete: "off", "aria-label": "Nom de la fonction de reconnaissance" });
+    var msg = h("div", { class: "umsg", role: "status", text: recoFn ? "Fonction enregistrée : « " + recoFn + " »." : "Pas encore installée : le bouton photo reste caché dans le scanner." });
+    var save = h("button", { class: "btn primary", type: "button", text: "Enregistrer" }), test = h("button", { class: "btn", type: "button", text: "Tester" });
+    var say = function (t, bad) { msg.textContent = t; msg.className = "umsg" + (bad ? " bad" : ""); };
+    save.addEventListener("click", function () {
+      var v = inp.value.trim();
+      if (v && !/^[A-Za-z0-9_-]{2,60}$/.test(v)) { say("Le nom ne doit contenir que des lettres, des chiffres, des tirets.", true); return; }
+      save.disabled = true;
+      (v ? sb.from("reglages").upsert({ key: "reco_fn", value: v, updated_at: new Date().toISOString() }, { onConflict: "key" }) : sb.from("reglages").delete().eq("key", "reco_fn")).then(function (res) {
+        save.disabled = false;
+        if (res.error) { say(/relation|does not exist|schema cache/i.test(String(res.error.message)) ? "Lancez d'abord le script SQL « ajout-reglages » dans Supabase." : "Le réglage n'a pas pu être enregistré.", true); return; }
+        recoFn = v; settings.reco_fn = v; updateScanButtons(); say(v ? "Enregistré : « " + v + " ». Cliquez sur Tester pour vérifier." : "Réglage effacé : le bouton photo est caché.", false);
+      }, function () { save.disabled = false; say("Connexion impossible.", true); });
+    });
+    test.addEventListener("click", function () {
+      var v = inp.value.trim() || recoFn;
+      if (!v) { say("Indiquez d'abord le nom de la fonction.", true); return; }
+      test.disabled = true; say("Test en cours…", false);
+      invokeAuthed(v, { ping: true }).then(function (res) {
+        test.disabled = false; var d = res && res.data || {};
+        if (res.error) { say(recoErrText(res.error, d).replace("« " + recoFn + " »", "« " + v + " »"), true); return; }
+        if (!d.ok) { say("La fonction répond mais refuse le test : " + (d.error || "erreur") + ".", true); return; }
+        say(d.cle ? "✓ La fonction répond et la clé de l'IA est en place (modèle " + d.modele + ")." : "La fonction répond, mais la clé ANTHROPIC_API_KEY manque dans ses secrets.", !d.cle);
+      }, function () { test.disabled = false; say("Connexion impossible.", true); });
+    });
+    card.append(h("div", { class: "uform" }, inp, save, test), msg);
+    box.append(card);
+  }
   function renderInviteLinks(box, home, canAdminRole, choices) {
     choices = (choices && choices.length) ? choices : [home];
     var cab = choices.filter(function (c) { return c.id === linksPick[home.id]; })[0] || choices.filter(function (c) { return c.id === home.id; })[0] || choices[0];
