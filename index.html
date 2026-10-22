@@ -998,6 +998,14 @@ body.salle-tablette .roomchips { display:flex; }
   .msgwrap.show-thread .msgpane { display:flex; }
   .msgback { display:inline-flex; }
 }
+
+/* ===== v98 : renommer les personnes dans la messagerie ===== */
+.msgme { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 10px 10px; border-bottom:1px solid var(--line); margin-bottom:4px; font-size:14px; }
+.msgme .btn { margin-left:auto; }
+.msgrename { display:flex; gap:6px; flex-wrap:wrap; align-items:center; width:100%; }
+.msgrename input { flex:1 1 150px; min-width:0; border:1px solid var(--line); border-radius:10px; padding:8px 10px; font:inherit; background:var(--surface); color:var(--ink); }
+.mh-main, .mh-edit { flex:1; min-width:0; }
+.msgren { margin-left:auto; }
 </style>
 </head>
 <body>
@@ -1082,7 +1090,7 @@ body.salle-tablette .roomchips { display:flex; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v97</div>
+            <div class="menu-who"><span id="who"></span> · v98</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1953,7 +1961,7 @@ body.salle-tablette .roomchips { display:flex; }
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false, ownerOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
-  var state = { tab: "inventaire", filter: "all", q: "", cat: "", msgThread: "equipe", msgView: "list", msgAttach: null, msgTask: false, hideCat: false, hideTotal: true, totalSup: {}, totalLimit: 60, totalSig: "", collapsed: {}, tileSort: "usuel", limit: 60, limitSig: "", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
+  var state = { tab: "inventaire", filter: "all", q: "", cat: "", msgThread: "equipe", msgView: "list", msgAttach: null, msgTask: false, msgRename: null, msgRenameVal: "", hideCat: false, hideTotal: true, totalSup: {}, totalLimit: 60, totalSig: "", collapsed: {}, tileSort: "usuel", limit: 60, limitSig: "", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
   var chain = Promise.resolve();
 
@@ -5588,9 +5596,15 @@ body.salle-tablette .roomchips { display:flex; }
   // ---------- messagerie de l'équipe : canal du cabinet, messages privés, tâches ----------
   var msgOk = false, msgs = [], msgPeople = [], msgReads = {}, msgDraft = {}, msgEls = null, msgFocus = null;
   function personName(email) { var n = String(email || "").split("@")[0].replace(/[._-]+/g, " ").trim(); return n ? n.charAt(0).toUpperCase() + n.slice(1) : "?"; }
+  // le nom choisi pour la personne (messagerie), sinon le nom tiré de son adresse e-mail
+  function personLabel(id, email) {
+    var p = id ? msgPerson(id) : null;
+    if (!p && email) p = msgPeople.filter(function (x) { return String(x.email || "").toLowerCase() === String(email).toLowerCase(); })[0];
+    return p && p.nom ? p.nom : personName(email || (p && p.email) || "");
+  }
   function msgPerson(id) { return msgPeople.filter(function (p) { return p.user_id === id; })[0]; }
   function msgThreadOf(m) { return !m.to_user_id ? "equipe" : (m.author_id === sessionUser ? m.to_user_id : m.author_id); }
-  function msgThreadTitle(t) { return t === "equipe" ? "Équipe du cabinet" : personName((msgPerson(t) || {}).email || ""); }
+  function msgThreadTitle(t) { return t === "equipe" ? "Équipe du cabinet" : personLabel(t, (msgPerson(t) || {}).email || ""); }
   function msgThreads() { return ["equipe"].concat(msgPeople.filter(function (p) { return p.user_id !== sessionUser; }).map(function (p) { return p.user_id; })); }
   function msgUnread(t) {
     var lu = msgReads[t] || "", n = 0;
@@ -5632,10 +5646,43 @@ body.salle-tablette .roomchips { display:flex; }
     ]).then(function (rs) {
       if (cid !== cabinetId) return;
       if (rs[0].error) { msgOk = false; updateMsgBadge(); if (state.tab === "messages") render(); return; }
-      msgOk = true; msgs = (rs[0].data || []).slice().reverse(); msgPeople = rs[1].error ? [] : (rs[1].data || []);
+      msgOk = true; msgPeopleAt = Date.now(); msgs = (rs[0].data || []).slice().reverse(); msgPeople = rs[1].error ? [] : (rs[1].data || []);
       msgReads = {}; (rs[2].data || []).forEach(function (r) { msgReads[r.thread] = r.lu_at; });
       updateMsgBadge(); if (state.tab === "messages") render();
     }).catch(function () { msgOk = false; });
+  }
+  var msgPeopleAt = 0, msgWantRename = false;
+  function loadPeople() {
+    if (!sb || !cabinetId || !db) return;
+    var cid = cabinetId; msgPeopleAt = Date.now();
+    sb.rpc("equipe_cabinet", { c: cid }).then(function (r) {
+      if (cid !== cabinetId || r.error) return;
+      var before = JSON.stringify(msgPeople); msgPeople = r.data || [];
+      if (JSON.stringify(msgPeople) !== before) { updateMsgBadge(); if (state.tab === "messages") render(); }
+    }, function () {});
+  }
+  function canRename(uid) { return !!uid && uid !== "equipe" && !!db && (isAdmin || uid === sessionUser); }
+  function startRename(uid) { var p = msgPerson(uid); state.msgRename = uid; state.msgRenameVal = (p && p.nom) || ""; msgWantRename = true; render(); }
+  function saveName(uid, nom) {
+    nom = String(nom || "").replace(/\s+/g, " ").trim();
+    if (nom.length > 40) { toast("Nom trop long : 40 caractères au maximum."); return; }
+    var req = nom ? sb.from("equipe_noms").upsert({ cabinet_id: cabinetId, user_id: uid, nom: nom, maj_par: myEmail, updated_at: new Date().toISOString() }, { onConflict: "cabinet_id,user_id" })
+      : sb.from("equipe_noms").delete().eq("cabinet_id", cabinetId).eq("user_id", uid);
+    req.then(function (res) {
+      if (res.error) { toast(/relation|does not exist|schema cache|function/i.test(String(res.error.message)) ? "Relancez le script SQL « ajout-messages » dans Supabase (mise à jour des noms)." : "Le nom n'a pas pu être enregistré : seul l'administrateur renomme les autres."); return; }
+      var pp = msgPerson(uid); if (pp) pp.nom = nom;
+      state.msgRename = null; toast(nom ? "Nom enregistré : " + nom : "Nom d'origine rétabli."); render();
+    }, function () { toast("Connexion impossible."); });
+  }
+  function nameEditor(uid) {
+    var pp = msgPerson(uid) || { email: "" };
+    var inp = h("input", { type: "text", class: "msgrename-inp", maxlength: "40", value: state.msgRenameVal, placeholder: personName(pp.email), autocomplete: "off", "aria-label": "Nom affiché dans la messagerie" });
+    inp.addEventListener("input", function () { state.msgRenameVal = inp.value; });
+    inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); saveName(uid, inp.value); } else if (e.key === "Escape") { state.msgRename = null; render(); } });
+    return h("div", { class: "msgrename" }, inp,
+      h("button", { class: "btn sm primary", type: "button", text: "Enregistrer", onclick: function () { saveName(uid, inp.value); } }),
+      pp.nom ? h("button", { class: "btn sm", type: "button", text: "Nom d'origine", title: "Revenir au nom tiré de l'adresse e-mail", onclick: function () { saveName(uid, ""); } }) : null,
+      h("button", { class: "btn sm", type: "button", text: "Annuler", onclick: function () { state.msgRename = null; render(); } }));
   }
   function markRead(t) {
     if (!db || !msgOk) return;
@@ -5648,7 +5695,7 @@ body.salle-tablette .roomchips { display:flex; }
     var t = msgThreadOf(m), viewing = state.tab === "messages" && state.msgThread === t && (state.msgView === "thread" || window.innerWidth > 760);
     if (!mine) {
       if (viewing && document.visibilityState !== "hidden") markRead(t);
-      else toast("💬 " + personName(m.author_email) + (t === "equipe" ? " (équipe)" : "") + " : " + String(m.body).replace(/\s+/g, " ").slice(0, 70));
+      else toast("💬 " + personLabel(m.author_id, m.author_email) + (t === "equipe" ? " (équipe)" : "") + " : " + String(m.body).replace(/\s+/g, " ").slice(0, 70));
     }
     updateMsgBadge();
     if (state.tab === "messages") render();
@@ -5686,7 +5733,7 @@ body.salle-tablette .roomchips { display:flex; }
   function msgBubble(m) {
     var mine = m.author_id === sessionUser, canDel = mine || (!m.to_user_id && isAdmin);
     var wrap = h("div", { class: "bubble" + (mine ? " mine" : "") + (m.kind === "tache" ? " task" : "") });
-    if (!mine) wrap.append(h("div", { class: "bwho", text: personName(m.author_email) }));
+    if (!mine) wrap.append(h("div", { class: "bwho", text: personLabel(m.author_id, m.author_email) }));
     if (m.kind === "tache") {
       var cb = h("input", { type: "checkbox", checked: !!m.done_at, disabled: readOnly, "aria-label": "Tâche faite" });
       cb.addEventListener("change", function () { msgToggleDone(m, cb.checked); });
@@ -5700,7 +5747,7 @@ body.salle-tablette .roomchips { display:flex; }
         "📦 " + (it ? it.name : (m.item_name || "article")) + (it && it.tracked !== false ? " · stock " + fmt(it.qty) : "")));
     }
     var meta = h("div", { class: "bmeta" }, h("span", { text: msgClock(m.created_at) }));
-    if (m.kind === "tache" && m.done_at) meta.append(h("span", { text: " · fait par " + personName(m.done_by) + " " + msgClock(m.done_at) }));
+    if (m.kind === "tache" && m.done_at) meta.append(h("span", { text: " · fait par " + personLabel(null, m.done_by) + " " + msgClock(m.done_at) }));
     if (canDel && !readOnly) { var del = h("button", { class: "bdel", type: "button", text: "Supprimer", "aria-label": "Supprimer ce message" }); del.addEventListener("click", function () { msgDelete(m, del); }); meta.append(del); }
     wrap.append(meta);
     return wrap;
@@ -5740,31 +5787,43 @@ body.salle-tablette .roomchips { display:flex; }
   function parkMessages() {
     msgFocus = null;
     if (msgEls && document.activeElement === msgEls.ta) msgFocus = { a: msgEls.ta.selectionStart, b: msgEls.ta.selectionEnd };
+    else if (document.activeElement && document.activeElement.classList && document.activeElement.classList.contains("msgrename-inp")) msgFocus = { rename: true, a: document.activeElement.selectionStart, b: document.activeElement.selectionEnd };
   }
   function renderMessages(box) {
     if (!msgEls) msgEls = buildMsgUi();
     var E = msgEls;
     if (!msgOk) { box.append(h("div", { class: "dnote", text: "La messagerie n'est pas encore activée : lancez le script SQL « ajout-messages » dans Supabase (voir le guide)." })); return; }
+    if (Date.now() - msgPeopleAt > 60000) loadPeople();
     var threads = msgThreads(); if (threads.indexOf(state.msgThread) === -1) state.msgThread = "equipe";
     var t = state.msgThread, prevThread = E.root.getAttribute("data-thread");
     E.root.setAttribute("data-thread", t); E.root.classList.toggle("show-thread", state.msgView === "thread");
     // liste des conversations
     E.list.textContent = "";
+    if (msgPerson(sessionUser)) {
+      E.list.append(state.msgRename === sessionUser ? h("div", { class: "msgme" }, h("div", { class: "meta", text: "Votre nom, tel que l'équipe le voit :" }), nameEditor(sessionUser))
+        : h("div", { class: "msgme" }, h("span", { text: "Vous : " }), h("strong", { text: personLabel(sessionUser, myEmail) }),
+          h("button", { class: "btn sm", type: "button", text: "✎ Mon nom", "aria-label": "Changer mon nom affiché", onclick: function () { startRename(sessionUser); } })));
+    }
     var order = threads.slice(1).sort(function (a, b) { var la = msgLast(a), lb = msgLast(b); return (lb ? lb.created_at : "") < (la ? la.created_at : "") ? -1 : (lb ? lb.created_at : "") > (la ? la.created_at : "") ? 1 : msgThreadTitle(a).localeCompare(msgThreadTitle(b)); });
     ["equipe"].concat(order).forEach(function (th) {
       var last = msgLast(th), n = msgUnread(th), btn = h("button", { class: "msgconv" + (th === t ? " on" : ""), type: "button", "aria-current": th === t ? "true" : "false",
         onclick: function () { state.msgThread = th; state.msgView = "thread"; state.msgAttach = null; state.msgTask = false; markRead(th); render(); } },
-        h("span", { class: "mc-av", text: th === "equipe" ? "👥" : personName((msgPerson(th) || {}).email).charAt(0) }),
+        h("span", { class: "mc-av", text: th === "equipe" ? "👥" : personLabel(th, (msgPerson(th) || {}).email).charAt(0) }),
         h("span", { class: "mc-main" }, h("span", { class: "mc-name", text: msgThreadTitle(th) }),
-          h("span", { class: "mc-prev", text: last ? (last.author_id === sessionUser ? "Vous : " : (th === "equipe" ? personName(last.author_email) + " : " : "")) + String(last.body).replace(/\s+/g, " ").slice(0, 60) : (th === "equipe" ? "Tout le cabinet" : "Message privé") })),
+          h("span", { class: "mc-prev", text: last ? (last.author_id === sessionUser ? "Vous : " : (th === "equipe" ? personLabel(last.author_id, last.author_email) + " : " : "")) + String(last.body).replace(/\s+/g, " ").slice(0, 60) : (th === "equipe" ? "Tout le cabinet" : "Message privé") })),
         h("span", { class: "mc-side" }, last ? h("span", { class: "mc-time", text: msgClock(last.created_at) }) : null, n ? h("span", { class: "msgbadge", text: String(n) }) : null));
       E.list.append(btn);
     });
     if (threads.length === 1) E.list.append(h("div", { class: "meta mc-solo", text: "Les autres personnes du cabinet apparaîtront ici dès qu'elles auront rejoint l'équipe." }));
     // en-tête
     E.head.textContent = "";
-    E.head.append(h("button", { class: "btn sm msgback", type: "button", text: "← Conversations", onclick: function () { state.msgView = "list"; render(); } }),
-      h("div", null, h("div", { class: "mh-title", text: msgThreadTitle(t) }), h("div", { class: "meta", text: t === "equipe" ? "Visible par toute l'équipe de « " + cabinetName + " »" : "Message privé : seuls vous deux le voyez" })));
+    var who = t === "equipe" ? null : msgPerson(t);
+    var kids = [h("button", { class: "btn sm msgback", type: "button", text: "← Conversations", onclick: function () { state.msgView = "list"; render(); } }),
+      state.msgRename === t && t !== "equipe" ? h("div", { class: "mh-edit" }, h("div", { class: "meta", text: "Nom affiché pour « " + (who ? who.email : "") + " » :" }), nameEditor(t))
+        : h("div", { class: "mh-main" }, h("div", { class: "mh-title", text: msgThreadTitle(t) }),
+          h("div", { class: "meta", text: t === "equipe" ? "Visible par toute l'équipe de « " + cabinetName + " »" : "Message privé : seuls vous deux le voyez" + (who && who.email ? " · " + who.email : "") }))];
+    if (canRename(t) && state.msgRename !== t) kids.push(h("button", { class: "btn sm msgren", type: "button", text: "✎ Renommer", "aria-label": "Renommer " + msgThreadTitle(t), onclick: function () { startRename(t); } }));
+    kids.forEach(function (k) { E.head.append(k); });
     // messages
     var atBottom = E.scroll.scrollHeight - E.scroll.scrollTop - E.scroll.clientHeight < 80 || prevThread !== t;
     E.scroll.textContent = "";
@@ -5786,7 +5845,11 @@ body.salle-tablette .roomchips { display:flex; }
     box.append(E.root);
     if (atBottom) E.scroll.scrollTop = E.scroll.scrollHeight;
     if (state.msgView === "thread" || window.innerWidth > 760) { if ((msgReads[t] || "") < ((msgLast(t) || {}).created_at || "") && document.visibilityState !== "hidden") markRead(t); }
-    if (msgFocus) { try { E.ta.focus(); E.ta.setSelectionRange(msgFocus.a, msgFocus.b); } catch (e) {} msgFocus = null; }
+    if (msgFocus) {
+      try { var fe = msgFocus.rename ? E.root.querySelector(".msgrename-inp") : E.ta; if (fe) { fe.focus(); fe.setSelectionRange(Math.min(msgFocus.a, fe.value.length), Math.min(msgFocus.b, fe.value.length)); } } catch (e) {}
+      msgFocus = null;
+    }
+    if (msgWantRename) { var ri = E.root.querySelector(".msgrename-inp"); if (ri) { try { ri.focus(); ri.select(); } catch (e) {} } msgWantRename = false; }
   }
   function renderInventory(box) {
     var rsc = roomScope();
@@ -9161,6 +9224,7 @@ body.salle-tablette .roomchips { display:flex; }
         render();
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "movements" }, function (p) { if (p.new && p.new.cabinet_id === cabinetId) addLogRow(p.new); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "equipe_noms" }, function (p) { if ((p.new && p.new.cabinet_id === cabinetId) || (p.old && p.eventType === "DELETE")) loadPeople(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, function (p) {
         if (p.eventType === "DELETE") { msgs = msgs.filter(function (m) { return m.id !== (p.old && p.old.id); }); updateMsgBadge(); if (state.tab === "messages") render(); return; }
         if (!p.new || p.new.cabinet_id !== cabinetId) return;
