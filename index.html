@@ -128,10 +128,10 @@ h1 { font-size:28px; font-weight:700; color:var(--brand); }
 .sb-title { font-weight:700; color:var(--brand); }
 .sb-pin { border:0; background:transparent; font-size:16px; opacity:.5; padding:4px 6px; border-radius:8px; }
 .sb-pin[aria-pressed="true"] { opacity:1; background:var(--surface-2); }
-.tab { display:flex; align-items:center; gap:10px; width:100%; text-align:left; border:0; background:transparent; padding:10px 12px; border-radius:10px; color:var(--muted); font-weight:500; font-size:15px; }
-.tab:hover { background:var(--surface-2); color:var(--ink); }
+.tab, .tab-act { display:flex; align-items:center; gap:10px; width:100%; text-align:left; border:0; background:transparent; padding:10px 12px; border-radius:10px; color:var(--muted); font-weight:500; font-size:15px; }
+.tab:hover, .tab-act:hover { background:var(--surface-2); color:var(--ink); }
 .tab[aria-selected="true"] { background:var(--surface-2); color:var(--brand); font-weight:600; }
-.tab .ti { width:22px; text-align:center; flex:none; }
+.tab .ti, .tab-act .ti { width:22px; text-align:center; flex:none; }
 .tab-trash { margin-top:auto; }
 .sb-backdrop { display:none; }
 .title-left { display:flex; align-items:center; gap:10px; min-width:0; }
@@ -435,8 +435,8 @@ h1, h2, h3, .tile-name, .tile-num, .fav-num, .catrow, .counter .n { font-family:
 .sidebar { background:var(--sb-bg); border-right-color:transparent; }
 .sidebar::after { background:var(--sb-ink); }
 .sb-title { color:var(--sb-title); }
-.tab { color:var(--sb-ink); }
-.tab:hover { background:var(--sb-hover); color:var(--sb-active-ink); }
+.tab, .tab-act { color:var(--sb-ink); }
+.tab:hover, .tab-act:hover { background:var(--sb-hover); color:var(--sb-active-ink); }
 .tab[aria-selected="true"] { background:var(--sb-active-bg); color:var(--sb-active-ink); box-shadow:inset 3px 0 0 var(--sb-mark); }
 .sb-pin[aria-pressed="true"] { background:var(--sb-hover); }
 .search, .btn { border-radius:12px; }
@@ -603,7 +603,7 @@ header.top h1::before { content:"S"; flex:none; display:grid; place-items:center
 .table { border-radius:16px; box-shadow:var(--shadow); }
 .dsec, .supplier, .ucard, .kpi, .fccard, .fpanel { border-radius:16px; }
 .sidebar { border-right:1px solid var(--line); }
-.tab { border-radius:12px; font-weight:600; }
+.tab, .tab-act { border-radius:12px; font-weight:600; }
 :root[data-theme="recept"] .tab[aria-selected="true"] { box-shadow:none; }
 dialog { border-radius:22px; box-shadow:0 30px 80px rgba(16,24,40,.30); }
 dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
@@ -1043,6 +1043,26 @@ html.mod-equipe .sb-title { color:var(--brand); }
   html.is-touch .sb-group { margin-top:6px; }
   html.is-touch .sb-label { padding-bottom:2px; }
 }
+
+/* ===== v103 : trois espaces de stock + la communication ===== */
+.modsw { gap:6px; align-items:center; }
+.modgrp { display:inline-flex; gap:3px; }
+.moddiv { width:1px; align-self:stretch; background:var(--line); margin:3px 2px; }
+.modbtn .mi-ic { font-size:15px; }
+.sb-headtxt { display:flex; flex-direction:column; line-height:1.2; min-width:0; }
+.sb-prod { font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+.sb-group { margin-top:6px; }
+@media (max-width: 760px) {
+  .modbtn { padding:6px 9px; }
+  .modbtn[aria-selected="false"] .mi-lb { display:none; }
+}
+html.is-touch .tab-act { min-height:46px; font-size:16px; }
+@media (min-width: 761px) and (max-width: 940px) {
+  html.is-touch .tab-act { flex-direction:column; justify-content:center; gap:4px; text-align:center; padding:10px 2px; min-height:64px; font-size:10.5px; line-height:1.15; }
+  html.is-touch .tab-act .ti { font-size:24px; width:auto; }
+  html.is-touch .sb-prod { display:none; }
+}
+@media (min-width: 761px) and (max-height: 860px) { html.is-touch .tab-act { min-height:42px; padding-top:7px; padding-bottom:7px; font-size:15.5px; } }
 </style>
 </head>
 <body>
@@ -1111,9 +1131,16 @@ html.mod-equipe .sb-title { color:var(--brand); }
     <div class="title-row">
       <div class="title-left"><button class="btn sm" id="menuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="sidebar" title="Menu">☰</button><h1 id="appTitle">SimSimStock</h1></div>
       <div class="who-row">
-        <div class="modsw" id="modSwitch" role="tablist" aria-label="Choisir l'outil">
-          <button type="button" class="modbtn" role="tab" data-module="stock" aria-selected="true" title="Gestion de stock">📦 Stock</button>
-          <button type="button" class="modbtn" role="tab" data-module="equipe" aria-selected="false" title="Communication interne">💬 Équipe <span class="msgbadge hidden" id="modBadge" aria-label="messages non lus"></span></button>
+        <div class="modsw" id="modSwitch" role="tablist" aria-label="Choisir l'espace de travail">
+          <div class="modgrp" role="group" aria-label="Gestion de stock">
+            <button type="button" class="modbtn" role="tab" data-module="stock" aria-selected="true" title="Gestion de stock : le stock au quotidien"><span class="mi-ic">📦</span><span class="mi-lb">Stock</span></button>
+            <button type="button" class="modbtn" role="tab" data-module="achats" aria-selected="false" title="Gestion de stock : achats et commandes"><span class="mi-ic">🛒</span><span class="mi-lb">Achats</span></button>
+            <button type="button" class="modbtn" role="tab" data-module="materiel" aria-selected="false" title="Gestion de stock : salles et matériel"><span class="mi-ic">🏥</span><span class="mi-lb">Matériel</span></button>
+          </div>
+          <span class="moddiv" aria-hidden="true"></span>
+          <div class="modgrp" role="group" aria-label="Communication interne">
+            <button type="button" class="modbtn" role="tab" data-module="equipe" aria-selected="false" title="Communication interne"><span class="mi-ic">💬</span><span class="mi-lb">Équipe</span> <span class="msgbadge hidden" id="modBadge" aria-label="messages non lus"></span></button>
+          </div>
         </div>
         <button class="btn sm" id="kBtn" type="button" title="Rechercher partout (Ctrl + K)" aria-label="Rechercher partout">⌘K</button>
         <button class="btn sm" id="helpBtn" type="button" title="Aide et raccourcis" aria-label="Aide">?</button>
@@ -1131,7 +1158,7 @@ html.mod-equipe .sb-title { color:var(--brand); }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v102</div>
+            <div class="menu-who"><span id="who"></span> · v103</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1177,29 +1204,31 @@ html.mod-equipe .sb-title { color:var(--brand); }
   </div>
 
   <nav class="sidebar" id="sidebar" role="tablist" aria-orientation="vertical" aria-label="Sections de l'application">
-    <div class="sb-head"><span class="sb-title" id="sbTitle">Gestion de stock</span><button class="sb-pin" id="sbPin" type="button" aria-pressed="false" title="Garder le menu toujours ouvert">📌</button></div>
-    <button type="button" class="sb-scan" id="sbScan" data-mod="stock"><span class="ti">📷</span><span class="tl">Scanner</span></button>
-    <div class="sb-group" data-mod="stock"><div class="sb-label">Au quotidien</div>
+    <div class="sb-head"><span class="sb-headtxt"><span class="sb-prod" id="sbProd">Gestion de stock</span><span class="sb-title" id="sbTitle">Stock au quotidien</span></span><button class="sb-pin" id="sbPin" type="button" aria-pressed="false" title="Garder le menu toujours ouvert">📌</button></div>
+    <button type="button" class="sb-scan" id="sbScan" data-mod="stock materiel"><span class="ti">📷</span><span class="tl">Scanner</span></button>
+    <div class="sb-group" data-mod="stock">
       <button class="tab" role="tab" data-tab="inventaire" data-mod="stock" aria-selected="true"><span class="ti">📦</span><span class="tl">Stock</span></button>
       <button class="tab" role="tab" data-tab="favoris" data-mod="stock" aria-selected="false"><span class="ti">⭐</span><span class="tl">Favoris</span></button>
-      <button class="tab" role="tab" data-tab="commande" data-mod="stock" aria-selected="false"><span class="ti">🛒</span><span class="tl">À commander</span></button>
       <button class="tab" role="tab" data-tab="comptage" data-mod="stock" aria-selected="false"><span class="ti">🔢</span><span class="tl">Comptage</span></button>
-    </div>
-    <div class="sb-group" data-mod="stock"><div class="sb-label">Salles et matériel</div>
-      <button class="tab" role="tab" data-tab="salles" data-mod="stock" aria-selected="false"><span class="ti">🏠</span><span class="tl">Salles</span></button>
-      <button class="tab" role="tab" data-tab="controles" data-mod="stock" aria-selected="false"><span class="ti">✅</span><span class="tl">Contrôles<span id="ctlBadge"></span></span></button>
-      <button class="tab" role="tab" data-tab="equipements" data-mod="stock" aria-selected="false"><span class="ti">🔧</span><span class="tl">Équipements</span></button>
-    </div>
-    <div class="sb-group" data-mod="stock"><div class="sb-label">Achats et suivi</div>
-      <button class="tab" role="tab" data-tab="catalogues" data-mod="stock" aria-selected="false"><span class="ti">📚</span><span class="tl">Catalogues</span></button>
       <button class="tab" role="tab" data-tab="historique" data-mod="stock" aria-selected="false"><span class="ti">🕘</span><span class="tl">Historique</span></button>
-      <button class="tab" role="tab" data-tab="donnees" data-mod="stock" aria-selected="false"><span class="ti">📊</span><span class="tl">Données</span></button>
+      <button type="button" class="tab-act" data-act="recapBtn" data-mod="stock"><span class="ti">📅</span><span class="tl">Récap de la semaine</span></button>
     </div>
-    <div class="sb-group" data-mod="equipe"><div class="sb-label">Communication</div>
+    <div class="sb-group" data-mod="achats">
+      <button class="tab" role="tab" data-tab="commande" data-mod="achats" aria-selected="false"><span class="ti">🛒</span><span class="tl">À commander</span></button>
+      <button class="tab" role="tab" data-tab="catalogues" data-mod="achats" aria-selected="false"><span class="ti">📚</span><span class="tl">Catalogues</span></button>
+      <button class="tab" role="tab" data-tab="donnees" data-mod="achats" aria-selected="false"><span class="ti">📊</span><span class="tl">Dépenses et prix</span></button>
+      <button type="button" class="tab-act" data-act="jrnBtn" data-mod="achats"><span class="ti">🧾</span><span class="tl">Factures importées</span></button>
+      <button type="button" class="tab-act" data-act="importBtn" data-mod="achats"><span class="ti">⬆</span><span class="tl">Importer une facture</span></button>
+      <button type="button" class="tab-act" data-act="photoInvBtn" data-mod="achats"><span class="ti">📷</span><span class="tl">Photo d'une facture</span></button>
+    </div>
+    <div class="sb-group" data-mod="materiel">
+      <button class="tab" role="tab" data-tab="salles" data-mod="materiel" aria-selected="false"><span class="ti">🏠</span><span class="tl">Salles</span></button>
+      <button class="tab" role="tab" data-tab="controles" data-mod="materiel" aria-selected="false"><span class="ti">✅</span><span class="tl">Contrôles<span id="ctlBadge"></span></span></button>
+      <button class="tab" role="tab" data-tab="equipements" data-mod="materiel" aria-selected="false"><span class="ti">🔧</span><span class="tl">Équipements</span></button>
+    </div>
+    <div class="sb-group" data-mod="equipe">
       <button class="tab" role="tab" data-tab="messages" data-mod="equipe" aria-selected="false"><span class="ti">💬</span><span class="tl">Messages <span class="msgbadge hidden" id="msgBadge" aria-label="messages non lus"></span></span></button>
       <button class="tab" role="tab" data-tab="taches" data-mod="equipe" aria-selected="false"><span class="ti">☑</span><span class="tl">Tâches <span class="msgbadge hidden" id="taskBadge" aria-label="tâches à faire"></span></span></button>
-    </div>
-    <div class="sb-group" data-mod="equipe"><div class="sb-label">Personnes</div>
       <button class="tab hidden" role="tab" data-tab="utilisateurs" data-mod="equipe" aria-selected="false"><span class="ti">👥</span><span class="tl">Utilisateurs</span></button>
     </div>
     <div class="sb-group sb-bottom">
@@ -1208,15 +1237,19 @@ html.mod-equipe .sb-title { color:var(--brand); }
     </div>
   </nav>
   <div class="sb-backdrop" id="sbBackdrop"></div>
-  <button type="button" class="fab-scan" id="fabScan" data-mod="stock" aria-label="Scanner un code-barres"><span aria-hidden="true">📷</span><span>Scanner</span></button>
+  <button type="button" class="fab-scan" id="fabScan" data-mod="stock materiel" aria-label="Scanner un code-barres"><span aria-hidden="true">📷</span><span>Scanner</span></button>
   <nav class="bottombar" id="bottombar" aria-label="Navigation rapide">
     <button type="button" data-go="inventaire" data-mod="stock"><span>📦</span><span>Stock</span></button>
     <button type="button" data-go="favoris" data-mod="stock"><span>⭐</span><span>Favoris</span></button>
-    <button type="button" class="bb-scan" id="bbScan" data-mod="stock"><span>📷</span><span>Scanner</span></button>
-    <button type="button" data-go="commande" data-mod="stock"><span>🛒</span><span>À commander</span></button>
+    <button type="button" class="bb-scan" id="bbScan" data-mod="stock materiel"><span>📷</span><span>Scanner</span></button>
+    <button type="button" data-go="comptage" data-mod="stock"><span>🔢</span><span>Comptage</span></button>
+    <button type="button" data-go="commande" data-mod="achats"><span>🛒</span><span>À commander</span></button>
+    <button type="button" data-go="catalogues" data-mod="achats"><span>📚</span><span>Catalogues</span></button>
+    <button type="button" data-act="jrnBtn" data-mod="achats"><span>🧾</span><span>Factures</span></button>
+    <button type="button" data-go="salles" data-mod="materiel"><span>🏠</span><span>Salles</span></button>
+    <button type="button" data-go="controles" data-mod="materiel"><span>✅</span><span>Contrôles</span></button>
     <button type="button" data-go="messages" data-mod="equipe"><span>💬</span><span>Messages</span></button>
     <button type="button" data-go="taches" data-mod="equipe"><span>☑</span><span>Tâches</span></button>
-    <button type="button" data-module="stock" data-mod="equipe"><span>📦</span><span>Stock</span></button>
     <button type="button" id="bbMenu"><span>☰</span><span>Menu</span></button>
   </nav>
 
@@ -6518,21 +6551,26 @@ html.mod-equipe .sb-title { color:var(--brand); }
     else renderHistory(box);
   }
   // ---------- deux outils dans une même appli : Gestion de stock et Communication interne ----------
-  var MODS = { stock: { title: "Gestion de stock", tab: "inventaire" }, equipe: { title: "Communication interne", tab: "messages" } }, lastTabs = {};
-  function tabModule(t) { var b = document.querySelector('.tab[data-tab="' + t + '"]'), m = b && b.getAttribute("data-mod"); return m === "equipe" ? "equipe" : m === "all" ? "all" : "stock"; }
+  var MODS = {
+    stock: { prod: "Gestion de stock", title: "Stock au quotidien", tab: "inventaire" },
+    achats: { prod: "Gestion de stock", title: "Achats et commandes", tab: "commande" },
+    materiel: { prod: "Gestion de stock", title: "Salles et matériel", tab: "salles" },
+    equipe: { prod: "Communication interne", title: "Équipe", tab: "messages" }
+  }, lastTabs = {};
+  function tabModule(t) { var b = document.querySelector('.tab[data-tab="' + t + '"]'), m = (b && b.getAttribute("data-mod") || "stock").split(/\s+/)[0]; return m === "all" ? "all" : MODS[m] ? m : "stock"; }
   function refreshSbGroups() {
     Array.prototype.forEach.call(document.querySelectorAll("#sidebar .sb-group"), function (g) {
       var has = !!g.querySelector(".tab:not(.hidden)"); g.classList.toggle("sb-empty", !has);
     });
   }
   function applyModule(m) {
-    if (m !== "stock" && m !== "equipe") m = "stock";
+    if (!MODS[m]) m = "stock";
     state.module = m;
     try { localStorage.setItem("simsim_module", m); } catch (e) {}
     document.documentElement.classList.toggle("mod-equipe", m === "equipe");
-    Array.prototype.forEach.call(document.querySelectorAll("[data-mod]"), function (e) { var dm = e.getAttribute("data-mod"); e.classList.toggle("mod-off", dm !== "all" && dm !== m); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-mod]"), function (e) { var dm = e.getAttribute("data-mod"); e.classList.toggle("mod-off", dm !== "all" && dm.split(/\s+/).indexOf(m) === -1); });
     Array.prototype.forEach.call(document.querySelectorAll("#modSwitch .modbtn"), function (b) { b.setAttribute("aria-selected", b.getAttribute("data-module") === m ? "true" : "false"); });
-    $("sbTitle").textContent = MODS[m].title;
+    $("sbTitle").textContent = MODS[m].title; $("sbProd").textContent = MODS[m].prod;
     refreshSbGroups();
   }
   function setModule(m) {
@@ -6541,6 +6579,9 @@ html.mod-equipe .sb-title { color:var(--brand); }
     applyModule(m);
     goTab(lastTabs[m] || MODS[m].tab);
   }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-act]"), function (b) {
+    b.addEventListener("click", function () { var t = $(b.getAttribute("data-act")); setSidebarOpen(false); if (t) t.click(); });
+  });
   Array.prototype.forEach.call(document.querySelectorAll("[data-module]"), function (b) { b.addEventListener("click", function () { setModule(b.getAttribute("data-module")); setSidebarOpen(false); }); });
   // tâches : ce qui m'attend, ce que j'ai demandé, ce qui est fait
   function taskLists() {
@@ -8713,7 +8754,7 @@ html.mod-equipe .sb-title { color:var(--brand); }
       if (target === "controles") loadControls();
     });
   });
-  (function () { var m = "stock"; try { m = localStorage.getItem("simsim_module") || "stock"; } catch (e) {} if (urlSalle) m = "stock"; applyModule(m); if (m === "equipe") { state.tab = "messages"; syncTabs(); } })();
+  (function () { var m = "stock"; try { m = localStorage.getItem("simsim_module") || "stock"; } catch (e) {} if (urlSalle || !MODS[m]) m = "stock"; applyModule(m); if (m !== "stock") { state.tab = MODS[m].tab; syncTabs(); } })();
   var searchTimer = null;
   $("search").addEventListener("input", function (e) { var v = e.target.value; clearTimeout(searchTimer); searchTimer = setTimeout(function () { state.q = v; render(); }, 130); });
   $("addBtn").addEventListener("click", function () { var rr = roomScope(); if (rr) { state.room = rr.id; openRoomAdd(); } else openItem(null); });
@@ -10018,7 +10059,7 @@ html.mod-equipe .sb-title { color:var(--brand); }
     usersData.members = null; usersData.msg = ""; usersData.mail = null;
     priceAlerts = []; alertOk = false; cmpData = null; cmpErr = ""; cmpStamp = 0;
     loadOrderQty();
-    state.tab = state.module === "equipe" ? (lastTabs.equipe || "messages") : "inventaire"; state.filter = "all"; state.cat = ""; state.q = ""; state.view = ""; $("search").value = "";
+    state.tab = state.module === "stock" ? "inventaire" : (lastTabs[state.module] || MODS[state.module].tab); state.filter = "all"; state.cat = ""; state.q = ""; state.view = ""; $("search").value = "";
     syncTabs(); showScreen("app"); startData(); render();
     if (welcomePw) { welcomePw = false; toast("Bienvenue ! Choisissez un mot de passe pour vous reconnecter facilement."); openPw(null); }
     else if (incomingAdd) startIncoming();
