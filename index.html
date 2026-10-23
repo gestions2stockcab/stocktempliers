@@ -1109,6 +1109,21 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
 /* ===== v106 : bouton Précédent ===== */
 #backBtn { margin-right:6px; }
 @media (max-width: 760px) { .bk-lb { display:none; } }
+
+/* ===== v107 : facture d'équipement ===== */
+.eqi-file { display:flex; gap:8px; flex-wrap:wrap; margin:6px 0; }
+.eqi-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:4px 12px; }
+.eqi-quick { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin:2px 0 6px; }
+.eqi-list { display:flex; flex-direction:column; max-height:220px; overflow:auto; border:1px solid var(--line); border-radius:10px; padding:4px 8px; }
+.eqi-row { display:flex; gap:10px; align-items:center; padding:7px 2px; cursor:pointer; }
+.eqi-row input { width:20px; height:20px; flex:none; }
+.eqi-new { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:10px 0 4px; }
+.eqi-new input[type=number] { width:70px; }
+.eqi-new input[type=text] { width:150px; }
+.eqdocs { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+.eqdocrow { display:flex; gap:8px; align-items:center; padding:6px 0; border-top:1px solid var(--line); }
+.eqdoc-main { flex:1; min-width:0; }
+.eqdocadd { display:flex; gap:8px; align-items:center; margin:8px 0; flex-wrap:wrap; }
 </style>
 </head>
 <body>
@@ -1198,7 +1213,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v106</div>
+            <div class="menu-who"><span id="who"></span> · v107</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1590,9 +1605,19 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
       <label class="f">N° de série <input id="eqSerial" type="text" maxlength="60" autocomplete="off"></label>
       <label class="f">Date d'achat ou d'installation <input id="eqBought" type="date"></label>
       <label class="f">Fin de garantie <input id="eqWarranty" type="date"></label>
+      <div id="eqBuyBox" class="hidden">
+        <label class="f">Prix d'achat HT (€) <input id="eqPrice" type="number" step="0.01" min="0" inputmode="decimal"></label>
+        <label class="f">Fournisseur <input id="eqBuySup" type="text" maxlength="80" autocomplete="off"></label>
+        <label class="f">N° de la facture d'achat <input id="eqBuyDoc" type="text" maxlength="40" autocomplete="off"></label>
+      </div>
       <label class="f">Prochain contrôle ou maintenance <input id="eqNext" type="date"></label>
       <label class="f">Société de maintenance <input id="eqMaint" type="text" maxlength="80" autocomplete="off"></label>
       <label class="f">Notes <input id="eqNotes" type="text" maxlength="200" autocomplete="off"></label>
+    </div>
+    <div id="eqDocsBox" class="hidden">
+      <h3>Documents de cet équipement</h3>
+      <div id="eqDocsList"></div>
+      <div class="eqdocadd"><select id="eqDocKind" aria-label="Type de document"></select><button class="btn sm" id="eqDocAdd" type="button">＋ Ajouter un document</button><input id="eqDocFile" type="file" accept="application/pdf,image/*" class="hidden"></div>
     </div>
     <div class="umsg bad hidden" id="eqErr" role="alert"></div>
     <div class="dlg-actions">
@@ -1622,6 +1647,35 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
       <button class="btn" id="intCancel" type="button">Annuler</button>
       <button class="btn danger hidden" id="intDel" type="button">Supprimer</button>
     </div>
+  </div>
+</dialog>
+
+<dialog id="eqiDlg" class="wide">
+  <div class="dlg">
+    <h2>Facture d'équipement</h2>
+    <div class="sub">Ajoutez la facture de vos fauteuils (ou d'un autoclave, d'une radio…) : elle est gardée dans l'appli, et le prix, la date d'achat et la garantie sont reportés sur chaque équipement choisi.</div>
+    <div class="eqi-file">
+      <button class="btn primary" id="eqiPick" type="button">📄 Choisir la facture (PDF ou photo)</button>
+      <button class="btn" id="eqiShot" type="button">📷 Photographier</button>
+      <input id="eqiFile" type="file" accept="application/pdf,image/*" class="hidden" aria-label="Facture en PDF ou en photo">
+      <input id="eqiShotFile" type="file" accept="image/*" capture="environment" class="hidden" aria-label="Photo de la facture">
+    </div>
+    <div class="meta" id="eqiStatus" role="status">Vous pouvez aussi remplir les champs à la main, sans fichier.</div>
+    <div class="eqi-grid">
+      <label class="f">Fournisseur <input id="eqiSup" type="text" maxlength="80" autocomplete="off" placeholder="Ex : Planmeca"></label>
+      <label class="f">N° de facture <input id="eqiNum" type="text" maxlength="40" autocomplete="off"></label>
+      <label class="f">Date de la facture <input id="eqiDate" type="date"></label>
+      <label class="f">Total HT de la facture (€) <input id="eqiTotal" type="number" step="0.01" min="0" inputmode="decimal"></label>
+      <label class="f">Fin de garantie <input id="eqiWar" type="date"></label>
+    </div>
+    <div class="eqi-quick"><span class="meta">Garantie :</span> <button class="btn sm" type="button" data-yrs="1">+ 1 an</button> <button class="btn sm" type="button" data-yrs="2">+ 2 ans</button> <button class="btn sm" type="button" data-yrs="5">+ 5 ans</button></div>
+    <h3>Équipements concernés</h3>
+    <div id="eqiList" class="eqi-list"></div>
+    <div class="eqi-new">Créer <input id="eqiNewN" type="number" min="0" max="20" value="0" aria-label="Nombre d'équipements à créer"> nouvel(s) équipement(s) de type <select id="eqiNewKind" aria-label="Type"></select> nommé(s) <input id="eqiNewName" type="text" maxlength="40" value="Fauteuil" aria-label="Nom de base"></div>
+    <label class="f">Prix HT par équipement (€) <input id="eqiEach" type="number" step="0.01" min="0" inputmode="decimal"></label>
+    <div class="meta" id="eqiSplit"></div>
+    <div class="umsg bad hidden" id="eqiErr" role="alert"></div>
+    <div class="dlg-actions"><button class="btn primary" id="eqiSave" type="button">Enregistrer</button><button class="btn" id="eqiCancel" type="button">Annuler</button></div>
   </div>
 </dialog>
 
@@ -2530,6 +2584,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
     });
   }
   // ---------- équipements : pannes, maintenances, coûts ----------
+  var eqDocs = [], eqDocsOk = false, EQ_DOC_KINDS = [["facture_achat", "Facture d'achat"], ["garantie", "Garantie"], ["contrat", "Contrat"], ["notice", "Notice"], ["rapport", "Rapport d'intervention"], ["autre", "Autre"]];
   var eqOk = false, eqList = [], eqInts = [], eqOpen = {}, eqvOk = false, eqvRows = [], eqEdit = null, intEdit = null;
   var EQ_KINDS = [["fauteuil", "Fauteuil / unit"], ["autoclave", "Autoclave, stérilisation"], ["radio", "Radiologie"], ["aspiration", "Aspiration, compresseur"], ["laveur", "Laveur-désinfecteur"], ["info", "Informatique"], ["autre", "Autre"]];
   var INT_KINDS = [["panne", "Panne, dépannage"], ["maintenance", "Maintenance préventive"], ["controle", "Contrôle réglementaire"], ["installation", "Installation, achat"], ["autre", "Autre"]];
@@ -2545,6 +2600,12 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
       eqOk = true; eqList = res.data || [];
       if (state.tab === "equipements") render();
     }).catch(function () { eqOk = false; });
+    sb.from("equipement_docs").select("*").eq("cabinet_id", cid).order("created_at", { ascending: false }).then(function (res) {
+      if (cid !== cabinetId) return;
+      if (res.error) { eqDocsOk = false; return; }
+      eqDocsOk = true; eqDocs = res.data || [];
+      if (state.tab === "equipements") render();
+    }).catch(function () { eqDocsOk = false; });
     fetchAll(function () { return sb.from("interventions").select("*").eq("cabinet_id", cid).order("on_date", { ascending: false }); }).then(function (res) {
       if (cid !== cabinetId) return;
       if (res.error) return;
@@ -2576,13 +2637,14 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
       return;
     }
     var today = todayIso(), in90 = plusDays(90), in30 = plusDays(30), act = eqList.filter(function (e) { return !e.archived; });
-    var cost12 = 0; act.forEach(function (e) { cost12 += eqCosts(e.id).y12; });
+    var cost12 = 0, buyTotal = 0; act.forEach(function (e) { cost12 += eqCosts(e.id).y12; buyTotal += Number(e.purchase_price) || 0; });
     var warn = act.filter(function (e) { return e.warranty_until && String(e.warranty_until) >= today && String(e.warranty_until) <= in90; });
     var chk = act.filter(function (e) { return e.next_check && String(e.next_check) <= in30; });
     var kp = h("div", { class: "kpis dsec" });
-    [["Équipements suivis", String(act.length)], ["Pannes et maintenance, 12 mois", money(cost12) + " HT"], ["Garanties qui se terminent (90 j)", String(warn.length)], ["Contrôles à prévoir (30 j)", String(chk.length)]].forEach(function (k) { kp.append(h("div", { class: "kpi" }, h("b", { text: k[1] }), h("span", { text: k[0] }))); });
+    [["Équipements suivis", String(act.length)], ["Pannes et maintenance, 12 mois", money(cost12) + " HT"], buyTotal > 0 ? ["Achats d'équipement", money(buyTotal) + " HT"] : null, ["Garanties qui se terminent (90 j)", String(warn.length)], ["Contrôles à prévoir (30 j)", String(chk.length)]].filter(Boolean).forEach(function (k) { kp.append(h("div", { class: "kpi" }, h("b", { text: k[1] }), h("span", { text: k[0] }))); });
     box.append(kp);
     if (!readOnly) box.append(h("div", { class: "eqbar" }, h("button", { class: "btn primary", type: "button", onclick: function () { openEqForm(null); }, text: "＋ Ajouter un équipement" }),
+      h("button", { class: "btn", type: "button", onclick: function () { openEqInvoice(); }, text: "📄 Ajouter une facture d'équipement" }),
       h("button", { class: "btn", type: "button", disabled: !act.length, onclick: function () { openIntForm(null, act[0] && act[0].id); }, text: "＋ Noter une intervention" })));
     if (!act.length) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Aucun équipement" }), h("div", { text: "Ajoutez vos fauteuils, autoclave, radio, aspiration… puis notez chaque panne ou maintenance : vous verrez ce que chaque équipement vous coûte, et quand sa garantie se termine." }))));
@@ -2619,6 +2681,9 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
           readOnly ? null : h("button", { class: "btn sm", type: "button", onclick: function () { openEqForm(e); }, text: "Modifier" }))),
       badges,
       h("div", { class: "meta", text: c.n ? c.n + " intervention" + (c.n > 1 ? "s" : "") + " · " + money(c.y12) + " HT sur 12 mois · " + money(c.total) + " HT au total" + (c.last ? " · dernière le " + frDate(c.last) : "") : "Aucune intervention notée." }));
+    if (e.purchase_price != null || e.purchase_supplier || e.purchase_doc) card.append(h("div", { class: "meta", text: "Achat : " + [e.purchase_price != null ? money(Number(e.purchase_price)) + " HT" : "", e.purchase_supplier, e.purchase_doc ? "facture " + e.purchase_doc : ""].filter(Boolean).join(" · ") }));
+    var edocs = eqDocsOf(e.id);
+    if (edocs.length) { var drow = h("div", { class: "eqdocs" }); edocs.forEach(function (d) { drow.append(h("button", { class: "btn sm", type: "button", title: "Ouvrir " + (d.file_name || ""), onclick: function () { openEqDoc(d); }, text: "📄 " + (d.label || d.file_name || kindLabel(EQ_DOC_KINDS, d.kind)) })); }); card.append(drow); }
     if (e.maintenance_by) card.append(h("div", { class: "meta", text: "Maintenance : " + e.maintenance_by }));
     if (e.notes) card.append(h("div", { class: "meta", text: e.notes }));
     if (c.n) {
@@ -2635,6 +2700,177 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
     }
     return card;
   }
+  // ---------- facture d'équipement et documents des équipements ----------
+  function eqDocsOf(id) { return eqDocs.filter(function (d) { return d.equipement_id === id; }); }
+  function eqUnusedPaths(eqId) {
+    var others = eqDocs.filter(function (d) { return d.equipement_id !== eqId; }), out = [];
+    eqDocsOf(eqId).forEach(function (d) { if (d.file_path && out.indexOf(d.file_path) === -1 && !others.some(function (o) { return o.file_path === d.file_path; })) out.push(d.file_path); });
+    return out;
+  }
+  function uploadEqFile(file) {
+    var safe = String(file.name || "document").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9._-]+/g, "_");
+    var path = cabinetId + "/equipements/" + Date.now() + "-" + safe;
+    return sb.storage.from("docs").upload(path, file, { contentType: file.type || "application/octet-stream", upsert: false }).then(function (up) { if (up && up.error) throw up.error; return path; });
+  }
+  function openEqDoc(d) {
+    if (!d || !d.file_path) return;
+    var w = null; try { w = window.open("", "_blank"); } catch (e) {}
+    sb.storage.from("docs").createSignedUrl(d.file_path, 600).then(function (res) {
+      if (res.error || !res.data) { if (w) w.close(); toast("Le document n'a pas pu être ouvert."); return; }
+      if (w) w.location.href = res.data.signedUrl; else window.location.href = res.data.signedUrl;
+    }).catch(function () { if (w) w.close(); toast("Le document n'a pas pu être ouvert."); });
+  }
+  var eqDelAsk = "";
+  function drawEqDocs() {
+    var box = $("eqDocsBox"), list = $("eqDocsList");
+    box.classList.toggle("hidden", !(eqEdit && eqDocsOk)); list.textContent = "";
+    if (!(eqEdit && eqDocsOk)) return;
+    fillSelect($("eqDocKind"), EQ_DOC_KINDS, "facture_achat");
+    $("eqDocAdd").classList.toggle("hidden", readOnly);
+    var docs = eqDocsOf(eqEdit.id);
+    if (!docs.length) list.append(h("div", { class: "meta", text: "Aucun document pour l'instant." }));
+    docs.forEach(function (d) {
+      var del = h("button", { class: "btn sm danger", type: "button", text: "Supprimer" });
+      del.addEventListener("click", function () { if (eqDelAsk !== d.id) { eqDelAsk = d.id; del.textContent = "Confirmer"; return; } eqDelAsk = ""; deleteEqDoc(d); });
+      list.append(h("div", { class: "eqdocrow" }, h("div", { class: "eqdoc-main" }, h("div", { class: "item-name", text: d.label || d.file_name || "Document" }),
+        h("div", { class: "meta", text: [kindLabel(EQ_DOC_KINDS, d.kind), d.doc_date ? frDate(d.doc_date) : "", d.amount_ht != null ? money(Number(d.amount_ht)) + " HT" : "", d.file_name].filter(Boolean).join(" · ") })),
+        h("button", { class: "btn sm", type: "button", text: "Ouvrir", onclick: function () { openEqDoc(d); } }), readOnly ? null : del));
+    });
+  }
+  function deleteEqDoc(d) {
+    sb.from("equipement_docs").delete().eq("id", d.id).then(function (res) {
+      if (res.error) { toast("Le document n'a pas pu être supprimé."); return; }
+      eqDocs = eqDocs.filter(function (x) { return x.id !== d.id; });
+      if (d.file_path && !eqDocs.some(function (x) { return x.file_path === d.file_path; })) { try { sb.storage.from("docs").remove([d.file_path]).then(function () {}, function () {}); } catch (e) {} }
+      toast("Document supprimé."); drawEqDocs(); render();
+    }, function () { toast("Connexion impossible."); });
+  }
+  $("eqDocAdd").addEventListener("click", function () { $("eqDocFile").click(); });
+  $("eqDocFile").addEventListener("change", function (e) {
+    var f = e.target.files && e.target.files[0]; e.target.value = "";
+    if (!f || !eqEdit || readOnly) return;
+    if (!(f.type === "application/pdf" || /^image\//.test(f.type))) { toast("Seuls les PDF et les photos sont acceptés."); return; }
+    if (f.size > 20 * 1024 * 1024) { toast("Ce fichier dépasse 20 Mo."); return; }
+    var kind = $("eqDocKind").value, eid = eqEdit.id; toast("Envoi du document…");
+    uploadEqFile(f).then(function (path) {
+      return sb.from("equipement_docs").insert({ cabinet_id: cabinetId, equipement_id: eid, kind: kind, label: kindLabel(EQ_DOC_KINDS, kind), file_path: path, file_name: f.name, mime: f.type || "", size: f.size, uploaded_by: myEmail }).select();
+    }).then(function (res) {
+      if (res.error) throw res.error;
+      eqDocs = (res.data || []).concat(eqDocs); toast("Document ajouté."); drawEqDocs(); render();
+    }).catch(function () { toast("Le document n'a pas pu être envoyé."); });
+  });
+  // lire une facture (PDF avec texte, scan ou photo) sans ouvrir l'aperçu des achats
+  function readDocLines(file) {
+    var isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name || "");
+    if (!isPdf) {
+      return Promise.all([loadOcr(), shrinkImage(file, 2400)]).then(function (a) { ocrStatus.pre = "Lecture de la photo"; return a[0].recognize(a[1]); }).then(function (r) { ocrStatus(""); return ocrLines(r.data); });
+    }
+    if (!window.pdfjsLib) return Promise.reject(new Error("pdfjs"));
+    return new Promise(function (resolve, reject) { var r = new FileReader(); r.onerror = reject; r.onload = function () { resolve(new Uint8Array(r.result)); }; r.readAsArrayBuffer(file); })
+      .then(function (data) { return window.pdfjsLib.getDocument({ data: data }).promise; })
+      .then(function (pdf) {
+        var all = [], pp = Promise.resolve();
+        var step = function (i) { pp = pp.then(function () { return pdf.getPage(i).then(function (pg) { return pg.getTextContent(); }).then(function (tc) { all = all.concat(linesFromContent(tc.items)); }); }); };
+        for (var i = 1; i <= pdf.numPages; i++) step(i);
+        return pp.then(function () {
+          if (all.length >= 6) return all;
+          ocrStatus("Lecture du scan…");
+          return ocrPdf(pdf, file).then(function (pages) { ocrStatus(""); return [].concat.apply([], pages); });
+        });
+      });
+  }
+  function equipInvoiceGuess(lines) {
+    var head = lines.slice(0, 90).join(" "), full = lines.join(" "), meta = {};
+    try { meta = docMeta(lines) || {}; } catch (e) {}
+    var g = { supplier: guessSupplier(head), number: meta.number || "", date: meta.date || "", total: meta.total };
+    if (!g.number) { var m = /\b(?:facture|fact\.?)\s*(?:n[°o]|num[ée]ro|#)?\s*[:.]?\s*([A-Z0-9][A-Z0-9\/_-]{3,19})/i.exec(full); if (m && /\d/.test(m[1])) g.number = m[1]; }
+    if (!g.date) { var d = /\b(\d{2})[\/.-](\d{2})[\/.-](\d{4})\b/.exec(full); if (d) g.date = d[3] + "-" + d[2] + "-" + d[1]; }
+    if (g.total == null) { var t = /total\s*h\.?t\.?(?:\s*net)?\s*:?\s*€?\s*([\d\s.]*\d[,.]\d{2})/i.exec(full); if (t) g.total = num(t[1].replace(/\s/g, "")); }
+    return g;
+  }
+  var eqi = { file: null, touched: false };
+  function eqiCount() { return document.querySelectorAll("#eqiList input:checked").length + Math.max(0, Math.min(20, parseInt($("eqiNewN").value, 10) || 0)); }
+  function eqiRecalc() {
+    var n = eqiCount(), tot = $("eqiTotal").value === "" ? null : num($("eqiTotal").value);
+    if (!eqi.touched && tot != null && n > 0) $("eqiEach").value = String(Math.round(tot / n * 100) / 100);
+    var each = $("eqiEach").value === "" ? null : num($("eqiEach").value);
+    $("eqiSplit").textContent = n ? n + " équipement" + (n > 1 ? "s" : "") + (each != null ? " × " + money(each) + " HT" + (tot != null ? " = " + money(each * n) + " HT" + (Math.abs(each * n - tot) > 0.05 ? " (la facture indique " + money(tot) + ")" : "") : "") : "") : "Choisissez au moins un équipement.";
+  }
+  function openEqInvoice() {
+    if (readOnly) return;
+    if (!eqDocsOk) { toast("Lancez d'abord le script SQL « ajout-equipements-factures » dans Supabase."); return; }
+    eqi.file = null; eqi.touched = false;
+    ["eqiSup", "eqiNum", "eqiDate", "eqiTotal", "eqiWar", "eqiEach"].forEach(function (id) { $(id).value = ""; });
+    $("eqiNewN").value = "0"; $("eqiNewName").value = "Fauteuil"; fillSelect($("eqiNewKind"), EQ_KINDS, "fauteuil");
+    $("eqiStatus").textContent = "Vous pouvez aussi remplir les champs à la main, sans fichier."; $("eqiErr").classList.add("hidden"); $("eqiSave").disabled = false;
+    var list = $("eqiList"); list.textContent = "";
+    var act = eqList.filter(function (e) { return !e.archived; }).sort(function (a, b) { return (a.kind === "fauteuil" ? 0 : 1) - (b.kind === "fauteuil" ? 0 : 1) || String(a.name).localeCompare(String(b.name), "fr"); });
+    if (!act.length) list.append(h("div", { class: "meta", text: "Aucun équipement pour l'instant : créez-les juste en dessous." }));
+    act.forEach(function (e) {
+      var cb = h("input", { type: "checkbox", value: e.id }); cb.addEventListener("change", eqiRecalc);
+      list.append(h("label", { class: "eqi-row" }, cb, h("span", { text: e.name + (e.room ? " (" + e.room + ")" : "") }), e.purchase_doc ? h("span", { class: "meta", text: " · déjà rattaché à la facture " + e.purchase_doc }) : null));
+    });
+    eqiRecalc(); $("eqiDlg").showModal();
+  }
+  function eqiRead(file) {
+    if (!file) return;
+    eqi.file = file; $("eqiStatus").textContent = "Lecture de « " + file.name + " »…";
+    readDocLines(file).then(function (lines) {
+      var g = equipInvoiceGuess(lines), found = [];
+      if (g.supplier && !$("eqiSup").value) { $("eqiSup").value = g.supplier; found.push("fournisseur"); }
+      if (g.number && !$("eqiNum").value) { $("eqiNum").value = g.number; found.push("n° " + g.number); }
+      if (g.date && !$("eqiDate").value) { $("eqiDate").value = g.date; found.push("date"); }
+      if (g.total != null && $("eqiTotal").value === "") { $("eqiTotal").value = String(g.total); found.push("total " + money(g.total)); }
+      $("eqiStatus").textContent = "Facture jointe (" + file.name + "). " + (found.length ? "Lu : " + found.join(", ") + ". Vérifiez avant d'enregistrer." : "Je n'ai pas pu en lire les chiffres : remplissez les champs ci-dessous.");
+      eqiRecalc();
+    }, function (e) {
+      $("eqiStatus").textContent = "Facture jointe (" + file.name + "), mais je n'ai pas pu la lire" + (e && e.message === "chargement" ? " (lecteur de scans indisponible : vérifiez internet)" : "") + " : remplissez les champs à la main.";
+    });
+  }
+  $("eqiPick").addEventListener("click", function () { $("eqiFile").click(); });
+  $("eqiShot").addEventListener("click", function () { $("eqiShotFile").click(); });
+  $("eqiFile").addEventListener("change", function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; eqiRead(f); });
+  $("eqiShotFile").addEventListener("change", function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; eqiRead(f); });
+  ["eqiTotal", "eqiNewN"].forEach(function (id) { $(id).addEventListener("input", eqiRecalc); });
+  $("eqiEach").addEventListener("input", function () { eqi.touched = true; eqiRecalc(); });
+  Array.prototype.forEach.call(document.querySelectorAll(".eqi-quick [data-yrs]"), function (b) {
+    b.addEventListener("click", function () {
+      var base = $("eqiDate").value || todayIso(), d = new Date(base + "T12:00:00"); d.setFullYear(d.getFullYear() + parseInt(b.getAttribute("data-yrs"), 10));
+      $("eqiWar").value = d.toISOString().slice(0, 10);
+    });
+  });
+  $("eqiCancel").addEventListener("click", function () { $("eqiDlg").close(); });
+  $("eqiSave").addEventListener("click", function () {
+    var err = $("eqiErr"); err.classList.add("hidden");
+    var ids = Array.prototype.map.call(document.querySelectorAll("#eqiList input:checked"), function (c) { return c.value; }), nNew = Math.max(0, Math.min(20, parseInt($("eqiNewN").value, 10) || 0));
+    var fail = function (t) { err.textContent = t; err.classList.remove("hidden"); $("eqiSave").disabled = false; };
+    if (!ids.length && !nNew) { fail("Choisissez au moins un équipement, ou créez-en."); return; }
+    var date = $("eqiDate").value || null, war = $("eqiWar").value || null, sup = $("eqiSup").value.trim(), numb = $("eqiNum").value.trim();
+    var each = $("eqiEach").value === "" ? null : Math.max(0, num($("eqiEach").value)), file = eqi.file, base = $("eqiNewName").value.trim() || "Équipement";
+    $("eqiSave").disabled = true;
+    var created = [], path = "";
+    (file ? uploadEqFile(file) : Promise.resolve("")).then(function (pth) {
+      path = pth;
+      var patch = { purchase_supplier: sup, purchase_doc: numb }; if (each != null) patch.purchase_price = each; if (date) patch.bought_on = date; if (war) patch.warranty_until = war;
+      var chain = Promise.resolve();
+      if (nNew) {
+        var rows = []; for (var i = 1; i <= nNew; i++) rows.push(Object.assign({ cabinet_id: cabinetId, name: nNew > 1 || base.match(/\d$/) === null ? base + " " + i : base, kind: $("eqiNewKind").value }, patch));
+        chain = chain.then(function () { return sb.from("equipements").insert(rows).select(); }).then(function (r) { if (r.error) throw r.error; created = r.data || []; });
+      }
+      ids.forEach(function (id) { chain = chain.then(function () { return sb.from("equipements").update(patch).eq("id", id); }).then(function (r) { if (r && r.error) throw r.error; }); });
+      return chain;
+    }).then(function () {
+      var all = ids.concat(created.map(function (c) { return c.id; }));
+      if (!path) return all.length;
+      var rows = all.map(function (id) { return { cabinet_id: cabinetId, equipement_id: id, kind: "facture_achat", label: "Facture" + (numb ? " " + numb : ""), file_path: path, file_name: file.name, mime: file.type || "", size: file.size, doc_number: numb, doc_date: date, amount_ht: each, uploaded_by: myEmail }; });
+      return sb.from("equipement_docs").insert(rows).then(function (r) { if (r.error) throw r.error; return all.length; });
+    }).then(function (n) {
+      $("eqiDlg").close(); toast("Facture ajoutée à " + n + " équipement" + (n > 1 ? "s" : "") + "."); loadEquip();
+    }).catch(function (e) {
+      var m = String((e && e.message) || "");
+      fail(/column|relation|does not exist|schema cache/i.test(m) ? "Lancez le script SQL « ajout-equipements-factures » dans Supabase." : "L'enregistrement a échoué : réessayez (rien n'a été perdu).");
+    });
+  });
   function fillSelect(sel, opts, val) { sel.textContent = ""; opts.forEach(function (o) { sel.append(h("option", { value: o[0], text: o[1] })); }); if (val != null) sel.value = val; }
   function openEqForm(e) {
     if (readOnly) return;
@@ -2644,6 +2880,9 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
     $("eqName").value = e ? e.name : ""; $("eqRoom").value = e ? e.room || "" : ""; $("eqBrand").value = e ? e.brand || "" : ""; $("eqModel").value = e ? e.model || "" : ""; $("eqSerial").value = e ? e.serial || "" : "";
     $("eqBought").value = e && e.bought_on ? String(e.bought_on).slice(0, 10) : ""; $("eqWarranty").value = e && e.warranty_until ? String(e.warranty_until).slice(0, 10) : ""; $("eqNext").value = e && e.next_check ? String(e.next_check).slice(0, 10) : "";
     $("eqMaint").value = e ? e.maintenance_by || "" : ""; $("eqNotes").value = e ? e.notes || "" : "";
+    $("eqBuyBox").classList.toggle("hidden", !eqDocsOk);
+    $("eqPrice").value = e && e.purchase_price != null ? String(Number(e.purchase_price)) : ""; $("eqBuySup").value = e ? e.purchase_supplier || "" : ""; $("eqBuyDoc").value = e ? e.purchase_doc || "" : "";
+    drawEqDocs();
     $("eqErr").classList.add("hidden"); $("eqSave").disabled = false; $("eqDel").classList.toggle("hidden", !e); $("eqDel").textContent = "Supprimer";
     $("eqDlg").showModal(); $("eqName").focus();
   }
@@ -2653,6 +2892,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
     if (!name) { err.textContent = "Donnez un nom à l'équipement."; err.classList.remove("hidden"); return; }
     var row = { name: name, kind: $("eqKind").value, room: $("eqRoom").value.trim(), brand: $("eqBrand").value.trim(), model: $("eqModel").value.trim(), serial: $("eqSerial").value.trim(),
       bought_on: $("eqBought").value || null, warranty_until: $("eqWarranty").value || null, next_check: $("eqNext").value || null, maintenance_by: $("eqMaint").value.trim(), notes: $("eqNotes").value.trim() };
+    if (eqDocsOk) { row.purchase_price = $("eqPrice").value === "" ? null : Math.max(0, num($("eqPrice").value)); row.purchase_supplier = $("eqBuySup").value.trim(); row.purchase_doc = $("eqBuyDoc").value.trim(); }
     $("eqSave").disabled = true;
     var q = eqEdit ? sb.from("equipements").update(row).eq("id", eqEdit.id) : sb.from("equipements").insert(Object.assign({ cabinet_id: cabinetId }, row));
     q.then(function (res) {
@@ -2664,8 +2904,10 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
   $("eqDel").addEventListener("click", function () {
     if (!eqEdit) return;
     if ($("eqDel").textContent !== "Confirmer") { $("eqDel").textContent = "Confirmer"; return; }
-    sb.from("equipements").delete().eq("id", eqEdit.id).then(function (res) {
+    var delId = eqEdit.id, gone = eqUnusedPaths(delId);
+    sb.from("equipements").delete().eq("id", delId).then(function (res) {
       if (res.error) { $("eqErr").textContent = "La suppression a échoué."; $("eqErr").classList.remove("hidden"); return; }
+      if (gone.length) { try { sb.storage.from("docs").remove(gone).then(function () {}, function () {}); } catch (e) {} }
       $("eqDlg").close(); toast("Équipement supprimé avec son historique."); loadEquip();
     });
   });
@@ -7587,7 +7829,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
   }
   function guessSupplier(text) {
     if (/m[ée]ga ?dental/i.test(text || "")) return "Méga Dental";
-    var known = ["Komet", "GACD", "Dental Price", "Septodont", "Henry Schein", "Dentsply", "Straumann", "Nobel Biocare", "Zimmer", "Biotech Dental", "Pierre Fabre", "Ivoclar", "Kerr"];
+    var known = ["Komet", "Planmeca", "Dentsply Sirona", "Sirona", "KaVo", "Anthos", "Stern Weber", "Castellini", "Belmont", "Takara", "A-dec", "Dürr Dental", "Melag", "W&H", "Acteon", "Carestream", "GACD", "Dental Price", "Septodont", "Henry Schein", "Dentsply", "Straumann", "Nobel Biocare", "Zimmer", "Biotech Dental", "Pierre Fabre", "Ivoclar", "Kerr"];
     for (var i = 0; i < known.length; i++) if (new RegExp(known[i], "i").test(text || "")) return known[i];
     var m = /^\s*(?:SAS|SARL|SASU|SA|EURL)\s+([A-Z0-9][A-Za-z0-9&'.-]*(?: [A-Z][A-Za-z0-9&'.-]*){0,2}?)(?=\s+\d|\s+[a-zé]|$)/.exec(text || "");
     return m ? m[1] : "";
@@ -9522,7 +9764,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     stopPresence();
     channels = []; started = false;
-    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; ctOk = false; ctList = []; jrnFileOk = false; openOk = false; recoFn = ""; settings = {}; msgOk = false; msgs = []; msgPeople = []; msgReads = {}; msgDraft = {}; updateMsgBadge(); descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
+    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqDocs = []; eqDocsOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; ctOk = false; ctList = []; jrnFileOk = false; openOk = false; recoFn = ""; settings = {}; msgOk = false; msgs = []; msgPeople = []; msgReads = {}; msgDraft = {}; updateMsgBadge(); descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
   }
   // ---------- rejoindre un cabinet avec un lien d'invitation (#rejoindre=...) ----------
   var JOIN_KEY = "simsim_join";
