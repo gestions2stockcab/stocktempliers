@@ -1174,6 +1174,22 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
 .eqi-rowbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:4px 0 8px; }
 .eqi-exist { margin:6px 0; }
 .eqi-exist summary { cursor:pointer; color:var(--muted); font-weight:600; padding:6px 0; }
+
+/* ===== v113 : page centrale de chaque espace ===== */
+.hub .hubhead { text-align:left; margin:4px 0 20px; }
+.hub-crumb { color:var(--muted); font-size:14px; margin-bottom:6px; }
+.linkbtn { border:0; background:transparent; color:var(--brand); font:inherit; cursor:pointer; padding:0; text-decoration:underline; }
+.hubhead h2 { margin:0; font-size:clamp(28px, 4.5vw, 40px); font-weight:800; letter-spacing:-.02em; }
+.hub-ic { margin-right:2px; }
+.hubtiles { grid-template-columns:repeat(auto-fill, minmax(290px, 1fr)); }
+@media (max-width: 600px) { .hubtiles { grid-template-columns:1fr; } }
+.hubtile { min-height:118px; padding:20px 20px; }
+.hubtile .ht-title { font-size:23px; }
+.hubtile .ht-sub { font-size:13.5px; }
+.hubtile.act { background:color-mix(in srgb, var(--tc) 5%, var(--surface)); border-style:dashed; }
+.hubtile:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+.tab-act.on, .sb-hub.on { background:var(--surface-2); color:var(--brand); font-weight:600; }
+@media (max-width: 600px) { .hubtile { min-height:98px; padding:14px 16px; } }
 </style>
 </head>
 <body>
@@ -1267,7 +1283,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v112</div>
+            <div class="menu-who"><span id="who"></span> · v113</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1337,6 +1353,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
   <nav class="sidebar" id="sidebar" role="tablist" aria-orientation="vertical" aria-label="Sections de l'application">
     <div class="sb-head"><span class="sb-headtxt"><span class="sb-prod" id="sbProd">Gestion de stock</span><span class="sb-title" id="sbTitle">Stock au quotidien</span></span><button class="sb-pin" id="sbPin" type="button" aria-pressed="false" title="Garder le menu toujours ouvert">📌</button></div>
     <button type="button" class="tab-act sb-home" data-module="accueil" data-mod="stock achats materiel equipe"><span class="ti">🏠</span><span class="tl">Accueil</span></button>
+    <button type="button" class="tab-act sb-hub" id="sbHub" data-mod="stock achats materiel equipe"><span class="ti">🧭</span><span class="tl">Vue d'ensemble</span></button>
     <button type="button" class="sb-scan" id="sbScan" data-mod="stock materiel"><span class="ti">📷</span><span class="tl">Scanner</span></button>
     <div class="sb-group" data-mod="accueil">
       <button type="button" class="tab-act" data-module="stock" data-mod="accueil"><span class="ti">📦</span><span class="tl">Stock</span></button>
@@ -1371,6 +1388,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
       <button class="tab hidden" role="tab" data-tab="utilisateurs" data-mod="equipe" aria-selected="false"><span class="ti">👥</span><span class="tl">Utilisateurs</span></button>
     </div>
     <div class="sb-group sb-bottom">
+      <button class="tab sb-hide" role="tab" data-tab="hub" data-mod="all" aria-selected="false"><span class="ti">🧭</span><span class="tl">Vue d'ensemble</span></button>
       <button class="tab hidden sb-hide" role="tab" data-tab="administration" data-mod="all" aria-selected="false"><span class="ti">🛠</span><span class="tl">Administration</span></button>
       <button class="tab tab-trash sb-hide" role="tab" data-tab="corbeille" data-mod="stock" aria-selected="false" title="Articles supprimés"><span class="ti">🗑</span><span class="tl">Corbeille<span id="trashCount"></span></span></button>
     </div>
@@ -7013,6 +7031,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
     else if (state.tab === "messages") renderMessages(box);
     else if (state.tab === "taches") renderTasks(box);
     else if (state.tab === "accueil") renderHome(box);
+    else if (state.tab === "hub") renderHub(box);
     else if (state.tab === "catalogues") renderCatalogues(box);
     else if (state.tab === "commande") renderOrder(box);
     else if (state.tab === "comptage") renderCount(box);
@@ -7047,11 +7066,12 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
     refreshSbGroups(); if (pres.ch) trackPresence();
   }
   function setModule(m) {
-    if (m === state.module) return;
+    if (m === state.module) { if (m !== "accueil" && state.tab !== "hub") goTab("hub"); return; }   // retoucher l'espace en cours : sa vue d'ensemble
     var from = tabModule(state.tab); if (from === state.module) lastTabs[state.module] = state.tab;
     applyModule(m);
-    goTab(lastTabs[m] || MODS[m].tab);
+    goTab(m === "accueil" ? "accueil" : "hub");
   }
+  $("sbHub").addEventListener("click", function () { goTab("hub"); setSidebarOpen(false); });
   Array.prototype.forEach.call(document.querySelectorAll("[data-act]"), function (b) {
     b.addEventListener("click", function () { var t = $(b.getAttribute("data-act")); setSidebarOpen(false); if (t) t.click(); });
   });
@@ -7092,7 +7112,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
   }
   // ---------- page d'accueil : le choix de l'espace, avec ce qui compte dans chacun ----------
   var homeT = null, greeted = false;
-  function homeRefresh() { if (state.tab !== "accueil") return; clearTimeout(homeT); homeT = setTimeout(function () { if (state.tab === "accueil") render(); }, 300); }
+  function homeRefresh() { if (state.tab !== "accueil" && state.tab !== "hub") return; clearTimeout(homeT); homeT = setTimeout(function () { if (state.tab === "accueil" || state.tab === "hub") render(); }, 300); }
   function homeStats() {
     var o = { rupt: [], bas: 0, exp: 0, need: 0, needEur: 0, ordered: 0, ctl: 0, eqLate: 0, eqWarr: 0, ct: 0, unread: 0, tasks: 0, online: 0, alerts: [] };
     items.forEach(function (it) {
@@ -7181,11 +7201,74 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
   function drawStartOpt() { Array.prototype.forEach.call(document.querySelectorAll("[data-start]"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-start") === startPref ? "true" : "false"); }); }
   Array.prototype.forEach.call(document.querySelectorAll("[data-start]"), function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); startPref = b.getAttribute("data-start"); try { localStorage.setItem("simsim_start", startPref); } catch (er) {} drawStartOpt(); toast(startPref === "home" ? "L'appli s'ouvrira sur l'accueil." : "L'appli s'ouvrira sur le dernier espace utilisé."); }); });
   drawStartOpt();
+  // ---------- page centrale d'un espace : ses sous-sections en grandes tuiles (comme le menu de gauche) ----------
+  var SPACE_COLOR = { stock: "#3b6cff", achats: "#f59e0b", materiel: "#14b8a6", equipe: "#8b5cf6" };
+  var SPACE_SUB = { stock: "Le stock au quotidien", achats: "Commandes, catalogues, factures, dépenses", materiel: "Salles, contrôles, équipements, contrats", equipe: "Messages, tâches, qui est connecté" };
+  var SPACE_NAME = { stock: "Stock", achats: "Achats", materiel: "Matériel", equipe: "Équipe" };
+  var SPACE_IC = { stock: "📦", achats: "🛒", materiel: "🏥", equipe: "💬" };
+  function lineStatus(lines, okText) {
+    var on = lines.filter(function (l) { return l[0] > 0; });
+    var tone = on.length ? (on.some(function (l) { return l[2] === "bad"; }) ? "bad" : on.some(function (l) { return l[2] === "warn"; }) ? "warn" : "on") : "ok";
+    return { tone: tone, text: on.length ? on.slice(0, 2).map(function (l) { return l[1]; }).join(" · ") : okText };
+  }
+  function hubDefs(m) {
+    var st = homeStats(), pl = function (n, a, b) { return n + " " + (n > 1 ? b : a); };
+    var favN = 0; items.forEach(function (it) { if (it.favorite) favN++; });
+    var today = new Date().toISOString().slice(0, 10), logToday = logEntries.filter(function (e) { return String(e.at || e.created_at || "").slice(0, 10) === today; }).length;
+    var clickBtn = function (id) { return function () { var b = $(id); if (b) b.click(); }; };
+    var defs = {
+      stock: [
+        { ic: "📦", title: "Stock", sub: "Tous vos articles, par domaine", tab: "inventaire", status: lineStatus([[st.rupt.length, pl(st.rupt.length, "en rupture", "en rupture"), "bad"], [st.bas, st.bas + " sous le seuil", "warn"], [st.exp, st.exp + " à périmer", "warn"]], "Tout est en ordre") },
+        { ic: "⭐", title: "Favoris", sub: "Vos articles du quotidien", tab: "favoris", status: { tone: favN ? "on" : "", text: favN ? pl(favN, "favori", "favoris") : "Aucun favori" } },
+        { ic: "🔢", title: "Comptage", sub: "Compter et corriger le stock", tab: "comptage" },
+        { ic: "🕘", title: "Historique", sub: "Tous les mouvements", tab: "historique", status: logToday ? { tone: "on", text: pl(logToday, "mouvement aujourd'hui", "mouvements aujourd'hui") } : null },
+        { ic: "📅", title: "Récap de la semaine", sub: "Ce qu'il faut savoir cette semaine", act: clickBtn("recapBtn"), action: true },
+        { ic: "🗑", title: "Corbeille", sub: "Articles supprimés", tab: "corbeille", status: trash.size ? { tone: "", text: pl(trash.size, "article", "articles") } : null }
+      ],
+      achats: [
+        { ic: "🛒", title: "À commander", sub: "Ce qui manque, par fournisseur", tab: "commande", status: lineStatus([[st.need, st.need + " à commander" + (st.needEur ? " · ≈ " + money(st.needEur) + " HT" : ""), "warn"], [st.ordered, pl(st.ordered, "commande en attente", "commandes en attente"), ""]], "Rien à commander") },
+        { ic: "📚", title: "Catalogues", sub: "Les catalogues de vos fournisseurs", tab: "catalogues" },
+        { ic: "📊", title: "Dépenses et prix", sub: "Où va l'argent, évolution des prix", tab: "donnees" },
+        { ic: "🧾", title: "Factures importées", sub: "Retrouver une facture et son PDF", act: clickBtn("jrnBtn"), action: true },
+        { ic: "⬆", title: "Importer une facture", sub: "PDF, scan ou fichier", act: clickBtn("importBtn"), action: true, needsWrite: true },
+        { ic: "📷", title: "Photo d'une facture", sub: "Photographier un bon ou une facture", act: clickBtn("photoInvBtn"), action: true, needsWrite: true }
+      ],
+      materiel: [
+        { ic: "🏠", title: "Salles", sub: "Le stock de chaque salle, réassort", tab: "salles", status: { tone: rooms.length ? "on" : "", text: rooms.length ? pl(rooms.length, "salle", "salles") : "Aucune salle" } },
+        { ic: "✅", title: "Contrôles", sub: "Contrôles de salle à faire", tab: "controles", status: lineStatus([[st.ctl, pl(st.ctl, "contrôle à faire", "contrôles à faire"), "bad"]], "Rien à faire") },
+        { ic: "🔧", title: "Équipements", sub: "Fauteuils, autoclave, radio, contrats", tab: "equipements", status: lineStatus([[st.eqLate, pl(st.eqLate, "maintenance à prévoir", "maintenances à prévoir"), "warn"], [st.eqWarr + st.ct, pl(st.eqWarr + st.ct, "échéance à suivre", "échéances à suivre"), ""]], eqOk ? pl(eqList.filter(function (e) { return !e.archived; }).length, "équipement suivi", "équipements suivis") : "À activer") },
+        { ic: "📄", title: "Facture d'équipement", sub: "Ajouter la facture de vos fauteuils : le matériel est créé", act: function () { goTab("equipements"); setTimeout(openEqInvoice, 250); }, action: true, needsWrite: true }
+      ],
+      equipe: [
+        { ic: "💬", title: "Messages", sub: "Écrire à l'équipe ou en privé", tab: "messages", status: lineStatus([[st.unread, pl(st.unread, "message non lu", "messages non lus"), "bad"]], msgOk ? "Rien de nouveau" : "À activer") },
+        { ic: "☑", title: "Tâches", sub: "Ce qu'on vous demande, ce que vous demandez", tab: "taches", status: lineStatus([[st.tasks, pl(st.tasks, "tâche à faire", "tâches à faire"), "warn"]], msgOk ? "Rien à faire" : "À activer") },
+        { ic: "🟢", title: "Qui est connecté", sub: "L'équipe en ligne en ce moment", act: function () { var b = $("presBtn"); if (b) b.click(); }, action: true, status: { tone: st.online ? "on" : "", text: st.online ? st.online + " en ligne" : "Personne d'autre" } }
+      ]
+    };
+    if (m === "equipe" && isAdmin) defs.equipe.splice(2, 0, { ic: "👥", title: "Utilisateurs", sub: "Inviter, gérer les accès", tab: "utilisateurs" });
+    return defs[m] || [];
+  }
+  function renderHub(box) {
+    var m = state.module; if (!SPACE_COLOR[m]) { goTab("accueil"); return; }
+    var wrap = h("div", { class: "home hub" });
+    wrap.append(h("div", { class: "hubhead" },
+      h("div", { class: "hub-crumb" }, h("button", { class: "linkbtn", type: "button", text: "Accueil", onclick: function () { setModule("accueil"); } }), h("span", { text: " › " + MODS[m].prod })),
+      h("h2", null, h("span", { class: "hub-ic", text: SPACE_IC[m] }), " " + SPACE_NAME[m]), h("div", { class: "hg-date", text: SPACE_SUB[m] })));
+    var grid = h("div", { class: "hometiles hubtiles" });
+    hubDefs(m).forEach(function (t) {
+      var dis = t.needsWrite && (readOnly || !db);
+      var status = t.status ? h("span", { class: "ht-status " + (t.status.tone || ""), }, h("i", { class: "ht-dot" }), h("span", { text: t.status.text })) : null;
+      grid.append(h("button", { class: "hometile hubtile" + (t.action ? " act" : ""), type: "button", disabled: dis, style: "--tc:" + SPACE_COLOR[m], "aria-label": t.title + " : " + t.sub,
+        onclick: function () { if (t.tab) goTab(t.tab); else if (t.act) t.act(); } },
+        h("span", { class: "ht-ic", text: t.ic }), h("span", { class: "ht-main" }, t.action ? h("span", { class: "ht-prod", text: "Action rapide" }) : h("span", { class: "ht-prod", text: "Section" }), h("span", { class: "ht-title", text: t.title }), h("span", { class: "ht-sub", text: t.sub }), status), h("span", { class: "ht-go", "aria-hidden": "true", text: "→" })));
+    });
+    wrap.append(grid); box.append(wrap);
+  }
   function syncTabs() {
     document.querySelectorAll(".tab").forEach(function (t) {
       t.setAttribute("aria-selected", t.getAttribute("data-tab") === state.tab ? "true" : "false");
     });
-    refreshSbGroups();
+    refreshSbGroups(); $("sbHub").classList.toggle("on", state.tab === "hub");
     document.querySelectorAll("#bottombar [data-go]").forEach(function (b) {
       if (b.getAttribute("data-go") === state.tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
