@@ -1105,6 +1105,10 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
   .presbtn { padding:6px 9px; }
 }
 @media (max-width: 430px) { .modbtn .mi-lb { display:none !important; } .modbtn { padding:6px 9px; } .modbtn .msgbadge { margin-left:2px; } }
+
+/* ===== v106 : bouton Précédent ===== */
+#backBtn { margin-right:6px; }
+@media (max-width: 760px) { .bk-lb { display:none; } }
 </style>
 </head>
 <body>
@@ -1171,7 +1175,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
 <div class="wrap hidden" id="app">
   <header class="top">
     <div class="title-row">
-      <div class="title-left"><button class="btn sm" id="menuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="sidebar" title="Menu">☰</button><h1 id="appTitle">SimSimStock</h1></div>
+      <div class="title-left"><button class="btn sm" id="menuBtn" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="sidebar" title="Menu">☰</button><button class="btn sm hidden" id="backBtn" type="button" title="Revenir à l'écran précédent (Alt + flèche gauche)" aria-label="Revenir à l'écran précédent">← <span class="bk-lb">Précédent</span></button><h1 id="appTitle">SimSimStock</h1></div>
       <div class="who-row">
         <div class="modsw" id="modSwitch" role="tablist" aria-label="Choisir l'espace de travail">
           <div class="modgrp" role="group" aria-label="Gestion de stock">
@@ -1194,7 +1198,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v105</div>
+            <div class="menu-who"><span id="who"></span> · v106</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -6566,7 +6570,42 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
     refresh();
   }
 
-  function render() {
+  // ---------- bouton « Précédent » : revenir à l'écran d'avant (marche aussi avec le bouton retour du téléphone ou du navigateur) ----------
+  var nav = { list: [], idx: 0, last: "", restoring: false, ready: false, pending: false };
+  function navSnap() { return { mod: state.module, tab: state.tab, cat: state.cat, view: state.view, room: state.room, filter: state.filter, thread: state.msgThread, mview: state.msgView }; }
+  function navSig(o) { return [o.mod, o.tab, o.cat, o.view, o.room, o.filter, o.tab === "messages" ? o.thread + "/" + o.mview : ""].join("|"); }
+  function updateBackBtn() { var b = $("backBtn"); if (b) b.classList.toggle("hidden", nav.idx <= 0); }
+  function navTrack() {
+    if (!nav.ready || nav.restoring) return;
+    var snap = navSnap(), sig = navSig(snap);
+    if (nav.pending) { nav.pending = false; nav.list = [snap]; nav.idx = 0; nav.last = sig; try { history.replaceState({ s: 0, ss: 1 }, ""); } catch (e) {} updateBackBtn(); return; }
+    if (sig === nav.last) return;
+    nav.last = sig; nav.idx += 1; nav.list.length = nav.idx; nav.list.push(snap);
+    try { history.pushState({ s: nav.idx, ss: 1 }, ""); } catch (e) {}
+    updateBackBtn();
+  }
+  function navReset() {
+    var snap = navSnap(); nav.list = [snap]; nav.idx = 0; nav.last = navSig(snap); nav.ready = true; nav.pending = true;
+    try { history.replaceState({ s: 0, ss: 1 }, ""); } catch (e) {}
+    updateBackBtn();
+  }
+  function navRestore(snap) {
+    nav.restoring = true;
+    try {
+      if (snap.mod !== state.module) applyModule(snap.mod);
+      if (snap.tab !== state.tab) { var b = document.querySelector('.tab[data-tab="' + snap.tab + '"]'); if (b) b.click(); }
+      state.cat = snap.cat; state.view = snap.view; state.room = snap.room; state.filter = snap.filter; state.msgThread = snap.thread; state.msgView = snap.mview;
+      syncTabs(); render();
+    } finally { nav.restoring = false; }
+    nav.last = navSig(navSnap());
+  }
+  window.addEventListener("popstate", function (e) {
+    var st = e.state; if (!nav.ready || !st || !st.ss || typeof st.s !== "number" || !nav.list[st.s]) return;
+    nav.idx = st.s; navRestore(nav.list[st.s]); updateBackBtn();
+  });
+  $("backBtn").addEventListener("click", function () { if (nav.idx > 0) { try { history.back(); } catch (e) {} } });
+  function render() { renderInner(); navTrack(); }
+  function renderInner() {
     dupCache = null;
     scoped(function () { if (state.cat && domainList().indexOf(state.cat) === -1) state.cat = ""; });
     scoped(function () { renderAlerts(); });
@@ -10238,7 +10277,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
     priceAlerts = []; alertOk = false; cmpData = null; cmpErr = ""; cmpStamp = 0;
     loadOrderQty();
     state.tab = state.module === "stock" ? "inventaire" : (lastTabs[state.module] || MODS[state.module].tab); state.filter = "all"; state.cat = ""; state.q = ""; state.view = ""; $("search").value = "";
-    syncTabs(); showScreen("app"); startData(); render();
+    syncTabs(); navReset(); showScreen("app"); startData(); render();
     if (welcomePw) { welcomePw = false; toast("Bienvenue ! Choisissez un mot de passe pour vous reconnecter facilement."); openPw(null); }
     else if (incomingAdd) startIncoming();
     else { maybeTour(); maybeRecap(); }
