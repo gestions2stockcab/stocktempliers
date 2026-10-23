@@ -1153,6 +1153,11 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
 .startopt { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
 #appTitle { cursor:pointer; }
 @media (min-width: 761px) and (max-width: 940px) { html.is-touch .sb-home .tl { font-size:10.5px; } }
+
+/* ===== v109 : bonjour et nom modifiable ===== */
+.homegreet { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.homename-edit { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0 4px; }
+.homename-edit input { flex:1 1 220px; min-width:0; font-size:22px; font-weight:800; border:2px solid var(--brand); border-radius:12px; padding:8px 12px; background:var(--surface); color:var(--ink); }
 </style>
 </head>
 <body>
@@ -1246,7 +1251,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v108</div>
+            <div class="menu-who"><span id="who"></span> · v109</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -2213,7 +2218,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false, ownerOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
-  var state = { tab: "inventaire", filter: "all", q: "", cat: "", module: "stock", msgThread: "equipe", msgView: "list", msgAttach: null, msgTask: false, msgRename: null, msgRenameVal: "", hideCat: false, hideTotal: true, totalSup: {}, totalLimit: 60, totalSig: "", collapsed: {}, tileSort: "usuel", limit: 60, limitSig: "", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
+  var state = { tab: "inventaire", filter: "all", q: "", cat: "", module: "stock", homeRename: false, homeNameVal: "", msgThread: "equipe", msgView: "list", msgAttach: null, msgTask: false, msgRename: null, msgRenameVal: "", hideCat: false, hideTotal: true, totalSup: {}, totalLimit: 60, totalSig: "", collapsed: {}, tileSort: "usuel", limit: 60, limitSig: "", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
   var chain = Promise.resolve();
 
@@ -7005,8 +7010,8 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
     box.append(h("div", { class: "dnote", text: "Pour créer une tâche : ouvrez Messages, choisissez une personne, touchez « ☑ Tâche » puis écrivez la demande." }));
   }
   // ---------- page d'accueil : le choix de l'espace, avec ce qui compte dans chacun ----------
-  var homeT = null;
-  function homeRefresh() { if (state.tab !== "accueil") return; clearTimeout(homeT); homeT = setTimeout(function () { if (state.tab === "accueil") render(); }, 300); }
+  var homeT = null, homeFocus = false, greeted = false;
+  function homeRefresh() { if (state.tab !== "accueil" || state.homeRename) return; clearTimeout(homeT); homeT = setTimeout(function () { if (state.tab === "accueil") render(); }, 300); }
   function homeStats() {
     var o = { rupt: [], bas: 0, exp: 0, need: 0, needEur: 0, ordered: 0, ctl: 0, eqLate: 0, eqWarr: 0, ct: 0, unread: 0, tasks: 0, online: 0, alerts: [] };
     items.forEach(function (it) {
@@ -7023,10 +7028,46 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
     o.online = Object.keys(pres.online).filter(function (u) { return u !== sessionUser; }).length;
     return o;
   }
+  // ---------- mon nom (accueil) : partagé avec l'équipe si la messagerie est prête, sinon gardé sur cet appareil ----------
+  function localNameKey() { return "simsim_name_" + sessionUser; }
+  function myName() {
+    var p = msgPerson(sessionUser); if (p && p.nom) return p.nom;
+    try { var l = localStorage.getItem(localNameKey()); if (l) return l; } catch (e) {}
+    return personName(myEmail);
+  }
+  function myNameChosen() {
+    var p = msgPerson(sessionUser); if (p && p.nom) return true;
+    try { return !!localStorage.getItem(localNameKey()); } catch (e) { return false; }
+  }
+  function saveMyName(nom) {
+    nom = String(nom || "").replace(/\s+/g, " ").trim();
+    if (nom.length > 40) { toast("Nom trop long : 40 caractères au maximum."); return; }
+    try { if (nom) localStorage.setItem(localNameKey(), nom); else localStorage.removeItem(localNameKey()); } catch (e) {}
+    state.homeRename = false;
+    var p = msgPerson(sessionUser);
+    if (msgOk && p) saveName(sessionUser, nom);          // partagé avec l'équipe (affiche le message et redessine)
+    else { toast(nom ? "Enregistré : bonjour " + nom + " !" : "Nom d'origine rétabli."); render(); }
+  }
   function renderHome(box) {
-    var st = homeStats(), me = personLabel(sessionUser, myEmail), now = new Date();
+    var st = homeStats(), me = myName(), now = new Date();
     var day = now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-    box.append(h("div", { class: "homehead" }, h("h2", { text: "Bonjour" + (me && me !== "?" ? " " + me : "") + " 👋" }), h("div", { class: "meta", text: day.charAt(0).toUpperCase() + day.slice(1) + " · " + cabinetName })));
+    var head = h("div", { class: "homehead" });
+    if (state.homeRename) {
+      var inp = h("input", { type: "text", class: "home-name-inp", maxlength: "40", value: state.homeNameVal, placeholder: personName(myEmail), autocomplete: "off", "aria-label": "Votre nom" });
+      inp.addEventListener("input", function () { state.homeNameVal = inp.value; });
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); saveMyName(inp.value); } else if (e.key === "Escape") { state.homeRename = false; render(); } });
+      head.append(h("div", { class: "meta", text: "Comment voulez-vous qu'on vous appelle ?" }), h("div", { class: "homename-edit" }, inp,
+        h("button", { class: "btn sm primary", type: "button", text: "Enregistrer", onclick: function () { saveMyName(inp.value); } }),
+        h("button", { class: "btn sm", type: "button", text: "Annuler", onclick: function () { state.homeRename = false; render(); } }),
+        myNameChosen() ? h("button", { class: "btn sm", type: "button", text: "Nom d'origine", onclick: function () { saveMyName(""); } }) : null));
+    } else {
+      head.append(h("div", { class: "homegreet" }, h("h2", { text: "Bonjour" + (me && me !== "?" ? " " + me : "") + " 👋" }),
+        h("button", { class: "btn sm", type: "button", title: "Changer le nom affiché", "aria-label": "Changer mon nom", text: "✎ Changer mon nom", onclick: function () { state.homeRename = true; state.homeNameVal = myNameChosen() ? myName() : ""; homeFocus = true; render(); } })));
+      if (!myNameChosen()) head.append(h("div", { class: "meta", text: "Ce n'est pas votre prénom ? Touchez « Changer mon nom »." }));
+    }
+    head.append(h("div", { class: "meta", text: day.charAt(0).toUpperCase() + day.slice(1) + " · " + cabinetName }));
+    box.append(head);
+    if (homeFocus) { homeFocus = false; setTimeout(function () { var i = document.querySelector(".home-name-inp"); if (i) { try { i.focus(); i.select(); } catch (e) {} } }, 0); }
     var chip = function (text, tone) { return h("span", { class: "hchip " + (tone || ""), text: text }); };
     var plural = function (n, a, b) { return n + " " + (n > 1 ? b : a); };
     var tiles = [
@@ -10642,6 +10683,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
     loadOrderQty();
     state.tab = state.module === "stock" ? "inventaire" : (lastTabs[state.module] || MODS[state.module].tab); state.filter = "all"; state.cat = ""; state.q = ""; state.view = ""; $("search").value = "";
     syncTabs(); navReset(); showScreen("app"); startData(); render();
+    if (!greeted && state.module !== "accueil") { greeted = true; setTimeout(function () { toast("Bonjour " + myName() + " 👋"); }, 1300); }
     if (welcomePw) { welcomePw = false; toast("Bienvenue ! Choisissez un mot de passe pour vous reconnecter facilement."); openPw(null); }
     else if (incomingAdd) startIncoming();
     else { maybeTour(); maybeRecap(); }
