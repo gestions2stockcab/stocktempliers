@@ -1131,14 +1131,8 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
 .homegreet { display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; }
 .homegreet h2 { margin:0; font-size:clamp(30px, 5vw, 46px); font-weight:800; letter-spacing:-.02em; }
 .hg-name { background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
-.hg-edit { border:1px solid var(--line); background:var(--surface); color:var(--muted); width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:15px; opacity:.55; transition:opacity .15s; }
-.hg-edit:hover, .hg-edit:focus-visible { opacity:1; }
 .hg-date { color:var(--muted); font-size:16px; margin-top:6px; }
-.hg-hint { color:var(--muted); font-size:13.5px; margin-top:6px; }
-.homename-edit { display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; margin:8px 0 4px; }
-.homename-edit input { flex:0 1 320px; min-width:0; font-size:26px; font-weight:800; text-align:center; border:2px solid var(--brand); border-radius:14px; padding:8px 12px; background:var(--surface); color:var(--ink); }
 .hometiles { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:18px; }
-@media (max-width: 600px) { .hometiles { grid-template-columns:1fr; gap:10px; } .homehead { margin-bottom:16px; } .hometile { padding:16px 18px; min-height:104px; gap:14px; border-radius:20px; } .ht-ic { width:56px; height:56px; font-size:28px; border-radius:16px; } .ht-title { font-size:24px; } .ht-status { font-size:13.5px; } .hg-hint { font-size:12.5px; } }
 .hometile { position:relative; display:flex; align-items:center; gap:18px; text-align:left; background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:24px; padding:26px 24px; cursor:pointer; font:inherit; min-height:132px; overflow:hidden; box-shadow:0 1px 2px rgba(20,30,70,.04), 0 8px 24px -12px rgba(20,30,70,.18); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
 .hometile::before { content:""; position:absolute; inset:0; background:radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--tc) 16%, transparent) 0%, transparent 60%); pointer-events:none; }
 .hometile:hover, .hometile:focus-visible { transform:translateY(-3px); border-color:color-mix(in srgb, var(--tc) 55%, var(--line)); box-shadow:0 2px 4px rgba(20,30,70,.05), 0 18px 36px -14px color-mix(in srgb, var(--tc) 45%, transparent); outline:none; }
@@ -1156,10 +1150,30 @@ html.theme-sombre .ht-status.bad, html[data-theme="sombre"] .ht-status.bad { col
 .ht-go { position:relative; flex:none; font-size:22px; color:var(--tc); opacity:0; transform:translateX(-6px); transition:opacity .18s, transform .18s; }
 .hometile:hover .ht-go, .hometile:focus-visible .ht-go { opacity:1; transform:none; }
 html.is-touch .ht-go { opacity:.55; transform:none; }
+@media (max-width: 600px) { .hometiles { grid-template-columns:1fr; gap:10px; } .homehead { margin-bottom:16px; } .hometile { padding:16px 18px; min-height:104px; gap:14px; border-radius:20px; } .ht-ic { width:56px; height:56px; font-size:28px; border-radius:16px; } .ht-title { font-size:24px; } .ht-status { font-size:13.5px; } }
 .startopt { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
 #appTitle { cursor:pointer; }
 @media (min-width: 761px) and (max-width: 940px) { html.is-touch .sb-home .tl { font-size:10.5px; } }
 /* ===== v109 : bonjour et nom modifiable ===== */
+
+/* ===== v111 : prénom dans Plus > Affichage ===== */
+.nameedit { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:6px; }
+.nameedit input { flex:1 1 150px; min-width:0; border:1px solid var(--line); border-radius:10px; padding:8px 10px; font:inherit; background:var(--surface); color:var(--ink); }
+
+/* ===== v112 : matériel reconnu sur la facture ===== */
+.eqi-rows { display:flex; flex-direction:column; gap:8px; margin:8px 0; }
+.eqi-rowedit { display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding:8px; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); }
+.eqi-rowedit.svc { opacity:.8; }
+.eqi-rowedit input[type=checkbox] { width:22px; height:22px; flex:none; }
+.eqi-rowedit .eqr-name { flex:1 1 220px; min-width:0; }
+.eqi-rowedit .eqr-qty { width:64px; }
+.eqi-rowedit .eqr-unit { width:110px; }
+.eqi-rowedit input[type=text], .eqi-rowedit input[type=number], .eqi-rowedit select { border:1px solid var(--line); border-radius:10px; padding:7px 9px; font:inherit; background:var(--surface); color:var(--ink); }
+.eqi-rowedit select { max-width:150px; }
+.eqr-x { color:var(--muted); font-size:13px; }
+.eqi-rowbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:4px 0 8px; }
+.eqi-exist { margin:6px 0; }
+.eqi-exist summary { cursor:pointer; color:var(--muted); font-weight:600; padding:6px 0; }
 </style>
 </head>
 <body>
@@ -1253,7 +1267,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v110</div>
+            <div class="menu-who"><span id="who"></span> · v112</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1288,6 +1302,9 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
               <button class="mi hidden danger" id="wipeBtn">Supprimer tout le stock…</button>
             </div>
             <div class="menu-group" data-mtab="affichage"><div class="menu-title">Affichage et aide</div>
+              <div class="menu-sw"><div class="meta">Mon prénom (affiché dans « Bonjour ») :</div>
+                <div class="nameedit"><input id="myNameInp" type="text" maxlength="40" autocomplete="off" aria-label="Mon prénom"><button class="btn sm primary" id="myNameSave" type="button">Enregistrer</button><button class="btn sm hidden" id="myNameReset" type="button" title="Revenir au nom tiré de l'adresse e-mail">Nom d'origine</button></div>
+              </div>
               <div class="menu-sw"><div class="meta">Couleur de l'appli</div>
         <div class="swatches" role="group" aria-label="Couleur de fond">
                   <button class="sw sw-recept" data-theme="recept" title="Recept (bleu)" aria-label="Style Recept, bleu"></button>
@@ -1708,7 +1725,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
 <dialog id="eqiDlg" class="wide">
   <div class="dlg">
     <h2>Facture d'équipement</h2>
-    <div class="sub">Ajoutez la facture de vos fauteuils (ou d'un autoclave, d'une radio…) : elle est gardée dans l'appli, et le prix, la date d'achat et la garantie sont reportés sur chaque équipement choisi.</div>
+    <div class="sub">Ajoutez simplement la facture de vos fauteuils (ou d'un autoclave, d'une radio…) : l'appli lit les lignes, crée le matériel avec son prix, la date d'achat et la garantie, et garde la facture.</div>
     <div class="eqi-file">
       <button class="btn primary" id="eqiPick" type="button">📄 Choisir la facture (PDF ou photo)</button>
       <button class="btn" id="eqiShot" type="button">📷 Photographier</button>
@@ -1723,14 +1740,17 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
       <label class="f">Total HT de la facture (€) <input id="eqiTotal" type="number" step="0.01" min="0" inputmode="decimal"></label>
       <label class="f">Fin de garantie <input id="eqiWar" type="date"></label>
     </div>
-    <div class="eqi-quick"><span class="meta">Garantie :</span> <button class="btn sm" type="button" data-yrs="1">+ 1 an</button> <button class="btn sm" type="button" data-yrs="2">+ 2 ans</button> <button class="btn sm" type="button" data-yrs="5">+ 5 ans</button></div>
-    <h3>Équipements concernés</h3>
-    <div id="eqiList" class="eqi-list"></div>
-    <div class="eqi-new">Créer <input id="eqiNewN" type="number" min="0" max="20" value="0" aria-label="Nombre d'équipements à créer"> nouvel(s) équipement(s) de type <select id="eqiNewKind" aria-label="Type"></select> nommé(s) <input id="eqiNewName" type="text" maxlength="40" value="Fauteuil" aria-label="Nom de base"></div>
-    <label class="f">Prix HT par équipement (€) <input id="eqiEach" type="number" step="0.01" min="0" inputmode="decimal"></label>
-    <div class="meta" id="eqiSplit"></div>
+    <div class="eqi-quick"><span class="meta">Garantie à partir de la date de facture :</span> <button class="btn sm" type="button" data-yrs="1">+ 1 an</button> <button class="btn sm" type="button" data-yrs="2">+ 2 ans</button> <button class="btn sm" type="button" data-yrs="5">+ 5 ans</button></div>
+    <h3>Matériel de la facture</h3>
+    <div class="meta">Chaque ligne cochée devient un équipement (un par exemplaire), avec son prix, la date d'achat, la garantie et la facture jointe. Corrigez un nom ou un prix si besoin.</div>
+    <div id="eqiRows" class="eqi-rows"></div>
+    <div class="eqi-rowbar"><button class="btn sm" id="eqiAddRow" type="button">＋ Ajouter une ligne</button><span class="meta" id="eqiSplit"></span></div>
+    <details class="eqi-exist"><summary>Ou rattacher la facture à des équipements déjà créés</summary>
+      <div id="eqiList" class="eqi-list"></div>
+      <label class="f">Prix HT par équipement rattaché (€) <input id="eqiEach" type="number" step="0.01" min="0" inputmode="decimal"></label>
+    </details>
     <div class="umsg bad hidden" id="eqiErr" role="alert"></div>
-    <div class="dlg-actions"><button class="btn primary" id="eqiSave" type="button">Enregistrer</button><button class="btn" id="eqiCancel" type="button">Annuler</button></div>
+    <div class="dlg-actions"><button class="btn primary" id="eqiSave" type="button">Intégrer le matériel</button><button class="btn" id="eqiCancel" type="button">Annuler</button></div>
   </div>
 </dialog>
 
@@ -2220,7 +2240,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false, ownerOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
-  var state = { tab: "inventaire", filter: "all", q: "", cat: "", module: "stock", homeRename: false, homeNameVal: "", msgThread: "equipe", msgView: "list", msgAttach: null, msgTask: false, msgRename: null, msgRenameVal: "", hideCat: false, hideTotal: true, totalSup: {}, totalLimit: 60, totalSig: "", collapsed: {}, tileSort: "usuel", limit: 60, limitSig: "", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
+  var state = { tab: "inventaire", filter: "all", q: "", cat: "", module: "stock", msgThread: "equipe", msgView: "list", msgAttach: null, msgTask: false, msgRename: null, msgRenameVal: "", hideCat: false, hideTotal: true, totalSup: {}, totalLimit: 60, totalSig: "", collapsed: {}, tileSort: "usuel", limit: 60, limitSig: "", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
   var chain = Promise.resolve();
 
@@ -2843,24 +2863,79 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
     if (g.total == null) { var t = /total\s*h\.?t\.?(?:\s*net)?\s*:?\s*€?\s*([\d\s.]*\d[,.]\d{2})/i.exec(full); if (t) g.total = num(t[1].replace(/\s/g, "")); }
     return g;
   }
-  var eqi = { file: null, touched: false };
-  function eqiCount() { return document.querySelectorAll("#eqiList input:checked").length + Math.max(0, Math.min(20, parseInt($("eqiNewN").value, 10) || 0)); }
+  var eqi = { file: null };
+  // les lignes d'une facture de matériel : désignation, quantité, prix unitaire HT
+  function eqNum(str) { str = String(str); return str.indexOf(",") >= 0 ? Number(str.replace(/[ .]/g, "").replace(",", ".")) : Number(str.replace(/ /g, "")); }
+  function eqKindOf(name) {
+    var n = norm(name);
+    if (/fauteuil|\bunit\b|siege praticien|\bunit dentaire/.test(n)) return "fauteuil";
+    if (/autoclave|sterilisat/.test(n)) return "autoclave";
+    if (/radio|panoram|capteur|\brvg\b|cbct|scanner|cephalo/.test(n)) return "radio";
+    if (/aspiration|compresseur|turbine d.?aspir/.test(n)) return "aspiration";
+    if (/laveur|desinfect/.test(n)) return "laveur";
+    if (/ordinateur|\bpc\b|serveur|ecran|imprimante|tablette/.test(n)) return "info";
+    return "autre";
+  }
+  function equipInvoiceRows(lines) {
+    var out = [], amt = /(\d{1,3}(?:[ .]\d{3})+,\d{2}|\d+,\d{2}|\d+\.\d{2})(?![\d])/g;
+    var skip = /^(?:sous[- ]?total|total|tva|net a payer|acompte|solde|reste|remise globale|escompte|montant|base|taux|conditions|iban|bic|rib|date|facture|avoir|page|client|adresse|tel|email|siret|siren|code|reglement|echeance|mode|banque|regle)\b/;
+    var svc = /installation|mise en service|livraison|transport|\bport\b|formation|main d.?oeuvre|deplacement|extension de garantie|contrat|reprise|eco-?participation|\bd3e\b|\bdee\b|emballage|frais/;
+    (lines || []).forEach(function (ln) {
+      var t = String(ln).replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
+      if (t.length < 6 || skip.test(norm(t))) return;
+      var ms = [], m; amt.lastIndex = 0;
+      while ((m = amt.exec(t))) ms.push({ v: eqNum(m[1]), i: m.index });
+      if (!ms.length) return;
+      var before = t.slice(0, ms[0].i).trim(), qty = 1, name = before;
+      var qm = /(?:^|\s)(\d{1,2})\s*(?:u|x|pcs?)?$/i.exec(before);
+      if (qm) { qty = parseInt(qm[1], 10); name = before.slice(0, qm.index).trim(); }
+      name = name.replace(/^[\-–•*·]+\s*/, "").replace(/^\d+[.)]\s+/, "").replace(/[€:]+$/, "").trim();
+      if (!(qty >= 1 && qty <= 20)) { qty = 1; name = before.replace(/[€:]+$/, "").trim(); }
+      if (name.length < 4 || !/[A-Za-zÀ-ÿ]{3,}/.test(name) || /^(?:designation|description|libelle|article|ref)\b/i.test(norm(name))) return;
+      var total = ms[ms.length - 1].v, unit = ms.length >= 2 ? ms[ms.length - 2].v : total / qty;
+      if (ms.length >= 2 && Math.abs(qty * unit - total) > Math.max(1, total * 0.02)) { if (Math.abs(qty * ms[0].v - total) <= Math.max(1, total * 0.02)) unit = ms[0].v; else unit = total / qty; }
+      var isSvc = svc.test(norm(name)), kind = eqKindOf(name);
+      out.push({ name: name.slice(0, 80), qty: qty, unit: Math.round(unit * 100) / 100, kind: kind, service: isSvc, on: !isSvc && unit >= 100 });
+    });
+    return out;
+  }
+  function eqiAddRow(r) {
+    r = r || { name: "", qty: 1, unit: "", kind: "fauteuil", on: true };
+    var on = h("input", { type: "checkbox", checked: r.on !== false, "aria-label": "Intégrer cette ligne" });
+    var nm = h("input", { type: "text", class: "eqr-name", maxlength: "80", value: r.name || "", placeholder: "Nom du matériel (ex : Fauteuil Compact i5)", "aria-label": "Nom du matériel", autocomplete: "off" });
+    var q = h("input", { type: "number", class: "eqr-qty", min: "1", max: "20", step: "1", value: String(r.qty || 1), "aria-label": "Quantité" });
+    var u = h("input", { type: "number", class: "eqr-unit", min: "0", step: "0.01", inputmode: "decimal", value: r.unit === "" || r.unit == null ? "" : String(r.unit), placeholder: "Prix HT", "aria-label": "Prix HT d'un exemplaire" });
+    var k = h("select", { class: "eqr-kind", "aria-label": "Type de matériel" }); fillSelect(k, EQ_KINDS, r.kind || "autre");
+    var rm = h("button", { class: "btn sm", type: "button", text: "✕", "aria-label": "Retirer cette ligne" });
+    var row = h("div", { class: "eqi-rowedit" + (r.service ? " svc" : "") }, on, nm, h("span", { class: "eqr-x", text: "×" }), q, h("span", { class: "eqr-x", text: "à" }), u, h("span", { class: "eqr-x", text: "€ HT" }), k, r.service ? h("span", { class: "meta", text: "service" }) : null, rm);
+    [on, q, u, nm].forEach(function (el) { el.addEventListener("input", eqiRecalc); }); on.addEventListener("change", eqiRecalc);
+    rm.addEventListener("click", function () { row.remove(); eqiRecalc(); });
+    $("eqiRows").append(row);
+  }
+  function eqiRows() {
+    return Array.prototype.map.call($("eqiRows").querySelectorAll(".eqi-rowedit"), function (row) {
+      return { on: row.querySelector("input[type=checkbox]").checked, name: row.querySelector(".eqr-name").value.trim(), qty: Math.max(1, Math.min(20, parseInt(row.querySelector(".eqr-qty").value, 10) || 1)), unit: row.querySelector(".eqr-unit").value === "" ? null : Math.max(0, num(row.querySelector(".eqr-unit").value)), kind: row.querySelector(".eqr-kind").value };
+    });
+  }
   function eqiRecalc() {
-    var n = eqiCount(), tot = $("eqiTotal").value === "" ? null : num($("eqiTotal").value);
-    if (!eqi.touched && tot != null && n > 0) $("eqiEach").value = String(Math.round(tot / n * 100) / 100);
-    var each = $("eqiEach").value === "" ? null : num($("eqiEach").value);
-    $("eqiSplit").textContent = n ? n + " équipement" + (n > 1 ? "s" : "") + (each != null ? " × " + money(each) + " HT" + (tot != null ? " = " + money(each * n) + " HT" + (Math.abs(each * n - tot) > 0.05 ? " (la facture indique " + money(tot) + ")" : "") : "") : "") : "Choisissez au moins un équipement.";
+    var all = eqiRows(), rows = all.filter(function (r) { return r.on; }), n = 0, sum = 0, off = 0;
+    rows.forEach(function (r) { n += r.qty; sum += r.qty * (r.unit || 0); });
+    all.forEach(function (r) { if (!r.on) off += r.qty * (r.unit || 0); });
+    var exist = document.querySelectorAll("#eqiList input:checked").length, tot = $("eqiTotal").value === "" ? null : num($("eqiTotal").value);
+    var txt = n || exist ? (n ? n + " équipement" + (n > 1 ? "s" : "") + " à créer" : "") + (exist ? (n ? " + " : "") + exist + " existant" + (exist > 1 ? "s" : "") + " rattaché" + (exist > 1 ? "s" : "") : "") + (sum ? " · " + money(sum) + " HT" : "") : "Cochez au moins une ligne.";
+    if (n && tot != null && sum) txt += Math.abs(sum - tot) <= 0.05 ? " ✓ égal au total de la facture" : (off > 0 && Math.abs(sum + off - tot) <= 0.05 ? " ✓ avec " + money(off) + " de lignes non intégrées (services), on retrouve le total de la facture" : " · attention : la facture indique " + money(tot) + " HT (remise ou ligne manquante ?)");
+    $("eqiSplit").textContent = txt;
   }
   function openEqInvoice() {
     if (readOnly) return;
     if (!eqDocsOk) { toast("Lancez d'abord le script SQL « ajout-equipements-factures » dans Supabase."); return; }
-    eqi.file = null; eqi.touched = false;
+    eqi.file = null;
     ["eqiSup", "eqiNum", "eqiDate", "eqiTotal", "eqiWar", "eqiEach"].forEach(function (id) { $(id).value = ""; });
-    $("eqiNewN").value = "0"; $("eqiNewName").value = "Fauteuil"; fillSelect($("eqiNewKind"), EQ_KINDS, "fauteuil");
-    $("eqiStatus").textContent = "Vous pouvez aussi remplir les champs à la main, sans fichier."; $("eqiErr").classList.add("hidden"); $("eqiSave").disabled = false;
+    $("eqiStatus").textContent = "Choisissez la facture : le matériel est reconnu tout seul. Vous pouvez aussi saisir les lignes à la main."; $("eqiErr").classList.add("hidden"); $("eqiSave").disabled = false;
+    $("eqiRows").textContent = ""; eqiAddRow({ name: "", qty: 1, unit: "", kind: "fauteuil", on: true });
     var list = $("eqiList"); list.textContent = "";
     var act = eqList.filter(function (e) { return !e.archived; }).sort(function (a, b) { return (a.kind === "fauteuil" ? 0 : 1) - (b.kind === "fauteuil" ? 0 : 1) || String(a.name).localeCompare(String(b.name), "fr"); });
-    if (!act.length) list.append(h("div", { class: "meta", text: "Aucun équipement pour l'instant : créez-les juste en dessous." }));
+    if (!act.length) list.append(h("div", { class: "meta", text: "Aucun équipement créé pour l'instant." }));
     act.forEach(function (e) {
       var cb = h("input", { type: "checkbox", value: e.id }); cb.addEventListener("change", eqiRecalc);
       list.append(h("label", { class: "eqi-row" }, cb, h("span", { text: e.name + (e.room ? " (" + e.room + ")" : "") }), e.purchase_doc ? h("span", { class: "meta", text: " · déjà rattaché à la facture " + e.purchase_doc }) : null));
@@ -2871,23 +2946,28 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
     if (!file) return;
     eqi.file = file; $("eqiStatus").textContent = "Lecture de « " + file.name + " »…";
     readDocLines(file).then(function (lines) {
-      var g = equipInvoiceGuess(lines), found = [];
+      var g = equipInvoiceGuess(lines), found = [], rows = equipInvoiceRows(lines);
       if (g.supplier && !$("eqiSup").value) { $("eqiSup").value = g.supplier; found.push("fournisseur"); }
       if (g.number && !$("eqiNum").value) { $("eqiNum").value = g.number; found.push("n° " + g.number); }
       if (g.date && !$("eqiDate").value) { $("eqiDate").value = g.date; found.push("date"); }
       if (g.total != null && $("eqiTotal").value === "") { $("eqiTotal").value = String(g.total); found.push("total " + money(g.total)); }
-      $("eqiStatus").textContent = "Facture jointe (" + file.name + "). " + (found.length ? "Lu : " + found.join(", ") + ". Vérifiez avant d'enregistrer." : "Je n'ai pas pu en lire les chiffres : remplissez les champs ci-dessous.");
+      var items = rows.filter(function (r) { return r.on; });
+      if (rows.length) {
+        $("eqiRows").textContent = ""; rows.forEach(eqiAddRow);
+        found.push(items.length + " matériel" + (items.length > 1 ? "s" : "") + " reconnu" + (items.length > 1 ? "s" : "") + (rows.length > items.length ? " (+ " + (rows.length - items.length) + " ligne" + (rows.length - items.length > 1 ? "s" : "") + " de service, décochée" + (rows.length - items.length > 1 ? "s" : "") + ")" : ""));
+      }
+      $("eqiStatus").textContent = "Facture jointe (" + file.name + "). " + (found.length ? "Lu : " + found.join(", ") + ". Vérifiez avant d'intégrer." : "Je n'ai pas pu en lire les chiffres : remplissez les lignes ci-dessous.");
       eqiRecalc();
     }, function (e) {
-      $("eqiStatus").textContent = "Facture jointe (" + file.name + "), mais je n'ai pas pu la lire" + (e && e.message === "chargement" ? " (lecteur de scans indisponible : vérifiez internet)" : "") + " : remplissez les champs à la main.";
+      $("eqiStatus").textContent = "Facture jointe (" + file.name + "), mais je n'ai pas pu la lire" + (e && e.message === "chargement" ? " (lecteur de scans indisponible : vérifiez internet)" : "") + " : remplissez les lignes à la main.";
     });
   }
   $("eqiPick").addEventListener("click", function () { $("eqiFile").click(); });
   $("eqiShot").addEventListener("click", function () { $("eqiShotFile").click(); });
   $("eqiFile").addEventListener("change", function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; eqiRead(f); });
   $("eqiShotFile").addEventListener("change", function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; eqiRead(f); });
-  ["eqiTotal", "eqiNewN"].forEach(function (id) { $(id).addEventListener("input", eqiRecalc); });
-  $("eqiEach").addEventListener("input", function () { eqi.touched = true; eqiRecalc(); });
+  $("eqiAddRow").addEventListener("click", function () { eqiAddRow({ name: "", qty: 1, unit: "", kind: "autre", on: true }); eqiRecalc(); });
+  $("eqiTotal").addEventListener("input", eqiRecalc);
   Array.prototype.forEach.call(document.querySelectorAll(".eqi-quick [data-yrs]"), function (b) {
     b.addEventListener("click", function () {
       var base = $("eqiDate").value || todayIso(), d = new Date(base + "T12:00:00"); d.setFullYear(d.getFullYear() + parseInt(b.getAttribute("data-yrs"), 10));
@@ -2897,30 +2977,29 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
   $("eqiCancel").addEventListener("click", function () { $("eqiDlg").close(); });
   $("eqiSave").addEventListener("click", function () {
     var err = $("eqiErr"); err.classList.add("hidden");
-    var ids = Array.prototype.map.call(document.querySelectorAll("#eqiList input:checked"), function (c) { return c.value; }), nNew = Math.max(0, Math.min(20, parseInt($("eqiNewN").value, 10) || 0));
     var fail = function (t) { err.textContent = t; err.classList.remove("hidden"); $("eqiSave").disabled = false; };
-    if (!ids.length && !nNew) { fail("Choisissez au moins un équipement, ou créez-en."); return; }
-    var date = $("eqiDate").value || null, war = $("eqiWar").value || null, sup = $("eqiSup").value.trim(), numb = $("eqiNum").value.trim();
-    var each = $("eqiEach").value === "" ? null : Math.max(0, num($("eqiEach").value)), file = eqi.file, base = $("eqiNewName").value.trim() || "Équipement";
+    var rows = eqiRows().filter(function (r) { return r.on; }), ids = Array.prototype.map.call(document.querySelectorAll("#eqiList input:checked"), function (c) { return c.value; });
+    if (!rows.length && !ids.length) { fail("Cochez au moins une ligne de matériel (ou rattachez des équipements existants)."); return; }
+    if (rows.some(function (r) { return !r.name; })) { fail("Donnez un nom à chaque ligne cochée."); return; }
+    var date = $("eqiDate").value || null, war = $("eqiWar").value || null, sup = $("eqiSup").value.trim(), numb = $("eqiNum").value.trim(), file = eqi.file;
+    var eachExist = $("eqiEach").value === "" ? null : Math.max(0, num($("eqiEach").value));
     $("eqiSave").disabled = true;
     var created = [], path = "";
     (file ? uploadEqFile(file) : Promise.resolve("")).then(function (pth) {
       path = pth;
-      var patch = { purchase_supplier: sup, purchase_doc: numb }; if (each != null) patch.purchase_price = each; if (date) patch.bought_on = date; if (war) patch.warranty_until = war;
-      var chain = Promise.resolve();
-      if (nNew) {
-        var rows = []; for (var i = 1; i <= nNew; i++) rows.push(Object.assign({ cabinet_id: cabinetId, name: nNew > 1 || base.match(/\d$/) === null ? base + " " + i : base, kind: $("eqiNewKind").value }, patch));
-        chain = chain.then(function () { return sb.from("equipements").insert(rows).select(); }).then(function (r) { if (r.error) throw r.error; created = r.data || []; });
-      }
-      ids.forEach(function (id) { chain = chain.then(function () { return sb.from("equipements").update(patch).eq("id", id); }).then(function (r) { if (r && r.error) throw r.error; }); });
+      var common = { purchase_supplier: sup, purchase_doc: numb }; if (date) common.bought_on = date; if (war) common.warranty_until = war;
+      var chain = Promise.resolve(), newRows = [];
+      rows.forEach(function (r) { for (var i = 1; i <= r.qty; i++) newRows.push(Object.assign({ cabinet_id: cabinetId, name: (r.qty > 1 ? r.name + " " + i : r.name).slice(0, 80), kind: r.kind }, common, r.unit != null ? { purchase_price: r.unit } : {})); });
+      if (newRows.length) chain = chain.then(function () { return sb.from("equipements").insert(newRows).select(); }).then(function (r) { if (r.error) throw r.error; created = (r.data || []).map(function (c, i) { return Object.assign({}, c, { _price: newRows[i] && newRows[i].purchase_price }); }); });
+      ids.forEach(function (id) { chain = chain.then(function () { return sb.from("equipements").update(Object.assign({}, common, eachExist != null ? { purchase_price: eachExist } : {})).eq("id", id); }).then(function (r) { if (r && r.error) throw r.error; }); });
       return chain;
     }).then(function () {
-      var all = ids.concat(created.map(function (c) { return c.id; }));
+      var all = ids.map(function (id) { return { id: id, price: eachExist }; }).concat(created.map(function (c) { return { id: c.id, price: c._price != null ? c._price : null }; }));
       if (!path) return all.length;
-      var rows = all.map(function (id) { return { cabinet_id: cabinetId, equipement_id: id, kind: "facture_achat", label: "Facture" + (numb ? " " + numb : ""), file_path: path, file_name: file.name, mime: file.type || "", size: file.size, doc_number: numb, doc_date: date, amount_ht: each, uploaded_by: myEmail }; });
-      return sb.from("equipement_docs").insert(rows).then(function (r) { if (r.error) throw r.error; return all.length; });
+      var drows = all.map(function (a) { return { cabinet_id: cabinetId, equipement_id: a.id, kind: "facture_achat", label: "Facture" + (numb ? " " + numb : ""), file_path: path, file_name: file.name, mime: file.type || "", size: file.size, doc_number: numb, doc_date: date, amount_ht: a.price, uploaded_by: myEmail }; });
+      return sb.from("equipement_docs").insert(drows).then(function (r) { if (r.error) throw r.error; return all.length; });
     }).then(function (n) {
-      $("eqiDlg").close(); toast("Facture ajoutée à " + n + " équipement" + (n > 1 ? "s" : "") + "."); loadEquip();
+      $("eqiDlg").close(); toast(n + " équipement" + (n > 1 ? "s" : "") + " intégré" + (n > 1 ? "s" : "") + " avec la facture."); loadEquip();
     }).catch(function (e) {
       var m = String((e && e.message) || "");
       fail(/column|relation|does not exist|schema cache/i.test(m) ? "Lancez le script SQL « ajout-equipements-factures » dans Supabase." : "L'enregistrement a échoué : réessayez (rien n'a été perdu).");
@@ -7012,8 +7091,8 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
     box.append(h("div", { class: "dnote", text: "Pour créer une tâche : ouvrez Messages, choisissez une personne, touchez « ☑ Tâche » puis écrivez la demande." }));
   }
   // ---------- page d'accueil : le choix de l'espace, avec ce qui compte dans chacun ----------
-  var homeT = null, homeFocus = false, greeted = false;
-  function homeRefresh() { if (state.tab !== "accueil" || state.homeRename) return; clearTimeout(homeT); homeT = setTimeout(function () { if (state.tab === "accueil") render(); }, 300); }
+  var homeT = null, greeted = false;
+  function homeRefresh() { if (state.tab !== "accueil") return; clearTimeout(homeT); homeT = setTimeout(function () { if (state.tab === "accueil") render(); }, 300); }
   function homeStats() {
     var o = { rupt: [], bas: 0, exp: 0, need: 0, needEur: 0, ordered: 0, ctl: 0, eqLate: 0, eqWarr: 0, ct: 0, unread: 0, tasks: 0, online: 0, alerts: [] };
     items.forEach(function (it) {
@@ -7045,29 +7124,32 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
     nom = String(nom || "").replace(/\s+/g, " ").trim();
     if (nom.length > 40) { toast("Nom trop long : 40 caractères au maximum."); return; }
     try { if (nom) localStorage.setItem(localNameKey(), nom); else localStorage.removeItem(localNameKey()); } catch (e) {}
-    state.homeRename = false;
     var p = msgPerson(sessionUser);
     if (msgOk && p) saveName(sessionUser, nom);          // partagé avec l'équipe (affiche le message et redessine)
     else { toast(nom ? "Enregistré : bonjour " + nom + " !" : "Nom d'origine rétabli."); render(); }
+    setTimeout(drawMyName, 50);
   }
+  function drawMyName() {
+    var i = $("myNameInp"); if (!i) return;
+    i.placeholder = personName(myEmail); i.value = myNameChosen() ? myName() : "";
+    $("myNameReset").classList.toggle("hidden", !myNameChosen());
+  }
+  $("myNameSave").addEventListener("click", function () { saveMyName($("myNameInp").value); });
+  $("myNameInp").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); saveMyName($("myNameInp").value); } });
+  $("myNameReset").addEventListener("click", function () { saveMyName(""); });
+  $("menuTabs").addEventListener("click", function (e) { var b = e.target.closest && e.target.closest(".mtab"); if (b && b.scrollIntoView) { try { b.scrollIntoView({ inline: "nearest", block: "nearest" }); } catch (er) {} } });
+  $("moreBtn").addEventListener("click", function () {
+    drawMyName();
+    // le menu reste entièrement visible : jamais sous le menu de gauche ni hors de l'écran
+    var m = $("moreMenu"), br = $("moreBtn").getBoundingClientRect(), sbr = $("sidebar").getBoundingClientRect().right, left = sbr > 40 ? sbr + 10 : 12;
+    m.style.maxWidth = Math.max(280, Math.min(document.documentElement.clientWidth - 24, br.right - left)) + "px";
+  });
   function renderHome(box) {
     var st = homeStats(), me = myName(), now = new Date();
     var day = now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
     var wrap = h("div", { class: "home" });
     var head = h("div", { class: "homehead" });
-    if (state.homeRename) {
-      var inp = h("input", { type: "text", class: "home-name-inp", maxlength: "40", value: state.homeNameVal, placeholder: personName(myEmail), autocomplete: "off", "aria-label": "Votre nom" });
-      inp.addEventListener("input", function () { state.homeNameVal = inp.value; });
-      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); saveMyName(inp.value); } else if (e.key === "Escape") { state.homeRename = false; render(); } });
-      head.append(h("div", { class: "meta", text: "Comment voulez-vous qu'on vous appelle ?" }), h("div", { class: "homename-edit" }, inp,
-        h("button", { class: "btn sm primary", type: "button", text: "Enregistrer", onclick: function () { saveMyName(inp.value); } }),
-        h("button", { class: "btn sm", type: "button", text: "Annuler", onclick: function () { state.homeRename = false; render(); } }),
-        myNameChosen() ? h("button", { class: "btn sm", type: "button", text: "Nom d'origine", onclick: function () { saveMyName(""); } }) : null));
-    } else {
-      head.append(h("div", { class: "homegreet" }, h("h2", null, "Bonjour ", h("span", { class: "hg-name", text: me && me !== "?" ? me : "" }), " 👋"),
-        h("button", { class: "hg-edit", type: "button", title: "Changer mon nom", "aria-label": "Changer mon nom", text: "✎", onclick: function () { state.homeRename = true; state.homeNameVal = myNameChosen() ? myName() : ""; homeFocus = true; render(); } })));
-      if (!myNameChosen()) head.append(h("div", { class: "hg-hint", text: "Ce n'est pas votre prénom ? Touchez le crayon pour le changer." }));
-    }
+    head.append(h("div", { class: "homegreet" }, h("h2", null, "Bonjour ", h("span", { class: "hg-name", text: me && me !== "?" ? me : "" }), " 👋")));
     head.append(h("div", { class: "hg-date", text: day.charAt(0).toUpperCase() + day.slice(1) + " · " + cabinetName }));
     wrap.append(head);
     var plural = function (n, a, b) { return n + " " + (n > 1 ? b : a); };
@@ -7091,7 +7173,6 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
     });
     wrap.append(grid);
     box.append(wrap);
-    if (homeFocus) { homeFocus = false; setTimeout(function () { var i = document.querySelector(".home-name-inp"); if (i) { try { i.focus(); i.select(); } catch (e) {} } }, 0); }
   }
   $("appTitle").setAttribute("role", "link"); $("appTitle").setAttribute("tabindex", "0"); $("appTitle").title = "Retour à l'accueil";
   $("appTitle").addEventListener("click", function () { setModule("accueil"); });
