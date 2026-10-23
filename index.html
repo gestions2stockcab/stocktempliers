@@ -1086,6 +1086,25 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
 .presline.on { color:#1fa463; font-weight:600; }
 .presline.idle { color:#b07a00; font-weight:600; }
 @media (max-width: 760px) { .presbtn #presTxt { font-size:13px; } .prespop { position:fixed; left:12px; right:12px; top:90px; width:auto; } }
+
+/* ===== v105 : en-tête et menu simplifiés ===== */
+.sb-hide { display:none !important; }
+.live #liveText { display:none; }
+.live:not(.on) #liveText { display:inline; color:var(--bad, #d93025); font-weight:600; }
+.live.on { cursor:help; }
+.menu-sw { padding:6px 10px 10px; }
+.menu-sw .swatches { margin-top:6px; }
+.menu-group[data-mtab="affichage"] .mi { margin-top:2px; }
+.kb-lb { display:none; }
+@media (min-width: 1240px) { html:not(.is-touch) .kb-lb { display:inline; } }
+@media (max-width: 760px) {
+  .presbtn #presTxt { font-size:0; }
+  .presbtn #presTxt::before { content:attr(data-n); font-size:13px; }
+  .who-row { gap:6px; }
+  .live.on { display:none; }
+  .presbtn { padding:6px 9px; }
+}
+@media (max-width: 430px) { .modbtn .mi-lb { display:none !important; } .modbtn { padding:6px 9px; } .modbtn .msgbadge { margin-left:2px; } }
 </style>
 </head>
 <body>
@@ -1169,28 +1188,19 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
           <button class="btn sm presbtn" id="presBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Qui est connecté en ce moment"><span class="pdot" id="presDot"></span><span id="presTxt">Équipe</span></button>
           <div class="prespop hidden" id="presPop" role="dialog" aria-label="Personnes connectées"></div>
         </div>
-        <button class="btn sm" id="kBtn" type="button" title="Rechercher partout (Ctrl + K)" aria-label="Rechercher partout">⌘K</button>
-        <button class="btn sm" id="helpBtn" type="button" title="Aide et raccourcis" aria-label="Aide">?</button>
+        <button class="btn sm" id="kBtn" type="button" title="Rechercher partout (Ctrl + K)" aria-label="Rechercher partout">🔍<span class="kb-lb"> Rechercher</span></button>
         <button class="btn sm hidden" id="undoBtn" type="button">↶ Annuler</button>
-        <div class="swatches head-sw" role="group" aria-label="Couleur de fond">
-          <button class="sw sw-recept" data-theme="recept" title="Recept (bleu)" aria-label="Style Recept, bleu"></button>
-          <button class="sw sw-frais" data-theme="frais" title="Frais (turquoise)" aria-label="Style frais, turquoise"></button>
-          <button class="sw sw-blanc" data-theme="blanc" title="Fond blanc" aria-label="Fond blanc"></button>
-          <button class="sw sw-gris" data-theme="gris" title="Fond gris" aria-label="Fond gris"></button>
-          <button class="sw sw-rose" data-theme="rose" title="Fond rose" aria-label="Fond rose"></button>
-          <button class="sw sw-mauve" data-theme="mauve" title="Fond mauve" aria-label="Fond mauve"></button>
-          <button class="sw sw-sombre" data-theme="sombre" title="Fond sombre" aria-label="Fond sombre"></button>
-        </div>
-        <span class="sub live" id="live"><i></i><span id="liveText">Connexion…</span></span>
+        <span class="sub live" id="live" title="Connexion en direct au cabinet" aria-label="Connexion en direct"><i></i><span id="liveText">Connexion…</span></span>
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v104</div>
+            <div class="menu-who"><span id="who"></span> · v105</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
               <button class="mtab" type="button" role="tab" data-mtab="cabinet" aria-selected="false">🏥 Cabinet</button>
               <button class="mtab" type="button" role="tab" data-mtab="securite" aria-selected="false">🔒 Sécurité</button>
+              <button class="mtab" type="button" role="tab" data-mtab="affichage" aria-selected="false">🎨 Affichage</button>
             </div>
             <div class="menu-group" data-mtab="catalogue"><div class="menu-title">Catalogue et import</div>
               <button class="mi" id="catSupBtn">Catalogues fournisseurs</button>
@@ -1213,9 +1223,24 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
             <div class="menu-group" data-mtab="securite"><div class="menu-title">Sauvegarde et sécurité</div>
               <button class="mi" id="bkBtn">Sauvegardes</button>
               <button class="mi" id="updBtn">Vérifier les mises à jour</button>
+              <button class="mi" id="trashBtn">Corbeille (articles supprimés)</button>
               <button class="mi" id="secBtn">Sécurité du compte</button>
               <button class="mi" id="pwBtn">Changer mon mot de passe</button>
               <button class="mi hidden danger" id="wipeBtn">Supprimer tout le stock…</button>
+            </div>
+            <div class="menu-group" data-mtab="affichage"><div class="menu-title">Affichage et aide</div>
+              <div class="menu-sw"><div class="meta">Couleur de l'appli</div>
+        <div class="swatches" role="group" aria-label="Couleur de fond">
+                  <button class="sw sw-recept" data-theme="recept" title="Recept (bleu)" aria-label="Style Recept, bleu"></button>
+                  <button class="sw sw-frais" data-theme="frais" title="Frais (turquoise)" aria-label="Style frais, turquoise"></button>
+                  <button class="sw sw-blanc" data-theme="blanc" title="Fond blanc" aria-label="Fond blanc"></button>
+                  <button class="sw sw-gris" data-theme="gris" title="Fond gris" aria-label="Fond gris"></button>
+                  <button class="sw sw-rose" data-theme="rose" title="Fond rose" aria-label="Fond rose"></button>
+                  <button class="sw sw-mauve" data-theme="mauve" title="Fond mauve" aria-label="Fond mauve"></button>
+                  <button class="sw sw-sombre" data-theme="sombre" title="Fond sombre" aria-label="Fond sombre"></button>
+                </div>
+              </div>
+              <button class="mi" id="helpBtn">Aide et raccourcis</button>
             </div>
             <div class="menu-group menu-last">
               <button class="mi" id="logoutBtn">Se déconnecter</button>
@@ -1259,8 +1284,8 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
       <button class="tab hidden" role="tab" data-tab="utilisateurs" data-mod="equipe" aria-selected="false"><span class="ti">👥</span><span class="tl">Utilisateurs</span></button>
     </div>
     <div class="sb-group sb-bottom">
-      <button class="tab hidden" role="tab" data-tab="administration" data-mod="all" aria-selected="false"><span class="ti">🛠</span><span class="tl">Administration</span></button>
-      <button class="tab tab-trash" role="tab" data-tab="corbeille" data-mod="stock" aria-selected="false" title="Articles supprimés"><span class="ti">🗑</span><span class="tl">Corbeille<span id="trashCount"></span></span></button>
+      <button class="tab hidden sb-hide" role="tab" data-tab="administration" data-mod="all" aria-selected="false"><span class="ti">🛠</span><span class="tl">Administration</span></button>
+      <button class="tab tab-trash sb-hide" role="tab" data-tab="corbeille" data-mod="stock" aria-selected="false" title="Articles supprimés"><span class="ti">🗑</span><span class="tl">Corbeille<span id="trashCount"></span></span></button>
     </div>
   </nav>
   <div class="sb-backdrop" id="sbBackdrop"></div>
@@ -6548,6 +6573,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
     renderViewBar();
     scoped(function () { renderCrumb(); renderFilters(); });
     $("trashCount").textContent = trash.size ? " (" + trash.size + ")" : "";
+    $("trashBtn").textContent = "Corbeille (articles supprimés)" + (trash.size ? " · " + trash.size : "");
     updateSelBar();
     updateUndoBtn();
     var nd = dupGroups().length;
@@ -6590,7 +6616,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
   function tabModule(t) { var b = document.querySelector('.tab[data-tab="' + t + '"]'), m = (b && b.getAttribute("data-mod") || "stock").split(/\s+/)[0]; return m === "all" ? "all" : MODS[m] ? m : "stock"; }
   function refreshSbGroups() {
     Array.prototype.forEach.call(document.querySelectorAll("#sidebar .sb-group"), function (g) {
-      var has = !!g.querySelector(".tab:not(.hidden)"); g.classList.toggle("sb-empty", !has);
+      var has = !!g.querySelector(".tab:not(.hidden):not(.sb-hide), .tab-act"); g.classList.toggle("sb-empty", !has);
     });
   }
   function applyModule(m) {
@@ -8985,7 +9011,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
   // ---------- connexion ----------
   function setLive(on, text) {
     $("live").classList.toggle("on", on);
-    $("liveText").textContent = text;
+    $("liveText").textContent = text; $("live").title = text;
   }
   function doLogin() {
     if (loginMode === "join") { doJoinSignup(); return; }
@@ -10011,6 +10037,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
     var n = others.length;
     dot.className = "pdot " + (active.length ? "on" : n ? "idle" : "");
     txt.textContent = n ? n + " en ligne" : "Seul(e)";
+    txt.setAttribute("data-n", n ? String(n) : "");
     $("presBtn").title = n ? n + " autre" + (n > 1 ? "s" : "") + " personne" + (n > 1 ? "s" : "") + " connectée" + (n > 1 ? "s" : "") + " : " + others.map(function (u) { return presName({ user_id: u, email: (msgPerson(u) || {}).email }); }).join(", ") : "Personne d'autre n'est connecté";
     if (!$("presPop").classList.contains("hidden")) drawPresPop();
     if (state.tab === "messages" && msgEls) render();
@@ -10299,6 +10326,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
   $("ctlCheckOk").addEventListener("click", saveCheck);
   $("kBtn").addEventListener("click", openPalette);
   $("helpBtn").addEventListener("click", openHelp);
+  $("trashBtn").addEventListener("click", function () { goTab("corbeille"); });
   $("helpClose").addEventListener("click", function () { $("helpDlg").close(); });
   $("helpTour").addEventListener("click", function () { $("helpDlg").close(); openTour(); });
   $("tourSkip").addEventListener("click", endTour);
