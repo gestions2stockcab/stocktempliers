@@ -1125,39 +1125,41 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
 .eqdoc-main { flex:1; min-width:0; }
 .eqdocadd { display:flex; gap:8px; align-items:center; margin:8px 0; flex-wrap:wrap; }
 
-/* ===== v108 : page d'accueil ===== */
-.homehead { margin:4px 0 14px; }
-.homehead h2 { margin:0; font-size:26px; }
-.hometiles { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; }
-@media (min-width: 1180px) { .hometiles { grid-template-columns:repeat(4, minmax(0, 1fr)); } }
-@media (max-width: 560px) { .hometiles { grid-template-columns:1fr; } }
-.hometile { display:flex; gap:14px; align-items:flex-start; text-align:left; background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:18px; padding:18px; cursor:pointer; font:inherit; box-shadow:0 2px 10px rgba(20,40,120,.06); min-height:150px; transition:transform .12s, box-shadow .12s; }
-.hometile:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(20,40,120,.14); }
-.ht-ic { font-size:40px; line-height:1; flex:none; }
-.ht-main { display:flex; flex-direction:column; gap:4px; min-width:0; }
-.ht-prod { font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
-.ht-title { font-size:22px; font-weight:800; }
-.ht-sub { color:var(--muted); font-size:14px; }
-.hchips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
-.hchip { padding:4px 10px; border-radius:999px; font-size:13px; font-weight:700; background:var(--surface-2); color:var(--ink); }
-.hchip.bad { background:#fde7e9; color:#b3202f; }
-.hchip.warn { background:#fff1d6; color:#8a5a00; }
-.hchip.ok { background:#e2f5ea; color:#13794a; }
-.hchip.on { background:#e2f5ea; color:#13794a; }
-.hometile.mod-equipe { border-color:color-mix(in srgb, var(--brand) 40%, var(--line)); }
-.homeqa { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:16px 0; }
-.homealerts { margin-top:6px; }
-.halert { display:flex; gap:10px; align-items:center; justify-content:space-between; padding:10px 14px; border-top:1px solid var(--line); border-left:4px solid transparent; }
-.halert.bad { border-left-color:#d93a4b; } .halert.warn { border-left-color:#e0a100; }
-.hal-t { min-width:0; overflow-wrap:anywhere; }
+/* ===== v110 : page d'accueil épurée ===== */
+.home { max-width:980px; margin:0 auto; padding:18px 4px 40px; }
+.homehead { margin:6px 0 28px; text-align:center; }
+.homegreet { display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; }
+.homegreet h2 { margin:0; font-size:clamp(30px, 5vw, 46px); font-weight:800; letter-spacing:-.02em; }
+.hg-name { background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.hg-edit { border:1px solid var(--line); background:var(--surface); color:var(--muted); width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:15px; opacity:.55; transition:opacity .15s; }
+.hg-edit:hover, .hg-edit:focus-visible { opacity:1; }
+.hg-date { color:var(--muted); font-size:16px; margin-top:6px; }
+.hg-hint { color:var(--muted); font-size:13.5px; margin-top:6px; }
+.homename-edit { display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; margin:8px 0 4px; }
+.homename-edit input { flex:0 1 320px; min-width:0; font-size:26px; font-weight:800; text-align:center; border:2px solid var(--brand); border-radius:14px; padding:8px 12px; background:var(--surface); color:var(--ink); }
+.hometiles { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:18px; }
+@media (max-width: 600px) { .hometiles { grid-template-columns:1fr; gap:10px; } .homehead { margin-bottom:16px; } .hometile { padding:16px 18px; min-height:104px; gap:14px; border-radius:20px; } .ht-ic { width:56px; height:56px; font-size:28px; border-radius:16px; } .ht-title { font-size:24px; } .ht-status { font-size:13.5px; } .hg-hint { font-size:12.5px; } }
+.hometile { position:relative; display:flex; align-items:center; gap:18px; text-align:left; background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:24px; padding:26px 24px; cursor:pointer; font:inherit; min-height:132px; overflow:hidden; box-shadow:0 1px 2px rgba(20,30,70,.04), 0 8px 24px -12px rgba(20,30,70,.18); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.hometile::before { content:""; position:absolute; inset:0; background:radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--tc) 16%, transparent) 0%, transparent 60%); pointer-events:none; }
+.hometile:hover, .hometile:focus-visible { transform:translateY(-3px); border-color:color-mix(in srgb, var(--tc) 55%, var(--line)); box-shadow:0 2px 4px rgba(20,30,70,.05), 0 18px 36px -14px color-mix(in srgb, var(--tc) 45%, transparent); outline:none; }
+.ht-ic { position:relative; flex:none; width:68px; height:68px; border-radius:20px; display:grid; place-items:center; font-size:34px; background:color-mix(in srgb, var(--tc) 14%, var(--surface)); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--tc) 28%, transparent); }
+.ht-main { position:relative; display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
+.ht-prod { font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); }
+.ht-title { font-size:28px; font-weight:800; letter-spacing:-.01em; line-height:1.15; }
+.ht-status { display:inline-flex; align-items:center; gap:8px; margin-top:6px; font-size:14.5px; font-weight:600; color:var(--muted); }
+.ht-dot { width:9px; height:9px; border-radius:50%; background:var(--line); flex:none; }
+.ht-status.ok .ht-dot, .ht-status.on .ht-dot { background:#1fa463; }
+.ht-status.warn .ht-dot { background:#e0a100; } .ht-status.warn { color:#8a5a00; }
+.ht-status.bad .ht-dot { background:#d93a4b; } .ht-status.bad { color:#b3202f; }
+html.theme-sombre .ht-status.warn, html[data-theme="sombre"] .ht-status.warn { color:#f0c050; }
+html.theme-sombre .ht-status.bad, html[data-theme="sombre"] .ht-status.bad { color:#ff8a96; }
+.ht-go { position:relative; flex:none; font-size:22px; color:var(--tc); opacity:0; transform:translateX(-6px); transition:opacity .18s, transform .18s; }
+.hometile:hover .ht-go, .hometile:focus-visible .ht-go { opacity:1; transform:none; }
+html.is-touch .ht-go { opacity:.55; transform:none; }
 .startopt { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
 #appTitle { cursor:pointer; }
 @media (min-width: 761px) and (max-width: 940px) { html.is-touch .sb-home .tl { font-size:10.5px; } }
-
 /* ===== v109 : bonjour et nom modifiable ===== */
-.homegreet { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-.homename-edit { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0 4px; }
-.homename-edit input { flex:1 1 220px; min-width:0; font-size:22px; font-weight:800; border:2px solid var(--brand); border-radius:12px; padding:8px 12px; background:var(--surface); color:var(--ink); }
 </style>
 </head>
 <body>
@@ -1251,7 +1253,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v109</div>
+            <div class="menu-who"><span id="who"></span> · v110</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -7051,6 +7053,7 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
   function renderHome(box) {
     var st = homeStats(), me = myName(), now = new Date();
     var day = now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    var wrap = h("div", { class: "home" });
     var head = h("div", { class: "homehead" });
     if (state.homeRename) {
       var inp = h("input", { type: "text", class: "home-name-inp", maxlength: "40", value: state.homeNameVal, placeholder: personName(myEmail), autocomplete: "off", "aria-label": "Votre nom" });
@@ -7061,54 +7064,34 @@ html.is-touch .tab-act { min-height:46px; font-size:16px; }
         h("button", { class: "btn sm", type: "button", text: "Annuler", onclick: function () { state.homeRename = false; render(); } }),
         myNameChosen() ? h("button", { class: "btn sm", type: "button", text: "Nom d'origine", onclick: function () { saveMyName(""); } }) : null));
     } else {
-      head.append(h("div", { class: "homegreet" }, h("h2", { text: "Bonjour" + (me && me !== "?" ? " " + me : "") + " 👋" }),
-        h("button", { class: "btn sm", type: "button", title: "Changer le nom affiché", "aria-label": "Changer mon nom", text: "✎ Changer mon nom", onclick: function () { state.homeRename = true; state.homeNameVal = myNameChosen() ? myName() : ""; homeFocus = true; render(); } })));
-      if (!myNameChosen()) head.append(h("div", { class: "meta", text: "Ce n'est pas votre prénom ? Touchez « Changer mon nom »." }));
+      head.append(h("div", { class: "homegreet" }, h("h2", null, "Bonjour ", h("span", { class: "hg-name", text: me && me !== "?" ? me : "" }), " 👋"),
+        h("button", { class: "hg-edit", type: "button", title: "Changer mon nom", "aria-label": "Changer mon nom", text: "✎", onclick: function () { state.homeRename = true; state.homeNameVal = myNameChosen() ? myName() : ""; homeFocus = true; render(); } })));
+      if (!myNameChosen()) head.append(h("div", { class: "hg-hint", text: "Ce n'est pas votre prénom ? Touchez le crayon pour le changer." }));
     }
-    head.append(h("div", { class: "meta", text: day.charAt(0).toUpperCase() + day.slice(1) + " · " + cabinetName }));
-    box.append(head);
-    if (homeFocus) { homeFocus = false; setTimeout(function () { var i = document.querySelector(".home-name-inp"); if (i) { try { i.focus(); i.select(); } catch (e) {} } }, 0); }
-    var chip = function (text, tone) { return h("span", { class: "hchip " + (tone || ""), text: text }); };
+    head.append(h("div", { class: "hg-date", text: day.charAt(0).toUpperCase() + day.slice(1) + " · " + cabinetName }));
+    wrap.append(head);
     var plural = function (n, a, b) { return n + " " + (n > 1 ? b : a); };
+    // une seule ligne par espace : ce qui compte le plus, sinon « tout va bien »
     var tiles = [
-      { mod: "stock", ic: "📦", prod: "Gestion de stock", title: "Stock", sub: "Le stock au quotidien : articles, favoris, comptage",
-        chips: [st.rupt.length ? chip(plural(st.rupt.length, "en rupture", "en rupture"), "bad") : null, st.bas ? chip(st.bas + " sous le seuil", "warn") : null, st.exp ? chip(st.exp + " à périmer", "warn") : null], ok: !st.rupt.length && !st.bas && !st.exp, okText: "Tout est en ordre" },
-      { mod: "achats", ic: "🛒", prod: "Gestion de stock", title: "Achats", sub: "Commandes, catalogues, factures, dépenses",
-        chips: [st.need ? chip(st.need + " à commander" + (st.needEur ? " · ≈ " + money(st.needEur) + " HT" : ""), "warn") : null, st.ordered ? chip(plural(st.ordered, "commande en attente", "commandes en attente"), "") : null], ok: !st.need && !st.ordered, okText: "Rien à commander" },
-      { mod: "materiel", ic: "🏥", prod: "Gestion de stock", title: "Matériel", sub: "Salles, contrôles, équipements, contrats",
-        chips: [st.ctl ? chip(plural(st.ctl, "contrôle à faire", "contrôles à faire"), "bad") : null, st.eqLate ? chip(plural(st.eqLate, "maintenance à prévoir", "maintenances à prévoir"), "warn") : null, st.eqWarr ? chip(plural(st.eqWarr, "garantie à surveiller", "garanties à surveiller"), "") : null, st.ct ? chip(plural(st.ct, "contrat à suivre", "contrats à suivre"), "") : null], ok: !st.ctl && !st.eqLate && !st.eqWarr && !st.ct, okText: "Rien à signaler" },
-      { mod: "equipe", ic: "💬", prod: "Communication interne", title: "Équipe", sub: "Messages, tâches, qui est connecté",
-        chips: [st.unread ? chip(plural(st.unread, "message non lu", "messages non lus"), "bad") : null, st.tasks ? chip(plural(st.tasks, "tâche à faire", "tâches à faire"), "warn") : null, st.online ? chip(st.online + " en ligne", "on") : null], ok: !st.unread && !st.tasks, okText: msgOk ? "Rien de nouveau" : "Messagerie à activer" }
+      { mod: "stock", ic: "📦", prod: "Gestion de stock", title: "Stock", color: "#3b6cff",
+        lines: [[st.rupt.length, plural(st.rupt.length, "en rupture", "en rupture"), "bad"], [st.bas, st.bas + " sous le seuil", "warn"], [st.exp, st.exp + " à périmer", "warn"]], okText: "Tout est en ordre" },
+      { mod: "achats", ic: "🛒", prod: "Gestion de stock", title: "Achats", color: "#f59e0b",
+        lines: [[st.need, st.need + " à commander" + (st.needEur ? " · ≈ " + money(st.needEur) + " HT" : ""), "warn"], [st.ordered, plural(st.ordered, "commande en attente", "commandes en attente"), ""]], okText: "Rien à commander" },
+      { mod: "materiel", ic: "🏥", prod: "Gestion de stock", title: "Matériel", color: "#14b8a6",
+        lines: [[st.ctl, plural(st.ctl, "contrôle à faire", "contrôles à faire"), "bad"], [st.eqLate, plural(st.eqLate, "maintenance à prévoir", "maintenances à prévoir"), "warn"], [st.eqWarr + st.ct, plural(st.eqWarr + st.ct, "échéance à suivre", "échéances à suivre"), ""]], okText: "Rien à signaler" },
+      { mod: "equipe", ic: "💬", prod: "Communication interne", title: "Équipe", color: "#8b5cf6",
+        lines: [[st.unread, plural(st.unread, "message non lu", "messages non lus"), "bad"], [st.tasks, plural(st.tasks, "tâche à faire", "tâches à faire"), "warn"], [st.online, st.online + " en ligne", "on"]], okText: msgOk ? "Rien de nouveau" : "Messagerie à activer" }
     ];
     var grid = h("div", { class: "hometiles" });
     tiles.forEach(function (t) {
-      var chips = h("div", { class: "hchips" }); t.chips.forEach(function (c) { if (c) chips.append(c); });
-      if (t.ok || !chips.children.length) chips.append(chip("✓ " + t.okText, "ok"));
-      var b = h("button", { class: "hometile mod-" + t.mod, type: "button", "aria-label": t.title + " : " + t.sub, onclick: function () { setModule(t.mod); } },
-        h("span", { class: "ht-ic", text: t.ic }), h("span", { class: "ht-main" }, h("span", { class: "ht-prod", text: t.prod }), h("span", { class: "ht-title", text: t.title }), h("span", { class: "ht-sub", text: t.sub }), chips));
-      grid.append(b);
+      var on = t.lines.filter(function (l) { return l[0] > 0; }), tone = on.length ? (on.some(function (l) { return l[2] === "bad"; }) ? "bad" : on.some(function (l) { return l[2] === "warn"; }) ? "warn" : "on") : "ok";
+      var status = h("span", { class: "ht-status " + tone }, h("i", { class: "ht-dot" }), h("span", { text: on.length ? on.slice(0, 2).map(function (l) { return l[1]; }).join(" · ") : t.okText }));
+      grid.append(h("button", { class: "hometile mod-" + t.mod, type: "button", style: "--tc:" + t.color, "aria-label": t.title + " : " + (on.length ? on.map(function (l) { return l[1]; }).join(", ") : t.okText), onclick: function () { setModule(t.mod); } },
+        h("span", { class: "ht-ic", text: t.ic }), h("span", { class: "ht-main" }, h("span", { class: "ht-prod", text: t.prod }), h("span", { class: "ht-title", text: t.title }), status), h("span", { class: "ht-go", "aria-hidden": "true", text: "→" })));
     });
-    box.append(grid);
-    var qa = h("div", { class: "homeqa" }, h("span", { class: "meta", text: "Raccourcis :" }));
-    [["📷 Scanner", function () { $("scanBtn").click(); }], ["＋ Ajouter un article", function () { setModule("stock"); setTimeout(function () { $("addBtn").click(); }, 150); }, true], ["⬆ Importer une facture", function () { $("importBtn").click(); }, true], ["🔍 Rechercher", function () { $("kBtn").click(); }], ["📅 Récap de la semaine", function () { $("recapBtn").click(); }]].forEach(function (a) {
-      qa.append(h("button", { class: "btn sm", type: "button", disabled: a[2] && (readOnly || !db), text: a[0], onclick: a[1] }));
-    });
-    box.append(qa);
-    // à surveiller : les plus urgents, avec l'espace où les traiter
-    var al = [];
-    if (st.rupt.length) al.push(["stock", "Rupture : " + st.rupt.slice(0, 3).join(", ") + (st.rupt.length > 3 ? " (+" + (st.rupt.length - 3) + ")" : ""), "bad"]);
-    if (st.exp) al.push(["stock", plural(st.exp, "article périmé ou bientôt périmé", "articles périmés ou bientôt périmés"), "warn"]);
-    if (st.need) al.push(["achats", plural(st.need, "article à commander", "articles à commander"), "warn"]);
-    if (st.ctl) al.push(["materiel", plural(st.ctl, "contrôle de salle à faire", "contrôles de salle à faire"), "bad"]);
-    st.maint.eqLate.concat(st.maint.eqSoon).slice(0, 3).forEach(function (t) { al.push(["materiel", "Maintenance : " + t, "warn"]); });
-    st.maint.ctNotice.concat(st.maint.ctRenew).slice(0, 2).forEach(function (t) { al.push(["materiel", "Contrat : " + t, "warn"]); });
-    st.maint.eqWarr.slice(0, 2).forEach(function (t) { al.push(["materiel", "Garantie : " + t, ""]); });
-    if (st.unread) al.push(["equipe", plural(st.unread, "message non lu", "messages non lus"), "bad"]);
-    if (st.tasks) al.push(["equipe", plural(st.tasks, "tâche à faire", "tâches à faire"), "warn"]);
-    var wrap = h("div", { class: "table homealerts" }, h("div", { class: "totalhead" }, h("strong", { text: "À surveiller" }), h("span", { class: "meta", text: al.length ? String(al.length) : "" })));
-    if (!al.length) wrap.append(h("div", { class: "empty", text: "Rien à signaler pour le moment. 🎉" }));
-    al.slice(0, 9).forEach(function (a) { wrap.append(h("div", { class: "halert " + a[2] }, h("span", { class: "hal-t", text: a[1] }), h("button", { class: "btn sm", type: "button", text: "Voir", onclick: function () { setModule(a[0]); } }))); });
+    wrap.append(grid);
     box.append(wrap);
+    if (homeFocus) { homeFocus = false; setTimeout(function () { var i = document.querySelector(".home-name-inp"); if (i) { try { i.focus(); i.select(); } catch (e) {} } }, 0); }
   }
   $("appTitle").setAttribute("role", "link"); $("appTitle").setAttribute("tabindex", "0"); $("appTitle").title = "Retour à l'accueil";
   $("appTitle").addEventListener("click", function () { setModule("accueil"); });
