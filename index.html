@@ -1200,13 +1200,90 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
 .taskform textarea { width:100%; resize:vertical; min-height:60px; border:1px solid var(--line); border-radius:12px; padding:10px 12px; font:inherit; background:var(--surface); color:var(--ink); }
 .tf-actions { display:flex; justify-content:flex-end; }
 .nextp { display:inline-block; margin-right:8px; padding:2px 9px; border-radius:999px; background:#fff1d6; color:#8a5a00; font-size:12.5px; font-weight:700; }
+
+/* ===== v115 : design Recept (dégradé bleu → violet, encre marine, verre dépoli) ===== */
+:root[data-theme="recept"] body { background-image:radial-gradient(1100px 520px at 90% -170px, rgba(47,103,255,.17), transparent 70%), radial-gradient(900px 460px at -8% -130px, rgba(107,91,255,.13), transparent 70%); background-attachment:fixed; background-repeat:no-repeat; }
+body { font-feature-settings:"cv11" 1, "ss03" 1; }
+::selection { background:rgba(47,103,255,.22); }
+:focus-visible { outline:2px solid var(--brand); outline-offset:2px; }
+/* bandeau d'accueil */
+.hero { position:relative; overflow:hidden; border-radius:30px; padding:36px 38px; margin:6px 0 26px; color:#fff; text-align:left; background:linear-gradient(118deg, #2F67FF 0%, #5560FF 52%, #7B55FF 100%); box-shadow:0 26px 50px -26px rgba(47,103,255,.75), inset 0 1px 0 rgba(255,255,255,.28); }
+.hubhead.hero { background:linear-gradient(118deg, var(--tc) 0%, color-mix(in srgb, var(--tc) 55%, #7B55FF) 100%); box-shadow:0 26px 50px -26px color-mix(in srgb, var(--tc) 75%, transparent), inset 0 1px 0 rgba(255,255,255,.28); padding:28px 34px; }
+.hero::after { content:""; position:absolute; inset:0; pointer-events:none; background-image:linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px); background-size:38px 38px; -webkit-mask-image:linear-gradient(115deg, transparent 25%, #000 100%); mask-image:linear-gradient(115deg, transparent 25%, #000 100%); }
+.hero-orb { position:absolute; border-radius:50%; pointer-events:none; }
+.hero-orb.o1 { width:380px; height:380px; right:-110px; top:-170px; background:radial-gradient(circle at 35% 35%, rgba(255,255,255,.38), rgba(255,255,255,0) 68%); }
+.hero-orb.o2 { width:260px; height:260px; right:150px; bottom:-170px; background:radial-gradient(circle, rgba(255,255,255,.22), rgba(255,255,255,0) 70%); }
+.hero-in { position:relative; z-index:1; }
+.hero-kicker { display:inline-flex; align-items:center; gap:8px; padding:6px 13px; border-radius:999px; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.28); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); font-size:13px; font-weight:600; }
+.hero h2 { margin:14px 0 6px; font-size:clamp(32px, 5.4vw, 54px); font-weight:800; letter-spacing:-.04em; line-height:1.04; color:#fff; }
+.homehead.hero { text-align:left; }
+.homehead .homegreet { justify-content:flex-start; }
+.hero .hg-name { background:none; -webkit-text-fill-color:#fff; color:#fff; }
+.hero .hg-date { color:rgba(255,255,255,.88); font-size:16px; margin-top:0; }
+.hero .hub-crumb { color:rgba(255,255,255,.82); margin-bottom:2px; }
+.hero .linkbtn { color:#fff; text-decoration:underline; text-underline-offset:3px; }
+.hub .hubhead h2 { color:#fff; }
+.hub-ic { display:inline-grid; place-items:center; width:1.3em; height:1.3em; border-radius:.36em; background:rgba(255,255,255,.2); font-size:.7em; vertical-align:middle; margin-right:6px; }
+/* tuiles */
+.home { max-width:1040px; }
+.hometiles { gap:20px; }
+.hometile { border-radius:28px; padding:26px; background:var(--surface); border:1px solid color-mix(in srgb, var(--tc) 14%, var(--line)); box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 14px 34px -20px rgba(11,27,58,.38); }
+.hometile::before { background:radial-gradient(130% 120% at 100% 0%, color-mix(in srgb, var(--tc) 11%, transparent) 0%, transparent 58%); }
+.hometile:hover, .hometile:focus-visible { transform:translateY(-4px); border-color:color-mix(in srgb, var(--tc) 60%, var(--line)); box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 26px 44px -22px color-mix(in srgb, var(--tc) 55%, transparent); }
+.hometile:active { transform:translateY(-1px) scale(.995); }
+.ht-ic { width:74px; height:74px; border-radius:23px; font-size:35px; color:#fff; background:linear-gradient(135deg, var(--tc), color-mix(in srgb, var(--tc) 48%, #7B55FF)); box-shadow:0 14px 26px -12px color-mix(in srgb, var(--tc) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.4); text-shadow:0 2px 6px rgba(0,0,0,.28); }
+.ht-prod { color:color-mix(in srgb, var(--tc) 70%, var(--muted)); }
+.ht-title { font-size:30px; letter-spacing:-.03em; color:var(--ink); }
+.ht-status { margin-top:8px; padding:5px 12px; border-radius:999px; background:var(--surface-2); font-size:13.5px; font-weight:650; align-self:flex-start; }
+.ht-dot { width:8px; height:8px; }
+.ht-status.ok, .ht-status.on { background:var(--ok-bg); color:var(--ok); }
+.ht-status.warn { background:var(--warn-bg); color:var(--warn); }
+.ht-status.bad { background:var(--bad-bg); color:var(--bad); }
+.ht-go { width:40px; height:40px; display:grid; place-items:center; border-radius:50%; font-size:19px; background:color-mix(in srgb, var(--tc) 12%, transparent); transition:background .18s, color .18s, opacity .18s, transform .18s; }
+.hometile:hover .ht-go, .hometile:focus-visible .ht-go { background:var(--tc); color:#fff; }
+.hubtile { padding:22px; min-height:120px; }
+.hubtile .ht-ic { width:64px; height:64px; border-radius:20px; font-size:30px; }
+.hubtile .ht-title { font-size:24px; }
+.hubtile.act { background:color-mix(in srgb, var(--tc) 5%, var(--surface)); border-style:dashed; border-color:color-mix(in srgb, var(--tc) 38%, var(--line)); }
+/* barre du haut en verre dépoli (tablette et ordinateur) */
+@media (min-width: 761px) { header.top { position:sticky; top:0; z-index:35; margin-left:-14px; margin-right:-14px; padding-left:14px; padding-right:14px; background:transparent; border-bottom:1px solid transparent; transition:background .2s, border-color .2s, box-shadow .2s; } header.top.scrolled { background:color-mix(in srgb, var(--bg) 72%, transparent); -webkit-backdrop-filter:saturate(1.5) blur(16px); backdrop-filter:saturate(1.5) blur(16px); border-bottom-color:color-mix(in srgb, var(--line) 80%, transparent); box-shadow:0 10px 24px -18px rgba(11,27,58,.35); } }
+.modsw { background:color-mix(in srgb, var(--surface) 80%, transparent); border:1px solid color-mix(in srgb, var(--brand) 12%, var(--line)); box-shadow:0 6px 18px -12px rgba(11,27,58,.4); }
+.modbtn[aria-selected="true"] { background:var(--grad); box-shadow:0 8px 18px -8px rgba(47,103,255,.7); }
+.btn.primary { background:var(--grad); box-shadow:0 10px 22px -10px rgba(47,103,255,.75); transition:transform .15s, box-shadow .15s; }
+.btn.primary:hover { transform:translateY(-1px); box-shadow:0 14px 26px -10px rgba(47,103,255,.85); }
+.btn.primary:active { transform:translateY(0) scale(.98); }
+/* menu de gauche */
+:root[data-theme="recept"] .sidebar { background:linear-gradient(180deg, #FFFFFF 0%, #F6F8FF 100%); border-right:1px solid rgba(47,103,255,.10); }
+.sb-prod { color:var(--brand); opacity:.85; }
+.sb-title { letter-spacing:-.02em; }
+.tab, .tab-act { border-radius:14px; transition:background .15s, color .15s, transform .12s; }
+.tab:hover, .tab-act:hover { transform:translateX(2px); }
+.tab[aria-selected="true"], .sb-hub.on { background:linear-gradient(90deg, rgba(47,103,255,.15), rgba(107,91,255,.05)); color:var(--sb-active-ink, var(--brand)); font-weight:700; box-shadow:inset 3px 0 0 var(--brand); }
+.sb-scan { background:var(--grad); box-shadow:0 12px 24px -12px rgba(47,103,255,.8); }
+/* cartes et fenêtres */
+.table, .tile, .kpi { border-radius:20px; }
+dialog { border-radius:26px; box-shadow:0 40px 90px -24px rgba(11,27,58,.55); }
+dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5px); backdrop-filter:blur(5px); }
+.menu, .prespop { border-radius:18px; box-shadow:0 24px 60px -18px rgba(11,27,58,.45); border-color:color-mix(in srgb, var(--brand) 10%, var(--line)); }
+/* connexion */
+#login { background:radial-gradient(900px 520px at 12% 0%, rgba(123,85,255,.55), transparent 62%), radial-gradient(900px 520px at 95% 100%, rgba(47,103,255,.55), transparent 62%), linear-gradient(160deg, #0B1B3A 0%, #12295c 100%); }
+#login .login-card { background:color-mix(in srgb, var(--surface) 96%, transparent); border:1px solid rgba(255,255,255,.5); box-shadow:0 40px 90px -30px rgba(0,0,0,.7); }
+.brandmark { width:62px; height:62px; border-radius:20px; font-size:30px; font-weight:800; box-shadow:0 16px 30px -12px rgba(47,103,255,.8), inset 0 1px 0 rgba(255,255,255,.4); }
+@media (max-width: 600px) { .hero { padding:26px 22px; border-radius:26px; margin-bottom:18px; } .hubhead.hero { padding:22px 20px; } .hero h2 { font-size:clamp(30px, 9vw, 40px); } .hometile { padding:18px; border-radius:24px; } .ht-ic { width:60px; height:60px; border-radius:19px; font-size:29px; } .ht-title { font-size:25px; } .hubtile .ht-ic { width:54px; height:54px; font-size:26px; } .hubtile .ht-title { font-size:21px; } }
+@media (prefers-reduced-motion: reduce) { .hometile, .tab, .tab-act, .btn.primary { transition:none !important; transform:none !important; } }
+
+/* retouches */
+.ht-status { border-radius:16px; }
+@media (max-width: 1100px) { .ht-go { display:none; } }
+#login .login-card .linkbtn { display:block; margin:4px auto; text-align:center; font-size:14px; text-decoration:none; font-weight:600; }
+#login .login-card .linkbtn:hover { text-decoration:underline; }
 </style>
 </head>
 <body>
 
 <div id="login" class="hidden">
   <div class="login-card">
-    <div class="brandmark" aria-hidden="true">📦</div>
+    <div class="brandmark" aria-hidden="true">S</div>
     <h1 id="loginTitle">SimSimStock</h1>
     <div class="sub" id="loginHint">Connectez-vous avec votre e-mail et votre mot de passe.</div>
     <div class="joinbanner hidden" id="joinBanner" role="status"></div>
@@ -1231,7 +1308,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
 
 <div id="recover" class="hidden">
   <div class="login-card">
-    <div class="brandmark" aria-hidden="true">📦</div>
+    <div class="brandmark" aria-hidden="true">S</div>
     <h1>Nouveau mot de passe</h1>
     <div class="sub">Choisissez un nouveau mot de passe (8 caractères minimum).</div>
     <label class="f">Nouveau mot de passe
@@ -1247,7 +1324,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
 
 <div id="pick" class="hidden">
   <div class="login-card pick-card">
-    <div class="brandmark" aria-hidden="true">📦</div>
+    <div class="brandmark" aria-hidden="true">S</div>
     <h1 id="pickTitle">Choisissez un cabinet</h1>
     <div class="sub" id="pickHint"></div>
     <div class="tiles" id="pickTiles"></div>
@@ -1293,7 +1370,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v114</div>
+            <div class="menu-who"><span id="who"></span> · v115</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -7237,20 +7314,21 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
     var st = homeStats(), me = myName(), now = new Date();
     var day = now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
     var wrap = h("div", { class: "home" });
-    var head = h("div", { class: "homehead" });
-    head.append(h("div", { class: "homegreet" }, h("h2", null, "Bonjour ", h("span", { class: "hg-name", text: me && me !== "?" ? me : "" }), " 👋")));
-    head.append(h("div", { class: "hg-date", text: day.charAt(0).toUpperCase() + day.slice(1) + " · " + cabinetName }));
+    var head = h("div", { class: "homehead hero" }, h("span", { class: "hero-orb o1", "aria-hidden": "true" }), h("span", { class: "hero-orb o2", "aria-hidden": "true" }),
+      h("div", { class: "hero-in" }, h("div", { class: "hero-kicker", text: cabinetName }),
+        h("div", { class: "homegreet" }, h("h2", null, "Bonjour ", h("span", { class: "hg-name", text: me && me !== "?" ? me : "" }), " 👋")),
+        h("div", { class: "hg-date", text: day.charAt(0).toUpperCase() + day.slice(1) })));
     wrap.append(head);
     var plural = function (n, a, b) { return n + " " + (n > 1 ? b : a); };
     // une seule ligne par espace : ce qui compte le plus, sinon « tout va bien »
     var tiles = [
-      { mod: "stock", ic: "📦", prod: "Gestion de stock", title: "Stock", color: "#3b6cff",
+      { mod: "stock", ic: "📦", prod: "Gestion de stock", title: "Stock", color: "#2F67FF",
         lines: [[st.rupt.length, plural(st.rupt.length, "en rupture", "en rupture"), "bad"], [st.bas, st.bas + " sous le seuil", "warn"], [st.exp, st.exp + " à périmer", "warn"]], okText: "Tout est en ordre" },
-      { mod: "achats", ic: "🛒", prod: "Gestion de stock", title: "Achats", color: "#f59e0b",
+      { mod: "achats", ic: "🛒", prod: "Gestion de stock", title: "Achats", color: "#6B5BFF",
         lines: [[st.need, st.need + " à commander" + (st.needEur ? " · ≈ " + money(st.needEur) + " HT" : ""), "warn"], [st.ordered, plural(st.ordered, "commande en attente", "commandes en attente"), ""]], okText: "Rien à commander" },
-      { mod: "materiel", ic: "🏥", prod: "Gestion de stock", title: "Matériel", color: "#14b8a6",
+      { mod: "materiel", ic: "🏥", prod: "Gestion de stock", title: "Matériel", color: "#0BA5D6",
         lines: [[st.ctl, plural(st.ctl, "contrôle à faire", "contrôles à faire"), "bad"], [st.eqLate, plural(st.eqLate, "maintenance à prévoir", "maintenances à prévoir"), "warn"], [st.eqWarr + st.ct, plural(st.eqWarr + st.ct, "échéance à suivre", "échéances à suivre"), ""]], okText: "Rien à signaler" },
-      { mod: "equipe", ic: "💬", prod: "Communication interne", title: "Équipe", color: "#8b5cf6",
+      { mod: "equipe", ic: "💬", prod: "Communication interne", title: "Équipe", color: "#A05BFF",
         lines: [[st.unread, plural(st.unread, "message non lu", "messages non lus"), "bad"], [st.tasks, plural(st.tasks, "tâche à faire", "tâches à faire"), "warn"], [st.online, st.online + " en ligne", "on"]], okText: msgOk ? "Rien de nouveau" : "Messagerie à activer" }
     ];
     var grid = h("div", { class: "hometiles" });
@@ -7263,6 +7341,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
     wrap.append(grid);
     box.append(wrap);
   }
+  (function () { var hd = document.querySelector("header.top"); if (!hd) return; var on = function () { hd.classList.toggle("scrolled", (window.scrollY || document.documentElement.scrollTop || 0) > 6); }; window.addEventListener("scroll", on, { passive: true }); on(); })();
   $("appTitle").setAttribute("role", "link"); $("appTitle").setAttribute("tabindex", "0"); $("appTitle").title = "Retour à l'accueil";
   $("appTitle").addEventListener("click", function () { setModule("accueil"); });
   $("appTitle").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setModule("accueil"); } });
@@ -7271,7 +7350,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
   Array.prototype.forEach.call(document.querySelectorAll("[data-start]"), function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); startPref = b.getAttribute("data-start"); try { localStorage.setItem("simsim_start", startPref); } catch (er) {} drawStartOpt(); toast(startPref === "home" ? "L'appli s'ouvrira sur l'accueil." : "L'appli s'ouvrira sur le dernier espace utilisé."); }); });
   drawStartOpt();
   // ---------- page centrale d'un espace : ses sous-sections en grandes tuiles (comme le menu de gauche) ----------
-  var SPACE_COLOR = { stock: "#3b6cff", achats: "#f59e0b", materiel: "#14b8a6", equipe: "#8b5cf6" };
+  var SPACE_COLOR = { stock: "#2F67FF", achats: "#6B5BFF", materiel: "#0BA5D6", equipe: "#A05BFF" };
   var SPACE_SUB = { stock: "Le stock au quotidien", achats: "Commandes, catalogues, factures, dépenses", materiel: "Salles, contrôles, équipements, contrats", equipe: "Messages, tâches, qui est connecté" };
   var SPACE_NAME = { stock: "Stock", achats: "Achats", materiel: "Matériel", equipe: "Équipe" };
   var SPACE_IC = { stock: "📦", achats: "🛒", materiel: "🏥", equipe: "💬" };
@@ -7321,9 +7400,10 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
   function renderHub(box) {
     var m = state.module; if (!SPACE_COLOR[m]) { goTab("accueil"); return; }
     var wrap = h("div", { class: "home hub" });
-    wrap.append(h("div", { class: "hubhead" },
-      h("div", { class: "hub-crumb" }, h("button", { class: "linkbtn", type: "button", text: "Accueil", onclick: function () { setModule("accueil"); } }), h("span", { text: " › " + MODS[m].prod })),
-      h("h2", null, h("span", { class: "hub-ic", text: SPACE_IC[m] }), " " + SPACE_NAME[m]), h("div", { class: "hg-date", text: SPACE_SUB[m] })));
+    wrap.append(h("div", { class: "hubhead hero", style: "--tc:" + SPACE_COLOR[m] }, h("span", { class: "hero-orb o1", "aria-hidden": "true" }), h("span", { class: "hero-orb o2", "aria-hidden": "true" }),
+      h("div", { class: "hero-in" },
+        h("div", { class: "hub-crumb" }, h("button", { class: "linkbtn", type: "button", text: "Accueil", onclick: function () { setModule("accueil"); } }), h("span", { text: " › " + MODS[m].prod })),
+        h("h2", null, h("span", { class: "hub-ic", text: SPACE_IC[m] }), " " + SPACE_NAME[m]), h("div", { class: "hg-date", text: SPACE_SUB[m] }))));
     var grid = h("div", { class: "hometiles hubtiles" });
     hubDefs(m).forEach(function (t) {
       var dis = t.needsWrite && (readOnly || !db);
