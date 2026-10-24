@@ -1190,6 +1190,16 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
 .hubtile:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
 .tab-act.on, .sb-hub.on { background:var(--surface-2); color:var(--brand); font-weight:600; }
 @media (max-width: 600px) { .hubtile { min-height:98px; padding:14px 16px; } }
+
+/* ===== v114 : demander une tâche ===== */
+.taskform { margin-bottom:14px; }
+.tf-body { padding:12px 14px 14px; display:flex; flex-direction:column; gap:10px; }
+.tf-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; }
+.tf-row select { width:100%; border:1px solid var(--line); border-radius:10px; padding:9px 10px; font:inherit; background:var(--surface); color:var(--ink); }
+.tf-chips { display:flex; gap:6px; flex-wrap:wrap; }
+.taskform textarea { width:100%; resize:vertical; min-height:60px; border:1px solid var(--line); border-radius:12px; padding:10px 12px; font:inherit; background:var(--surface); color:var(--ink); }
+.tf-actions { display:flex; justify-content:flex-end; }
+.nextp { display:inline-block; margin-right:8px; padding:2px 9px; border-radius:999px; background:#fff1d6; color:#8a5a00; font-size:12.5px; font-weight:700; }
 </style>
 </head>
 <body>
@@ -1283,7 +1293,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v113</div>
+            <div class="menu-who"><span id="who"></span> · v114</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -6251,7 +6261,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
     var t = msgThreadOf(m), viewing = state.tab === "messages" && state.msgThread === t && (state.msgView === "thread" || window.innerWidth > 760);
     if (!mine) {
       if (viewing && document.visibilityState !== "hidden") markRead(t);
-      else toast("💬 " + personLabel(m.author_id, m.author_email) + (t === "equipe" ? " (équipe)" : "") + " : " + String(m.body).replace(/\s+/g, " ").slice(0, 70));
+      else toast((m.kind === "tache" ? "☑ Nouvelle tâche de " : "💬 ") + personLabel(m.author_id, m.author_email) + (m.kind === "tache" ? "" : t === "equipe" ? " (équipe)" : "") + " : " + String(m.body).replace(/\s+/g, " ").slice(0, 70));
     }
     updateMsgBadge();
     if (state.tab === "messages" || state.tab === "taches") render();
@@ -6295,7 +6305,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
       cb.addEventListener("change", function () { msgToggleDone(m, cb.checked); });
       wrap.append(h("label", { class: "btask" }, cb, h("span", { class: "btag", text: m.done_at ? "Fait" : "À faire" })));
     }
-    wrap.append(h("div", { class: "btext", text: m.body }));
+    wrap.append(h("div", { class: "btext" }, m.kind === "tache" && isNextPatient(m.body) ? h("span", { class: "nextp", text: "⏭ Prochain patient" }) : null, m.body));
     if (m.item_id) {
       var it = items.get(m.item_id);
       wrap.append(h("button", { class: "bitem", type: "button", title: it ? "Ouvrir la fiche de l'article" : "Cet article n'existe plus",
@@ -6343,6 +6353,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
   function parkMessages() {
     msgFocus = null;
     if (msgEls && document.activeElement === msgEls.ta) msgFocus = { a: msgEls.ta.selectionStart, b: msgEls.ta.selectionEnd };
+    else if (document.activeElement && document.activeElement.id === "taskTa") msgFocus = { task: true, a: document.activeElement.selectionStart, b: document.activeElement.selectionEnd };
     else if (document.activeElement && document.activeElement.classList && document.activeElement.classList.contains("msgrename-inp")) msgFocus = { rename: true, a: document.activeElement.selectionStart, b: document.activeElement.selectionEnd };
   }
   function renderMessages(box) {
@@ -7069,7 +7080,26 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
     if (m === state.module) { if (m !== "accueil" && state.tab !== "hub") goTab("hub"); return; }   // retoucher l'espace en cours : sa vue d'ensemble
     var from = tabModule(state.tab); if (from === state.module) lastTabs[state.module] = state.tab;
     applyModule(m);
-    goTab(m === "accueil" ? "accueil" : "hub");
+    if (m === "accueil") goTab("accueil");
+    else if (m === "equipe") openTeamDirect();
+    else goTab("hub");
+  }
+  // « Équipe » ouvre tout de suite la messagerie, sur la conversation qui a des messages non lus
+  function firstUnreadThread() {
+    if (!msgOk) return "";
+    var best = "", bestAt = "";
+    msgThreads().forEach(function (t) {
+      if (!msgUnread(t)) return;
+      var lu = msgReads[t] || "", last = "";
+      msgs.forEach(function (m) { if (m.author_id !== sessionUser && msgThreadOf(m) === t && (!lu || m.created_at > lu) && m.created_at > last) last = m.created_at; });
+      if (!best || last > bestAt) { best = t; bestAt = last; }
+    });
+    return best;
+  }
+  function openTeamDirect() {
+    var t = firstUnreadThread(); if (t) { state.msgThread = t; state.msgView = "thread"; }
+    var tab = lastTabs.equipe === "taches" || lastTabs.equipe === "utilisateurs" ? lastTabs.equipe : "messages";
+    goTab(tab);
   }
   $("sbHub").addEventListener("click", function () { goTab("hub"); setSidebarOpen(false); });
   Array.prototype.forEach.call(document.querySelectorAll("[data-act]"), function (b) {
@@ -7088,9 +7118,46 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
   function updateTaskBadge() {
     var n = msgOk ? taskLists().todo.length : 0, b = $("taskBadge"); b.textContent = String(n); b.classList.toggle("hidden", !n);
   }
+  // ---------- demander une tâche en deux touches (modèles : « Pano au prochain patient »…) ----------
+  var TASK_PRESETS = [["📷", "Faire une pano au prochain patient"], ["🦷", "Faire une rétro-alvéolaire au prochain patient"], ["🧹", "Préparer la salle pour le prochain patient"], ["🧴", "Stériliser les instruments de la salle"]];
+  var taskDraft = { to: "equipe", text: "", room: "" };
+  function isNextPatient(t) { return /prochain patient/i.test(String(t || "")); }
+  function sendTask() {
+    var text = taskDraft.text.replace(/\s+/g, " ").trim();
+    if (!text) { toast("Écrivez la tâche, ou touchez un modèle."); return; }
+    if (readOnly || !db) return;
+    if (taskDraft.room && text.indexOf(taskDraft.room) === -1) text += " — " + taskDraft.room;
+    if (text.length > 2000) { toast("Texte trop long."); return; }
+    var to = taskDraft.to === "equipe" ? null : taskDraft.to, toName = to ? msgThreadTitle(to) : "toute l'équipe";
+    sb.from("messages").insert({ cabinet_id: cabinetId, to_user_id: to, body: text, kind: "tache", item_id: null, item_name: "" }).select().then(function (res) {
+      if (res.error || !res.data || !res.data[0]) { toast(msgErrText(res.error)); return; }
+      taskDraft.text = ""; addMessage(res.data[0], true); toast("Tâche envoyée à " + toName + "."); render();
+    }, function () { toast("Connexion impossible : la tâche n'a pas été envoyée."); });
+  }
+  function taskForm() {
+    var card = h("div", { class: "table taskform" }, h("div", { class: "totalhead" }, h("strong", { text: "Demander une tâche" }), h("span", { class: "meta", text: "Ni nom de patient ni information de santé" })));
+    var body = h("div", { class: "tf-body" });
+    var who = h("select", { id: "taskTo", "aria-label": "Pour qui" }), room = h("select", { id: "taskRoom", "aria-label": "Dans quelle salle" });
+    who.append(h("option", { value: "equipe", text: "Toute l'équipe" }));
+    msgPeople.filter(function (p) { return p.user_id !== sessionUser; }).forEach(function (p) { who.append(h("option", { value: p.user_id, text: personLabel(p.user_id, p.email) })); });
+    if (!Array.prototype.some.call(who.options, function (o) { return o.value === taskDraft.to; })) taskDraft.to = "equipe";
+    who.value = taskDraft.to; who.addEventListener("change", function () { taskDraft.to = who.value; });
+    room.append(h("option", { value: "", text: "Salle : peu importe" })); (rooms || []).forEach(function (r) { room.append(h("option", { value: r.name, text: r.name })); });
+    if (!Array.prototype.some.call(room.options, function (o) { return o.value === taskDraft.room; })) taskDraft.room = "";
+    room.value = taskDraft.room; room.addEventListener("change", function () { taskDraft.room = room.value; });
+    var chips = h("div", { class: "tf-chips" });
+    TASK_PRESETS.forEach(function (pr) { chips.append(h("button", { class: "btn sm", type: "button", text: pr[0] + " " + pr[1], onclick: function () { taskDraft.text = pr[1]; var t = $("taskTa"); if (t) { t.value = pr[1]; t.focus(); } } })); });
+    var ta = h("textarea", { id: "taskTa", rows: "2", maxlength: "300", placeholder: "Ex : Faire une pano au prochain patient", "aria-label": "La tâche à faire" });
+    ta.value = taskDraft.text; ta.addEventListener("input", function () { taskDraft.text = ta.value; });
+    ta.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey && window.innerWidth > 760 && !document.documentElement.classList.contains("is-touch")) { e.preventDefault(); sendTask(); } });
+    body.append(h("div", { class: "tf-row" }, h("label", { class: "f" }, "Pour", who), h("label", { class: "f" }, "Où", room)), chips, ta, h("div", { class: "tf-actions" }, h("button", { class: "btn primary", id: "taskSend", type: "button", text: "☑ Envoyer la tâche", onclick: sendTask })));
+    card.append(body);
+    return card;
+  }
   function renderTasks(box) {
     if (!msgOk) { box.append(h("div", { class: "dnote", text: "Les tâches utilisent la messagerie : lancez le script SQL « ajout-messages » dans Supabase (voir le guide)." })); return; }
     var L = taskLists();
+    if (!readOnly) box.append(taskForm());
     var section = function (title, list, hint, mineToTick) {
       var wrap = h("div", { class: "table taskbox" }, h("div", { class: "totalhead" }, h("strong", { text: title }), h("span", { class: "meta", text: list.length ? String(list.length) : hint })));
       list.forEach(function (m) {
@@ -7099,7 +7166,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
         var who = m.author_id === sessionUser ? (m.to_user_id ? "Pour " + msgThreadTitle(m.to_user_id) : "Pour l'équipe") : "De " + personLabel(m.author_id, m.author_email) + (m.to_user_id ? "" : " (équipe)");
         var it = m.item_id ? items.get(m.item_id) : null;
         wrap.append(h("div", { class: "taskrow" }, cb,
-          h("div", { class: "trow-main" }, h("div", { class: "item-name", text: m.body }),
+          h("div", { class: "trow-main" }, h("div", { class: "item-name" }, isNextPatient(m.body) ? h("span", { class: "nextp", text: "⏭ Prochain patient" }) : null, m.body),
             h("div", { class: "meta", text: [who, msgClock(m.created_at), m.done_at ? "fait par " + personLabel(null, m.done_by) + " " + msgClock(m.done_at) : ""].filter(Boolean).join(" · ") }),
             it ? h("button", { class: "bitem", type: "button", text: "📦 " + it.name, onclick: function () { openItem(R(it)); } }) : null),
           h("button", { class: "btn sm", type: "button", text: "Conversation", onclick: function () { state.msgThread = msgThreadOf(m); state.msgView = "thread"; goTab("messages"); } })));
@@ -7108,8 +7175,10 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
       return wrap;
     };
     box.append(section("À faire", L.todo, "Rien à faire pour le moment.", true), section("Demandées par moi, en attente", L.sent, "Aucune tâche en attente chez les autres."), section("Faites récemment", L.done, "Aucune tâche terminée."));
-    box.append(h("div", { class: "dnote", text: "Pour créer une tâche : ouvrez Messages, choisissez une personne, touchez « ☑ Tâche » puis écrivez la demande." }));
+    if (msgFocus && msgFocus.task) { var tt = $("taskTa"); if (tt) { try { tt.focus(); tt.setSelectionRange(Math.min(msgFocus.a, tt.value.length), Math.min(msgFocus.b, tt.value.length)); } catch (e) {} } msgFocus = null; }
+    if (taskWantFocus) { taskWantFocus = false; setTimeout(function () { var t = $("taskTa"); if (t) { t.focus(); } }, 50); }
   }
+  var taskWantFocus = false;
   // ---------- page d'accueil : le choix de l'espace, avec ce qui compte dans chacun ----------
   var homeT = null, greeted = false;
   function homeRefresh() { if (state.tab !== "accueil" && state.tab !== "hub") return; clearTimeout(homeT); homeT = setTimeout(function () { if (state.tab === "accueil" || state.tab === "hub") render(); }, 300); }
@@ -7241,6 +7310,7 @@ html.is-touch .ht-go { opacity:.55; transform:none; }
       ],
       equipe: [
         { ic: "💬", title: "Messages", sub: "Écrire à l'équipe ou en privé", tab: "messages", status: lineStatus([[st.unread, pl(st.unread, "message non lu", "messages non lus"), "bad"]], msgOk ? "Rien de nouveau" : "À activer") },
+        { ic: "⏭", title: "Demander une tâche", sub: "Ex : une pano au prochain patient", act: function () { taskWantFocus = true; goTab("taches"); }, action: true, needsWrite: true },
         { ic: "☑", title: "Tâches", sub: "Ce qu'on vous demande, ce que vous demandez", tab: "taches", status: lineStatus([[st.tasks, pl(st.tasks, "tâche à faire", "tâches à faire"), "warn"]], msgOk ? "Rien à faire" : "À activer") },
         { ic: "🟢", title: "Qui est connecté", sub: "L'équipe en ligne en ce moment", act: function () { var b = $("presBtn"); if (b) b.click(); }, action: true, status: { tone: st.online ? "on" : "", text: st.online ? st.online + " en ligne" : "Personne d'autre" } }
       ]
