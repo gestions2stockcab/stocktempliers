@@ -1311,6 +1311,82 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
 @media (max-width: 1100px) { .msgnote { display:none; } .profsel { max-width:160px; } .mh-main, .mh-edit { flex-basis:200px; } .mh-actions { flex-wrap:nowrap; } }
 .msgtools { flex-wrap:nowrap; }
 .msgtools .send, .msgtools .btn.primary { margin-left:auto; }
+
+/* ===== v118 : kits par acte ===== */
+.kitgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(290px, 1fr)); gap:16px; margin-top:12px; }
+.kitcard { background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:18px; box-shadow:0 12px 30px -22px rgba(11,27,58,.4); display:flex; flex-direction:column; gap:10px; }
+.kit-top { display:flex; gap:12px; align-items:center; }
+.kit-ic { width:54px; height:54px; border-radius:17px; display:grid; place-items:center; font-size:28px; background:var(--grad); box-shadow:0 12px 22px -12px rgba(47,103,255,.8); flex:none; }
+.kit-name { font-weight:800; font-size:19px; letter-spacing:-.01em; }
+.kit-lines { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; font-size:14.5px; }
+.kit-lines li.low { color:var(--warn); }
+.kit-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:auto; }
+.kit-head { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
+.kit-head .kit-name { flex:1 1 220px; font-size:inherit; font-weight:inherit; }
+#kitIcon { width:80px; text-align:center; font-size:22px; }
+.kit-rows { display:flex; flex-direction:column; gap:8px; margin:8px 0; }
+.kit-row { display:flex; gap:8px; align-items:center; }
+.kit-pick { flex:1; text-align:left; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.kit-qty { width:90px; border:1px solid var(--line); border-radius:10px; padding:8px 10px; font:inherit; background:var(--surface); color:var(--ink); }
+.kit-uselines { display:flex; flex-direction:column; gap:6px; margin:8px 0 12px; }
+.kit-useline.low { color:var(--warn); }
+.kit-warn { font-weight:700; }
+
+/* ===== v119 : routines ===== */
+.rt-date { font-size:18px; }
+.rtgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:16px; margin:12px 0; }
+.rtcard { background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:18px; box-shadow:0 12px 30px -22px rgba(11,27,58,.4); }
+.rtcard.done { border-color:color-mix(in srgb, var(--ok) 45%, var(--line)); background:linear-gradient(180deg, color-mix(in srgb, var(--ok-bg) 70%, var(--surface)), var(--surface)); }
+.rtcard.off { opacity:.75; }
+.rt-top { display:flex; gap:12px; align-items:center; }
+.rt-ic { width:50px; height:50px; border-radius:16px; display:grid; place-items:center; font-size:26px; background:var(--grad); flex:none; box-shadow:0 12px 22px -12px rgba(47,103,255,.8); }
+.rt-id { flex:1; min-width:0; }
+.rt-name { font-weight:800; font-size:18px; letter-spacing:-.01em; }
+.rt-prog { font-weight:800; font-size:14px; padding:4px 11px; border-radius:999px; background:var(--surface-2); white-space:nowrap; }
+.rt-prog.ok { background:var(--ok-bg); color:var(--ok); }
+.rt-bar { height:7px; border-radius:99px; background:var(--surface-2); margin:12px 0 8px; overflow:hidden; }
+.rt-bar i { display:block; height:100%; background:var(--grad); border-radius:99px; transition:width .25s; }
+.rt-step { display:flex; align-items:center; gap:12px; padding:11px 6px; border-top:1px solid var(--line); cursor:pointer; min-height:48px; }
+.rt-step input { width:24px; height:24px; flex:none; accent-color:var(--brand); }
+.rt-txt { flex:1; min-width:0; }
+.rt-step.on .rt-txt { text-decoration:line-through; opacity:.6; }
+.rt-by { white-space:nowrap; }
+.rt-fin { margin-top:8px; }
+.rt-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin:8px 0; }
+.rt-row select, #rtSteps { width:100%; border:1px solid var(--line); border-radius:10px; padding:9px 10px; font:inherit; background:var(--surface); color:var(--ink); }
+#rtSteps { min-height:140px; resize:vertical; }
+.rtother { margin:10px 0; } .rtother summary { cursor:pointer; color:var(--muted); font-weight:600; padding:6px 0; }
+.rthist { margin-top:14px; }
+.rth-row { display:grid; grid-template-columns:minmax(120px, 1.6fr) repeat(7, minmax(34px, 1fr)); gap:4px; align-items:center; padding:9px 14px; border-top:1px solid var(--line); }
+.rth-head { color:var(--muted); font-size:12px; font-weight:700; text-transform:capitalize; }
+.rth-name { font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rth-d { text-align:center; }
+.rth-c { text-align:center; font-weight:800; border-radius:8px; padding:3px 0; background:var(--surface-2); color:var(--muted); }
+.rth-c.ok { background:var(--ok-bg); color:var(--ok); } .rth-c.part { background:var(--warn-bg); color:var(--warn); } .rth-c.bad { background:var(--bad-bg); color:var(--bad); }
+@media (max-width: 600px) { .rtgrid { grid-template-columns:1fr; } .rth-row { grid-template-columns:minmax(80px, 1.2fr) repeat(7, 1fr); padding:8px 10px; } }
+
+/* ===== v120 : rapport mensuel ===== */
+.rep-prev { margin:10px 0; padding:12px 14px; border-radius:14px; background:var(--surface-2); display:flex; flex-direction:column; gap:4px; }
+.rep-line b { font-size:22px; letter-spacing:-.02em; }
+#repMonth { width:100%; border:1px solid var(--line); border-radius:10px; padding:9px 10px; font:inherit; background:var(--surface); color:var(--ink); }
+
+/* ===== v121 : notifications ===== */
+.push-state { font-size:14px; color:var(--ink); margin:6px 0; }
+.push-prefs { display:flex; gap:14px; flex-wrap:wrap; margin-top:8px; }
+.push-prefs .chk { display:flex; gap:6px; align-items:center; font-size:14px; }
+
+/* ===== v122 : santé de l'installation ===== */
+.health-sum { padding:12px 16px; border-radius:14px; font-weight:700; margin:8px 0 12px; background:var(--surface-2); }
+.health-sum.ok { background:var(--ok-bg); color:var(--ok); }
+.health-sum.warn { background:var(--warn-bg); color:var(--warn); }
+.health-sum.bad { background:var(--bad-bg); color:var(--bad); }
+.health-list { max-height:52vh; overflow:auto; display:flex; flex-direction:column; gap:8px; }
+.health-grp { border:1px solid var(--line); border-radius:14px; padding:4px 12px; background:var(--surface); }
+.health-grp summary { cursor:pointer; padding:8px 0; }
+.health-row { display:flex; gap:10px; align-items:flex-start; padding:7px 0; border-top:1px solid var(--line); }
+.hr-ic { flex:none; width:24px; text-align:center; }
+.hr-name { font-weight:600; }
+.health-row.bad .hr-name { color:var(--bad); }
 </style>
 </head>
 <body>
@@ -1404,7 +1480,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v117</div>
+            <div class="menu-who"><span id="who"></span> · v122</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1429,6 +1505,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
               <button class="mi hidden" id="teamBtn">Utilisateurs et invitations</button>
               <button class="mi hidden" id="newCabBtn">Créer un cabinet</button>
               <button class="mi hidden" id="adminBtn">Administration</button>
+              <button class="mi hidden" id="healthBtn">🩺 Santé de l'installation</button>
             </div>
             <div class="menu-group" data-mtab="securite"><div class="menu-title">Sauvegarde et sécurité</div>
               <button class="mi" id="bkBtn">Sauvegardes</button>
@@ -1444,6 +1521,11 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
               </div>
               <div class="menu-sw"><div class="meta">Mon profil (dentiste, assistante…) :</div>
                 <div class="nameedit"><select id="myProfilSel" aria-label="Mon profil"></select></div>
+              </div>
+              <div class="menu-sw" id="pushBox"><div class="meta">🔔 Notifications sur cet appareil</div>
+                <div class="push-state" id="pushState"></div>
+                <div class="nameedit"><button class="btn sm primary" id="pushOn" type="button">Activer</button><button class="btn sm hidden" id="pushTest" type="button">Envoyer un essai</button><button class="btn sm hidden" id="pushOff" type="button">Désactiver</button></div>
+                <div class="push-prefs hidden" id="pushPrefs"><label class="chk"><input type="checkbox" id="pushMsg" checked> Messages</label><label class="chk"><input type="checkbox" id="pushTasks" checked> Tâches et réponses</label></div>
               </div>
               <div class="menu-sw"><div class="meta">Couleur de l'appli</div>
         <div class="swatches" role="group" aria-label="Couleur de fond">
@@ -1490,6 +1572,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
       <button class="tab" role="tab" data-tab="inventaire" data-mod="stock" aria-selected="true"><span class="ti">📦</span><span class="tl">Stock</span></button>
       <button class="tab" role="tab" data-tab="favoris" data-mod="stock" aria-selected="false"><span class="ti">⭐</span><span class="tl">Favoris</span></button>
       <button class="tab" role="tab" data-tab="comptage" data-mod="stock" aria-selected="false"><span class="ti">🔢</span><span class="tl">Comptage</span></button>
+      <button class="tab" role="tab" data-tab="kits" data-mod="stock" aria-selected="false"><span class="ti">🧰</span><span class="tl">Kits par acte</span></button>
       <button class="tab" role="tab" data-tab="historique" data-mod="stock" aria-selected="false"><span class="ti">🕘</span><span class="tl">Historique</span></button>
       <button type="button" class="tab-act" data-act="recapBtn" data-mod="stock"><span class="ti">📅</span><span class="tl">Récap de la semaine</span></button>
     </div>
@@ -1509,6 +1592,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     <div class="sb-group" data-mod="equipe">
       <button class="tab" role="tab" data-tab="messages" data-mod="equipe" aria-selected="false"><span class="ti">💬</span><span class="tl">Messages <span class="msgbadge hidden" id="msgBadge" aria-label="messages non lus"></span></span></button>
       <button class="tab" role="tab" data-tab="taches" data-mod="equipe" aria-selected="false"><span class="ti">☑</span><span class="tl">Tâches <span class="msgbadge hidden" id="taskBadge" aria-label="tâches à faire"></span></span></button>
+      <button class="tab" role="tab" data-tab="routines" data-mod="equipe" aria-selected="false"><span class="ti">📋</span><span class="tl">Routines <span class="msgbadge hidden" id="rtBadge" aria-label="routines à faire"></span></span></button>
       <button class="tab hidden" role="tab" data-tab="utilisateurs" data-mod="equipe" aria-selected="false"><span class="ti">👥</span><span class="tl">Utilisateurs</span></button>
     </div>
     <div class="sb-group sb-bottom">
@@ -1861,6 +1945,74 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
       <button class="btn" id="intCancel" type="button">Annuler</button>
       <button class="btn danger hidden" id="intDel" type="button">Supprimer</button>
     </div>
+  </div>
+</dialog>
+
+<dialog id="healthDlg" class="wide">
+  <div class="dlg">
+    <h2>🩺 Santé de l'installation</h2>
+    <div class="sub">Ce qui est installé, ce qui manque, et le fichier à lancer pour le réparer. Aucune donnée n'est modifiée.</div>
+    <div id="healthSum" class="health-sum" role="status"></div>
+    <div id="healthList" class="health-list"></div>
+    <div class="dlg-actions"><button class="btn" id="healthClose" type="button">Fermer</button><button class="btn" id="healthCopy" type="button">📋 Copier la liste à faire</button><button class="btn primary" id="healthRun" type="button">↻ Tester à nouveau</button></div>
+  </div>
+</dialog>
+
+<dialog id="repDlg">
+  <div class="dlg">
+    <h2>📄 Rapport mensuel</h2>
+    <div class="sub">Un PDF d'une ou deux pages : achats du mois et comparaison, fournisseurs, domaines, produits les plus achetés, ruptures, équipements achetés, tâches et contrôles.</div>
+    <label class="f">Mois<select id="repMonth"></select></label>
+    <div id="repPreview" class="rep-prev"></div>
+    <div class="umsg bad hidden" id="repErr" role="alert"></div>
+    <div class="dlg-actions"><button class="btn" id="repClose" type="button">Fermer</button><button class="btn hidden" id="repShare" type="button">📤 Partager…</button><button class="btn" id="repMail" type="button">✉️ E-mail</button><button class="btn primary" id="repPdf" type="button">⬇ Télécharger le PDF</button></div>
+  </div>
+</dialog>
+
+<dialog id="rtDlg" class="wide">
+  <div class="dlg">
+    <h2 id="rtTitle">Nouvelle routine</h2>
+    <div class="sub">Une liste d'étapes à cocher, chaque jour, chaque semaine ou chaque mois. Toute l'équipe voit qui a fait quoi.</div>
+    <div class="kit-head"><label class="f">Icône <input id="rtIcon" type="text" maxlength="4" value="✅" autocomplete="off"></label><label class="f kit-name">Nom <input id="rtName" type="text" maxlength="80" placeholder="Ex : Ouverture du cabinet" autocomplete="off"></label></div>
+    <div class="rt-row">
+      <label class="f">Quand<select id="rtFreq"><option value="quotidien">Chaque jour</option><option value="hebdo">Chaque semaine</option><option value="mensuel">Chaque mois</option></select></label>
+      <label class="f hidden" id="rtJourWrap">Le<select id="rtJour"></select></label>
+      <label class="f">Pour<select id="rtProfil"><option value="">Tout le monde</option><option value="assistante">🧑‍⚕️ L'assistante</option><option value="dentiste">🦷 Le dentiste</option></select></label>
+    </div>
+    <label class="f">Étapes (une par ligne)<textarea id="rtSteps" rows="7" placeholder="Allumer les unités&#10;Purger les eaux&#10;…"></textarea></label>
+    <div class="umsg bad hidden" id="rtErr" role="alert"></div>
+    <div class="dlg-actions"><button class="btn danger hidden" id="rtDel" type="button">Supprimer</button><button class="btn" id="rtCancel" type="button">Annuler</button><button class="btn primary" id="rtSave" type="button">Enregistrer</button></div>
+  </div>
+</dialog>
+
+<dialog id="kitDlg" class="wide">
+  <div class="dlg">
+    <h2 id="kitTitle">Nouveau kit</h2>
+    <div class="sub">Un kit regroupe les consommables d'un acte (pose d'implant, détartrage, composite…). Un clic, ou un scan de son QR, les retire tous du stock.</div>
+    <div class="kit-head"><label class="f">Icône <input id="kitIcon" type="text" maxlength="4" value="🧰" autocomplete="off"></label><label class="f kit-name">Nom du kit <input id="kitName" type="text" maxlength="80" placeholder="Ex : Pose d'implant" autocomplete="off"></label></div>
+    <h3>Contenu</h3>
+    <div id="kitRows" class="kit-rows"></div>
+    <button class="btn sm" id="kitAddRow" type="button">＋ Ajouter un article</button>
+    <div class="meta" id="kitCode"></div>
+    <div class="umsg bad hidden" id="kitErr" role="alert"></div>
+    <div class="dlg-actions"><button class="btn danger hidden" id="kitDel" type="button">Supprimer</button><button class="btn" id="kitCancel" type="button">Annuler</button><button class="btn primary" id="kitSave" type="button">Enregistrer</button></div>
+  </div>
+</dialog>
+<dialog id="kitPickDlg">
+  <div class="dlg">
+    <h2>Choisir un article</h2>
+    <input id="kitPickQ" type="search" placeholder="Rechercher un article" autocomplete="off" aria-label="Rechercher un article">
+    <div id="kitPickRes" class="scanres"></div>
+    <div class="dlg-actions"><button class="btn" id="kitPickCancel" type="button">Fermer</button></div>
+  </div>
+</dialog>
+<dialog id="kitUseDlg">
+  <div class="dlg">
+    <h2 id="kitUseTitle">Utiliser le kit</h2>
+    <div class="sub" id="kitUseSub"></div>
+    <div id="kitUseLines" class="kit-uselines"></div>
+    <label class="f hidden" id="kitUseRoomWrap">Retirer de<select id="kitUseRoom"></select></label>
+    <div class="dlg-actions"><button class="btn" id="kitUseCancel" type="button">Annuler</button><button class="btn primary" id="kitUseOk" type="button">Retirer ces articles</button></div>
   </div>
 </dialog>
 
@@ -2347,6 +2499,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
 (function () {
   "use strict";
@@ -2427,7 +2580,9 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     var t = new Date(); t.setHours(0, 0, 0, 0);
     return Math.round((d - t) / 86400000);
   }
+  var toastMute = false;
   function toast(msg) {
+    if (toastMute) return;
     var old = document.querySelector(".toast"); if (old) old.remove();
     var t = h("div", { class: "toast", role: "status", text: msg });
     document.body.append(t);
@@ -3836,6 +3991,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     sec.append(h("div", { class: "dnote", text: "Valeur estimée au dernier prix connu. Les pertes ne sont pas comptées dans la consommation ni dans les seuils suggérés." }));
   }
   function renderData(box) {
+    box.append(h("div", { class: "eqbar" }, h("button", { class: "btn", type: "button", text: "📄 Rapport mensuel (PDF)", onclick: function () { openReport(); } })));
     renderCompare(box);
     renderPriceAlerts(box);
     if (achOk) renderPriceCompare(box);
@@ -3975,7 +4131,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   function goTab(t) { var b = document.querySelector('.tab[data-tab="' + t + '"]'); if (b) b.click(); }   // le clic passe seul dans l'outil qui contient cet onglet
   function kActions() {
     var a = [
-      ["Stock", "section", function () { goTab("inventaire"); }], ["Favoris", "section", function () { goTab("favoris"); }], ["Messages de l'équipe", "section", function () { goTab("messages"); }], ["Accueil", "section", function () { setModule("accueil"); }], ["Catalogues fournisseurs", "section", function () { goTab("catalogues"); }],
+      ["Stock", "section", function () { goTab("inventaire"); }], ["Favoris", "section", function () { goTab("favoris"); }], ["Messages de l'équipe", "section", function () { goTab("messages"); }], ["Kits par acte", "section", function () { goTab("kits"); }], ["Routines (ouverture, fermeture…)", "section", function () { goTab("routines"); }], ["Santé de l'installation", "section", function () { if (isAdmin) openHealth(); else toast("Réservé aux administrateurs."); }], ["Accueil", "section", function () { setModule("accueil"); }], ["Catalogues fournisseurs", "section", function () { goTab("catalogues"); }],
       ["À commander", "section", function () { goTab("commande"); }], ["Comptage", "section", function () { goTab("comptage"); }],
       ["Historique", "section", function () { goTab("historique"); }], ["Données et prévisions", "section", function () { goTab("donnees"); }],
       ["Corbeille", "section", function () { goTab("corbeille"); }],
@@ -6618,6 +6774,575 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     }
     if (msgWantRename) { var ri = E.root.querySelector(".msgrename-inp"); if (ri) { try { ri.focus(); ri.select(); } catch (e) {} } msgWantRename = false; }
   }
+  // ---------- kits par acte : un clic (ou un scan) retire tous les consommables d'un acte ----------
+  var kits = [], kitLines = [], kitsOk = false, kitEdit = null, kitRowsData = [], lastKit = null;
+  function loadKits() {
+    if (!sb || !cabinetId || !db) return;
+    var cid = cabinetId;
+    Promise.all([sb.from("kits").select("*").eq("cabinet_id", cid).order("name"), sb.from("kit_lignes").select("*").eq("cabinet_id", cid)]).then(function (rs) {
+      if (cid !== cabinetId) return;
+      if (rs[0].error || rs[1].error) { kitsOk = false; return; }
+      kitsOk = true; kits = rs[0].data || []; kitLines = rs[1].data || [];
+      if (state.tab === "kits" || state.tab === "hub") render();
+    }).catch(function () { kitsOk = false; });
+  }
+  function kitLinesOf(id) { return kitLines.filter(function (l) { return l.kit_id === id; }); }
+  function kitByCode(code) { var c = String(code || "").trim().toUpperCase(); return kitsOk && /^KIT-/.test(c) ? kits.filter(function (k) { return String(k.code).toUpperCase() === c; })[0] || null : null; }
+  function newKitCode() { var code; do { code = "KIT-" + Math.random().toString(36).slice(2, 8).toUpperCase(); } while (kits.some(function (k) { return k.code === code; })); return code; }
+  function kitShort(kit) {
+    var out = [];
+    kitLinesOf(kit.id).forEach(function (l) { var it = items.get(l.item_id); if (!it) out.push({ name: "(article supprimé)", need: l.qty, have: 0 }); else if ((Number(it.qty) || 0) < Number(l.qty)) out.push({ name: it.name, need: Number(l.qty), have: Number(it.qty) || 0 }); });
+    return out;
+  }
+  function kitCard(k) {
+    var lines = kitLinesOf(k.id), short = kitShort(k).length;
+    var ul = h("ul", { class: "kit-lines" });
+    lines.forEach(function (l) {
+      var it = items.get(l.item_id), low = !it || (Number(it.qty) || 0) < Number(l.qty);
+      ul.append(h("li", { class: low ? "low" : "" }, h("b", { text: fmt(l.qty) + " × " }), it ? it.name : "(article supprimé)", low ? h("span", { class: "meta", text: it ? " · en stock : " + fmt(it.qty) : "" }) : null));
+    });
+    if (!lines.length) ul.append(h("li", { class: "meta", text: "Kit vide : ajoutez des articles." }));
+    return h("div", { class: "kitcard" },
+      h("div", { class: "kit-top" }, h("span", { class: "kit-ic", text: k.icon || "🧰" }), h("div", { class: "kit-id" }, h("div", { class: "kit-name", text: k.name }), h("div", { class: "meta", text: k.code + " · " + lines.length + " article" + (lines.length > 1 ? "s" : "") + (short ? " · " + short + " en manque" : "") }))),
+      ul,
+      h("div", { class: "kit-actions" },
+        h("button", { class: "btn primary", type: "button", disabled: readOnly || !lines.length, text: "▶ Utiliser", onclick: function () { useKit(k); } }),
+        readOnly ? null : h("button", { class: "btn", type: "button", text: "✎ Modifier", onclick: function () { openKitForm(k); } }),
+        h("button", { class: "btn", type: "button", text: "🖨 QR", title: "Imprimer le QR du kit (à scanner pour l'utiliser)", onclick: function () { printKitQr(k); } })));
+  }
+  function renderKits(box) {
+    if (!kitsOk) { box.append(h("div", { class: "dnote", text: "Les kits ne sont pas encore activés : lancez le script SQL « ajout-kits » dans Supabase (voir le guide)." })); return; }
+    box.append(h("div", { class: "eqbar" }, readOnly ? null : h("button", { class: "btn primary", type: "button", text: "＋ Nouveau kit", onclick: function () { openKitForm(null); } }), h("span", { class: "meta", text: "Un kit = les consommables d'un acte. Un clic ou un scan de son QR les retire du stock." })));
+    if (!kits.length) box.append(h("div", { class: "empty", text: "Aucun kit pour l'instant. Exemples : « Pose d'implant », « Détartrage », « Composite »." }));
+    var grid = h("div", { class: "kitgrid" }); kits.forEach(function (k) { grid.append(kitCard(k)); }); box.append(grid);
+  }
+  function kitPick(cb) {
+    var dlg = $("kitPickDlg"), q = $("kitPickQ"), res = $("kitPickRes");
+    var fill = function () {
+      res.textContent = ""; var qn = norm(q.value);
+      Array.from(items.values()).filter(function (x) { return x.tracked !== false && (!qn || norm(x.name + " " + (x.ref || "")).indexOf(qn) !== -1); })
+        .sort(function (a, b) { return norm(a.name).localeCompare(norm(b.name)); }).slice(0, 30).forEach(function (x) {
+          res.append(h("button", { class: "btn sm", type: "button", text: x.name + " (" + fmt(x.qty) + ")", onclick: function () { dlg.close(); cb(x); } }));
+        });
+      if (!res.children.length) res.append(h("div", { class: "meta", text: "Aucun article trouvé." }));
+    };
+    q.value = ""; q.oninput = fill; fill(); dlg.showModal(); setTimeout(function () { q.focus(); }, 50);
+  }
+  function drawKitRows() {
+    var box = $("kitRows"); box.textContent = "";
+    kitRowsData.forEach(function (r, i) {
+      var it = r.item_id ? items.get(r.item_id) : null;
+      var pick = h("button", { class: "btn kit-pick", type: "button", text: it ? it.name : "Choisir un article…", onclick: function () { kitPick(function (x) { r.item_id = x.id; drawKitRows(); }); } });
+      var q = h("input", { type: "number", class: "kit-qty", min: "0.01", step: "any", inputmode: "decimal", value: String(r.qty), "aria-label": "Quantité" }); q.addEventListener("input", function () { r.qty = q.value; });
+      box.append(h("div", { class: "kit-row" }, pick, h("span", { class: "eqr-x", text: "×" }), q, h("button", { class: "btn sm", type: "button", "aria-label": "Retirer cette ligne", text: "✕", onclick: function () { kitRowsData.splice(i, 1); drawKitRows(); } })));
+    });
+    if (!kitRowsData.length) box.append(h("div", { class: "meta", text: "Aucun article : touchez « ＋ Ajouter un article »." }));
+  }
+  function openKitForm(k) {
+    if (readOnly) return;
+    kitEdit = k || null;
+    $("kitTitle").textContent = k ? "Modifier le kit" : "Nouveau kit";
+    $("kitIcon").value = k ? k.icon || "🧰" : "🧰"; $("kitName").value = k ? k.name : "";
+    kitRowsData = k ? kitLinesOf(k.id).map(function (l) { return { item_id: l.item_id, qty: String(l.qty) }; }) : [{ item_id: "", qty: "1" }];
+    $("kitCode").textContent = k ? "Code du kit (QR à imprimer) : " + k.code : "Le code du kit et son QR sont créés à l'enregistrement.";
+    $("kitErr").classList.add("hidden"); $("kitSave").disabled = false; $("kitDel").classList.toggle("hidden", !k); $("kitDel").textContent = "Supprimer";
+    drawKitRows(); $("kitDlg").showModal();
+  }
+  $("kitAddRow").addEventListener("click", function () { kitRowsData.push({ item_id: "", qty: "1" }); drawKitRows(); kitPick(function (x) { kitRowsData[kitRowsData.length - 1].item_id = x.id; drawKitRows(); }); });
+  $("kitCancel").addEventListener("click", function () { $("kitDlg").close(); });
+  $("kitPickCancel").addEventListener("click", function () { $("kitPickDlg").close(); });
+  $("kitSave").addEventListener("click", function () {
+    var err = $("kitErr"), fail = function (t) { err.textContent = t; err.classList.remove("hidden"); $("kitSave").disabled = false; };
+    var name = $("kitName").value.trim(), icon = ($("kitIcon").value || "🧰").trim().slice(0, 4) || "🧰";
+    if (!name) { fail("Donnez un nom au kit."); return; }
+    var rows = kitRowsData.filter(function (r) { return r.item_id && Number(String(r.qty).replace(",", ".")) > 0; });
+    if (!rows.length) { fail("Ajoutez au moins un article avec une quantité."); return; }
+    $("kitSave").disabled = true; err.classList.add("hidden");
+    var lines = function (kid) { return rows.map(function (r) { return { kit_id: kid, cabinet_id: cabinetId, item_id: r.item_id, qty: Number(String(r.qty).replace(",", ".")) }; }); };
+    var chain;
+    if (kitEdit) {
+      var kid = kitEdit.id;
+      chain = sb.from("kits").update({ name: name, icon: icon }).eq("id", kid).then(function (r) { if (r.error) throw r.error; return sb.from("kit_lignes").delete().eq("kit_id", kid); }).then(function (r) { if (r.error) throw r.error; return sb.from("kit_lignes").insert(lines(kid)); });
+    } else {
+      chain = sb.from("kits").insert({ cabinet_id: cabinetId, name: name, icon: icon, code: newKitCode() }).select().then(function (r) { if (r.error || !r.data || !r.data[0]) throw (r.error || new Error("kit")); return sb.from("kit_lignes").insert(lines(r.data[0].id)); });
+    }
+    chain.then(function (r) { if (r && r.error) throw r.error; $("kitDlg").close(); toast(kitEdit ? "Kit modifié." : "Kit créé : imprimez son QR pour le scanner."); loadKits(); })
+      .catch(function (e) { fail(/relation|does not exist|schema cache/i.test(String((e && e.message) || "")) ? "Lancez le script SQL « ajout-kits » dans Supabase." : "L'enregistrement a échoué : réessayez."); });
+  });
+  $("kitDel").addEventListener("click", function () {
+    if (!kitEdit) return;
+    if ($("kitDel").textContent !== "Confirmer") { $("kitDel").textContent = "Confirmer"; return; }
+    sb.from("kits").delete().eq("id", kitEdit.id).then(function (r) { if (r.error) { toast("Le kit n'a pas pu être supprimé."); return; } $("kitDlg").close(); toast("Kit supprimé."); loadKits(); }, function () { toast("Connexion impossible."); });
+  });
+  // utiliser un kit : on vérifie le stock, on choisit d'où retirer, puis tout part en une fois
+  function useKit(k, quick) {
+    var lines = kitLinesOf(k.id); if (!lines.length) { toast("Ce kit est vide."); return; }
+    var scope = roomScope(), roomsOk = rooms && rooms.length;
+    var go = function (rid) { $("kitUseDlg").close(); applyKit(k, rid); };
+    if (quick) { go(scope ? scope.id : ""); return; }
+    $("kitUseTitle").textContent = (k.icon || "🧰") + " " + k.name; $("kitUseSub").textContent = "Ces articles vont être retirés du stock :";
+    var ul = $("kitUseLines"); ul.textContent = "";
+    lines.forEach(function (l) { var it = items.get(l.item_id), low = !it || (Number(it.qty) || 0) < Number(l.qty); ul.append(h("div", { class: "kit-useline" + (low ? " low" : "") }, h("b", { text: fmt(l.qty) + " × " }), it ? it.name : "(article supprimé)", h("span", { class: "meta", text: it ? " · en stock : " + fmt(it.qty) : "" }), low ? h("span", { class: "kit-warn", text: " ⚠ insuffisant" }) : null)); });
+    var wrap = $("kitUseRoomWrap"), sel = $("kitUseRoom"); wrap.classList.toggle("hidden", !roomsOk); sel.textContent = "";
+    if (roomsOk) { sel.append(h("option", { value: "", text: "Stock central" })); rooms.forEach(function (r) { sel.append(h("option", { value: r.id, text: "Salle : " + r.name })); }); sel.value = scope ? scope.id : ""; }
+    $("kitUseOk").onclick = function () { go(roomsOk ? sel.value : ""); }; $("kitUseCancel").onclick = function () { $("kitUseDlg").close(); };
+    $("kitUseDlg").showModal();
+  }
+  function applyKit(k, rid) {
+    if (readOnly || !db) return Promise.resolve();
+    var lines = kitLinesOf(k.id), done = [], skipped = 0;
+    return new Promise(function (resolve) {
+      enqueue(function () {
+        toastMute = true; var p = Promise.resolve();
+        lines.forEach(function (l) {
+          p = p.then(function () {
+            var it = items.get(l.item_id), q = Number(l.qty) || 0; if (!it || q <= 0) { skipped++; return; }
+            if (rid) { if (roomRemove(it, rid, q, "", "Kit : " + k.name)) done.push({ id: it.id, qty: q, room: rid }); else skipped++; return; }
+            var take = Math.min(Number(it.qty) || 0, q); if (take <= 0) { skipped++; return; }
+            if (take < q) skipped++;
+            return doAdjust(it.id, -take, "Kit : " + k.name, null, { noUndo: true, reason: "kit" }).then(function () { done.push({ id: it.id, qty: take }); });
+          });
+        });
+        return p.then(function () {
+          toastMute = false; lastKit = { kit: k, done: done };
+          updBar("🧰 Kit « " + k.name + " » utilisé : " + done.length + " article" + (done.length > 1 ? "s" : "") + " retiré" + (done.length > 1 ? "s" : "") + (skipped ? " (" + skipped + " en manque ou introuvable)" : "") + ".", skipped ? "warn" : "ok", done.length ? [{ text: "Annuler le kit", fn: undoKit }] : [], 20000);
+          resolve(done);
+        }, function (e) { toastMute = false; toast("Le kit n'a pas pu être appliqué en entier."); resolve(done); });
+      });
+    });
+  }
+  function undoKit() {
+    var lk = lastKit; if (!lk) return; lastKit = null; $("updBar").classList.add("hidden");
+    toastMute = true;
+    lk.done.forEach(function (d) { var it = items.get(d.id); if (!it) return; if (d.room) roomDirect(it, d.room, d.qty, "Annulation du kit « " + lk.kit.name + " »"); else adjustQty(it, d.qty, "Annulation du kit : " + lk.kit.name, null, { noUndo: true, reason: "kit_undo" }); });
+    setTimeout(function () { toastMute = false; toast("Kit annulé : " + lk.done.length + " article" + (lk.done.length > 1 ? "s" : "") + " remis."); }, 600);
+  }
+  function printKitQr(k) {
+    var svg = "";
+    try { if (window.qrcode) { var qr = window.qrcode(0, "M"); qr.addData(k.code); qr.make(); svg = qr.createSvgTag({ cellSize: 8, margin: 2, scalable: true }); } } catch (e) {}
+    var w = null; try { w = window.open("", "_blank"); } catch (e) {}
+    var lines = kitLinesOf(k.id).map(function (l) { var it = items.get(l.item_id); return "<li>" + fmt(l.qty) + " × " + escHtml(it ? it.name : "(supprimé)") + "</li>"; }).join("");
+    var html = '<!doctype html><meta charset="utf-8"><title>Kit ' + escHtml(k.name) + '</title><style>body{font-family:Inter,Arial,sans-serif;text-align:center;padding:24px;color:#0B1B3A}h1{margin:0 0 4px;font-size:34px}.qr svg{width:340px;height:340px}.code{font:700 22px monospace;letter-spacing:.08em;margin:8px 0}ul{display:inline-block;text-align:left;font-size:18px}.hint{color:#5b6b8a;margin-top:14px}@media print{.hint{display:none}}</style><h1>' + escHtml((k.icon || "🧰") + " " + k.name) + '</h1><div class="qr">' + (svg || "<p>(QR indisponible hors connexion)</p>") + '</div><div class="code">' + escHtml(k.code) + '</div><ul>' + lines + '</ul><p class="hint">Collez ce QR dans le tiroir ou sur le plateau : le scanner de SimSimStock retire tout le kit.</p>';
+    if (w) { w.document.write(html); w.document.close(); setTimeout(function () { try { w.print(); } catch (e) {} }, 400); } else toast("Autorisez les fenêtres pour imprimer le QR du kit.");
+  }
+  function escHtml(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  // un QR de kit lu par le scanner
+  function scanKit(kit) {
+    var st = $("scanStatus");
+    if (scanFast) {
+      applyKit(kit, roomScope() ? roomScope().id : "").then(function (done) { feedback(!done.length); st.className = "sub " + (done.length ? "scanok" : "scanbad"); st.textContent = (done.length ? "✓ Kit « " + kit.name + " » : " + done.length + " article" + (done.length > 1 ? "s" : "") + " retiré" + (done.length > 1 ? "s" : "") : "✗ Kit « " + kit.name + " » : rien à retirer"); });
+      return;
+    }
+    scanBusy = true; stopScanner(); st.textContent = "";
+    var panel = $("scanPanel"); panel.textContent = "";
+    var ul = h("ul", { class: "kit-lines" });
+    kitLinesOf(kit.id).forEach(function (l) { var it = items.get(l.item_id); ul.append(h("li", {}, h("b", { text: fmt(l.qty) + " × " }), it ? it.name : "(article supprimé)")); });
+    panel.append(h("div", { class: "scanitem" }, h("div", { class: "item-name", text: (kit.icon || "🧰") + " Kit « " + kit.name + " »" }), ul,
+      h("div", { class: "dlg-actions" }, h("button", { class: "btn", text: "Scanner un autre", onclick: resetScan }),
+        h("button", { class: "btn primary", text: "Retirer le kit du stock", onclick: function () { applyKit(kit, roomScope() ? roomScope().id : "").then(function (d) { toast("Kit « " + kit.name + " » : " + d.length + " article(s) retiré(s)."); resetScan(); }); } }))));
+  }
+  // ---------- routines : ouverture, fermeture, stérilisation… une case à cocher par étape ----------
+  var routines = [], rCoches = [], routinesOk = false, rtEdit = null;
+  var RT_DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+  var RT_TEMPLATES = [
+    { icon: "🌅", name: "Ouverture du cabinet", freq: "quotidien", jour: null, profil: "assistante", etapes: ["Allumer les unités, le compresseur et l'aspiration", "Purger les eaux des unités", "Lancer le test et le premier cycle du stérilisateur", "Contrôler les salles (lumière, aspirations, plateaux)", "Vérifier l'agenda et les urgences du jour"] },
+    { icon: "🌙", name: "Fermeture du cabinet", freq: "quotidien", jour: null, profil: "assistante", etapes: ["Désinfecter les salles et les crachoirs", "Lancer le dernier cycle de stérilisation", "Éteindre les unités, l'aspiration et le compresseur", "Sortir les déchets (DASRI si besoin)", "Fermer les fenêtres, éteindre les lumières, activer l'alarme"] },
+    { icon: "🧴", name: "Stérilisation de fin de journée", freq: "quotidien", jour: null, profil: "assistante", etapes: ["Vider le bac à ultrasons et le nettoyer", "Ranger les instruments stérilisés", "Remplir le registre de traçabilité", "Vérifier le niveau d'eau du stérilisateur"] },
+    { icon: "🔬", name: "Contrôle hebdomadaire de l'autoclave", freq: "hebdo", jour: 1, profil: "", etapes: ["Test de pénétration de la vapeur (Bowie-Dick ou hélix)", "Nettoyer le joint et le filtre", "Noter le résultat dans le registre"] }
+  ];
+  function pad2(n) { return n < 10 ? "0" + n : String(n); }
+  function localIso(d) { d = d || new Date(); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+  function routineDue(r, d) {
+    d = d || new Date();
+    if (r.freq === "hebdo") return (d.getDay() || 7) === (r.jour || 1);
+    if (r.freq === "mensuel") return d.getDate() === (r.jour || 1);
+    return true;
+  }
+  function routinesList() { return routines.filter(function (r) { return !r.archived; }); }
+  function rSteps(r) { return Array.isArray(r.etapes) ? r.etapes : []; }
+  function rTicks(r, iso) { return rCoches.filter(function (c) { return c.routine_id === r.id && c.jour === iso; }); }
+  function routinesTodo() {
+    var iso = localIso(), me = myProfil(), n = 0;
+    routinesList().forEach(function (r) {
+      if (!routineDue(r)) return;
+      if (r.profil && me && r.profil !== me && me !== "bigboss") return;
+      if (rTicks(r, iso).length < rSteps(r).length) n++;
+    });
+    return n;
+  }
+  function updateRoutineBadge() { var b = $("rtBadge"); if (!b) return; var n = routinesOk ? routinesTodo() : 0; b.textContent = String(n); b.classList.toggle("hidden", !n); }
+  function loadRoutines() {
+    if (!sb || !cabinetId || !db) return;
+    var cid = cabinetId, since = new Date(); since.setDate(since.getDate() - 8);
+    Promise.all([sb.from("routines").select("*").eq("cabinet_id", cid).order("name"), sb.from("routine_coches").select("*").eq("cabinet_id", cid).gte("jour", localIso(since))]).then(function (rs) {
+      if (cid !== cabinetId) return;
+      if (rs[0].error || rs[1].error) { routinesOk = false; updateRoutineBadge(); return; }
+      routinesOk = true; routines = (rs[0].data || []).slice().sort(function (a, b) { return (a.position || 0) - (b.position || 0) || String(a.name).localeCompare(String(b.name), "fr"); }); rCoches = rs[1].data || [];
+      updateRoutineBadge(); if (state.tab === "routines" || state.tab === "accueil" || state.tab === "hub") render();
+    }).catch(function () { routinesOk = false; });
+  }
+  function tickRoutine(r, idx, on) {
+    if (readOnly || !db) return;
+    var iso = localIso(), had = rCoches.some(function (c) { return c.routine_id === r.id && c.jour === iso && c.etape === idx; });
+    if (on === had) return;
+    var before = rTicks(r, iso).length;
+    if (on) rCoches.push({ routine_id: r.id, cabinet_id: cabinetId, jour: iso, etape: idx, par: myEmail, at: new Date().toISOString() });
+    else rCoches = rCoches.filter(function (c) { return !(c.routine_id === r.id && c.jour === iso && c.etape === idx); });
+    updateRoutineBadge(); render();
+    if (on && before + 1 === rSteps(r).length) toast("✅ « " + r.name + " » : terminée !");
+    var req = on ? sb.from("routine_coches").upsert({ routine_id: r.id, cabinet_id: cabinetId, jour: iso, etape: idx, par: myEmail, at: new Date().toISOString() }, { onConflict: "routine_id,jour,etape", ignoreDuplicates: true })
+      : sb.from("routine_coches").delete().eq("routine_id", r.id).eq("jour", iso).eq("etape", idx);
+    req.then(function (res) { if (res && res.error) { toast("La case n'a pas pu être enregistrée : réessayez."); loadRoutines(); } }, function () { toast("Connexion impossible."); loadRoutines(); });
+  }
+  function rtCard(r, due) {
+    var iso = localIso(), steps = rSteps(r), ticks = rTicks(r, iso), done = ticks.length >= steps.length && steps.length > 0;
+    var card = h("div", { class: "rtcard" + (done ? " done" : "") + (due ? "" : " off") });
+    var last = ticks.slice().sort(function (a, b) { return String(a.at) < String(b.at) ? 1 : -1; })[0];
+    card.append(h("div", { class: "rt-top" }, h("span", { class: "rt-ic", text: r.icon || "✅" }),
+      h("div", { class: "rt-id" }, h("div", { class: "rt-name", text: r.name }), h("div", { class: "meta", text: (r.freq === "hebdo" ? "Chaque " + RT_DAYS[(r.jour || 1) - 1] : r.freq === "mensuel" ? "Le " + (r.jour || 1) + " du mois" : "Chaque jour") + (r.profil ? " · " + PROFILS[r.profil].ic + " " + PROFILS[r.profil].label : "") })),
+      h("span", { class: "rt-prog" + (done ? " ok" : ""), text: done ? "✅ Terminée" : ticks.length + " / " + steps.length }),
+      isAdmin && !readOnly ? h("button", { class: "btn sm", type: "button", title: "Modifier la routine", "aria-label": "Modifier " + r.name, text: "✎", onclick: function () { openRoutineForm(r); } }) : null));
+    card.append(h("div", { class: "rt-bar" }, h("i", { style: "width:" + (steps.length ? Math.round(ticks.length / steps.length * 100) : 0) + "%" })));
+    steps.forEach(function (txt, i) {
+      var t = ticks.filter(function (c) { return c.etape === i; })[0];
+      var cb = h("input", { type: "checkbox", checked: !!t, disabled: readOnly || !due, "aria-label": txt });
+      cb.addEventListener("change", function () { tickRoutine(r, i, cb.checked); });
+      card.append(h("label", { class: "rt-step" + (t ? " on" : "") }, cb, h("span", { class: "rt-txt", text: txt }), t ? h("span", { class: "meta rt-by", text: personLabel(null, t.par) + " · " + msgClock(t.at).replace(/^.* /, "") }) : null));
+    });
+    if (done && last) card.append(h("div", { class: "meta rt-fin", text: "Terminée par " + personLabel(null, last.par) + " à " + msgClock(last.at).replace(/^.* /, "") }));
+    return card;
+  }
+  function rtHistory() {
+    var days = []; for (var i = 6; i >= 0; i--) { var d = new Date(); d.setDate(d.getDate() - i); days.push(d); }
+    var tb = h("div", { class: "table rthist" }, h("div", { class: "totalhead" }, h("strong", { text: "7 derniers jours" }), h("span", { class: "meta", text: "✓ fait · ◐ en partie · ✕ oublié" })));
+    var head = h("div", { class: "rth-row rth-head" }, h("span", { class: "rth-name", text: "" })); days.forEach(function (d) { head.append(h("span", { class: "rth-d", text: d.toLocaleDateString("fr-FR", { weekday: "short" }).slice(0, 3) + " " + d.getDate() })); }); tb.append(head);
+    routinesList().forEach(function (r) {
+      var row = h("div", { class: "rth-row" }, h("span", { class: "rth-name", text: (r.icon || "") + " " + r.name }));
+      days.forEach(function (d) {
+        var iso = localIso(d), due = routineDue(r, d), n = rTicks(r, iso).length, tot = rSteps(r).length, isToday = iso === localIso();
+        var born = r.created_at ? localIso(new Date(r.created_at)) : "";
+        var st = !due || (born && iso < born) ? "off" : n >= tot && tot ? "ok" : n > 0 ? "part" : isToday ? "wait" : "bad";
+        row.append(h("span", { class: "rth-c " + st, title: n + " / " + tot, text: st === "ok" ? "✓" : st === "part" ? "◐" : st === "bad" ? "✕" : st === "wait" ? "·" : "–" }));
+      });
+      tb.append(row);
+    });
+    return tb;
+  }
+  function renderRoutines(box) {
+    if (!routinesOk) { box.append(h("div", { class: "dnote", text: "Les routines ne sont pas encore activées : lancez le script SQL « ajout-routines » dans Supabase (voir le guide)." })); return; }
+    var day = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    box.append(h("div", { class: "eqbar" }, h("strong", { class: "rt-date", text: "Aujourd'hui · " + day.charAt(0).toUpperCase() + day.slice(1) }),
+      isAdmin && !readOnly ? h("button", { class: "btn primary", type: "button", text: "＋ Nouvelle routine", onclick: function () { openRoutineForm(null); } }) : null));
+    var list = routinesList();
+    if (!list.length) {
+      box.append(h("div", { class: "empty", text: isAdmin ? "Aucune routine pour l'instant. Ajoutez les routines types (ouverture, fermeture, stérilisation, contrôle de l'autoclave) puis adaptez-les." : "Aucune routine pour l'instant : l'administrateur peut en créer." }));
+      if (isAdmin && !readOnly) box.append(h("button", { class: "btn primary", type: "button", text: "✨ Ajouter les routines types", onclick: addRoutineTemplates }));
+      return;
+    }
+    var today = list.filter(function (r) { return routineDue(r); }), other = list.filter(function (r) { return !routineDue(r); });
+    var grid = h("div", { class: "rtgrid" }); today.forEach(function (r) { grid.append(rtCard(r, true)); });
+    if (!today.length) grid.append(h("div", { class: "empty", text: "Aucune routine prévue aujourd'hui. 🎉" }));
+    box.append(grid);
+    if (other.length) { var det = h("details", { class: "rtother" }, h("summary", { text: "Autres routines (pas prévues aujourd'hui) : " + other.length })); var g2 = h("div", { class: "rtgrid" }); other.forEach(function (r) { g2.append(rtCard(r, false)); }); det.append(g2); box.append(det); }
+    box.append(rtHistory());
+  }
+  function addRoutineTemplates() {
+    var rows = RT_TEMPLATES.map(function (t, i) { return { cabinet_id: cabinetId, name: t.name, icon: t.icon, freq: t.freq, jour: t.jour, etapes: t.etapes, profil: t.profil, position: i }; });
+    sb.from("routines").insert(rows).then(function (r) { if (r.error) { toast("Les routines n'ont pas pu être ajoutées."); return; } toast("Routines types ajoutées : adaptez-les avec ✎."); loadRoutines(); }, function () { toast("Connexion impossible."); });
+  }
+  function drawRtJour() {
+    var f = $("rtFreq").value, sel = $("rtJour"), w = $("rtJourWrap"); sel.textContent = "";
+    w.classList.toggle("hidden", f === "quotidien");
+    if (f === "hebdo") RT_DAYS.forEach(function (d, i) { sel.append(h("option", { value: String(i + 1), text: d })); });
+    else if (f === "mensuel") for (var i = 1; i <= 28; i++) sel.append(h("option", { value: String(i), text: i === 1 ? "1er" : String(i) }));
+  }
+  $("rtFreq").addEventListener("change", drawRtJour);
+  function openRoutineForm(r) {
+    if (!isAdmin || readOnly) return;
+    rtEdit = r || null; $("rtTitle").textContent = r ? "Modifier la routine" : "Nouvelle routine";
+    $("rtIcon").value = r ? r.icon || "✅" : "✅"; $("rtName").value = r ? r.name : ""; $("rtFreq").value = r ? r.freq : "quotidien"; drawRtJour();
+    if (r && r.jour) $("rtJour").value = String(r.jour);
+    $("rtProfil").value = r ? r.profil || "" : ""; $("rtSteps").value = r ? rSteps(r).join("\n") : "";
+    $("rtErr").classList.add("hidden"); $("rtSave").disabled = false; $("rtDel").classList.toggle("hidden", !r); $("rtDel").textContent = "Supprimer";
+    $("rtDlg").showModal();
+  }
+  $("rtCancel").addEventListener("click", function () { $("rtDlg").close(); });
+  $("rtSave").addEventListener("click", function () {
+    var err = $("rtErr"), fail = function (t) { err.textContent = t; err.classList.remove("hidden"); $("rtSave").disabled = false; };
+    var name = $("rtName").value.trim(), steps = $("rtSteps").value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean);
+    if (!name) { fail("Donnez un nom à la routine."); return; }
+    if (!steps.length) { fail("Ajoutez au moins une étape (une par ligne)."); return; }
+    if (steps.length > 50) { fail("50 étapes au maximum."); return; }
+    var f = $("rtFreq").value, row = { name: name, icon: ($("rtIcon").value || "✅").trim().slice(0, 4) || "✅", freq: f, jour: f === "quotidien" ? null : parseInt($("rtJour").value, 10) || 1, etapes: steps, profil: $("rtProfil").value };
+    $("rtSave").disabled = true; err.classList.add("hidden");
+    var req = rtEdit ? sb.from("routines").update(row).eq("id", rtEdit.id) : sb.from("routines").insert(Object.assign({ cabinet_id: cabinetId, position: routines.length }, row));
+    req.then(function (r) { if (r.error) throw r.error; $("rtDlg").close(); toast(rtEdit ? "Routine modifiée." : "Routine créée."); loadRoutines(); })
+      .catch(function (e) { fail(/relation|does not exist|schema cache/i.test(String((e && e.message) || "")) ? "Lancez le script SQL « ajout-routines » dans Supabase." : "L'enregistrement a échoué : seul l'administrateur modifie les routines."); });
+  });
+  $("rtDel").addEventListener("click", function () {
+    if (!rtEdit) return;
+    if ($("rtDel").textContent !== "Confirmer") { $("rtDel").textContent = "Confirmer"; return; }
+    sb.from("routines").delete().eq("id", rtEdit.id).then(function (r) { if (r.error) { toast("La routine n'a pas pu être supprimée."); return; } $("rtDlg").close(); toast("Routine supprimée."); loadRoutines(); }, function () { toast("Connexion impossible."); });
+  });
+  // ---------- rapport mensuel (PDF) ----------
+  var REPORT_MONTH_NAMES = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+  function ymLabel(ym) { var p = ym.split("-"); return REPORT_MONTH_NAMES[Number(p[1]) - 1] + " " + p[0]; }
+  function ymPrev(ym) { var p = ym.split("-"), d = new Date(Number(p[0]), Number(p[1]) - 2, 1); return d.getFullYear() + "-" + pad2(d.getMonth() + 1); }
+  function buildReportData(ym) {
+    var rows = spendRows(), inM = function (iso) { return String(iso || "").slice(0, 7) === ym; };
+    var mRows = rows.filter(function (r) { return r.date.slice(0, 7) === ym; }), pm = ymPrev(ym);
+    var sum = function (list) { return list.reduce(function (a, r) { return a + r.amount; }, 0); };
+    var group = function (list, key) { var m = {}; list.forEach(function (r) { var k = r[key] || "—"; m[k] = (m[k] || 0) + r.amount; }); return Object.keys(m).map(function (k) { return { name: k, amount: m[k] }; }).sort(function (a, b) { return b.amount - a.amount; }); };
+    var prod = {}; mRows.forEach(function (r) { var k = r.ref || r.name; prod[k] = prod[k] || { name: r.name, qty: 0, amount: 0 }; prod[k].qty += r.qty; prod[k].amount += r.amount; });
+    var months = []; for (var i = 5; i >= 0; i--) { var p = ym.split("-"), d = new Date(Number(p[0]), Number(p[1]) - 1 - i, 1); months.push(d.getFullYear() + "-" + pad2(d.getMonth() + 1)); }
+    var docs = {}; mRows.forEach(function (r) { docs[r.doc] = true; });
+    var rupt = [], bas = 0; items.forEach(function (it) { if (it.tracked === false) return; var st = statusOf(it); if (st === "rupture") rupt.push(it.name); else if (st === "bas") bas++; });
+    var eq = eqOk ? eqList.filter(function (e) { return inM(e.bought_on) && e.purchase_price != null; }).map(function (e) { return { name: e.name, price: Number(e.purchase_price) || 0, supplier: e.purchase_supplier || "" }; }) : [];
+    var tasksDone = msgs.filter(function (m) { return m.kind === "tache" && inM(m.done_at); }).length, tasksOpen = msgs.filter(function (m) { return m.kind === "tache" && !m.done_at; }).length;
+    var ctlDone = 0; Object.keys(ctlLogs).forEach(function (k) { (ctlLogs[k] || []).forEach(function (l) { if (inM(l.done_at)) ctlDone++; }); });
+    return { ym: ym, monthLabel: ymLabel(ym), cabinet: cabinetName, date: new Date().toLocaleDateString("fr-FR"), total: sum(mRows), prevTotal: sum(rows.filter(function (r) { return r.date.slice(0, 7) === pm; })), nbDocs: Object.keys(docs).length,
+      suppliers: group(mRows, "supplier"), domains: group(mRows, "category"), products: Object.keys(prod).map(function (k) { return prod[k]; }).sort(function (a, b) { return b.amount - a.amount; }).slice(0, 10),
+      series: months.map(function (k) { return { k: k, label: ["janv", "févr", "mars", "avr", "mai", "juin", "juil", "août", "sept", "oct", "nov", "déc"][Number(k.slice(5)) - 1], amount: sum(rows.filter(function (r) { return r.date.slice(0, 7) === k; })) }; }),
+      rupt: rupt.sort(function (a, b) { return a.localeCompare(b, "fr"); }), bas: bas, eq: eq, eqTotal: eq.reduce(function (a, e) { return a + e.price; }, 0), tasksDone: tasksDone, tasksOpen: tasksOpen, ctlDone: ctlDone, ctlLate: ctlOk ? ctlProblems() : 0 };
+  }
+  function reportSummaryText(d) {
+    var delta = d.prevTotal ? Math.round((d.total - d.prevTotal) / d.prevTotal * 100) : null;
+    return ["Rapport mensuel " + d.monthLabel + " — " + d.cabinet, "", "Achats HT : " + pdfMoney(d.total) + (delta === null ? "" : " (" + (delta >= 0 ? "+" : "") + delta + " % par rapport au mois précédent)"), "Factures : " + d.nbDocs, "Principal fournisseur : " + (d.suppliers[0] ? d.suppliers[0].name + " (" + pdfMoney(d.suppliers[0].amount) + ")" : "—"), "Ruptures actuelles : " + d.rupt.length + " · sous le seuil : " + d.bas, d.eqTotal ? "Achats d'équipement : " + pdfMoney(d.eqTotal) : "", "Tâches faites : " + d.tasksDone + " · contrôles réalisés : " + d.ctlDone].filter(function (x) { return x !== ""; }).join("\n");
+  }
+  function buildMonthlyReportPdf(lib, d) {
+    var doc = new lib({ unit: "mm", format: "a4" }), W = 210, M = 14, y = 0, brand = [47, 103, 255], ink = [11, 27, 58], muted = [91, 107, 138], line = [225, 230, 244];
+    var T = function (t, x, yy, o) { doc.text(String(t), x, yy, o || {}); };
+    var ensure = function (hh) { if (y + hh > 282) { doc.addPage(); y = 18; } };
+    var section = function (title) { ensure(18); doc.setTextColor.apply(doc, ink); doc.setFont("helvetica", "bold"); doc.setFontSize(13); T(title, M, y); doc.setDrawColor.apply(doc, brand); doc.setLineWidth(0.8); doc.line(M, y + 2, M + 12, y + 2); y += 9; };
+    var tableRows = function (list, cols, fmtRow) {
+      list.forEach(function (r) { ensure(7); var c = fmtRow(r); doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor.apply(doc, ink); T(String(c[0]).slice(0, 62), M, y); doc.setTextColor.apply(doc, muted); for (var i = 1; i < c.length; i++) T(c[i], cols[i], y, { align: "right" }); doc.setDrawColor.apply(doc, line); doc.setLineWidth(0.2); doc.line(M, y + 2, W - M, y + 2); y += 7; });
+    };
+    // bandeau
+    doc.setFillColor.apply(doc, brand); doc.rect(0, 0, W, 40, "F"); doc.setFillColor(123, 85, 255); doc.triangle(W - 70, 0, W, 0, W, 40, "F");
+    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(24); T("Rapport mensuel", M, 18);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(13); T(d.monthLabel.charAt(0).toUpperCase() + d.monthLabel.slice(1) + "  ·  " + d.cabinet, M, 27); doc.setFontSize(9); T("Édité le " + d.date + " par SimSimStock", M, 34);
+    y = 52;
+    // chiffres clés
+    var delta = d.prevTotal ? Math.round((d.total - d.prevTotal) / d.prevTotal * 100) : null;
+    var cards = [["Achats HT", pdfMoney(d.total), delta === null ? "pas de mois précédent" : (delta >= 0 ? "+" : "") + delta + " % vs mois précédent"], ["Factures", String(d.nbDocs), "enregistrées ce mois"], ["Ruptures", String(d.rupt.length), d.bas + " sous le seuil"], ["Équipements", pdfMoney(d.eqTotal), d.eq.length + " achat" + (d.eq.length > 1 ? "s" : "")]];
+    var cw = (W - 2 * M - 9) / 4;
+    cards.forEach(function (c, i) { var x = M + i * (cw + 3); doc.setFillColor(244, 247, 255); doc.setDrawColor.apply(doc, line); doc.roundedRect(x, y, cw, 26, 3, 3, "FD"); doc.setTextColor.apply(doc, muted); doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); T(c[0].toUpperCase(), x + 4, y + 7); doc.setTextColor.apply(doc, ink); doc.setFont("helvetica", "bold"); doc.setFontSize(14); T(c[1], x + 4, y + 16); doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor.apply(doc, muted); T(c[2], x + 4, y + 22); });
+    y += 36;
+    // histogramme 6 mois
+    section("Achats des 6 derniers mois");
+    var max = Math.max.apply(null, d.series.map(function (m) { return m.amount; }).concat([1])), bw = (W - 2 * M) / 6, bh = 34;
+    d.series.forEach(function (m, i) { var x = M + i * bw + 4, hh = Math.max(0.8, m.amount / max * bh); if (m.k === d.ym) doc.setFillColor.apply(doc, brand); else doc.setFillColor(190, 205, 250); doc.roundedRect(x, y + bh - hh, bw - 8, hh, 1.2, 1.2, "F"); doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor.apply(doc, muted); T(m.label, x + (bw - 8) / 2, y + bh + 5, { align: "center" }); doc.setTextColor.apply(doc, ink); T(Math.round(m.amount) + "", x + (bw - 8) / 2, y + bh - hh - 1.5, { align: "center" }); });
+    y += bh + 14;
+    var cols = [M, 0, 0, W - M - 28, W - M];
+    section("Par fournisseur");
+    if (!d.suppliers.length) { doc.setFontSize(10); doc.setTextColor.apply(doc, muted); T("Aucun achat enregistré ce mois-ci.", M, y); y += 8; }
+    tableRows(d.suppliers.slice(0, 8), cols, function (r) { return [r.name, 0, 0, d.total ? Math.round(r.amount / d.total * 100) + " %" : "", pdfMoney(r.amount)]; });
+    y += 4; section("Par domaine");
+    tableRows(d.domains.slice(0, 8), cols, function (r) { return [r.name, 0, 0, d.total ? Math.round(r.amount / d.total * 100) + " %" : "", pdfMoney(r.amount)]; });
+    y += 4; section("Les 10 produits les plus achetés");
+    tableRows(d.products, cols, function (r) { return [r.name, 0, 0, "× " + fmt(r.qty), pdfMoney(r.amount)]; });
+    if (d.eq.length) { y += 4; section("Achats d'équipement du mois"); tableRows(d.eq, cols, function (r) { return [r.name + (r.supplier ? " (" + r.supplier + ")" : ""), 0, 0, "", pdfMoney(r.price)]; }); }
+    y += 4; section("Ruptures de stock aujourd'hui");
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor.apply(doc, ink);
+    var rt = d.rupt.length ? d.rupt.join(" · ") : "Aucune rupture."; doc.splitTextToSize(rt, W - 2 * M).forEach(function (ln) { ensure(6); T(ln, M, y); y += 5.5; });
+    y += 6; section("Vie de l'équipe");
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    [["Tâches demandées et faites ce mois-ci", String(d.tasksDone)], ["Tâches encore en attente", String(d.tasksOpen)], ["Contrôles réalisés ce mois-ci", String(d.ctlDone)], ["Contrôles en retard aujourd'hui", String(d.ctlLate)]].forEach(function (r) { ensure(7); doc.setTextColor.apply(doc, ink); T(r[0], M, y); doc.setFont("helvetica", "bold"); T(r[1], W - M, y, { align: "right" }); doc.setFont("helvetica", "normal"); doc.setDrawColor.apply(doc, line); doc.line(M, y + 2, W - M, y + 2); y += 7; });
+    var n = doc.getNumberOfPages(); for (var i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor.apply(doc, muted); T("SimSimStock · " + d.cabinet + " · " + d.monthLabel + " · page " + i + "/" + n, W / 2, 291, { align: "center" }); }
+    return doc;
+  }
+  var repData = null;
+  function openReport() {
+    if (!achOk) { toast("Les achats ne sont pas encore chargés (ou le script « ajout-donnees-depenses » n'est pas lancé)."); return; }
+    var sel = $("repMonth"); sel.textContent = "";
+    monthsBack(13).slice().reverse().forEach(function (k, i) { sel.append(h("option", { value: k, text: ymLabel(k).charAt(0).toUpperCase() + ymLabel(k).slice(1) + (i === 0 ? " (en cours)" : "") })); });
+    sel.value = monthsBack(2)[0]; drawReportPreview(); $("repErr").classList.add("hidden");
+    $("repShare").classList.toggle("hidden", !(navigator.canShare && navigator.share));
+    $("repDlg").showModal();
+  }
+  function drawReportPreview() {
+    repData = buildReportData($("repMonth").value); var d = repData, pv = $("repPreview"); pv.textContent = "";
+    var delta = d.prevTotal ? Math.round((d.total - d.prevTotal) / d.prevTotal * 100) : null;
+    pv.append(h("div", { class: "rep-line" }, h("b", { text: pdfMoney(d.total) + " HT" }), h("span", { class: "meta", text: " d'achats" + (delta === null ? "" : " (" + (delta >= 0 ? "+" : "") + delta + " % vs mois précédent)") })),
+      h("div", { class: "meta", text: d.nbDocs + " facture" + (d.nbDocs > 1 ? "s" : "") + " · " + d.suppliers.length + " fournisseur" + (d.suppliers.length > 1 ? "s" : "") + " · " + d.rupt.length + " rupture" + (d.rupt.length > 1 ? "s" : "") + (d.eqTotal ? " · équipements " + pdfMoney(d.eqTotal) : "") }));
+    if (!d.total) pv.append(h("div", { class: "meta", text: "Aucun achat enregistré sur ce mois : le rapport ne contiendra que le stock et l'équipe." }));
+  }
+  function reportFile(cb) {
+    var lib = window.jspdf && window.jspdf.jsPDF;
+    if (!lib) { toast("Le PDF n'a pas pu être créé : vérifiez votre accès à internet, puis rechargez la page."); return; }
+    drawReportPreview(); var doc = buildMonthlyReportPdf(lib, repData), name = "rapport-" + bkSlug(cabinetName) + "-" + repData.ym + ".pdf";
+    cb(doc, name);
+  }
+  $("repMonth").addEventListener("change", drawReportPreview);
+  $("repClose").addEventListener("click", function () { $("repDlg").close(); });
+  $("repPdf").addEventListener("click", function () { reportFile(function (doc, name) { doc.save(name); toast("Rapport créé : regardez dans vos téléchargements."); }); });
+  $("repShare").addEventListener("click", function () {
+    reportFile(function (doc, name) {
+      var blob = doc.output("blob"), f = new File([blob], name, { type: "application/pdf" });
+      if (navigator.canShare && navigator.canShare({ files: [f] })) navigator.share({ files: [f], title: "Rapport mensuel " + repData.monthLabel, text: reportSummaryText(repData) }).catch(function () {});
+      else { doc.save(name); toast("Partage indisponible ici : le PDF est téléchargé."); }
+    });
+  });
+  $("repMail").addEventListener("click", function () {
+    drawReportPreview();
+    var subj = "Rapport mensuel " + repData.monthLabel + " — " + cabinetName, body = reportSummaryText(repData) + "\n\n(Le PDF est joint ou à joindre : téléchargez-le avec « Télécharger le PDF ».)";
+    window.location.href = "mailto:?subject=" + encodeURIComponent(subj) + "&body=" + encodeURIComponent(body);
+  });
+  // ---------- notifications : messages et tâches reçus même quand l'appli est fermée ----------
+  var VAPID_PUBLIC = "BGUEaySZ3FL4q1g0SuPWCR_UFbIDrrUAja2jGgOPcgCXxQ1hdROhtpZXWLq9JXxKs4beZ5uruSgcCSnSn6ldK-Q", pushSubNow = null, goParam = "";
+  try { goParam = new URLSearchParams(location.search).get("go") || ""; } catch (e) {}
+  function pushSupported() { return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window; }
+  function isIos() { return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); }
+  function isStandalone() { return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true; }
+  function b64ToU8(b64) { var pad = "=".repeat((4 - b64.length % 4) % 4), raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/")), out = new Uint8Array(raw.length); for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out; }
+  function pushKey() { return (settings && settings.vapid_public) || VAPID_PUBLIC; }
+  function swReady() { return navigator.serviceWorker.register("sw.js").then(function () { return navigator.serviceWorker.ready; }); }
+  function pushPrefsNow() { return { messages: $("pushMsg").checked, taches: $("pushTasks").checked }; }
+  function saveSub(sub) {
+    var j = sub.toJSON ? sub.toJSON() : sub; pushSubNow = j.endpoint;
+    return sb.from("push_abonnements").upsert({ user_id: sessionUser, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, ua: String(navigator.userAgent || "").slice(0, 160), prefs: pushPrefsNow() }, { onConflict: "user_id,endpoint" }).then(function (r) { if (r && r.error) throw r.error; });
+  }
+  function drawPush() {
+    var st = $("pushState"); if (!st) return;
+    var show = function (txt, on) { st.textContent = txt; $("pushOn").classList.toggle("hidden", on); $("pushOff").classList.toggle("hidden", !on); $("pushTest").classList.toggle("hidden", !on); $("pushPrefs").classList.toggle("hidden", !on); };
+    if (!pushSupported()) { show(isIos() && !isStandalone() ? "Sur iPhone ou iPad : touchez Partager, « Sur l'écran d'accueil », puis ouvrez l'appli depuis son icône et revenez ici." : "Ce navigateur ne gère pas les notifications.", false); $("pushOn").classList.add("hidden"); return; }
+    if (Notification.permission === "denied") { show("Notifications bloquées : autorisez-les dans les réglages du navigateur ou de l'appareil.", false); $("pushOn").classList.add("hidden"); return; }
+    if (Notification.permission !== "granted") { show("Désactivées sur cet appareil.", false); return; }
+    navigator.serviceWorker.getRegistration().then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) {
+      pushSubNow = sub ? (sub.endpoint || (sub.toJSON && sub.toJSON().endpoint)) : null;
+      show(sub ? "✅ Activées sur cet appareil." : "Désactivées sur cet appareil.", !!sub);
+      if (sub) sb.from("push_abonnements").select("prefs").eq("user_id", sessionUser).eq("endpoint", pushSubNow).then(function (r) { var row = r && r.data && r.data[0]; if (row && row.prefs) { $("pushMsg").checked = row.prefs.messages !== false; $("pushTasks").checked = row.prefs.taches !== false; } }, function () {});
+    }, function () { show("Désactivées sur cet appareil.", false); });
+  }
+  function enablePush() {
+    if (!pushSupported()) { drawPush(); return Promise.resolve(); }
+    if (isIos() && !isStandalone()) { toast("Sur iPhone ou iPad, ajoutez d'abord l'appli à l'écran d'accueil (Partager, « Sur l'écran d'accueil »)."); return Promise.resolve(); }
+    return Notification.requestPermission().then(function (perm) {
+      if (perm !== "granted") { toast("Notifications refusées : vous pouvez les autoriser dans les réglages de l'appareil."); drawPush(); return; }
+      return swReady().then(function (reg) { return reg.pushManager.getSubscription().then(function (s) { return s || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(pushKey()) }); }); })
+        .then(saveSub).then(function () { toast("🔔 Notifications activées sur cet appareil."); drawPush(); });
+    }).catch(function (e) { toast(/relation|does not exist|schema cache/i.test(String((e && e.message) || "")) ? "Lancez le script SQL « ajout-notifications » dans Supabase." : "Les notifications n'ont pas pu être activées : réessayez."); drawPush(); });
+  }
+  function disablePush() {
+    navigator.serviceWorker.getRegistration().then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) {
+      var ep = sub && (sub.endpoint || (sub.toJSON && sub.toJSON().endpoint)); var p = sub ? sub.unsubscribe() : Promise.resolve();
+      return p.then(function () { return ep ? sb.from("push_abonnements").delete().eq("user_id", sessionUser).eq("endpoint", ep) : null; });
+    }).then(function () { pushSubNow = null; toast("Notifications désactivées sur cet appareil."); drawPush(); }, function () { toast("La désactivation a échoué : réessayez."); });
+  }
+  function forgetPushDevice() {   // à la déconnexion : cet appareil ne doit plus recevoir les notifications de cette personne
+    try { if (!pushSupported() || !sb || !sessionUser) return; navigator.serviceWorker.getRegistration().then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) { var ep = sub && sub.endpoint; if (ep) sb.from("push_abonnements").delete().eq("user_id", sessionUser).eq("endpoint", ep).then(function () {}, function () {}); }, function () {}); } catch (e) {}
+  }
+  $("pushOn").addEventListener("click", enablePush);
+  $("pushOff").addEventListener("click", disablePush);
+  $("pushTest").addEventListener("click", function () {
+    navigator.serviceWorker.getRegistration().then(function (reg) { if (!reg) throw new Error("sw"); return reg.showNotification("SimSimStock", { body: "Notification d'essai : tout fonctionne 🎉", icon: "icon-192.png", tag: "essai", data: { tab: "messages" } }); }).then(function () { toast("Essai envoyé : regardez en haut de l'écran."); }, function () { toast("L'essai n'a pas pu être affiché."); });
+  });
+  ["pushMsg", "pushTasks"].forEach(function (id) { $(id).addEventListener("change", function () { if (pushSubNow) sb.from("push_abonnements").update({ prefs: pushPrefsNow() }).eq("user_id", sessionUser).eq("endpoint", pushSubNow).then(function () { toast("Préférences enregistrées."); }, function () {}); }); });
+  if ("serviceWorker" in navigator && navigator.serviceWorker.addEventListener) navigator.serviceWorker.addEventListener("message", function (e) { if (e.data && e.data.type === "go" && e.data.tab) goTab(e.data.tab); });
+  $("moreBtn").addEventListener("click", drawPush);
+  function pushAfterLogin() {
+    if (goParam) { var g = goParam; goParam = ""; try { history.replaceState(history.state, "", location.pathname + location.hash); } catch (e) {} setTimeout(function () { if (["messages", "taches", "routines"].indexOf(g) !== -1) goTab(g); }, 400); }
+    if (!pushSupported() || !db) return;
+    if (Notification.permission === "granted") {   // on garde l'abonnement à jour (et rattaché à la personne connectée)
+      navigator.serviceWorker.getRegistration().then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) { if (sub) saveSub(sub).catch(function () {}); }, function () {});
+    } else if (Notification.permission === "default" && !(isIos() && !isStandalone())) {
+      var seen = ""; try { seen = localStorage.getItem("simsim_push_hint") || ""; } catch (e) {}
+      if (!seen) setTimeout(function () { if (state.tab === "accueil" || state.tab === "messages" || state.tab === "hub") updBar("🔔 Activez les notifications : messages et tâches arrivent même quand l'appli est fermée.", "warn", [{ text: "Activer", fn: function () { try { localStorage.setItem("simsim_push_hint", "1"); } catch (e) {} $("updBar").classList.add("hidden"); enablePush(); } }, { text: "Plus tard", fn: function () { try { localStorage.setItem("simsim_push_hint", "1"); } catch (e) {} $("updBar").classList.add("hidden"); } }]); }, 4000);
+    }
+  }
+  // ---------- santé de l'installation : ce qui est en place, ce qui manque, et comment le réparer ----------
+  var SUPABASE_BASE = "https://wcalquzjehvhcjevjwxe.supabase.co", healthRes = [];
+  var HEALTH_TABLES = [
+    ["migration-multi-cabinets.sql", "Cabinets et accès", ["cabinets", "members", "items"], true],
+    ["ajout-documents.sql", "Documents liés aux articles", ["documents"]],
+    ["ajout-lots-favoris.sql", "Lots, péremptions et favoris", ["lots"]],
+    ["ajout-preferences.sql", "Préférences de chacun", ["user_prefs"]],
+    ["ajout-sauvegardes.sql", "Sauvegardes", ["sauvegardes"]],
+    ["ajout-invitations.sql", "Invitations", ["invitations"]],
+    ["ajout-liens-invitation.sql", "Liens d'invitation", ["invitation_liens"]],
+    ["ajout-administration.sql", "Administration (cabinets archivés)", ["cabinets_archives"]],
+    ["ajout-donnees-depenses.sql", "Données et dépenses", ["achat_lignes", "imported_docs"]],
+    ["ajout-salles-controles.sql", "Salles et contrôles", ["salles", "salle_items", "controles", "controle_items", "controle_logs"]],
+    ["ajout-equipements-prix.sql", "Équipements et pannes", ["equipements", "interventions"]],
+    ["ajout-contrats.sql", "Contrats", ["contrats"]],
+    ["ajout-catalogues-fournisseurs.sql", "Catalogues des fournisseurs", ["catalogue_fournisseurs", "catalogue_sources"]],
+    ["ajout-catalogue-initial.sql", "Catalogue de départ", ["catalogue_modele"]],
+    ["ajout-transferts-comparaison.sql", "Comparateur de prix et équivalences", ["equivalences", "alertes_prix"]],
+    ["ajout-reglages.sql", "Réglages communs", ["reglages"]],
+    ["ajout-recap-lundi.sql", "Récap du lundi", ["reglages_recap"]],
+    ["ajout-messages.sql", "Messagerie de l'équipe", ["messages", "message_lus", "equipe_noms"]],
+    ["ajout-presence.sql", "Qui est connecté (dernière vue)", ["derniere_vue"]],
+    ["ajout-profils-taches.sql", "Profils (Dentiste, Assistante, Big boss) et réponses OK", ["equipe_profils"]],
+    ["ajout-equipements-factures.sql", "Factures d'équipement", ["equipement_docs"]],
+    ["ajout-kits.sql", "Kits par acte", ["kits", "kit_lignes"]],
+    ["ajout-routines.sql", "Routines", ["routines", "routine_coches"]],
+    ["ajout-notifications.sql", "Notifications", ["push_abonnements"]]
+  ];
+  function probeTable(t) { return sb.from(t).select("*").limit(1).then(function (r) { return !r.error; }, function () { return false; }); }
+  function safeFetch(url, opt) { try { return typeof fetch === "function" ? fetch(url, opt) : Promise.reject(new Error("fetch")); } catch (e) { return Promise.reject(e); } }
+  function probeFn(name) { return safeFetch(SUPABASE_BASE + "/functions/v1/" + name, { method: "OPTIONS" }).then(function (r) { return r.status < 400; }, function () { return false; }); }
+  function probeFile(path) { return safeFetch(path + "?_=" + Date.now(), { method: "HEAD", cache: "no-store" }).then(function (r) { return r.ok; }, function () { return false; }); }
+  function runHealth() {
+    var out = [], jobs = [];
+    var add = function (group, label, ok, fix, file, opt) { out.push({ group: group, label: label, ok: ok, fix: fix || "", file: file || "", opt: !!opt }); };
+    HEALTH_TABLES.forEach(function (row) {
+      jobs.push(Promise.all(row[2].map(probeTable)).then(function (rs) { var bad = row[2].filter(function (t, i) { return !rs[i]; }); add("Base de données (scripts SQL)", row[1], !bad.length, bad.length ? "Lancez le fichier « " + row[0] + " » dans Supabase (SQL Editor)." : "", row[0]); }));
+    });
+    // fonctions et colonnes ajoutées par des scripts de mise à jour
+    var flags = [["ajout-codebarres.sql", "Codes-barres", barcodeOk], ["ajout-catalogue.sql", "Articles non suivis (catalogue)", trackedOk], ["ajout-sous-categories.sql", "Sous-catégories", subOk], ["ajout-description.sql", "Descriptions des articles", descOk], ["ajout-commandes-photos.sql", "Commandes et photos", photoOk], ["ajout-produits-ouverts.sql", "Produits ouverts", openOk], ["ajout-pdf-factures.sql", "PDF des factures importées", jrnFileOk]];
+    flags.forEach(function (f) { add("Base de données (scripts SQL)", f[1], !!f[2], f[2] ? "" : "Lancez le fichier « " + f[0] + " » dans Supabase (SQL Editor).", f[0]); });
+    var p0 = msgPeople[0];
+    add("Base de données (scripts SQL)", "Noms et profils dans la liste de l'équipe", !!(p0 && "nom" in p0 && "profil" in p0), "Relancez « ajout-messages.sql » puis « ajout-profils-taches.sql » (mise à jour de la liste de l'équipe).", "ajout-profils-taches.sql", !p0);
+    // fichiers du site
+    ["sw.js", "manifest.webmanifest", "icon-192.png", "apple-touch-icon.png"].forEach(function (f) { jobs.push(probeFile(f).then(function (ok) { add("Fichiers du site (GitHub)", f, ok, ok ? "" : "Envoyez « " + f + " » sur GitHub, à côté de index.html.", f); })); });
+    add("Fichiers du site (GitHub)", "Catalogue total (GACD, Méga Dental)", !!TOTAL.ok, TOTAL.ok ? "" : (TOTAL.why || "Envoyez catalogue-index.json et les deux catalogues sur GitHub."), "catalogue-index.json", !TOTAL.failed && !TOTAL.ok);
+    // fonctions Supabase (facultatives)
+    var fn = function (label, names, hint) { jobs.push(Promise.all(names.map(probeFn)).then(function (rs) { var ok = rs.some(Boolean); add("Services (fonctions Supabase)", label, ok, ok ? "" : hint, "", true); })); };
+    fn("Notifications (notifier-push)", ["notifier-push"], "Facultatif : suivez le guide « Notifications » pour les recevoir appli fermée.");
+    fn("E-mail du lundi", ["recap-hebdo", "rapid-task"], "Facultatif : suivez le guide du récap du lundi.");
+    fn("Rapport mensuel par e-mail", ["rapport-mensuel"], "Facultatif : suivez le guide « Rapport mensuel par e-mail ».");
+    if (recoFn) fn("Reconnaissance de produit par photo", [recoFn], "Facultatif : suivez le guide de la reconnaissance par photo."); else add("Services (fonctions Supabase)", "Reconnaissance de produit par photo", false, "Facultatif : suivez le guide de la reconnaissance par photo.", "", true);
+    // cet appareil
+    add("Cet appareil", "Connexion en direct", $("live").classList.contains("on"), "La connexion en direct est coupée : vérifiez internet puis rechargez la page.", "");
+    add("Cet appareil", "Appli installée sur l'écran d'accueil", isStandalone(), isIos() ? "Sur iPhone et iPad, c'est nécessaire pour les notifications : Partager, « Sur l'écran d'accueil »." : "Facultatif : Partager ou menu du navigateur, « Installer l'application ».", "", true);
+    add("Cet appareil", "Notifications autorisées", pushSupported() && Notification.permission === "granted", !pushSupported() ? "Ce navigateur ne gère pas les notifications." : "Plus, Affichage, « Notifications sur cet appareil » : Activer.", "", true);
+    add("Cet appareil", "Version de l'appli", true, "", "");
+    return Promise.all(jobs).then(function () { return out; });
+  }
+  function drawHealth(res) {
+    healthRes = res; var list = $("healthList"); list.textContent = "";
+    var bad = res.filter(function (r) { return !r.ok && !r.opt; }), opt = res.filter(function (r) { return !r.ok && r.opt; });
+    var sum = $("healthSum"); sum.className = "health-sum " + (bad.length ? "bad" : opt.length ? "warn" : "ok");
+    sum.textContent = bad.length ? "⚠ " + bad.length + " élément" + (bad.length > 1 ? "s" : "") + " à installer ou à réparer" + (opt.length ? " · " + opt.length + " facultatif" + (opt.length > 1 ? "s" : "") : "") : opt.length ? "✓ L'essentiel est en place · " + opt.length + " option" + (opt.length > 1 ? "s" : "") + " facultative" + (opt.length > 1 ? "s" : "") + " non activée" + (opt.length > 1 ? "s" : "") : "✓ Tout est en place (" + res.length + " points vérifiés)";
+    var groups = []; res.forEach(function (r) { if (groups.indexOf(r.group) === -1) groups.push(r.group); });
+    groups.forEach(function (g) {
+      var rows = res.filter(function (r) { return r.group === g; }).sort(function (a, b) { return (a.ok ? 1 : 0) - (b.ok ? 1 : 0); }), nb = rows.filter(function (r) { return !r.ok && !r.opt; }).length;
+      var box = h("details", { class: "health-grp", open: nb > 0 || g === "Cet appareil" }, h("summary", {}, h("b", { text: g }), h("span", { class: "meta", text: " · " + rows.filter(function (r) { return r.ok; }).length + "/" + rows.length + " en place" })));
+      rows.forEach(function (r) {
+        var ver = r.label === "Version de l'appli" ? "v" + localVer() : "";
+        box.append(h("div", { class: "health-row " + (r.ok ? "ok" : r.opt ? "warn" : "bad") }, h("span", { class: "hr-ic", text: r.ok ? "✅" : r.opt ? "➖" : "❌" }), h("div", { class: "hr-main" }, h("div", { class: "hr-name", text: r.label + (ver ? " : " + ver : "") }), r.ok ? null : h("div", { class: "meta", text: r.fix }))));
+      });
+      list.append(box);
+    });
+  }
+  function openHealth() {
+    $("healthSum").className = "health-sum"; $("healthSum").textContent = "Vérification en cours…"; $("healthList").textContent = "";
+    if (!$("healthDlg").open) $("healthDlg").showModal();
+    return runHealth().then(drawHealth, function () { $("healthSum").textContent = "La vérification n'a pas pu se faire : vérifiez votre connexion."; });
+  }
+  function healthText() {
+    var bad = healthRes.filter(function (r) { return !r.ok && !r.opt; }), opt = healthRes.filter(function (r) { return !r.ok && r.opt; });
+    var files = []; bad.forEach(function (r) { if (r.file && files.indexOf(r.file) === -1) files.push(r.file); });
+    return ["SimSimStock v" + localVer() + " · " + cabinetName + " · " + new Date().toLocaleDateString("fr-FR"), bad.length ? "À faire (" + bad.length + ") :" : "Rien d'obligatoire à faire.", bad.map(function (r) { return "- " + r.label + " : " + r.fix; }).join("\n"), files.length ? "\nFichiers à lancer ou à envoyer : " + files.join(", ") : "", opt.length ? "\nFacultatif :\n" + opt.map(function (r) { return "- " + r.label; }).join("\n") : ""].filter(function (x) { return x !== ""; }).join("\n");
+  }
+  $("healthBtn").addEventListener("click", function () { $("moreMenu").classList.add("hidden"); openHealth(); });
+  $("healthRun").addEventListener("click", openHealth);
+  $("healthClose").addEventListener("click", function () { $("healthDlg").close(); });
+  $("healthCopy").addEventListener("click", function () {
+    var t = healthText();
+    var done = function () { toast("Liste copiée : collez-la dans un message."); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, function () { toast("Copie impossible ici."); }); else toast("Copie impossible ici.");
+  });
   function renderInventory(box) {
     var rsc = roomScope();
     if (rsc) { box.append(roomHeader(rsc)); if (!items.size && !state.cat) box.append(h("div", { class: "dnote", text: "Cette salle est vide. Cliquez sur un domaine pour y ajouter ses produits, ou utilisez « ＋ Ajouter des produits »." })); }
@@ -7242,6 +7967,8 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     else if (state.tab === "taches") renderTasks(box);
     else if (state.tab === "accueil") renderHome(box);
     else if (state.tab === "hub") renderHub(box);
+    else if (state.tab === "kits") renderKits(box);
+    else if (state.tab === "routines") renderRoutines(box);
     else if (state.tab === "catalogues") renderCatalogues(box);
     else if (state.tab === "commande") renderOrder(box);
     else if (state.tab === "comptage") renderCount(box);
@@ -7358,6 +8085,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     var ma = maintAlerts(); o.eqLate = ma.eqLate.length + ma.eqSoon.length; o.eqWarr = ma.eqWarr.length; o.ct = ma.ctNotice.length + ma.ctRenew.length; o.maint = ma;
     if (msgOk) { msgThreads().forEach(function (t) { o.unread += msgUnread(t); }); o.tasks = taskLists().todo.length; }
     o.online = Object.keys(pres.online).filter(function (u) { return u !== sessionUser; }).length;
+    o.routines = routinesOk ? routinesTodo() : 0;
     return o;
   }
   // ---------- mon nom (accueil) : partagé avec l'équipe si la messagerie est prête, sinon gardé sur cet appareil ----------
@@ -7414,7 +8142,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
       { mod: "materiel", ic: "🏥", prod: "Gestion de stock", title: "Matériel", color: "#0BA5D6",
         lines: [[st.ctl, plural(st.ctl, "contrôle à faire", "contrôles à faire"), "bad"], [st.eqLate, plural(st.eqLate, "maintenance à prévoir", "maintenances à prévoir"), "warn"], [st.eqWarr + st.ct, plural(st.eqWarr + st.ct, "échéance à suivre", "échéances à suivre"), ""]], okText: "Rien à signaler" },
       { mod: "equipe", ic: "💬", prod: "Communication interne", title: "Équipe", color: "#A05BFF",
-        lines: [[st.unread, plural(st.unread, "message non lu", "messages non lus"), "bad"], [st.tasks, plural(st.tasks, "tâche à faire", "tâches à faire"), "warn"], [st.online, st.online + " en ligne", "on"]], okText: msgOk ? "Rien de nouveau" : "Messagerie à activer" }
+        lines: [[st.unread, plural(st.unread, "message non lu", "messages non lus"), "bad"], [st.tasks, plural(st.tasks, "tâche à faire", "tâches à faire"), "warn"], [st.routines, plural(st.routines, "routine à faire", "routines à faire"), "warn"], [st.online, st.online + " en ligne", "on"]], okText: msgOk ? "Rien de nouveau" : "Messagerie à activer" }
     ];
     var grid = h("div", { class: "hometiles" });
     tiles.forEach(function (t) {
@@ -7454,6 +8182,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
         { ic: "📦", title: "Stock", sub: "Tous vos articles, par domaine", tab: "inventaire", status: lineStatus([[st.rupt.length, pl(st.rupt.length, "en rupture", "en rupture"), "bad"], [st.bas, st.bas + " sous le seuil", "warn"], [st.exp, st.exp + " à périmer", "warn"]], "Tout est en ordre") },
         { ic: "⭐", title: "Favoris", sub: "Vos articles du quotidien", tab: "favoris", status: { tone: favN ? "on" : "", text: favN ? pl(favN, "favori", "favoris") : "Aucun favori" } },
         { ic: "🔢", title: "Comptage", sub: "Compter et corriger le stock", tab: "comptage" },
+        { ic: "🧰", title: "Kits par acte", sub: "Pose d'implant, détartrage… un clic ou un scan", tab: "kits", status: kitsOk ? { tone: kits.length ? "on" : "", text: kits.length ? pl(kits.length, "kit", "kits") : "Aucun kit" } : { tone: "", text: "À activer" } },
         { ic: "🕘", title: "Historique", sub: "Tous les mouvements", tab: "historique", status: logToday ? { tone: "on", text: pl(logToday, "mouvement aujourd'hui", "mouvements aujourd'hui") } : null },
         { ic: "📅", title: "Récap de la semaine", sub: "Ce qu'il faut savoir cette semaine", act: clickBtn("recapBtn"), action: true },
         { ic: "🗑", title: "Corbeille", sub: "Articles supprimés", tab: "corbeille", status: trash.size ? { tone: "", text: pl(trash.size, "article", "articles") } : null }
@@ -7462,6 +8191,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
         { ic: "🛒", title: "À commander", sub: "Ce qui manque, par fournisseur", tab: "commande", status: lineStatus([[st.need, st.need + " à commander" + (st.needEur ? " · ≈ " + money(st.needEur) + " HT" : ""), "warn"], [st.ordered, pl(st.ordered, "commande en attente", "commandes en attente"), ""]], "Rien à commander") },
         { ic: "📚", title: "Catalogues", sub: "Les catalogues de vos fournisseurs", tab: "catalogues" },
         { ic: "📊", title: "Dépenses et prix", sub: "Où va l'argent, évolution des prix", tab: "donnees" },
+        { ic: "📄", title: "Rapport mensuel", sub: "PDF du mois : achats, ruptures, équipe", act: function () { openReport(); }, action: true },
         { ic: "🧾", title: "Factures importées", sub: "Retrouver une facture et son PDF", act: clickBtn("jrnBtn"), action: true },
         { ic: "⬆", title: "Importer une facture", sub: "PDF, scan ou fichier", act: clickBtn("importBtn"), action: true, needsWrite: true },
         { ic: "📷", title: "Photo d'une facture", sub: "Photographier un bon ou une facture", act: clickBtn("photoInvBtn"), action: true, needsWrite: true }
@@ -7474,6 +8204,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
       ],
       equipe: [
         { ic: "💬", title: "Messages", sub: "Discuter et demander des tâches (OK / C'est fait)", tab: "messages", status: lineStatus([[st.unread, pl(st.unread, "message non lu", "messages non lus"), "bad"]], msgOk ? "Rien de nouveau" : "À activer") },
+        { ic: "📋", title: "Routines", sub: "Ouverture, fermeture, stérilisation : cases à cocher", tab: "routines", status: routinesOk ? lineStatus([[st.routines, pl(st.routines, "routine à faire", "routines à faire"), "warn"]], routinesList().length ? "Tout est fait" : "Aucune routine") : { tone: "", text: "À activer" } },
         { ic: "☑", title: "Tâches", sub: "Ce qu'on vous demande, ce que vous demandez", tab: "taches", status: lineStatus([[st.tasks, pl(st.tasks, "tâche à faire", "tâches à faire"), "warn"]], msgOk ? "Rien à faire" : "À activer") },
         { ic: "🟢", title: "Qui est connecté", sub: "L'équipe en ligne en ce moment", act: function () { var b = $("presBtn"); if (b) b.click(); }, action: true, status: { tone: st.online ? "on" : "", text: st.online ? st.online + " en ligne" : "Personne d'autre" } }
       ]
@@ -9503,6 +10234,8 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
       toast("Code lu : cliquez sur Enregistrer pour le garder dans la fiche.");
       return;
     }
+    var kitHit = scanMode === "stock" ? kitByCode(text) : null;
+    if (kitHit) { scanKit(kitHit); return; }
     var it = Array.from(items.values()).find(function (x) { return x.barcode && x.barcode === key; });
     if (scanFast && scanMode === "stock") { fastScan(it, key, info); return; }
     scanBusy = true;
@@ -10131,7 +10864,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   $("loginBtn").addEventListener("click", doLogin);
   $("loginPw").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
   $("loginEmail").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
-  $("logoutBtn").addEventListener("click", function () { if (sb) sb.auth.signOut(); });
+  $("logoutBtn").addEventListener("click", function () { forgetPushDevice(); if (sb) sb.auth.signOut(); });
   var THEMES = ["recept", "frais", "blanc", "gris", "rose", "mauve", "sombre"];
   function applyTheme(t) {
     if (THEMES.indexOf(t) === -1) t = "recept";
@@ -10260,6 +10993,8 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     loadContrats();
     loadSettings();
     loadMessages();
+    loadKits();
+    loadRoutines();
     loadConso();
     loadRooms();
     loadControls();
@@ -10281,6 +11016,12 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
         render();
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "movements" }, function (p) { if (p.new && p.new.cabinet_id === cabinetId) addLogRow(p.new); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "routine_coches" }, function (p) {
+        if (p.eventType === "DELETE") { var o = p.old || {}; rCoches = rCoches.filter(function (c) { return !(c.routine_id === o.routine_id && c.jour === o.jour && c.etape === o.etape); }); }
+        else if (p.new && p.new.cabinet_id === cabinetId) { rCoches = rCoches.filter(function (c) { return !(c.routine_id === p.new.routine_id && c.jour === p.new.jour && c.etape === p.new.etape); }); rCoches.push(p.new); }
+        updateRoutineBadge(); if (state.tab === "routines" || state.tab === "accueil" || state.tab === "hub") render();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "routines" }, function (p) { if ((p.new && p.new.cabinet_id === cabinetId) || (p.old && p.eventType === "DELETE")) loadRoutines(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "equipe_profils" }, function (p) { if ((p.new && p.new.cabinet_id === cabinetId) || (p.old && p.eventType === "DELETE")) loadPeople(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "equipe_noms" }, function (p) { if ((p.new && p.new.cabinet_id === cabinetId) || (p.old && p.eventType === "DELETE")) loadPeople(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, function (p) {
@@ -10319,7 +11060,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     stopPresence();
     channels = []; started = false;
-    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqDocs = []; eqDocsOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; ctOk = false; ctList = []; jrnFileOk = false; openOk = false; recoFn = ""; settings = {}; msgOk = false; msgs = []; msgPeople = []; msgReads = {}; msgDraft = {}; updateMsgBadge(); descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
+    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqDocs = []; eqDocsOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; ctOk = false; ctList = []; jrnFileOk = false; openOk = false; recoFn = ""; settings = {}; msgOk = false; msgs = []; msgPeople = []; msgReads = {}; msgDraft = {}; kits = []; kitLines = []; kitsOk = false; routines = []; rCoches = []; routinesOk = false; updateMsgBadge(); descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
   }
   // ---------- rejoindre un cabinet avec un lien d'invitation (#rejoindre=...) ----------
   var JOIN_KEY = "simsim_join";
@@ -11070,11 +11811,13 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     $("wipeBtn").classList.toggle("hidden", !isAdmin);
     updateOwnerBtns();
     document.querySelector('.tab[data-tab="utilisateurs"]').classList.toggle("hidden", !isAdmin);
+    $("healthBtn").classList.toggle("hidden", !isAdmin);
     usersData.members = null; usersData.msg = ""; usersData.mail = null;
     priceAlerts = []; alertOk = false; cmpData = null; cmpErr = ""; cmpStamp = 0;
     loadOrderQty();
     state.tab = state.module === "stock" ? "inventaire" : (lastTabs[state.module] || MODS[state.module].tab); state.filter = "all"; state.cat = ""; state.q = ""; state.view = ""; $("search").value = "";
     syncTabs(); navReset(); showScreen("app"); startData(); render();
+    pushAfterLogin();
     if (!greeted && state.module !== "accueil") { greeted = true; setTimeout(function () { toast("Bonjour " + myName() + " 👋"); }, 1300); }
     if (welcomePw) { welcomePw = false; toast("Bienvenue ! Choisissez un mot de passe pour vous reconnecter facilement."); openPw(null); }
     else if (incomingAdd) startIncoming();
@@ -11209,7 +11952,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   $("cabCreate").addEventListener("click", createCabinet);
   $("cabName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); createCabinet(); } });
   $("switchBtn").addEventListener("click", function () { stopData(); cabinetId = null; showPick(false); });
-  $("pickLogout").addEventListener("click", function () { if (sb) sb.auth.signOut(); });
+  $("pickLogout").addEventListener("click", function () { forgetPushDevice(); if (sb) sb.auth.signOut(); });
   $("loginAlt").addEventListener("click", function () { setLoginMode(loginMode === "join" ? "in" : (loginMode === "in" ? "forgot" : "in")); });
   $("loginJoin").addEventListener("click", function () { setLoginMode("join"); });
   $("loginMagic").addEventListener("click", function () { setLoginMode("magic"); });
