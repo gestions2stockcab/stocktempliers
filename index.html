@@ -1370,7 +1370,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v115</div>
+            <div class="menu-who"><span id="who"></span> · v116</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -7196,7 +7196,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     var n = msgOk ? taskLists().todo.length : 0, b = $("taskBadge"); b.textContent = String(n); b.classList.toggle("hidden", !n);
   }
   // ---------- demander une tâche en deux touches (modèles : « Pano au prochain patient »…) ----------
-  var TASK_PRESETS = [["📷", "Faire une pano au prochain patient"], ["🦷", "Faire une rétro-alvéolaire au prochain patient"], ["🧹", "Préparer la salle pour le prochain patient"], ["🧴", "Stériliser les instruments de la salle"]];
+  var TASK_PRESETS = [["📷", "Faire une pano au prochain patient"], ["🧾", "Faire le TP"], ["💶", "Faire payer le patient"], ["⚠️", "Rien n'a été codé"], ["🧹", "Préparer la salle pour le prochain patient"], ["🧴", "Stériliser les instruments de la salle"]];
   var taskDraft = { to: "equipe", text: "", room: "" };
   function isNextPatient(t) { return /prochain patient/i.test(String(t || "")); }
   function sendTask() {
