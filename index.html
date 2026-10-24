@@ -1277,6 +1277,40 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
 @media (max-width: 1100px) { .ht-go { display:none; } }
 #login .login-card .linkbtn { display:block; margin:4px auto; text-align:center; font-size:14px; text-decoration:none; font-weight:600; }
 #login .login-card .linkbtn:hover { text-decoration:underline; }
+
+/* ===== v117 : tâches dans la discussion, profils ===== */
+.msgquick { display:flex; gap:6px; align-items:center; overflow-x:auto; padding:2px 0 6px; scrollbar-width:thin; }
+.msgquick.hidden { display:none; }
+.qlab { flex:none; font-weight:600; }
+.qchip { flex:none; white-space:nowrap; background:var(--surface-2); }
+.qroom { flex:none; border:1px solid var(--line); border-radius:999px; padding:6px 10px; font:inherit; font-size:13px; background:var(--surface); color:var(--ink); }
+.tstat { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:8px; }
+.ts { font-size:13px; font-weight:700; padding:3px 10px; border-radius:999px; background:var(--surface); color:var(--ink); }
+.bubble.mine .ts { background:rgba(255,255,255,.2); color:#fff; }
+.ts.ok { background:var(--ok-bg); color:var(--ok); }
+.ts.ack { background:#e4efff; color:#1f4fd0; }
+.ts.wait { opacity:.85; }
+.tbtn { border:1px solid color-mix(in srgb, var(--brand) 30%, var(--line)); background:var(--surface); color:var(--ink); border-radius:999px; padding:9px 16px; font:inherit; font-weight:700; cursor:pointer; min-height:40px; }
+.tbtn.done { background:var(--grad); color:#fff; border-color:transparent; box-shadow:0 8px 18px -10px rgba(47,103,255,.8); }
+.tbtn.ok { background:#fff; }
+.profchip { margin-left:8px; padding:2px 10px; border-radius:999px; font-size:12.5px; font-weight:700; background:color-mix(in srgb, var(--brand) 12%, var(--surface)); color:var(--brand); vertical-align:middle; }
+.profsel { margin-left:auto; border:1px solid var(--line); border-radius:999px; padding:6px 10px; font:inherit; font-size:13px; background:var(--surface); color:var(--ink); }
+#myProfilSel { flex:1 1 200px; min-width:0; border:1px solid var(--line); border-radius:10px; padding:8px 10px; font:inherit; background:var(--surface); color:var(--ink); }
+
+/* la zone de discussion ne déborde jamais (la barre de tâches rapides défile à l'intérieur) */
+.msgwrap { grid-template-columns:300px minmax(0, 1fr); }
+.msgpane, .msgcomposer, .msgs { min-width:0; }
+.msgquick { max-width:100%; }
+@media (max-width: 760px) { .msgwrap { grid-template-columns:minmax(0, 1fr); } }
+
+.msghead { flex-wrap:wrap; }
+.mh-main, .mh-edit { flex:1 1 240px; min-width:0; }
+.mh-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-left:auto; }
+.mh-actions .msgren, .mh-actions .profsel { margin-left:0; }
+
+@media (max-width: 1100px) { .msgnote { display:none; } .profsel { max-width:160px; } .mh-main, .mh-edit { flex-basis:200px; } .mh-actions { flex-wrap:nowrap; } }
+.msgtools { flex-wrap:nowrap; }
+.msgtools .send, .msgtools .btn.primary { margin-left:auto; }
 </style>
 </head>
 <body>
@@ -1370,7 +1404,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v116</div>
+            <div class="menu-who"><span id="who"></span> · v117</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1407,6 +1441,9 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
             <div class="menu-group" data-mtab="affichage"><div class="menu-title">Affichage et aide</div>
               <div class="menu-sw"><div class="meta">Mon prénom (affiché dans « Bonjour ») :</div>
                 <div class="nameedit"><input id="myNameInp" type="text" maxlength="40" autocomplete="off" aria-label="Mon prénom"><button class="btn sm primary" id="myNameSave" type="button">Enregistrer</button><button class="btn sm hidden" id="myNameReset" type="button" title="Revenir au nom tiré de l'adresse e-mail">Nom d'origine</button></div>
+              </div>
+              <div class="menu-sw"><div class="meta">Mon profil (dentiste, assistante…) :</div>
+                <div class="nameedit"><select id="myProfilSel" aria-label="Mon profil"></select></div>
               </div>
               <div class="menu-sw"><div class="meta">Couleur de l'appli</div>
         <div class="swatches" role="group" aria-label="Couleur de fond">
@@ -2345,7 +2382,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false, ownerOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
-  var state = { tab: "inventaire", filter: "all", q: "", cat: "", module: "stock", msgThread: "equipe", msgView: "list", msgAttach: null, msgTask: false, msgRename: null, msgRenameVal: "", hideCat: false, hideTotal: true, totalSup: {}, totalLimit: 60, totalSig: "", collapsed: {}, tileSort: "usuel", limit: 60, limitSig: "", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
+  var state = { tab: "inventaire", filter: "all", q: "", cat: "", module: "stock", quickRoom: "", msgThread: "equipe", msgView: "list", msgAttach: null, msgTask: false, msgRename: null, msgRenameVal: "", hideCat: false, hideTotal: true, totalSup: {}, totalLimit: 60, totalSig: "", collapsed: {}, tileSort: "usuel", limit: 60, limitSig: "", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
   var chain = Promise.resolve();
 
@@ -6244,6 +6281,11 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     if (!p && email) p = msgPeople.filter(function (x) { return String(x.email || "").toLowerCase() === String(email).toLowerCase(); })[0];
     return p && p.nom ? p.nom : personName(email || (p && p.email) || "");
   }
+  var PROFILS = { dentiste: { ic: "🦷", label: "Dentiste" }, assistante: { ic: "🧑‍⚕️", label: "Assistante" }, bigboss: { ic: "👑", label: "Big boss du cabinet" } };
+  function profilOf(uid) { var p = uid ? msgPerson(uid) : null; return p && PROFILS[p.profil] ? p.profil : ""; }
+  function profilBadge(uid) { var k = profilOf(uid); return k ? PROFILS[k].ic : ""; }
+  function profilLabel(uid) { var k = profilOf(uid); return k ? PROFILS[k].label : ""; }
+  function myProfil() { return profilOf(sessionUser); }
   function msgPerson(id) { return msgPeople.filter(function (p) { return p.user_id === id; })[0]; }
   function msgThreadOf(m) { return !m.to_user_id ? "equipe" : (m.author_id === sessionUser ? m.to_user_id : m.author_id); }
   function msgThreadTitle(t) { return t === "equipe" ? "Équipe du cabinet" : personLabel(t, (msgPerson(t) || {}).email || ""); }
@@ -6361,8 +6403,16 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   function msgToggleDone(m, on) {
     sb.rpc("message_marquer_fait", { p_id: m.id, p_fait: on }).then(function (res) {
       if (res.error) { toast("La tâche n'a pas pu être mise à jour."); render(); return; }
-      m.done_at = on ? new Date().toISOString() : null; m.done_by = on ? myEmail : ""; updateMsgBadge(); render();
+      m.done_at = on ? new Date().toISOString() : null; m.done_by = on ? myEmail : "";
+      if (on && !m.ack_at) { m.ack_at = m.done_at; m.ack_by = myEmail; }
+      updateMsgBadge(); render();
     }, function () { toast("Connexion impossible."); render(); });
+  }
+  function msgAck(m) {
+    sb.rpc("message_accuser", { p_id: m.id }).then(function (res) {
+      if (res.error) { toast(/function|does not exist|schema cache/i.test(String(res.error.message)) ? "Lancez le script SQL « ajout-profils-taches » dans Supabase." : "La réponse n'a pas pu être envoyée."); render(); return; }
+      m.ack_at = new Date().toISOString(); m.ack_by = myEmail; render();
+    }, function () { toast("Connexion impossible."); });
   }
   var msgDelAsk = "";
   function msgDelete(m, btn) {
@@ -6376,11 +6426,13 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   function msgBubble(m) {
     var mine = m.author_id === sessionUser, canDel = mine || (!m.to_user_id && isAdmin);
     var wrap = h("div", { class: "bubble" + (mine ? " mine" : "") + (m.kind === "tache" ? " task" : "") });
-    if (!mine) wrap.append(h("div", { class: "bwho", text: personLabel(m.author_id, m.author_email) }));
+    if (!mine) wrap.append(h("div", { class: "bwho", text: personLabel(m.author_id, m.author_email) + (profilBadge(m.author_id) ? " " + profilBadge(m.author_id) : "") }));
     if (m.kind === "tache") {
-      var cb = h("input", { type: "checkbox", checked: !!m.done_at, disabled: readOnly, "aria-label": "Tâche faite" });
-      cb.addEventListener("change", function () { msgToggleDone(m, cb.checked); });
-      wrap.append(h("label", { class: "btask" }, cb, h("span", { class: "btag", text: m.done_at ? "Fait" : "À faire" })));
+      if (mine) {
+        var cb = h("input", { type: "checkbox", checked: !!m.done_at, disabled: readOnly, "aria-label": "Tâche faite" });
+        cb.addEventListener("change", function () { msgToggleDone(m, cb.checked); });
+        wrap.append(h("label", { class: "btask" }, cb, h("span", { class: "btag", text: m.done_at ? "Fait" : "À faire" })));
+      } else wrap.append(h("div", { class: "btask" }, h("span", { class: "btag", text: m.done_at ? "Fait" : "À faire" })));
     }
     wrap.append(h("div", { class: "btext" }, m.kind === "tache" && isNextPatient(m.body) ? h("span", { class: "nextp", text: "⏭ Prochain patient" }) : null, m.body));
     if (m.item_id) {
@@ -6389,12 +6441,79 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
         onclick: function () { var x = items.get(m.item_id); if (x) openItem(R(x)); else toast("Cet article n'existe plus."); } },
         "📦 " + (it ? it.name : (m.item_name || "article")) + (it && it.tracked !== false ? " · stock " + fmt(it.qty) : "")));
     }
+    if (m.kind === "tache") {
+      var st = h("div", { class: "tstat" });
+      if (m.done_at) st.append(h("span", { class: "ts ok", text: "✓ Fait · " + personLabel(null, m.done_by) + " · " + msgClock(m.done_at) }));
+      else if (m.ack_at) st.append(h("span", { class: "ts ack", text: "👍 OK · " + personLabel(null, m.ack_by) + " · " + msgClock(m.ack_at) }));
+      else if (mine) st.append(h("span", { class: "ts wait", text: "⏳ En attente de réponse" }));
+      if (!mine && !readOnly) {
+        if (m.done_at) st.append(h("button", { class: "tbtn", type: "button", text: "↩︎ Rouvrir", onclick: function () { msgToggleDone(m, false); } }));
+        else {
+          if (!m.ack_at) st.append(h("button", { class: "tbtn ok", type: "button", text: "👍 OK", onclick: function () { msgAck(m); } }));
+          st.append(h("button", { class: "tbtn done", type: "button", text: "✓ C'est fait", onclick: function () { msgToggleDone(m, true); } }));
+        }
+      }
+      wrap.append(st);
+    }
     var meta = h("div", { class: "bmeta" }, h("span", { text: msgClock(m.created_at) }));
-    if (m.kind === "tache" && m.done_at) meta.append(h("span", { text: " · fait par " + personLabel(null, m.done_by) + " " + msgClock(m.done_at) }));
     if (canDel && !readOnly) { var del = h("button", { class: "bdel", type: "button", text: "Supprimer", "aria-label": "Supprimer ce message" }); del.addEventListener("click", function () { msgDelete(m, del); }); meta.append(del); }
     wrap.append(meta);
     return wrap;
   }
+  // ---------- tâches rapides dans la discussion (profil Dentiste) ----------
+  var TASK_PRESETS = [["📷", "Faire une pano au prochain patient"], ["🧾", "Faire le TP"], ["💶", "Faire payer le patient"], ["⚠️", "Rien n'a été codé"], ["🧹", "Préparer la salle pour le prochain patient"], ["🧴", "Stériliser les instruments de la salle"]];
+  function isNextPatient(t) { return /prochain patient/i.test(String(t || "")); }
+  function sendQuickTask(text) {
+    if (readOnly || !db) return;
+    var t = state.msgThread, body = text + (state.quickRoom && text.indexOf(state.quickRoom) === -1 ? " — " + state.quickRoom : "");
+    sb.from("messages").insert({ cabinet_id: cabinetId, to_user_id: t === "equipe" ? null : t, body: body, kind: "tache", item_id: null, item_name: "" }).select().then(function (res) {
+      if (res.error || !res.data || !res.data[0]) { toast(msgErrText(res.error)); return; }
+      addMessage(res.data[0], true); markRead(t); toast("Tâche envoyée à " + (t === "equipe" ? "toute l'équipe" : msgThreadTitle(t)) + "."); render();
+      try { msgEls.scroll.scrollTop = msgEls.scroll.scrollHeight; } catch (e) {}
+    }, function () { toast("Connexion impossible : la tâche n'a pas été envoyée."); });
+  }
+  function drawQuick() {
+    var q = msgEls.quick; q.textContent = "";
+    var show = !readOnly && msgOk && myProfil() !== "assistante";
+    q.classList.toggle("hidden", !show); if (!show) return;
+    q.append(h("span", { class: "meta qlab", text: "⚡ Demander :" }));
+    TASK_PRESETS.forEach(function (pr) {
+      q.append(h("button", { class: "btn sm qchip", type: "button", title: "Envoyer cette tâche à " + (state.msgThread === "equipe" ? "toute l'équipe" : msgThreadTitle(state.msgThread)), text: pr[0] + " " + pr[1], onclick: function () { sendQuickTask(pr[1]); } }));
+    });
+    if (rooms && rooms.length) {
+      var sel = h("select", { class: "qroom", "aria-label": "Salle concernée" }, h("option", { value: "", text: "Salle : peu importe" }));
+      rooms.forEach(function (r) { sel.append(h("option", { value: r.name, text: r.name })); });
+      sel.value = state.quickRoom || ""; sel.addEventListener("change", function () { state.quickRoom = sel.value; }); q.append(sel);
+    }
+  }
+  // ---------- profils : Dentiste, Assistante, Big boss du cabinet (un seul) ----------
+  function setProfil(uid, key) {
+    var name = uid === sessionUser ? "Vous" : personLabel(uid, (msgPerson(uid) || {}).email);
+    var done = function () {
+      var pp = msgPerson(uid); if (key === "bigboss") msgPeople.forEach(function (x) { if (x.profil === "bigboss") x.profil = ""; }); if (pp) pp.profil = key || "";
+      toast(key === "bigboss" ? "👑 " + (uid === sessionUser ? "Vous êtes" : name + " est") + " maintenant Big boss du cabinet !" : key ? "Profil enregistré : " + PROFILS[key].label + "." : "Profil retiré.");
+      drawMyProfil(); render();
+    };
+    var fail = function (e) { var m = String((e && e.message) || ""); toast(/relation|does not exist|schema cache|function/i.test(m) ? "Lancez le script SQL « ajout-profils-taches » dans Supabase." : "Seul l'administrateur peut donner ce profil."); drawMyProfil(); render(); };
+    var off = function () { toast("Connexion impossible."); };
+    if (key === "bigboss") sb.rpc("profil_bigboss", { c: cabinetId, u: uid }).then(function (r) { if (r.error) fail(r.error); else done(); }, off);
+    else if (!key) sb.from("equipe_profils").delete().eq("cabinet_id", cabinetId).eq("user_id", uid).then(function (r) { if (r.error) fail(r.error); else done(); }, off);
+    else sb.from("equipe_profils").upsert({ cabinet_id: cabinetId, user_id: uid, profil: key, maj_par: myEmail, updated_at: new Date().toISOString() }, { onConflict: "cabinet_id,user_id" }).then(function (r) { if (r.error) fail(r.error); else done(); }, off);
+  }
+  function profSelect(uid) {
+    var sel = h("select", { class: "profsel", "aria-label": "Profil de " + msgThreadTitle(uid), title: "Profil" });
+    [["", "Profil…"], ["dentiste", "🦷 Dentiste"], ["assistante", "🧑‍⚕️ Assistante"], ["bigboss", "👑 Big boss du cabinet"]].forEach(function (o) { sel.append(h("option", { value: o[0], text: o[1] })); });
+    sel.value = profilOf(uid); sel.addEventListener("change", function () { setProfil(uid, sel.value); });
+    return sel;
+  }
+  function drawMyProfil() {
+    var sel = $("myProfilSel"); if (!sel) return;
+    sel.textContent = "";
+    [["", "Aucun"], ["dentiste", "🦷 Dentiste"], ["assistante", "🧑‍⚕️ Assistante"]].concat(isAdmin ? [["bigboss", "👑 Big boss du cabinet"]] : []).forEach(function (o) { sel.append(h("option", { value: o[0], text: o[1] })); });
+    if (!isAdmin && myProfil() === "bigboss") sel.append(h("option", { value: "bigboss", text: "👑 Big boss du cabinet" }));
+    sel.value = myProfil(); sel.disabled = !msgPerson(sessionUser);
+  }
+  $("myProfilSel").addEventListener("change", function () { var v = $("myProfilSel").value; if (v === "bigboss" && myProfil() === "bigboss") return; setProfil(sessionUser, v); });
   function buildMsgUi() {
     var list = h("div", { class: "msglist", role: "navigation", "aria-label": "Conversations" });
     var head = h("div", { class: "msghead" });
@@ -6405,7 +6524,8 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     var btnTask = h("button", { class: "btn sm toggle", type: "button", "aria-pressed": "false", text: "☑ Tâche" });
     var send = h("button", { class: "btn primary", type: "button", text: "Envoyer" });
     var tools = h("div", { class: "msgtools" }, btnItem, btnTask, h("span", { class: "msgnote", text: "Ni nom de patient, ni information de santé." }), send);
-    var composer = h("div", { class: "msgcomposer" }, attachRow, pick, ta, tools);
+    var quick = h("div", { class: "msgquick hidden", role: "group", "aria-label": "Demander une tâche" });
+    var composer = h("div", { class: "msgcomposer" }, quick, attachRow, pick, ta, tools);
     var pane = h("div", { class: "msgpane" }, head, scroll, composer);
     var root = h("div", { class: "msgwrap" }, list, pane);
     ta.addEventListener("input", function () { msgDraft[state.msgThread] = ta.value; });
@@ -6425,12 +6545,11 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
       };
       inp.addEventListener("input", draw); pick.append(inp, res); draw();
     }
-    return { root: root, list: list, head: head, scroll: scroll, ta: ta, send: send, btnTask: btnTask, btnItem: btnItem, attachRow: attachRow, pick: pick, composer: composer };
+    return { root: root, list: list, head: head, scroll: scroll, ta: ta, send: send, btnTask: btnTask, btnItem: btnItem, attachRow: attachRow, pick: pick, composer: composer, quick: quick };
   }
   function parkMessages() {
     msgFocus = null;
     if (msgEls && document.activeElement === msgEls.ta) msgFocus = { a: msgEls.ta.selectionStart, b: msgEls.ta.selectionEnd };
-    else if (document.activeElement && document.activeElement.id === "taskTa") msgFocus = { task: true, a: document.activeElement.selectionStart, b: document.activeElement.selectionEnd };
     else if (document.activeElement && document.activeElement.classList && document.activeElement.classList.contains("msgrename-inp")) msgFocus = { rename: true, a: document.activeElement.selectionStart, b: document.activeElement.selectionEnd };
   }
   function renderMessages(box) {
@@ -6453,7 +6572,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
       var last = msgLast(th), n = msgUnread(th), btn = h("button", { class: "msgconv" + (th === t ? " on" : ""), type: "button", "aria-current": th === t ? "true" : "false",
         onclick: function () { state.msgThread = th; state.msgView = "thread"; state.msgAttach = null; state.msgTask = false; markRead(th); render(); } },
         h("span", { class: "mc-av" }, th === "equipe" ? "👥" : personLabel(th, (msgPerson(th) || {}).email).charAt(0), th !== "equipe" && presStatus(th) ? h("span", { class: "pdot " + presStatus(th) }) : null),
-        h("span", { class: "mc-main" }, h("span", { class: "mc-name", text: msgThreadTitle(th) }),
+        h("span", { class: "mc-main" }, h("span", { class: "mc-name" }, msgThreadTitle(th), profilBadge(th) ? " " + profilBadge(th) : ""),
           h("span", { class: "mc-prev", text: last ? (last.author_id === sessionUser ? "Vous : " : (th === "equipe" ? personLabel(last.author_id, last.author_email) + " : " : "")) + String(last.body).replace(/\s+/g, " ").slice(0, 60) : (th === "equipe" ? "Tout le cabinet" : "Message privé") })),
         h("span", { class: "mc-side" }, last ? h("span", { class: "mc-time", text: msgClock(last.created_at) }) : null, n ? h("span", { class: "msgbadge", text: String(n) }) : null));
       E.list.append(btn);
@@ -6464,10 +6583,13 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     var who = t === "equipe" ? null : msgPerson(t);
     var kids = [h("button", { class: "btn sm msgback", type: "button", text: "← Conversations", onclick: function () { state.msgView = "list"; render(); } }),
       state.msgRename === t && t !== "equipe" ? h("div", { class: "mh-edit" }, h("div", { class: "meta", text: "Nom affiché pour « " + (who ? who.email : "") + " » :" }), nameEditor(t))
-        : h("div", { class: "mh-main" }, h("div", { class: "mh-title", text: msgThreadTitle(t) }),
+        : h("div", { class: "mh-main" }, h("div", { class: "mh-title" }, msgThreadTitle(t), profilBadge(t) ? h("span", { class: "profchip", text: profilBadge(t) + " " + profilLabel(t) }) : null),
           h("div", { class: "meta", text: t === "equipe" ? "Visible par toute l'équipe de « " + cabinetName + " »" : "Message privé : seuls vous deux le voyez" + (who && who.email ? " · " + who.email : "") }),
           t === "equipe" ? null : h("div", { class: "meta presline " + presStatus(t), text: (presStatus(t) ? "● " : "○ ") + presText(t) }))];
-    if (canRename(t) && state.msgRename !== t) kids.push(h("button", { class: "btn sm msgren", type: "button", text: "✎ Renommer", "aria-label": "Renommer " + msgThreadTitle(t), onclick: function () { startRename(t); } }));
+    var acts = [];
+    if (canRename(t) && state.msgRename !== t) acts.push(h("button", { class: "btn sm msgren", type: "button", text: "✎ Renommer", "aria-label": "Renommer " + msgThreadTitle(t), onclick: function () { startRename(t); } }));
+    if (t !== "equipe" && who && isAdmin && !readOnly) acts.push(profSelect(t));
+    if (acts.length) kids.push(h("div", { class: "mh-actions" }, acts));
     kids.forEach(function (k) { E.head.append(k); });
     // messages
     var atBottom = E.scroll.scrollHeight - E.scroll.scrollTop - E.scroll.clientHeight < 80 || prevThread !== t;
@@ -6480,9 +6602,9 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
       E.scroll.append(msgBubble(m));
     });
     // zone d'écriture
-    E.composer.classList.toggle("hidden", readOnly);
+    E.composer.classList.toggle("hidden", readOnly); drawQuick();
     if (readOnly) E.scroll.append(h("div", { class: "dnote", text: "Accès en lecture seule : vous lisez les messages mais vous ne pouvez pas en écrire." }));
-    E.ta.placeholder = t === "equipe" ? "Écrire à toute l'équipe…" : "Écrire à " + msgThreadTitle(t) + "…";
+    E.ta.placeholder = (t === "equipe" ? "Écrire à toute l'équipe…" : "Écrire à " + msgThreadTitle(t) + "…") + " (ni nom de patient, ni donnée de santé)";
     if (prevThread !== t || E.ta.value !== (msgDraft[t] || "")) { if (document.activeElement !== E.ta || prevThread !== t) E.ta.value = msgDraft[t] || ""; }
     E.btnTask.setAttribute("aria-pressed", state.msgTask ? "true" : "false"); E.btnTask.textContent = (state.msgTask ? "✓ " : "☑ ") + "Tâche";
     E.attachRow.textContent = ""; E.attachRow.classList.toggle("hidden", !state.msgAttach);
@@ -7197,44 +7319,9 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   }
   // ---------- demander une tâche en deux touches (modèles : « Pano au prochain patient »…) ----------
   var TASK_PRESETS = [["📷", "Faire une pano au prochain patient"], ["🧾", "Faire le TP"], ["💶", "Faire payer le patient"], ["⚠️", "Rien n'a été codé"], ["🧹", "Préparer la salle pour le prochain patient"], ["🧴", "Stériliser les instruments de la salle"]];
-  var taskDraft = { to: "equipe", text: "", room: "" };
-  function isNextPatient(t) { return /prochain patient/i.test(String(t || "")); }
-  function sendTask() {
-    var text = taskDraft.text.replace(/\s+/g, " ").trim();
-    if (!text) { toast("Écrivez la tâche, ou touchez un modèle."); return; }
-    if (readOnly || !db) return;
-    if (taskDraft.room && text.indexOf(taskDraft.room) === -1) text += " — " + taskDraft.room;
-    if (text.length > 2000) { toast("Texte trop long."); return; }
-    var to = taskDraft.to === "equipe" ? null : taskDraft.to, toName = to ? msgThreadTitle(to) : "toute l'équipe";
-    sb.from("messages").insert({ cabinet_id: cabinetId, to_user_id: to, body: text, kind: "tache", item_id: null, item_name: "" }).select().then(function (res) {
-      if (res.error || !res.data || !res.data[0]) { toast(msgErrText(res.error)); return; }
-      taskDraft.text = ""; addMessage(res.data[0], true); toast("Tâche envoyée à " + toName + "."); render();
-    }, function () { toast("Connexion impossible : la tâche n'a pas été envoyée."); });
-  }
-  function taskForm() {
-    var card = h("div", { class: "table taskform" }, h("div", { class: "totalhead" }, h("strong", { text: "Demander une tâche" }), h("span", { class: "meta", text: "Ni nom de patient ni information de santé" })));
-    var body = h("div", { class: "tf-body" });
-    var who = h("select", { id: "taskTo", "aria-label": "Pour qui" }), room = h("select", { id: "taskRoom", "aria-label": "Dans quelle salle" });
-    who.append(h("option", { value: "equipe", text: "Toute l'équipe" }));
-    msgPeople.filter(function (p) { return p.user_id !== sessionUser; }).forEach(function (p) { who.append(h("option", { value: p.user_id, text: personLabel(p.user_id, p.email) })); });
-    if (!Array.prototype.some.call(who.options, function (o) { return o.value === taskDraft.to; })) taskDraft.to = "equipe";
-    who.value = taskDraft.to; who.addEventListener("change", function () { taskDraft.to = who.value; });
-    room.append(h("option", { value: "", text: "Salle : peu importe" })); (rooms || []).forEach(function (r) { room.append(h("option", { value: r.name, text: r.name })); });
-    if (!Array.prototype.some.call(room.options, function (o) { return o.value === taskDraft.room; })) taskDraft.room = "";
-    room.value = taskDraft.room; room.addEventListener("change", function () { taskDraft.room = room.value; });
-    var chips = h("div", { class: "tf-chips" });
-    TASK_PRESETS.forEach(function (pr) { chips.append(h("button", { class: "btn sm", type: "button", text: pr[0] + " " + pr[1], onclick: function () { taskDraft.text = pr[1]; var t = $("taskTa"); if (t) { t.value = pr[1]; t.focus(); } } })); });
-    var ta = h("textarea", { id: "taskTa", rows: "2", maxlength: "300", placeholder: "Ex : Faire une pano au prochain patient", "aria-label": "La tâche à faire" });
-    ta.value = taskDraft.text; ta.addEventListener("input", function () { taskDraft.text = ta.value; });
-    ta.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey && window.innerWidth > 760 && !document.documentElement.classList.contains("is-touch")) { e.preventDefault(); sendTask(); } });
-    body.append(h("div", { class: "tf-row" }, h("label", { class: "f" }, "Pour", who), h("label", { class: "f" }, "Où", room)), chips, ta, h("div", { class: "tf-actions" }, h("button", { class: "btn primary", id: "taskSend", type: "button", text: "☑ Envoyer la tâche", onclick: sendTask })));
-    card.append(body);
-    return card;
-  }
   function renderTasks(box) {
     if (!msgOk) { box.append(h("div", { class: "dnote", text: "Les tâches utilisent la messagerie : lancez le script SQL « ajout-messages » dans Supabase (voir le guide)." })); return; }
     var L = taskLists();
-    if (!readOnly) box.append(taskForm());
     var section = function (title, list, hint, mineToTick) {
       var wrap = h("div", { class: "table taskbox" }, h("div", { class: "totalhead" }, h("strong", { text: title }), h("span", { class: "meta", text: list.length ? String(list.length) : hint })));
       list.forEach(function (m) {
@@ -7244,18 +7331,16 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
         var it = m.item_id ? items.get(m.item_id) : null;
         wrap.append(h("div", { class: "taskrow" }, cb,
           h("div", { class: "trow-main" }, h("div", { class: "item-name" }, isNextPatient(m.body) ? h("span", { class: "nextp", text: "⏭ Prochain patient" }) : null, m.body),
-            h("div", { class: "meta", text: [who, msgClock(m.created_at), m.done_at ? "fait par " + personLabel(null, m.done_by) + " " + msgClock(m.done_at) : ""].filter(Boolean).join(" · ") }),
+            h("div", { class: "meta", text: [who, msgClock(m.created_at), m.done_at ? "fait par " + personLabel(null, m.done_by) + " " + msgClock(m.done_at) : m.ack_at ? "👍 OK " + personLabel(null, m.ack_by) : ""].filter(Boolean).join(" · ") }),
             it ? h("button", { class: "bitem", type: "button", text: "📦 " + it.name, onclick: function () { openItem(R(it)); } }) : null),
+          (!readOnly && m.author_id !== sessionUser && !m.ack_at && !m.done_at) ? h("button", { class: "btn sm", type: "button", text: "👍 OK", onclick: function () { msgAck(m); } }) : null,
           h("button", { class: "btn sm", type: "button", text: "Conversation", onclick: function () { state.msgThread = msgThreadOf(m); state.msgView = "thread"; goTab("messages"); } })));
       });
       if (!list.length) wrap.append(h("div", { class: "empty", text: hint }));
       return wrap;
     };
     box.append(section("À faire", L.todo, "Rien à faire pour le moment.", true), section("Demandées par moi, en attente", L.sent, "Aucune tâche en attente chez les autres."), section("Faites récemment", L.done, "Aucune tâche terminée."));
-    if (msgFocus && msgFocus.task) { var tt = $("taskTa"); if (tt) { try { tt.focus(); tt.setSelectionRange(Math.min(msgFocus.a, tt.value.length), Math.min(msgFocus.b, tt.value.length)); } catch (e) {} } msgFocus = null; }
-    if (taskWantFocus) { taskWantFocus = false; setTimeout(function () { var t = $("taskTa"); if (t) { t.focus(); } }, 50); }
   }
-  var taskWantFocus = false;
   // ---------- page d'accueil : le choix de l'espace, avec ce qui compte dans chacun ----------
   var homeT = null, greeted = false;
   function homeRefresh() { if (state.tab !== "accueil" && state.tab !== "hub") return; clearTimeout(homeT); homeT = setTimeout(function () { if (state.tab === "accueil" || state.tab === "hub") render(); }, 300); }
@@ -7305,7 +7390,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   $("myNameReset").addEventListener("click", function () { saveMyName(""); });
   $("menuTabs").addEventListener("click", function (e) { var b = e.target.closest && e.target.closest(".mtab"); if (b && b.scrollIntoView) { try { b.scrollIntoView({ inline: "nearest", block: "nearest" }); } catch (er) {} } });
   $("moreBtn").addEventListener("click", function () {
-    drawMyName();
+    drawMyName(); drawMyProfil();
     // le menu reste entièrement visible : jamais sous le menu de gauche ni hors de l'écran
     var m = $("moreMenu"), br = $("moreBtn").getBoundingClientRect(), sbr = $("sidebar").getBoundingClientRect().right, left = sbr > 40 ? sbr + 10 : 12;
     m.style.maxWidth = Math.max(280, Math.min(document.documentElement.clientWidth - 24, br.right - left)) + "px";
@@ -7315,8 +7400,8 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     var day = now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
     var wrap = h("div", { class: "home" });
     var head = h("div", { class: "homehead hero" }, h("span", { class: "hero-orb o1", "aria-hidden": "true" }), h("span", { class: "hero-orb o2", "aria-hidden": "true" }),
-      h("div", { class: "hero-in" }, h("div", { class: "hero-kicker", text: cabinetName }),
-        h("div", { class: "homegreet" }, h("h2", null, "Bonjour ", h("span", { class: "hg-name", text: me && me !== "?" ? me : "" }), " 👋")),
+      h("div", { class: "hero-in" }, h("div", { class: "hero-kicker", text: cabinetName + (myProfil() ? " · " + PROFILS[myProfil()].ic + " " + PROFILS[myProfil()].label : "") }),
+        h("div", { class: "homegreet" }, h("h2", null, "Bonjour ", h("span", { class: "hg-name", text: me && me !== "?" ? me : "" }), myProfil() === "bigboss" ? " 👑" : " 👋")),
         h("div", { class: "hg-date", text: day.charAt(0).toUpperCase() + day.slice(1) })));
     wrap.append(head);
     var plural = function (n, a, b) { return n + " " + (n > 1 ? b : a); };
@@ -7388,8 +7473,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
         { ic: "📄", title: "Facture d'équipement", sub: "Ajouter la facture de vos fauteuils : le matériel est créé", act: function () { goTab("equipements"); setTimeout(openEqInvoice, 250); }, action: true, needsWrite: true }
       ],
       equipe: [
-        { ic: "💬", title: "Messages", sub: "Écrire à l'équipe ou en privé", tab: "messages", status: lineStatus([[st.unread, pl(st.unread, "message non lu", "messages non lus"), "bad"]], msgOk ? "Rien de nouveau" : "À activer") },
-        { ic: "⏭", title: "Demander une tâche", sub: "Ex : une pano au prochain patient", act: function () { taskWantFocus = true; goTab("taches"); }, action: true, needsWrite: true },
+        { ic: "💬", title: "Messages", sub: "Discuter et demander des tâches (OK / C'est fait)", tab: "messages", status: lineStatus([[st.unread, pl(st.unread, "message non lu", "messages non lus"), "bad"]], msgOk ? "Rien de nouveau" : "À activer") },
         { ic: "☑", title: "Tâches", sub: "Ce qu'on vous demande, ce que vous demandez", tab: "taches", status: lineStatus([[st.tasks, pl(st.tasks, "tâche à faire", "tâches à faire"), "warn"]], msgOk ? "Rien à faire" : "À activer") },
         { ic: "🟢", title: "Qui est connecté", sub: "L'équipe en ligne en ce moment", act: function () { var b = $("presBtn"); if (b) b.click(); }, action: true, status: { tone: st.online ? "on" : "", text: st.online ? st.online + " en ligne" : "Personne d'autre" } }
       ]
@@ -10197,12 +10281,23 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
         render();
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "movements" }, function (p) { if (p.new && p.new.cabinet_id === cabinetId) addLogRow(p.new); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "equipe_profils" }, function (p) { if ((p.new && p.new.cabinet_id === cabinetId) || (p.old && p.eventType === "DELETE")) loadPeople(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "equipe_noms" }, function (p) { if ((p.new && p.new.cabinet_id === cabinetId) || (p.old && p.eventType === "DELETE")) loadPeople(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, function (p) {
         if (p.eventType === "DELETE") { msgs = msgs.filter(function (m) { return m.id !== (p.old && p.old.id); }); updateMsgBadge(); if (state.tab === "messages" || state.tab === "taches") render(); return; }
         if (!p.new || p.new.cabinet_id !== cabinetId) return;
         if (p.eventType === "INSERT") addMessage(p.new, p.new.author_id === sessionUser);
-        else { var cur = msgs.filter(function (m) { return m.id === p.new.id; })[0]; if (cur) { Object.assign(cur, p.new); updateMsgBadge(); if (state.tab === "messages" || state.tab === "taches") render(); } }
+        else {
+          var cur = msgs.filter(function (m) { return m.id === p.new.id; })[0];
+          if (cur) {
+            var wasAck = cur.ack_at, wasDone = cur.done_at; Object.assign(cur, p.new);
+            if (cur.kind === "tache" && cur.author_id === sessionUser) {
+              if (cur.done_at && !wasDone) toast("✓ " + personLabel(null, cur.done_by) + " a fait : " + String(cur.body).slice(0, 60));
+              else if (cur.ack_at && !wasAck && !cur.done_at) toast("👍 " + personLabel(null, cur.ack_by) + " : OK — " + String(cur.body).slice(0, 60));
+            }
+            updateMsgBadge(); if (state.tab === "messages" || state.tab === "taches") render();
+          }
+        }
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "lots" }, function (p) {
         if (p.eventType === "DELETE") {
@@ -10795,7 +10890,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
       var st = presStatus(p.user_id), btn = null;
       if (p.user_id !== sessionUser && msgOk && p.email) btn = h("button", { class: "btn sm", type: "button", text: "Écrire", onclick: function () { state.msgThread = p.user_id; state.msgView = "thread"; closePresPop(); goTab("messages"); } });
       return h("div", { class: "pp-row" }, h("span", { class: "pp-av" }, presName(p).charAt(0), h("span", { class: "pdot " + st })),
-        h("div", { class: "pp-main" }, h("div", { class: "pp-name", text: presName(p) + (p.role === "admin" ? " · administrateur" : "") }), h("div", { class: "meta", text: presText(p.user_id) })), btn);
+        h("div", { class: "pp-main" }, h("div", { class: "pp-name", text: presName(p) + (PROFILS[p.profil] ? " · " + PROFILS[p.profil].ic + " " + PROFILS[p.profil].label : "") + (p.role === "admin" ? " · administrateur" : "") }), h("div", { class: "meta", text: presText(p.user_id) })), btn);
     };
     online.forEach(function (p) { pop.append(row(p)); });
     if (!online.length) pop.append(h("div", { class: "meta pp-none", text: "Personne n'est connecté." }));
