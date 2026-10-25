@@ -1510,7 +1510,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v125</div>
+            <div class="menu-who"><span id="who"></span> · v126</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -2528,17 +2528,12 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   </div>
 </dialog>
 
-<script src="vendor/supabase.js"></script>
+<script src="vendor.js"></script>
 <script>window.supabase || document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"><\/script>');</script>
-<script src="vendor/xlsx.full.min.js"></script>
 <script>window.XLSX || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');</script>
-<script src="vendor/pdf.min.js"></script>
 <script>window.__localPdf = !!window.pdfjsLib; window.pdfjsLib || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"><\/script>');</script>
-<script src="vendor/html5-qrcode.min.js"></script>
 <script>window.Html5Qrcode || document.write('<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"><\/script>');</script>
-<script src="vendor/jspdf.umd.min.js"></script>
 <script>window.jspdf || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>');</script>
-<script src="vendor/qrcode.min.js"></script>
 <script>window.qrcode || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script>');</script>
 <script>
 (function () {
@@ -7335,7 +7330,8 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     add("Base de données (scripts SQL)", "Noms et profils dans la liste de l'équipe", !!(p0 && "nom" in p0 && "profil" in p0), "Relancez « ajout-messages.sql » puis « ajout-profils-taches.sql » (mise à jour de la liste de l'équipe).", "ajout-profils-taches.sql", !p0);
     // fichiers du site
     ["sw.js", "manifest.webmanifest", "icon-192.png", "apple-touch-icon.png"].forEach(function (f) { jobs.push(probeFile(f).then(function (ok) { add("Fichiers du site (GitHub)", f, ok, ok ? "" : "Envoyez « " + f + " » sur GitHub, à côté de index.html.", f); })); });
-    jobs.push(probeFile("vendor/supabase.js").then(function (ok) { add("Fichiers du site (GitHub)", "Dossier vendor (bibliothèques hébergées)", ok, ok ? "" : "Facultatif : envoyez le dossier « vendor » sur GitHub (démarrage plus rapide, scans et PDF avec un mauvais réseau).", "vendor", true); }));
+    jobs.push(Promise.all([probeFile("vendor.js"), probeFile("vendor-pdf-worker.js")]).then(function (rs) { var ok = rs[0] && rs[1]; add("Fichiers du site (GitHub)", "Bibliothèques hébergées (vendor.js, vendor-pdf-worker.js)", ok, ok ? "" : "Facultatif : envoyez « vendor.js » et « vendor-pdf-worker.js » sur GitHub (démarrage plus rapide, PDF et QR avec un mauvais réseau).", "vendor.js", true); }));
+    jobs.push(Promise.all(["vendor-ocr-worker.js", "vendor-ocr-core-simd.js", "vendor-ocr-core.js", "fra.traineddata.gz"].map(probeFile)).then(function (rs) { var ok = rs.every(Boolean); add("Fichiers du site (GitHub)", "Lecture des scans hébergée (4 fichiers vendor-ocr… et fra.traineddata.gz)", ok, ok ? "" : "Facultatif : envoyez vendor-ocr-worker.js, vendor-ocr-core-simd.js, vendor-ocr-core.js et fra.traineddata.gz pour lire les factures sans internet.", "vendor-ocr-worker.js", true); }));
     add("Fichiers du site (GitHub)", "Catalogue total (GACD, Méga Dental)", !!TOTAL.ok, TOTAL.ok ? "" : (TOTAL.why || "Envoyez catalogue-index.json et les deux catalogues sur GitHub."), "catalogue-index.json", !TOTAL.failed && !TOTAL.ok);
     // fonctions Supabase (facultatives)
     var fn = function (label, names, hint) { jobs.push(Promise.all(names.map(probeFn)).then(function (rs) { var ok = rs.some(Boolean); add("Services (fonctions Supabase)", label, ok, ok ? "" : hint, "", true); })); };
@@ -9277,14 +9273,18 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   // ---------- scans et photos de factures : lecture du texte par reconnaissance de caractères (OCR) ----------
   var OCR_BASE = "https://cdn.jsdelivr.net/npm/", ocrPromise = null;
   function ocrStatus(t) { var b = $("ocrBar"); if (!t) { b.classList.add("hidden"); b.textContent = ""; return; } b.textContent = t; b.classList.remove("hidden"); }
-  // le lecteur de scans : fichiers du dossier « vendor » s'ils sont sur le site, sinon internet
+  // le lecteur de scans : fichiers « vendor-ocr-… » et « fra.traineddata.gz » s'ils sont sur le site, sinon internet
   var ocrPathsP = null;
+  function simdOk() { try { return typeof WebAssembly === "object" && WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11])); } catch (e) { return false; } }
   function ocrPaths() {
     if (ocrPathsP) return ocrPathsP;
     var abs = function (f) { try { return new URL(f, location.href).href; } catch (e) { return f; } };
-    ocrPathsP = safeFetch(abs("vendor/tesseract/worker.min.js"), { method: "HEAD", cache: "no-store" }).then(function (r) { return !!r.ok; }, function () { return false; }).then(function (local) {
-      return local ? { script: abs("vendor/tesseract/tesseract.min.js"), worker: abs("vendor/tesseract/worker.min.js"), core: abs("vendor/tesseract/core"), lang: abs("vendor/tesseract/lang"), local: true }
-        : { script: OCR_BASE + "tesseract.js@5.1.1/dist/tesseract.min.js", worker: OCR_BASE + "tesseract.js@5.1.1/dist/worker.min.js", core: OCR_BASE + "tesseract.js-core@5.1.1", lang: OCR_BASE + "@tesseract.js-data/fra@1.0.0/4.0.0_best_int", local: false };
+    var core = simdOk() ? "vendor-ocr-core-simd.js" : "vendor-ocr-core.js";
+    var has = function (f) { return safeFetch(abs(f), { method: "HEAD", cache: "no-store" }).then(function (r) { return !!r.ok; }, function () { return false; }); };
+    ocrPathsP = Promise.all([has("vendor-ocr-worker.js"), has(core), has("fra.traineddata.gz")]).then(function (rs) {
+      var cdn = OCR_BASE + "tesseract.js@5.1.1/dist/tesseract.min.js";
+      return rs[0] && rs[1] && rs[2] ? { script: cdn, worker: abs("vendor-ocr-worker.js"), core: abs(core), lang: abs("./").replace(/\/$/, ""), local: true }
+        : { script: cdn, worker: OCR_BASE + "tesseract.js@5.1.1/dist/worker.min.js", core: OCR_BASE + "tesseract.js-core@5.1.1", lang: OCR_BASE + "@tesseract.js-data/fra@1.0.0/4.0.0_best_int", local: false };
     });
     return ocrPathsP;
   }
@@ -12112,7 +12112,8 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   $("teamBtn").addEventListener("click", function () { state.tab = "utilisateurs"; state.filter = "all"; syncTabs(); render(); loadUsers(); });
 
   // ---------- démarrage ----------
-  if (window.pdfjsLib) window.pdfjsLib.GlobalWorkerOptions.workerSrc = window.__localPdf ? new URL("vendor/pdf.worker.min.js", location.href).href : "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  if (window.pdfjsLib) window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  if (window.pdfjsLib && window.__localPdf) { var pdfWorkerLocal = new URL("vendor-pdf-worker.js", location.href).href; safeFetch(pdfWorkerLocal, { method: "HEAD", cache: "no-store" }).then(function (r) { if (r && r.ok) window.pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerLocal; }, function () {}); }
   var configured = typeof cfg.url === "string" && /^https:\/\//.test(cfg.url) && typeof cfg.key === "string" && cfg.key.length > 20;
   if (!configured || !window.supabase) {
     $("login").classList.remove("hidden");
