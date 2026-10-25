@@ -1387,6 +1387,16 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
 .hr-ic { flex:none; width:24px; text-align:center; }
 .hr-name { font-weight:600; }
 .health-row.bad .hr-name { color:var(--bad); }
+
+/* ===== v123 : Stock d'abord, le reste en option ===== */
+.sb-sub { display:flex; flex-direction:column; gap:2px; margin:2px 0 4px 16px; padding-left:8px; border-left:2px solid var(--line); }
+.sb-sub.hidden { display:none; }
+.sb-moretoggle { color:var(--muted); font-size:14.5px; }
+.sb-moretoggle .sb-chev { margin-left:auto; transition:transform .18s; font-size:12px; }
+.sb-moretoggle.open .sb-chev { transform:rotate(180deg); }
+@media (min-width: 761px) and (max-width: 940px) { html.is-touch .sb-sub { margin-left:0; padding-left:0; border-left:0; } html.is-touch .sb-moretoggle .sb-chev { display:none; } }
+.fopts { display:contents; }
+.fopts.hidden { display:none; }
 </style>
 </head>
 <body>
@@ -1480,7 +1490,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v122</div>
+            <div class="menu-who"><span id="who"></span> · v123</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1570,11 +1580,14 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     </div>
     <div class="sb-group" data-mod="stock">
       <button class="tab" role="tab" data-tab="inventaire" data-mod="stock" aria-selected="true"><span class="ti">📦</span><span class="tl">Stock</span></button>
-      <button class="tab" role="tab" data-tab="favoris" data-mod="stock" aria-selected="false"><span class="ti">⭐</span><span class="tl">Favoris</span></button>
-      <button class="tab" role="tab" data-tab="comptage" data-mod="stock" aria-selected="false"><span class="ti">🔢</span><span class="tl">Comptage</span></button>
-      <button class="tab" role="tab" data-tab="kits" data-mod="stock" aria-selected="false"><span class="ti">🧰</span><span class="tl">Kits par acte</span></button>
-      <button class="tab" role="tab" data-tab="historique" data-mod="stock" aria-selected="false"><span class="ti">🕘</span><span class="tl">Historique</span></button>
-      <button type="button" class="tab-act" data-act="recapBtn" data-mod="stock"><span class="ti">📅</span><span class="tl">Récap de la semaine</span></button>
+      <button type="button" class="tab-act sb-moretoggle" id="sbMore" data-mod="stock" aria-expanded="false" aria-controls="sbSub" title="Favoris, comptage, kits, historique, récap, corbeille"><span class="ti">⋯</span><span class="tl">Autres outils</span><span class="sb-chev" aria-hidden="true">▾</span></button>
+      <div class="sb-sub hidden" id="sbSub" data-mod="stock">
+        <button class="tab" role="tab" data-tab="favoris" data-mod="stock" aria-selected="false"><span class="ti">⭐</span><span class="tl">Favoris</span></button>
+        <button class="tab" role="tab" data-tab="comptage" data-mod="stock" aria-selected="false"><span class="ti">🔢</span><span class="tl">Comptage</span></button>
+        <button class="tab" role="tab" data-tab="kits" data-mod="stock" aria-selected="false"><span class="ti">🧰</span><span class="tl">Kits par acte</span></button>
+        <button class="tab" role="tab" data-tab="historique" data-mod="stock" aria-selected="false"><span class="ti">🕘</span><span class="tl">Historique</span></button>
+        <button type="button" class="tab-act" data-act="recapBtn" data-mod="stock"><span class="ti">📅</span><span class="tl">Récap de la semaine</span></button>
+      </div>
     </div>
     <div class="sb-group" data-mod="achats">
       <button class="tab" role="tab" data-tab="commande" data-mod="achats" aria-selected="false"><span class="ti">🛒</span><span class="tl">À commander</span></button>
@@ -1609,9 +1622,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     <button type="button" data-module="materiel" data-mod="accueil"><span>🏥</span><span>Matériel</span></button>
     <button type="button" data-module="equipe" data-mod="accueil"><span>💬</span><span>Équipe</span></button>
     <button type="button" data-go="inventaire" data-mod="stock"><span>📦</span><span>Stock</span></button>
-    <button type="button" data-go="favoris" data-mod="stock"><span>⭐</span><span>Favoris</span></button>
     <button type="button" class="bb-scan" id="bbScan" data-mod="stock materiel"><span>📷</span><span>Scanner</span></button>
-    <button type="button" data-go="comptage" data-mod="stock"><span>🔢</span><span>Comptage</span></button>
     <button type="button" data-go="commande" data-mod="achats"><span>🛒</span><span>À commander</span></button>
     <button type="button" data-go="catalogues" data-mod="achats"><span>📚</span><span>Catalogues</span></button>
     <button type="button" data-act="jrnBtn" data-mod="achats"><span>🧾</span><span>Factures</span></button>
@@ -1635,10 +1646,13 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   <div class="filters hidden" id="filters">
     <div class="ftop">
       <button class="btn sm" id="filtersToggle" aria-expanded="false">Filtres</button>
-      <button class="btn sm toggle" id="hideCatBtn" aria-pressed="false">Masquer le catalogue déjà commandé</button>
-      <button class="btn sm toggle" id="hideTotalBtn" aria-pressed="true">✓ Catalogue total masqué</button>
-      <button class="btn sm toggle" id="hideDupBtn" aria-pressed="false">Masquer les doublons</button>
-      <button class="btn sm toggle" id="selToggle" aria-pressed="false">Sélectionner</button>
+      <button class="btn sm" id="optsToggle" aria-expanded="false" aria-controls="fopts" title="Catalogue, doublons, sélection">⚙ Options</button>
+      <span class="fopts hidden" id="fopts">
+        <button class="btn sm toggle" id="hideCatBtn" aria-pressed="false">Masquer le catalogue déjà commandé</button>
+        <button class="btn sm toggle" id="hideTotalBtn" aria-pressed="true">✓ Catalogue total masqué</button>
+        <button class="btn sm toggle" id="hideDupBtn" aria-pressed="false">Masquer les doublons</button>
+        <button class="btn sm toggle" id="selToggle" aria-pressed="false">Sélectionner</button>
+      </span>
       <span class="sub" id="filtersSummary"></span>
     </div>
     <div class="fpanel hidden" id="fpanel"></div>
@@ -2535,7 +2549,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   var roles = {}, isAdmin = false, loginMode = "in", pwTarget = null, prefsOk = false, welcomePw = false, ownerOk = false;
   var recovering = /type=recovery/.test(location.hash);
   var started = false;
-  var state = { tab: "inventaire", filter: "all", q: "", cat: "", module: "stock", quickRoom: "", msgThread: "equipe", msgView: "list", msgAttach: null, msgTask: false, msgRename: null, msgRenameVal: "", hideCat: false, hideTotal: true, totalSup: {}, totalLimit: 60, totalSig: "", collapsed: {}, tileSort: "usuel", limit: 60, limitSig: "", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
+  var state = { tab: "inventaire", filter: "all", q: "", cat: "", module: "stock", optsOpen: null, quickRoom: "", msgThread: "equipe", msgView: "list", msgAttach: null, msgTask: false, msgRename: null, msgRenameVal: "", hideCat: false, hideTotal: true, totalSup: {}, totalLimit: 60, totalSig: "", collapsed: {}, tileSort: "usuel", limit: 60, limitSig: "", fOpen: false, pr: { period: "12", show: "all", min: "3", more: false }, select: false, sel: new Set(), hideDup: false, f: { supplier: "", status: "", qty: "", location: "", sub: "", sort: "" }, editing: null, adjusting: null, adjSign: 1, confirmDelete: false };
   var EXP_DAYS = 60;
   var chain = Promise.resolve();
 
@@ -7933,7 +7947,17 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     nav.idx = st.s; navRestore(nav.list[st.s]); updateBackBtn();
   });
   $("backBtn").addEventListener("click", function () { if (nav.idx > 0) { try { history.back(); } catch (e) {} } });
-  function render() { renderInner(); navTrack(); }
+  function syncOpts() {
+    var t = $("optsToggle"); if (!t) return;
+    var act = ["hideCatBtn", "hideDupBtn", "selToggle"].filter(function (id) { return $(id).getAttribute("aria-pressed") === "true"; }).length + ($("hideTotalBtn").getAttribute("aria-pressed") === "false" ? 1 : 0);
+    var open = state.optsOpen === null ? act > 0 : state.optsOpen;
+    $("fopts").classList.toggle("hidden", !open);
+    t.setAttribute("aria-expanded", open ? "true" : "false"); t.textContent = "⚙ Options" + (act ? " · " + act : "");
+  }
+  document.addEventListener("click", function (e) {
+    if (e.target && e.target.id === "optsToggle") { state.optsOpen = $("fopts").classList.contains("hidden"); syncOpts(); }
+  });
+  function render() { renderInner(); navTrack(); syncOpts(); }
   function renderInner() {
     dupCache = null;
     scoped(function () { if (state.cat && domainList().indexOf(state.cat) === -1) state.cat = ""; });
@@ -8003,11 +8027,12 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     refreshSbGroups(); if (pres.ch) trackPresence();
   }
   function setModule(m) {
-    if (m === state.module) { if (m !== "accueil" && state.tab !== "hub") goTab("hub"); return; }   // retoucher l'espace en cours : sa vue d'ensemble
+    if (m === state.module) { if (m === "stock") { if (state.tab !== "inventaire") goTab("inventaire"); } else if (m !== "accueil" && state.tab !== "hub") goTab("hub"); return; }   // retoucher l'espace en cours : sa vue d'ensemble (sauf Stock : le stock lui-même)
     var from = tabModule(state.tab); if (from === state.module) lastTabs[state.module] = state.tab;
     applyModule(m);
     if (m === "accueil") goTab("accueil");
     else if (m === "equipe") openTeamDirect();
+    else if (m === "stock") goTab("inventaire");
     else goTab("hub");
   }
   // « Équipe » ouvre tout de suite la messagerie, sur la conversation qui a des messages non lus
@@ -8229,11 +8254,18 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     });
     wrap.append(grid); box.append(wrap);
   }
+  var sbMoreOpen = false; try { sbMoreOpen = localStorage.getItem("simsim_sbmore") === "1"; } catch (e) {}
+  function syncSbMore() {
+    var sub = $("sbSub"); if (!sub) return;
+    var inside = !!sub.querySelector('.tab[aria-selected="true"]'), open = sbMoreOpen || inside;
+    sub.classList.toggle("hidden", !open); $("sbMore").setAttribute("aria-expanded", open ? "true" : "false"); $("sbMore").classList.toggle("open", open);
+  }
+  $("sbMore").addEventListener("click", function () { var sub = $("sbSub"), inside = !!sub.querySelector('.tab[aria-selected="true"]'); sbMoreOpen = sub.classList.contains("hidden"); if (inside && !sbMoreOpen) sbMoreOpen = false; try { localStorage.setItem("simsim_sbmore", sbMoreOpen ? "1" : "0"); } catch (e) {} if (!sbMoreOpen && inside) toast("Vous êtes dans l'un de ces outils : il reste affiché."); syncSbMore(); });
   function syncTabs() {
     document.querySelectorAll(".tab").forEach(function (t) {
       t.setAttribute("aria-selected", t.getAttribute("data-tab") === state.tab ? "true" : "false");
     });
-    refreshSbGroups(); $("sbHub").classList.toggle("on", state.tab === "hub");
+    refreshSbGroups(); $("sbHub").classList.toggle("on", state.tab === "hub"); syncSbMore();
     document.querySelectorAll("#bottombar [data-go]").forEach(function (b) {
       if (b.getAttribute("data-go") === state.tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
