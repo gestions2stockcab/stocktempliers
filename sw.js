@@ -1,9 +1,9 @@
 // SimSimStock - service worker : notifications + ouverture hors connexion.
 // A placer a cote de index.html, a la racine du site. Changer VERSION a chaque nouvelle version de l'appli.
-var VERSION = "v125";
+var VERSION = "v126";
 var SHELL = "simsim-shell-" + VERSION, LIBS = "simsim-libs", DATA = "simsim-data";
 var PRECACHE = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "apple-touch-icon.png",
-  "vendor/supabase.js", "vendor/xlsx.full.min.js", "vendor/pdf.min.js", "vendor/pdf.worker.min.js", "vendor/html5-qrcode.min.js", "vendor/jspdf.umd.min.js", "vendor/qrcode.min.js"];
+  "vendor.js", "vendor-pdf-worker.js"];
 var CDN_HOSTS = ["cdnjs.cloudflare.com", "cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com"];
 
 self.addEventListener("install", function (e) {
@@ -33,7 +33,7 @@ self.addEventListener("fetch", function (e) {
     var path = url.pathname.replace(/\/+$/, "");
     var isPage = req.mode === "navigate" || /\/(index\.html)?$/.test(url.pathname);
     if (isPage) { e.respondWith(networkFirst(req, SHELL, new Request(url.origin + url.pathname), 5000).catch(function () { return caches.match("index.html").then(function (h) { return h || caches.match("./"); }); })); return; }
-    if (/\/vendor\//.test(path) || /\.(png|webmanifest|ico)$/.test(path)) { e.respondWith(cacheFirst(req, SHELL)); return; }
+    if (/\/vendor[^/]*\.js$/.test(path) || /\/fra\.traineddata\.gz$/.test(path) || /\.(png|webmanifest|ico)$/.test(path)) { e.respondWith(cacheFirst(req, SHELL)); return; }
     if (/\/catalogue[^/]*\.json$/.test(path) || /\/catalogues\//.test(path)) { e.respondWith(revalidate(req, SHELL)); return; }
     return;
   }
