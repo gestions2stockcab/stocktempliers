@@ -1397,6 +1397,26 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
 @media (min-width: 761px) and (max-width: 940px) { html.is-touch .sb-sub { margin-left:0; padding-left:0; border-left:0; } html.is-touch .sb-moretoggle .sb-chev { display:none; } }
 .fopts { display:contents; }
 .fopts.hidden { display:none; }
+
+/* ===== v124 : Ma journée ===== */
+.dayboard { margin:0 0 22px; }
+.db-head { display:flex; align-items:center; gap:10px; margin:0 2px 10px; }
+.db-head h3 { margin:0; font-size:22px; letter-spacing:-.02em; }
+.daygrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(310px, 1fr)); gap:14px; }
+.daycard { background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:14px 16px 12px; box-shadow:0 14px 34px -26px rgba(11,27,58,.45); border-top:4px solid var(--line); }
+.daycard.warn { border-top-color:#e0a100; } .daycard.bad { border-top-color:#d93a4b; }
+.dc-head { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.dc-ic { font-size:22px; } .dc-title { font-weight:800; font-size:17px; flex:1; }
+.dc-count { min-width:26px; text-align:center; font-weight:800; font-size:14px; padding:2px 9px; border-radius:99px; background:var(--surface-2); }
+.dc-row { display:flex; gap:10px; align-items:center; padding:10px 0; border-top:1px solid var(--line); }
+.dc-main { flex:1; min-width:0; } .dc-text { font-weight:650; overflow-wrap:anywhere; }
+.dc-text.bad { color:var(--bad); } .dc-text.warn { color:var(--warn); }
+.dc-acts { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+.dc-foot { display:block; margin:8px 0 2px; font-weight:600; }
+.dc-empty { display:flex; gap:14px; align-items:center; padding:18px 20px; border-radius:22px; background:var(--ok-bg); color:var(--ok); font-size:26px; }
+.dc-empty .meta { color:var(--ok); font-size:14px; }
+.daycard .rt-bar { margin:6px 0; }
+@media (max-width: 600px) { .daygrid { grid-template-columns:1fr; } .dc-row { flex-wrap:wrap; } .dc-acts { width:100%; justify-content:flex-start; } }
 </style>
 </head>
 <body>
@@ -1490,7 +1510,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v123</div>
+            <div class="menu-who"><span id="who"></span> · v125</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -2508,12 +2528,18 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   </div>
 </dialog>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="vendor/supabase.js"></script>
+<script>window.supabase || document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"><\/script>');</script>
+<script src="vendor/xlsx.full.min.js"></script>
+<script>window.XLSX || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');</script>
+<script src="vendor/pdf.min.js"></script>
+<script>window.__localPdf = !!window.pdfjsLib; window.pdfjsLib || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"><\/script>');</script>
+<script src="vendor/html5-qrcode.min.js"></script>
+<script>window.Html5Qrcode || document.write('<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"><\/script>');</script>
+<script src="vendor/jspdf.umd.min.js"></script>
+<script>window.jspdf || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>');</script>
+<script src="vendor/qrcode.min.js"></script>
+<script>window.qrcode || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script>');</script>
 <script>
 (function () {
   "use strict";
@@ -7309,6 +7335,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     add("Base de données (scripts SQL)", "Noms et profils dans la liste de l'équipe", !!(p0 && "nom" in p0 && "profil" in p0), "Relancez « ajout-messages.sql » puis « ajout-profils-taches.sql » (mise à jour de la liste de l'équipe).", "ajout-profils-taches.sql", !p0);
     // fichiers du site
     ["sw.js", "manifest.webmanifest", "icon-192.png", "apple-touch-icon.png"].forEach(function (f) { jobs.push(probeFile(f).then(function (ok) { add("Fichiers du site (GitHub)", f, ok, ok ? "" : "Envoyez « " + f + " » sur GitHub, à côté de index.html.", f); })); });
+    jobs.push(probeFile("vendor/supabase.js").then(function (ok) { add("Fichiers du site (GitHub)", "Dossier vendor (bibliothèques hébergées)", ok, ok ? "" : "Facultatif : envoyez le dossier « vendor » sur GitHub (démarrage plus rapide, scans et PDF avec un mauvais réseau).", "vendor", true); }));
     add("Fichiers du site (GitHub)", "Catalogue total (GACD, Méga Dental)", !!TOTAL.ok, TOTAL.ok ? "" : (TOTAL.why || "Envoyez catalogue-index.json et les deux catalogues sur GitHub."), "catalogue-index.json", !TOTAL.failed && !TOTAL.ok);
     // fonctions Supabase (facultatives)
     var fn = function (label, names, hint) { jobs.push(Promise.all(names.map(probeFn)).then(function (rs) { var ok = rs.some(Boolean); add("Services (fonctions Supabase)", label, ok, ok ? "" : hint, "", true); })); };
@@ -7320,6 +7347,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     add("Cet appareil", "Connexion en direct", $("live").classList.contains("on"), "La connexion en direct est coupée : vérifiez internet puis rechargez la page.", "");
     add("Cet appareil", "Appli installée sur l'écran d'accueil", isStandalone(), isIos() ? "Sur iPhone et iPad, c'est nécessaire pour les notifications : Partager, « Sur l'écran d'accueil »." : "Facultatif : Partager ou menu du navigateur, « Installer l'application ».", "", true);
     add("Cet appareil", "Notifications autorisées", pushSupported() && Notification.permission === "granted", !pushSupported() ? "Ce navigateur ne gère pas les notifications." : "Plus, Affichage, « Notifications sur cet appareil » : Activer.", "", true);
+    jobs.push((("serviceWorker" in navigator) ? navigator.serviceWorker.getRegistration().then(function (r) { return !!(r && (r.active || r.waiting)); }, function () { return false; }) : Promise.resolve(false)).then(function (ok) { add("Cet appareil", "Ouverture hors connexion (service worker)", ok, "Envoyez « sw.js » sur GitHub, rechargez l'appli puis relancez ce test.", "sw.js", true); }));
     add("Cet appareil", "Version de l'appli", true, "", "");
     return Promise.all(jobs).then(function () { return out; });
   }
@@ -7357,6 +7385,15 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     var done = function () { toast("Liste copiée : collez-la dans un message."); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, function () { toast("Copie impossible ici."); }); else toast("Copie impossible ici.");
   });
+  // ---------- hors connexion : l'appli s'ouvre quand même, avec les dernières données vues ----------
+  function clearOfflineData() { try { if (window.caches && caches.delete) caches.delete("simsim-data"); } catch (e) {} }
+  function offlineBar(force) {
+    if (force === true || navigator.onLine === false) updBar("📴 Hors connexion : vous voyez les dernières données enregistrées. Les modifications reprendront au retour du réseau.", "warn", []);
+  }
+  window.addEventListener("offline", function () { offlineBar(true); });
+  window.addEventListener("online", function () { updBar("✅ Connexion revenue.", "ok", [{ text: "Actualiser les données", fn: function () { location.reload(); } }], 12000); });
+  if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) { try { navigator.serviceWorker.register("sw.js").catch(function () {}); } catch (e) {} }
+  setTimeout(offlineBar, 1500);
   function renderInventory(box) {
     var rsc = roomScope();
     if (rsc) { box.append(roomHeader(rsc)); if (!items.size && !state.cat) box.append(h("div", { class: "dnote", text: "Cette salle est vide. Cliquez sur un domaine pour y ajouter ses produits, ou utilisez « ＋ Ajouter des produits »." })); }
@@ -8148,6 +8185,69 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
     var m = $("moreMenu"), br = $("moreBtn").getBoundingClientRect(), sbr = $("sidebar").getBoundingClientRect().right, left = sbr > 40 ? sbr + 10 : 12;
     m.style.maxWidth = Math.max(280, Math.min(document.documentElement.clientWidth - 24, br.right - left)) + "px";
   });
+  // ---------- « Ma journée » : ce qui m'attend aujourd'hui, selon mon profil ----------
+  function ago(iso) { var m = Math.round((Date.now() - new Date(iso).getTime()) / 60000); return m < 1 ? "à l'instant" : m < 60 ? "il y a " + m + " min" : m < 1440 ? "il y a " + Math.round(m / 60) + " h" : "il y a " + Math.round(m / 1440) + " j"; }
+  function dayBoard(st) {
+    var me = myProfil(), assist = me === "assistante", boss = me === "dentiste" || me === "bigboss";
+    var L = msgOk ? taskLists() : { todo: [], sent: [], done: [] }, cards = [];
+    var plural = function (n, a, b) { return n + " " + (n > 1 ? b : a); };
+    var card = function (id, ic, title, count, tone, rows, foot) {
+      var c = h("section", { class: "daycard " + (tone || ""), "data-card": id }, h("div", { class: "dc-head" }, h("span", { class: "dc-ic", text: ic }), h("span", { class: "dc-title", text: title }), count ? h("span", { class: "dc-count", text: String(count) }) : null));
+      rows.forEach(function (r) { c.append(r); }); if (foot) c.append(foot); return c;
+    };
+    var link = function (txt, fn) { return h("button", { class: "linkbtn dc-foot", type: "button", text: txt, onclick: fn }); };
+    // tâches qu'on m'a demandées
+    var tasksCard = function () {
+      var rows = L.todo.slice(0, 4).map(function (m) {
+        var acts = h("div", { class: "dc-acts" });
+        if (!readOnly) { if (!m.ack_at) acts.append(h("button", { class: "tbtn ok", type: "button", text: "👍 OK", onclick: function () { msgAck(m); } })); acts.append(h("button", { class: "tbtn done", type: "button", text: "✓ C'est fait", onclick: function () { msgToggleDone(m, true); } })); }
+        return h("div", { class: "dc-row" }, h("div", { class: "dc-main" }, h("div", { class: "dc-text" }, isNextPatient(m.body) ? h("span", { class: "nextp", text: "⏭ Prochain patient" }) : null, m.body), h("div", { class: "meta", text: "De " + personLabel(m.author_id, m.author_email) + " · " + ago(m.created_at) + (m.ack_at ? " · 👍 OK envoyé" : "") })), acts);
+      });
+      return L.todo.length ? card("taches", "☑", "Tâches pour vous", L.todo.length, "warn", rows, L.todo.length > 4 ? link("Voir les " + L.todo.length + " tâches", function () { goTab("taches"); }) : null) : null;
+    };
+    // routines du jour
+    var routinesCard = function () {
+      if (!routinesOk) return null; var iso = localIso(), rows = [], todo = 0;
+      routinesList().forEach(function (r) {
+        if (!routineDue(r) || (r.profil && me && r.profil !== me && me !== "bigboss")) return;
+        var steps = rSteps(r), ticks = rTicks(r, iso), n = ticks.length; if (n >= steps.length) return; todo++;
+        var next = -1; for (var i = 0; i < steps.length; i++) if (!ticks.some(function (c) { return c.etape === i; })) { next = i; break; }
+        rows.push(h("div", { class: "dc-row" }, h("div", { class: "dc-main" }, h("div", { class: "dc-text", text: (r.icon || "") + " " + r.name }), h("div", { class: "rt-bar" }, h("i", { style: "width:" + Math.round(n / steps.length * 100) + "%" })), h("div", { class: "meta", text: n + " / " + steps.length + " · prochaine étape : " + steps[next] })),
+          readOnly ? null : h("button", { class: "tbtn done", type: "button", text: "✓ Fait", title: "Cocher : " + steps[next], onclick: function () { tickRoutine(r, next, true); } })));
+      });
+      return todo ? card("routines", "📋", "Routines à faire", todo, "warn", rows.slice(0, 3), link("Ouvrir les routines", function () { goTab("routines"); })) : null;
+    };
+    // messages non lus
+    var msgCard = function () {
+      if (!msgOk) return null; var rows = [], tot = 0;
+      msgThreads().forEach(function (t) { var n = msgUnread(t); if (!n) return; tot += n; rows.push(h("div", { class: "dc-row" }, h("div", { class: "dc-main" }, h("div", { class: "dc-text", text: msgThreadTitle(t) + (profilBadge(t) ? " " + profilBadge(t) : "") }), h("div", { class: "meta", text: plural(n, "message non lu", "messages non lus") })), h("button", { class: "tbtn", type: "button", text: "Ouvrir", onclick: function () { state.msgThread = t; state.msgView = "thread"; goTab("messages"); } }))); });
+      return tot ? card("messages", "💬", "Messages", tot, "bad", rows.slice(0, 3), null) : null;
+    };
+    // alertes de stock et de matériel (pour le dentiste)
+    var alertCard = function () {
+      var rows = [], add = function (txt, tone, fn) { rows.push(h("div", { class: "dc-row" }, h("div", { class: "dc-main" }, h("div", { class: "dc-text " + (tone || ""), text: txt })), h("button", { class: "tbtn", type: "button", text: "Voir", onclick: fn }))); };
+      if (st.rupt.length) add("Rupture : " + st.rupt.slice(0, 4).join(", ") + (st.rupt.length > 4 ? " (+" + (st.rupt.length - 4) + ")" : ""), "bad", function () { setModule("stock"); });
+      if (st.need) add(plural(st.need, "article à commander", "articles à commander") + (st.needEur ? " · ≈ " + money(st.needEur) + " HT" : ""), "warn", function () { setModule("achats"); goTab("commande"); });
+      if (st.ordered) add(plural(st.ordered, "commande en attente de livraison", "commandes en attente de livraison"), "", function () { goTab("commande"); });
+      if (st.ctl) add(plural(st.ctl, "contrôle de salle à faire", "contrôles de salle à faire"), "bad", function () { goTab("controles"); });
+      if (st.eqLate) add(plural(st.eqLate, "maintenance à prévoir", "maintenances à prévoir"), "warn", function () { goTab("equipements"); });
+      if (st.eqWarr + st.ct) add(plural(st.eqWarr + st.ct, "échéance à suivre (garantie, contrat)", "échéances à suivre (garanties, contrats)"), "", function () { goTab("equipements"); });
+      return rows.length ? card("alertes", "⚠️", "À surveiller", rows.length, st.rupt.length || st.ctl ? "bad" : "warn", rows.slice(0, 5), null) : null;
+    };
+    // mes demandes en attente (je les ai envoyées)
+    var sentCard = function () {
+      if (!L.sent.length) return null;
+      var rows = L.sent.slice(0, 4).map(function (m) { return h("div", { class: "dc-row" }, h("div", { class: "dc-main" }, h("div", { class: "dc-text", text: m.body }), h("div", { class: "meta", text: (m.to_user_id ? "Pour " + msgThreadTitle(m.to_user_id) : "Pour l'équipe") + " · " + (m.ack_at ? "👍 OK reçu" : "⏳ pas encore de réponse") + " · " + ago(m.created_at) }))); });
+      return card("demandes", "⏭", "Mes demandes en attente", L.sent.length, "", rows, link("Voir toutes les tâches", function () { goTab("taches"); }));
+    };
+    var order = assist ? [routinesCard, tasksCard, msgCard, alertCard] : boss ? [alertCard, sentCard, msgCard, tasksCard, routinesCard] : [tasksCard, routinesCard, msgCard, alertCard, sentCard];
+    order.forEach(function (f) { var c = f(); if (c) cards.push(c); });
+    if (assist) cards = cards.filter(function (c) { return c.getAttribute("data-card") !== "alertes" || st.need || st.rupt.length; });
+    var box = h("div", { class: "dayboard" }, h("div", { class: "db-head" }, h("h3", { text: "Ma journée" }), me ? h("span", { class: "profchip", text: PROFILS[me].ic + " " + PROFILS[me].label }) : h("button", { class: "linkbtn", type: "button", text: "Choisir mon profil pour une page adaptée", onclick: function () { $("moreBtn").click(); var t = document.querySelector('.mtab[data-mtab="affichage"]'); if (t) t.click(); } })));
+    if (!cards.length) box.append(h("div", { class: "dc-empty" }, h("span", { text: "🎉" }), h("div", {}, h("b", { text: "Tout est fait pour le moment." }), h("div", { class: "meta", text: "Aucune tâche, routine ou message en attente." }))));
+    else { var grid = h("div", { class: "daygrid" }); cards.forEach(function (c) { grid.append(c); }); box.append(grid); }
+    return box;
+  }
   function renderHome(box) {
     var st = homeStats(), me = myName(), now = new Date();
     var day = now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
@@ -8157,6 +8257,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
         h("div", { class: "homegreet" }, h("h2", null, "Bonjour ", h("span", { class: "hg-name", text: me && me !== "?" ? me : "" }), myProfil() === "bigboss" ? " 👑" : " 👋")),
         h("div", { class: "hg-date", text: day.charAt(0).toUpperCase() + day.slice(1) })));
     wrap.append(head);
+    wrap.append(dayBoard(st));
     var plural = function (n, a, b) { return n + " " + (n > 1 ? b : a); };
     // une seule ligne par espace : ce qui compte le plus, sinon « tout va bien »
     var tiles = [
@@ -9176,24 +9277,36 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   // ---------- scans et photos de factures : lecture du texte par reconnaissance de caractères (OCR) ----------
   var OCR_BASE = "https://cdn.jsdelivr.net/npm/", ocrPromise = null;
   function ocrStatus(t) { var b = $("ocrBar"); if (!t) { b.classList.add("hidden"); b.textContent = ""; return; } b.textContent = t; b.classList.remove("hidden"); }
+  // le lecteur de scans : fichiers du dossier « vendor » s'ils sont sur le site, sinon internet
+  var ocrPathsP = null;
+  function ocrPaths() {
+    if (ocrPathsP) return ocrPathsP;
+    var abs = function (f) { try { return new URL(f, location.href).href; } catch (e) { return f; } };
+    ocrPathsP = safeFetch(abs("vendor/tesseract/worker.min.js"), { method: "HEAD", cache: "no-store" }).then(function (r) { return !!r.ok; }, function () { return false; }).then(function (local) {
+      return local ? { script: abs("vendor/tesseract/tesseract.min.js"), worker: abs("vendor/tesseract/worker.min.js"), core: abs("vendor/tesseract/core"), lang: abs("vendor/tesseract/lang"), local: true }
+        : { script: OCR_BASE + "tesseract.js@5.1.1/dist/tesseract.min.js", worker: OCR_BASE + "tesseract.js@5.1.1/dist/worker.min.js", core: OCR_BASE + "tesseract.js-core@5.1.1", lang: OCR_BASE + "@tesseract.js-data/fra@1.0.0/4.0.0_best_int", local: false };
+    });
+    return ocrPathsP;
+  }
   function loadOcr() {
     if (ocrPromise) return ocrPromise;
-    ocrPromise = new Promise(function (resolve, reject) {
+    ocrPromise = ocrPaths().then(function (P) { return new Promise(function (resolve, reject) {
       var go = function () {
         try {
           window.Tesseract.createWorker("fra", 1, {
-            workerPath: OCR_BASE + "tesseract.js@5.1.1/dist/worker.min.js", corePath: OCR_BASE + "tesseract.js-core@5.1.1", langPath: OCR_BASE + "@tesseract.js-data/fra@1.0.0/4.0.0_best_int",
+            workerPath: P.worker, corePath: P.core, langPath: P.lang,
             logger: function (m) { if (m && m.status === "recognizing text" && typeof m.progress === "number") ocrStatus((ocrStatus.pre || "Lecture du scan") + " : " + Math.round(m.progress * 100) + " %"); }
           }).then(function (w) { return w.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1" }).then(function () { resolve(w); }); }).catch(reject);
         } catch (e) { reject(e); }
       };
       if (window.Tesseract) { go(); return; }
-      var sc = document.createElement("script"); sc.src = OCR_BASE + "tesseract.js@5.1.1/dist/tesseract.min.js"; sc.onload = go; sc.onerror = function () { reject(new Error("chargement")); };
+      var sc = document.createElement("script"); sc.src = P.script; sc.onload = go; sc.onerror = function () { reject(new Error("chargement")); };
       document.head.append(sc);
-    });
-    ocrPromise.catch(function () { ocrPromise = null; });
+    }); });
+    ocrPromise.catch(function () { ocrPromise = null; ocrPathsP = null; });
     return ocrPromise;
   }
+  window.__loadOcr = loadOcr;   // utilisé par les tests
   function ocrLines(data) {
     var ln = String((data && data.text) || "").split("\n").map(function (l) { return l.replace(/[|¦]/g, " ").replace(/\s+/g, " ").trim(); }).filter(Boolean);
     window.__lastOcr = (window.__lastOcr || []).concat([ln]).slice(-6);
@@ -10896,7 +11009,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   $("loginBtn").addEventListener("click", doLogin);
   $("loginPw").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
   $("loginEmail").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
-  $("logoutBtn").addEventListener("click", function () { forgetPushDevice(); if (sb) sb.auth.signOut(); });
+  $("logoutBtn").addEventListener("click", function () { forgetPushDevice(); clearOfflineData(); if (sb) sb.auth.signOut(); });
   var THEMES = ["recept", "frais", "blanc", "gris", "rose", "mauve", "sombre"];
   function applyTheme(t) {
     if (THEMES.indexOf(t) === -1) t = "recept";
@@ -11984,7 +12097,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   $("cabCreate").addEventListener("click", createCabinet);
   $("cabName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); createCabinet(); } });
   $("switchBtn").addEventListener("click", function () { stopData(); cabinetId = null; showPick(false); });
-  $("pickLogout").addEventListener("click", function () { forgetPushDevice(); if (sb) sb.auth.signOut(); });
+  $("pickLogout").addEventListener("click", function () { forgetPushDevice(); clearOfflineData(); if (sb) sb.auth.signOut(); });
   $("loginAlt").addEventListener("click", function () { setLoginMode(loginMode === "join" ? "in" : (loginMode === "in" ? "forgot" : "in")); });
   $("loginJoin").addEventListener("click", function () { setLoginMode("join"); });
   $("loginMagic").addEventListener("click", function () { setLoginMode("magic"); });
@@ -11999,7 +12112,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
   $("teamBtn").addEventListener("click", function () { state.tab = "utilisateurs"; state.filter = "all"; syncTabs(); render(); loadUsers(); });
 
   // ---------- démarrage ----------
-  if (window.pdfjsLib) window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  if (window.pdfjsLib) window.pdfjsLib.GlobalWorkerOptions.workerSrc = window.__localPdf ? new URL("vendor/pdf.worker.min.js", location.href).href : "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   var configured = typeof cfg.url === "string" && /^https:\/\//.test(cfg.url) && typeof cfg.key === "string" && cfg.key.length > 20;
   if (!configured || !window.supabase) {
     $("login").classList.remove("hidden");
