@@ -1,6 +1,6 @@
 // SimSimStock - service worker : notifications + ouverture hors connexion.
 // A placer a cote de index.html, a la racine du site. Changer VERSION a chaque nouvelle version de l'appli.
-var VERSION = "v127";
+var VERSION = "v129";
 var SHELL = "simsim-shell-" + VERSION, LIBS = "simsim-libs", DATA = "simsim-data";
 var PRECACHE = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "apple-touch-icon.png",
   "vendor.js", "vendor-pdf-worker.js"];
@@ -16,8 +16,9 @@ self.addEventListener("message", function (e) { if (e.data && e.data.type === "c
 
 function timeout(ms) { return new Promise(function (_r, rej) { setTimeout(function () { rej(new Error("delai")); }, ms); }); }
 function store(name, req, res) { if (res && (res.ok || res.type === "opaque")) { var copy = res.clone(); caches.open(name).then(function (c) { c.put(req, copy); }).catch(function () {}); } return res; }
-function networkFirst(req, name, key, ms) {
-  return Promise.race([fetch(req), timeout(ms || 6000)]).then(function (res) { return store(name, key || req, res); }, function () {
+function networkFirst(req, name, key, ms, revalidate) {
+  // revalidate : pour la page de l'appli, on demande toujours au serveur s'il y a une version plus récente (sinon le navigateur peut garder l'ancienne 10 minutes)
+  return Promise.race([revalidate ? fetch(req.url, { cache: "no-cache", credentials: "same-origin" }) : fetch(req), timeout(ms || 6000)]).then(function (res) { return store(name, key || req, res); }, function () {
     return caches.open(name).then(function (c) { return c.match(key || req, { ignoreSearch: !!key }); }).then(function (hit) { if (hit) return hit; throw new Error("hors-ligne"); });
   });
 }
@@ -32,7 +33,7 @@ self.addEventListener("fetch", function (e) {
   if (same) {
     var path = url.pathname.replace(/\/+$/, "");
     var isPage = req.mode === "navigate" || /\/(index\.html)?$/.test(url.pathname);
-    if (isPage) { e.respondWith(networkFirst(req, SHELL, new Request(url.origin + url.pathname), 5000).catch(function () { return caches.match("index.html").then(function (h) { return h || caches.match("./"); }); })); return; }
+    if (isPage) { e.respondWith(networkFirst(req, SHELL, new Request(url.origin + url.pathname), 5000, true).catch(function () { return caches.match("index.html").then(function (h) { return h || caches.match("./"); }); })); return; }
     if (/\/vendor[^/]*\.js$/.test(path) || /\/fra\.traineddata\.gz$/.test(path) || /\.(png|webmanifest|ico)$/.test(path)) { e.respondWith(cacheFirst(req, SHELL)); return; }
     if (/\/catalogue[^/]*\.json$/.test(path) || /\/catalogues\//.test(path)) { e.respondWith(revalidate(req, SHELL)); return; }
     return;
