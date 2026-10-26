@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=DM+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=DM+Sans:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <script>
   // ============================================================
@@ -1652,6 +1652,68 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
 .sw-epure-mauve { background:linear-gradient(135deg,#F8F6FD 50%,#6E4FF0 50%); box-shadow:inset 0 0 0 1px #d8d0ef; }
 .sw-epure-graphite { background:linear-gradient(135deg,#E7E8EB 50%,#171A20 50%); box-shadow:inset 0 0 0 1px #c9ccd2; }
 .sw-epure-nuit { background:linear-gradient(135deg,#16191E 50%,#5B8CFF 50%); box-shadow:inset 0 0 0 1px #2f343c; }
+
+/* ===== v135 : encore plus net — icônes au trait, typo centrée, variante « Mission » ===== */
+:root[data-theme^="epure"] { --i-home:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 10.5 12 3l9 7.5%22/%3E%3Cpath d=%22M5 9v12h14V9%22/%3E%3Cpath d=%22M10 21v-6h4v6%22/%3E%3C/svg%3E"); --i-box:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M21 8 12 3 3 8v8l9 5 9-5z%22/%3E%3Cpath d=%22m3 8 9 5 9-5%22/%3E%3Cpath d=%22M12 13v8%22/%3E%3C/svg%3E"); --i-cart:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 4h2l2.4 11h11.2L21 7H6%22/%3E%3Ccircle cx=%229.5%22 cy=%2219.5%22 r=%221.3%22/%3E%3Ccircle cx=%2217.5%22 cy=%2219.5%22 r=%221.3%22/%3E%3C/svg%3E"); --i-tool:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 21V8l8-5 8 5v13z%22/%3E%3Cpath d=%22M12 10v6M9 13h6%22/%3E%3C/svg%3E"); --i-chat:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z%22/%3E%3C/svg%3E"); --i-list:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M9 3h6v3H9z%22/%3E%3Cpath d=%22M7 5H5v16h14V5h-2%22/%3E%3Cpath d=%22M9 12h6M9 16h4%22/%3E%3C/svg%3E"); --i-book:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z%22/%3E%3Cpath d=%22M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3%22/%3E%3C/svg%3E"); --i-receipt:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 3h12v18l-3-2-3 2-3-2-3 2z%22/%3E%3Cpath d=%22M9 8h6M9 12h6M9 16h3%22/%3E%3C/svg%3E"); --i-door:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M5 21V3h11v18%22/%3E%3Cpath d=%22M16 6h3v15H3%22/%3E%3Cpath d=%22M12.5 12v.01%22/%3E%3C/svg%3E"); --i-check:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%229%22/%3E%3Cpath d=%22m8 12 3 3 5-6%22/%3E%3C/svg%3E"); --i-task:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 4h16v16H4z%22/%3E%3Cpath d=%22m8 12 3 3 5-6%22/%3E%3C/svg%3E"); --i-menu:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h16M4 12h16M4 17h16%22/%3E%3C/svg%3E"); --i-scan:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4%22/%3E%3Cpath d=%22M7 12h10%22/%3E%3C/svg%3E"); --i-search:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2211%22 cy=%2211%22 r=%227%22/%3E%3Cpath d=%22m20 20-4-4%22/%3E%3C/svg%3E"); --i-compass:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%229%22/%3E%3Cpath d=%22m15.5 8.5-2 5-5 2 2-5z%22/%3E%3C/svg%3E"); }
+:root[data-theme^="epure"] .bottombar button > span:first-child, :root[data-theme^="epure"] .modbtn .mi-ic, :root[data-theme^="epure"] .kb-ic { font-size:0; width:22px; height:22px; display:inline-block; background:currentColor; filter:none; opacity:1; -webkit-mask:var(--i-box) center / contain no-repeat; mask:var(--i-box) center / contain no-repeat; }
+:root[data-theme^="epure"] .bottombar [data-module="accueil"] > span:first-child, :root[data-theme^="epure"] .modbtn[data-module="accueil"] .mi-ic { -webkit-mask-image:var(--i-home); mask-image:var(--i-home); }
+:root[data-theme^="epure"] .bottombar [data-module="stock"] > span:first-child, :root[data-theme^="epure"] .modbtn[data-module="stock"] .mi-ic { -webkit-mask-image:var(--i-box); mask-image:var(--i-box); }
+:root[data-theme^="epure"] .bottombar [data-go="inventaire"] > span:first-child, :root[data-theme^="epure"] .modbtn[data-go="inventaire"] .mi-ic { -webkit-mask-image:var(--i-box); mask-image:var(--i-box); }
+:root[data-theme^="epure"] .bottombar [data-module="achats"] > span:first-child, :root[data-theme^="epure"] .modbtn[data-module="achats"] .mi-ic { -webkit-mask-image:var(--i-cart); mask-image:var(--i-cart); }
+:root[data-theme^="epure"] .bottombar [data-go="commande"] > span:first-child, :root[data-theme^="epure"] .modbtn[data-go="commande"] .mi-ic { -webkit-mask-image:var(--i-list); mask-image:var(--i-list); }
+:root[data-theme^="epure"] .bottombar [data-module="materiel"] > span:first-child, :root[data-theme^="epure"] .modbtn[data-module="materiel"] .mi-ic { -webkit-mask-image:var(--i-tool); mask-image:var(--i-tool); }
+:root[data-theme^="epure"] .bottombar [data-module="equipe"] > span:first-child, :root[data-theme^="epure"] .modbtn[data-module="equipe"] .mi-ic { -webkit-mask-image:var(--i-chat); mask-image:var(--i-chat); }
+:root[data-theme^="epure"] .bottombar [data-go="messages"] > span:first-child, :root[data-theme^="epure"] .modbtn[data-go="messages"] .mi-ic { -webkit-mask-image:var(--i-chat); mask-image:var(--i-chat); }
+:root[data-theme^="epure"] .bottombar [data-go="catalogues"] > span:first-child, :root[data-theme^="epure"] .modbtn[data-go="catalogues"] .mi-ic { -webkit-mask-image:var(--i-book); mask-image:var(--i-book); }
+:root[data-theme^="epure"] .bottombar [data-act="jrnBtn"] > span:first-child, :root[data-theme^="epure"] .modbtn[data-act="jrnBtn"] .mi-ic { -webkit-mask-image:var(--i-receipt); mask-image:var(--i-receipt); }
+:root[data-theme^="epure"] .bottombar [data-go="salles"] > span:first-child, :root[data-theme^="epure"] .modbtn[data-go="salles"] .mi-ic { -webkit-mask-image:var(--i-door); mask-image:var(--i-door); }
+:root[data-theme^="epure"] .bottombar [data-go="controles"] > span:first-child, :root[data-theme^="epure"] .modbtn[data-go="controles"] .mi-ic { -webkit-mask-image:var(--i-check); mask-image:var(--i-check); }
+:root[data-theme^="epure"] .bottombar [data-go="taches"] > span:first-child, :root[data-theme^="epure"] .modbtn[data-go="taches"] .mi-ic { -webkit-mask-image:var(--i-task); mask-image:var(--i-task); }
+:root[data-theme^="epure"] .bottombar #bbMenu > span:first-child, :root[data-theme^="epure"] .modbtn#bbMenu .mi-ic { -webkit-mask-image:var(--i-menu); mask-image:var(--i-menu); }
+:root[data-theme^="epure"] .bottombar #bbScan > span:first-child, :root[data-theme^="epure"] .modbtn#bbScan .mi-ic { -webkit-mask-image:var(--i-scan); mask-image:var(--i-scan); }
+:root[data-theme^="epure"] .kb-ic { -webkit-mask-image:var(--i-search); mask-image:var(--i-search); width:18px; height:18px; vertical-align:-3px; }
+:root[data-theme^="epure"] .bottombar #bbScan > span:first-child { background:var(--ink); -webkit-mask:none; mask:none; position:relative; width:52px; height:52px; }
+:root[data-theme^="epure"] .bottombar #bbScan > span:first-child::after { content:""; position:absolute; inset:14px; background:var(--surface); -webkit-mask:var(--i-scan) center / contain no-repeat; mask:var(--i-scan) center / contain no-repeat; }
+:root[data-theme^="epure"] .sidebar .ti, :root[data-theme^="epure"] .dc-ic { display:none; }
+:root[data-theme^="epure"] .sidebar .tab-act, :root[data-theme^="epure"] .sidebar .sb-scan { padding-left:14px; }
+@media (min-width: 761px) { :root[data-theme^="epure"] .modbtn { font-size:14px; padding:8px 14px; } }
+:root[data-theme^="epure"] .btn, :root[data-theme^="epure"] .search, :root[data-theme^="epure"] .step:not(.qty .step) { border-radius:4px; }
+:root[data-theme^="epure"] .btn { min-height:40px; }
+:root[data-theme^="epure"] .btn.sm { min-height:34px; }
+:root[data-theme^="epure"] .hero { text-align:center; padding:56px 0 40px; border-bottom:0; }
+:root[data-theme^="epure"] .hero .hero-in { display:flex; flex-direction:column; align-items:center; }
+:root[data-theme^="epure"] .hero h2 { font-size:clamp(40px, 6vw, 64px); line-height:1.05; }
+:root[data-theme^="epure"] .hero .hg-date { margin-top:10px; }
+:root[data-theme^="epure"] .dayboard .db-head h3 { font-size:13px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+:root[data-theme^="epure"] .ht-title { font-size:28px; }
+:root[data-theme^="epure"] .tile-num { font-weight:300; }
+
+:root[data-theme^="epure"] .hg-emo { display:none; }
+@media (min-width: 761px) { :root[data-theme^="epure"] .modbtn .mi-ic { display:none; } }
+/* variante « Mission » : noir intégral, blanc, capitales espacées */
+:root[data-theme="epure-mission"] {
+  color-scheme:dark;
+  --bg:#000000; --surface:#0A0A0B; --surface-2:#161618; --ink:#FFFFFF; --muted:#8E8E93; --line:#232326;
+  --brand:#FFFFFF; --brand-ink:#000000; --brand-hover:#D6D6D6; --hover:#222225; --row-hover:#0F0F11; --faint:#3A3A3E; --bar-bg:rgba(0,0,0,.9);
+  --ok:#30D158; --ok-bg:rgba(48,209,88,.12); --warn:#FFB020; --warn-bg:rgba(255,176,32,.12); --bad:#FF453A; --bad-bg:rgba(255,69,58,.12); --exp:#A78BFA; --exp-bg:rgba(167,139,250,.12);
+}
+:root[data-theme="epure-mission"] body, :root[data-theme="epure-mission"] button, :root[data-theme="epure-mission"] input, :root[data-theme="epure-mission"] select, :root[data-theme="epure-mission"] textarea { font-family:"Barlow","Inter",system-ui,sans-serif; }
+:root[data-theme="epure-mission"] h1, :root[data-theme="epure-mission"] h2, :root[data-theme="epure-mission"] h3, :root[data-theme="epure-mission"] .ht-title, :root[data-theme="epure-mission"] .tile-name, :root[data-theme="epure-mission"] .dc-title { text-transform:uppercase; letter-spacing:.12em; font-weight:500; }
+:root[data-theme="epure-mission"] .hero h2 { letter-spacing:.14em; font-weight:400; font-size:clamp(34px, 5.5vw, 60px); }
+:root[data-theme="epure-mission"] .hero .hg-date, :root[data-theme="epure-mission"] .hero .hero-kicker { text-transform:uppercase; letter-spacing:.24em; font-size:12px; }
+:root[data-theme="epure-mission"] header.top h1 { font-size:16px; letter-spacing:.22em; }
+:root[data-theme="epure-mission"] .btn, :root[data-theme="epure-mission"] .modbtn { text-transform:uppercase; letter-spacing:.12em; font-size:12.5px; font-weight:600; }
+:root[data-theme="epure-mission"] .btn { background:transparent; border:1px solid var(--line); }
+:root[data-theme="epure-mission"] .btn:hover { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+:root[data-theme="epure-mission"] .btn.primary, :root[data-theme="epure-mission"] #addBtn { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+:root[data-theme="epure-mission"] .tile-num, :root[data-theme="epure-mission"] .alert strong, :root[data-theme="epure-mission"] .qty .v { font-family:"Barlow","Inter",sans-serif; font-weight:300; letter-spacing:0; font-variant-numeric:tabular-nums; }
+:root[data-theme="epure-mission"] .alert, :root[data-theme="epure-mission"] .ht-prod, :root[data-theme="epure-mission"] .tile-unit, :root[data-theme="epure-mission"] .tile-alert, :root[data-theme="epure-mission"] .chip { text-transform:uppercase; letter-spacing:.1em; font-size:12px; }
+:root[data-theme="epure-mission"] .tile, :root[data-theme="epure-mission"] .hometile, :root[data-theme="epure-mission"] .table, :root[data-theme="epure-mission"] .daycard, :root[data-theme="epure-mission"] .alerts { border-radius:2px; }
+:root[data-theme="epure-mission"] .tile:hover, :root[data-theme="epure-mission"] .hometile:hover { border-color:var(--ink); }
+:root[data-theme="epure-mission"] dialog { background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:2px; }
+:root[data-theme="epure-mission"] dialog::backdrop { background:rgba(0,0,0,.7); }
+@media (max-width: 600px) { :root[data-theme="epure-mission"] .alert { font-size:10.5px; letter-spacing:.06em; } :root[data-theme="epure-mission"] header.top h1 { letter-spacing:.14em; } }
+.sw-epure-mission { background:linear-gradient(135deg,#000 50%,#fff 50%); box-shadow:inset 0 0 0 1px #555; }
 </style>
 </head>
 <body>
@@ -1739,13 +1801,13 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
           <button class="btn sm presbtn" id="presBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Qui est connecté en ce moment"><span class="pdot" id="presDot"></span><span id="presTxt">Équipe</span></button>
           <div class="prespop hidden" id="presPop" role="dialog" aria-label="Personnes connectées"></div>
         </div>
-        <button class="btn sm" id="kBtn" type="button" title="Rechercher partout (Ctrl + K)" aria-label="Rechercher partout">🔍<span class="kb-lb"> Rechercher</span></button>
+        <button class="btn sm" id="kBtn" type="button" title="Rechercher partout (Ctrl + K)" aria-label="Rechercher partout"><span class="kb-ic">🔍</span><span class="kb-lb"> Rechercher</span></button>
         <button class="btn sm hidden" id="undoBtn" type="button">↶ Annuler</button>
         <span class="sub live" id="live" title="Connexion en direct au cabinet" aria-label="Connexion en direct"><i></i><span id="liveText">Connexion…</span></span>
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v134</div>
+            <div class="menu-who"><span id="who"></span> · v135</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1802,6 +1864,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
                   <button class="sw sw-epure-mauve" data-theme="epure-mauve" title="Épuré mauve" aria-label="Style épuré, mauve"></button>
                   <button class="sw sw-epure-graphite" data-theme="epure-graphite" title="Épuré graphite (gris et noir)" aria-label="Style épuré, graphite"></button>
                   <button class="sw sw-epure-nuit" data-theme="epure-nuit" title="Épuré nuit (sombre)" aria-label="Style épuré sombre"></button>
+                  <button class="sw sw-epure-mission" data-theme="epure-mission" title="Mission (noir et blanc)" aria-label="Style Mission, noir et blanc"></button>
                   <button class="sw sw-recept" data-theme="recept" title="Recept (bleu)" aria-label="Style Recept, bleu"></button>
                   <button class="sw sw-frais" data-theme="frais" title="Frais (turquoise)" aria-label="Style frais, turquoise"></button>
                   <button class="sw sw-blanc" data-theme="blanc" title="Fond blanc" aria-label="Fond blanc"></button>
@@ -1904,14 +1967,14 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   <div class="bar" id="bar">
     <input class="search" id="search" type="search" placeholder="Rechercher un article" aria-label="Rechercher">
     <button class="btn" id="scanBtn">Scanner</button>
-    <button class="btn" id="importBar" title="Importer des articles ou une facture (Excel, CSV ou PDF)">⬆ Importer un fichier</button>
+    <button class="btn" id="importBar" title="Importer des articles ou une facture (Excel, CSV ou PDF)">Importer</button>
     <button class="btn" id="addBtn">+ Ajouter</button>
   </div>
   <div class="roomchips hidden" id="viewBar" role="group" aria-label="Vue du stock : total ou par salle"></div>
   <div class="filters hidden" id="filters">
     <div class="ftop">
       <button class="btn sm" id="filtersToggle" aria-expanded="false">Filtres</button>
-      <button class="btn sm" id="optsToggle" aria-expanded="false" aria-controls="fopts" title="Catalogue, doublons, sélection">⚙ Options</button>
+      <button class="btn sm" id="optsToggle" aria-expanded="false" aria-controls="fopts" title="Catalogue, doublons, sélection">Options</button>
       <span class="fopts hidden" id="fopts">
         <button class="btn sm toggle" id="hideCatBtn" aria-pressed="false">Masquer le catalogue déjà commandé</button>
         <button class="btn sm toggle" id="hideTotalBtn" aria-pressed="true">✓ Catalogue total masqué</button>
@@ -8844,7 +8907,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     var wrap = h("div", { class: "home" });
     var head = h("div", { class: "homehead hero" }, h("span", { class: "hero-orb o1", "aria-hidden": "true" }), h("span", { class: "hero-orb o2", "aria-hidden": "true" }),
       h("div", { class: "hero-in" }, h("div", { class: "hero-kicker", text: cabinetName + (myProfil() ? " · " + PROFILS[myProfil()].ic + " " + PROFILS[myProfil()].label : "") }),
-        h("div", { class: "homegreet" }, h("h2", null, "Bonjour ", h("span", { class: "hg-name", text: me && me !== "?" ? me : "" }), myProfil() === "bigboss" ? " 👑" : " 👋")),
+        h("div", { class: "homegreet" }, h("h2", null, "Bonjour ", h("span", { class: "hg-name", text: me && me !== "?" ? me : "" }), h("span", { class: "hg-emo", text: myProfil() === "bigboss" ? " 👑" : " 👋" }))),
         h("div", { class: "hg-date", text: day.charAt(0).toUpperCase() + day.slice(1) })));
     wrap.append(head);
     wrap.append(dayBoard(st));
@@ -11608,7 +11671,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   $("loginPw").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
   $("loginEmail").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
   $("logoutBtn").addEventListener("click", function () { forgetPushDevice(); clearOfflineData(); if (sb) sb.auth.signOut(); });
-  var THEMES = ["epure", "epure-sable", "epure-menthe", "epure-ocean", "epure-rose", "epure-mauve", "epure-graphite", "epure-nuit", "recept", "frais", "blanc", "gris", "rose", "mauve", "sombre"];
+  var THEMES = ["epure", "epure-sable", "epure-menthe", "epure-ocean", "epure-rose", "epure-mauve", "epure-graphite", "epure-nuit", "epure-mission", "recept", "frais", "blanc", "gris", "rose", "mauve", "sombre"];
   function applyTheme(t) {
     if (THEMES.indexOf(t) === -1) t = "epure";
     document.documentElement.setAttribute("data-theme", t);
