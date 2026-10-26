@@ -1807,7 +1807,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v135</div>
+            <div class="menu-who"><span id="who"></span> · v136</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -7633,7 +7633,19 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   $("pushOn").addEventListener("click", enablePush);
   $("pushOff").addEventListener("click", disablePush);
   $("pushTest").addEventListener("click", function () {
-    navigator.serviceWorker.getRegistration().then(function (reg) { if (!reg) throw new Error("sw"); return reg.showNotification("SimSimStock", { body: "Notification d'essai : tout fonctionne 🎉", icon: "icon-192.png", tag: "essai", data: { tab: "messages" } }); }).then(function () { toast("Essai envoyé : regardez en haut de l'écran."); }, function () { toast("L'essai n'a pas pu être affiché."); });
+    // l'essai vérifie toute la chaîne : appareil inscrit dans la base, fonction d'envoi installée, puis affichage
+    var reg = null, sub = null;
+    navigator.serviceWorker.getRegistration().then(function (r) { if (!r) throw new Error("sw"); reg = r; return r.pushManager.getSubscription(); }).then(function (s) {
+      if (!s) throw new Error("inscription");
+      sub = s;
+      return sb.from("push_abonnements").select("id").eq("user_id", sessionUser).eq("endpoint", s.endpoint).then(function (r) { if (r.error || !(r.data && r.data.length)) return saveSub(s).then(check); });
+    }).then(function () { return probeFn("notifier-push"); }).then(function (fnOk) {
+      return reg.showNotification("SimSimStock", { body: fnOk ? "Notification d'essai : cet appareil recevra les messages de l'équipe." : "Notification d'essai affichée, mais l'envoi automatique n'est pas encore installé.", icon: "icon-192.png", tag: "essai", data: { tab: "messages" } }).then(function () { return fnOk; });
+    }).then(function (fnOk) {
+      toast(fnOk ? "Cet appareil est inscrit et l'envoi est en place : les messages arriveront ici." : "Cet appareil est inscrit, mais la fonction d'envoi « notifier-push » manque dans Supabase : aucun message ne partira tant qu'elle n'est pas installée.");
+    }, function (e) {
+      toast(e && e.message === "inscription" ? "Cet appareil n'est pas inscrit : touchez « Activer »." : "L'essai n'a pas pu aboutir : réessayez, ou désactivez puis réactivez les notifications.");
+    });
   });
   ["pushMsg", "pushTasks", "pushRappels"].forEach(function (id) { $(id).addEventListener("change", function () { if (pushSubNow) sb.from("push_abonnements").update({ prefs: pushPrefsNow() }).eq("user_id", sessionUser).eq("endpoint", pushSubNow).then(function () { toast("Préférences enregistrées."); }, function () {}); }); });
   if ("serviceWorker" in navigator && navigator.serviceWorker.addEventListener) navigator.serviceWorker.addEventListener("message", function (e) { if (e.data && e.data.type === "go" && e.data.tab) goTab(e.data.tab); });
