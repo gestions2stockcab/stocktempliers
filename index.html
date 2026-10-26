@@ -1819,7 +1819,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v138</div>
+            <div class="menu-who"><span id="who"></span> · v139</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -11780,14 +11780,18 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
       if (res.error) { prefsOk = false; return; }
       prefsOk = true;
       if (window.__styleMigrated) { window.__styleMigrated = false; applyTheme("epure"); saveThemePref("epure"); return; }
-      if (res.data && THEMES.indexOf(res.data.theme) !== -1) applyTheme(res.data.theme);
+      // le style choisi sur cet appareil n'a pas encore été enregistré : on l'envoie au lieu de le remplacer par l'ancien
+      var local = "", synced = ""; try { local = localStorage.getItem("simsim_theme") || ""; synced = localStorage.getItem("simsim_theme_sync") || ""; } catch (e) {}
+      var server = res.data && THEMES.indexOf(res.data.theme) !== -1 ? res.data.theme : "";
+      if (THEMES.indexOf(local) !== -1 && local !== server && synced !== local) { saveThemePref(local); return; }
+      if (server) { applyTheme(server); try { localStorage.setItem("simsim_theme_sync", server); } catch (e) {} }
     }).catch(function () { prefsOk = false; });
   }
   function saveThemePref(t) {
     if (!db || !prefsOk || !sessionUser) return;
     sb.from("user_prefs").upsert({ user_id: sessionUser, theme: t, updated_at: new Date().toISOString() }).then(function (res) {
-      if (res.error) prefsOk = false;
-    }).catch(function () { prefsOk = false; });
+      if (!res.error) { try { localStorage.setItem("simsim_theme_sync", t); } catch (e) {} }
+    }, function () {});
   }
   document.querySelectorAll(".sw").forEach(function (b) {
     b.addEventListener("click", function (e) {
