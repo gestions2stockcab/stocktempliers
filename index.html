@@ -1807,7 +1807,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v136</div>
+            <div class="menu-who"><span id="who"></span> · v137</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -7589,6 +7589,8 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   // ---------- notifications : messages et tâches reçus même quand l'appli est fermée ----------
   var VAPID_PUBLIC = "BGUEaySZ3FL4q1g0SuPWCR_UFbIDrrUAja2jGgOPcgCXxQ1hdROhtpZXWLq9JXxKs4beZ5uruSgcCSnSn6ldK-Q", pushSubNow = null, goParam = "";
   try { goParam = new URLSearchParams(location.search).get("go") || ""; } catch (e) {}
+  // fonction Supabase qui envoie les notifications (code : notifier-push.ts ; installée sous l'adresse « quick-action »)
+  var PUSH_FN = "quick-action";
   function pushSupported() { return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window; }
   function isIos() { return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); }
   function isStandalone() { return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true; }
@@ -7639,10 +7641,10 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
       if (!s) throw new Error("inscription");
       sub = s;
       return sb.from("push_abonnements").select("id").eq("user_id", sessionUser).eq("endpoint", s.endpoint).then(function (r) { if (r.error || !(r.data && r.data.length)) return saveSub(s).then(check); });
-    }).then(function () { return probeFn("notifier-push"); }).then(function (fnOk) {
+    }).then(function () { return probeFn(PUSH_FN); }).then(function (fnOk) {
       return reg.showNotification("SimSimStock", { body: fnOk ? "Notification d'essai : cet appareil recevra les messages de l'équipe." : "Notification d'essai affichée, mais l'envoi automatique n'est pas encore installé.", icon: "icon-192.png", tag: "essai", data: { tab: "messages" } }).then(function () { return fnOk; });
     }).then(function (fnOk) {
-      toast(fnOk ? "Cet appareil est inscrit et l'envoi est en place : les messages arriveront ici." : "Cet appareil est inscrit, mais la fonction d'envoi « notifier-push » manque dans Supabase : aucun message ne partira tant qu'elle n'est pas installée.");
+      toast(fnOk ? "Cet appareil est inscrit et l'envoi est en place : les messages arriveront ici." : "Cet appareil est inscrit, mais la fonction d'envoi des notifications ne répond pas dans Supabase : aucun message ne partira tant qu'elle n'est pas installée.");
     }, function (e) {
       toast(e && e.message === "inscription" ? "Cet appareil n'est pas inscrit : touchez « Activer »." : "L'essai n'a pas pu aboutir : réessayez, ou désactivez puis réactivez les notifications.");
     });

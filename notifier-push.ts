@@ -1,4 +1,4 @@
-// SimSimStock - envoi des notifications (fonction Supabase, appelee par un « Database Webhook » sur la table messages)
+// SimSimStock - envoi des notifications (fonction Supabase installée sous l'adresse « quick-action », appelée par le déclencheur notifier_push_envoyer sur la table messages)
 // - nouveau message ou nouvelle tache : la personne concernee (ou toute l'equipe du cabinet) est prevenue ;
 // - reponse « OK » ou « C'est fait » sur une tache : l'auteur de la tache est prevenu.
 // Secrets a definir dans Supabase : RECAP_SECRET (le meme que le recap du lundi), VAPID_PUBLIC, VAPID_PRIVATE, VAPID_SUBJECT (par exemple mailto:vous@exemple.fr).
