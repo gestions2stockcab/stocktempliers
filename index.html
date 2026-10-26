@@ -1489,6 +1489,26 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
 .emo-grid { display:grid; grid-template-columns:repeat(8, 1fr); gap:2px; max-height:210px; overflow:auto; }
 .emo { border:0; background:transparent; border-radius:10px; font-size:24px; line-height:1; padding:7px 0; cursor:pointer; }
 .emo:hover, .emo:focus-visible { background:var(--surface-2); outline:none; }
+
+/* ===== v130 : registre de stérilisation, rappels ===== */
+.ster-today { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:14px; margin:12px 0; }
+.ster-card { background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:14px 18px; box-shadow:var(--shadow-card); display:flex; flex-direction:column; gap:10px; }
+.ster-name { font-weight:800; font-size:18px; }
+.ster-chips { display:flex; gap:6px; flex-wrap:wrap; }
+.ster-chip { font-size:13px; font-weight:700; padding:3px 11px; border-radius:99px; background:var(--surface-2); color:var(--muted); }
+.ster-chip.ok { background:var(--ok-bg); color:var(--ok); } .ster-chip.bad { background:var(--bad-bg); color:var(--bad); } .ster-chip.wait { background:var(--warn-bg); color:var(--warn); }
+.ster-sum { margin:4px 2px 8px; }
+.ster-row { display:grid; grid-template-columns:96px minmax(90px, 1fr) minmax(140px, 1.2fr) minmax(160px, 2fr) minmax(120px, 1fr); gap:10px; align-items:start; padding:10px 16px; border-top:1px solid var(--line); font-size:14.5px; }
+.ster-head { background:var(--surface-2); color:var(--muted); font-size:12.5px; font-weight:700; }
+.ster-row.nc { background:var(--bad-bg); }
+.ster-res-b.non_conforme { color:var(--bad); } .ster-res-b.conforme { color:var(--ok); }
+.ster-by { display:flex; gap:6px; align-items:center; justify-content:space-between; }
+.ster-res { display:flex; gap:10px; margin:10px 0; flex-wrap:wrap; }
+.ster-radio { display:flex; gap:8px; align-items:center; padding:10px 16px; border:1px solid var(--line); border-radius:99px; font-weight:700; cursor:pointer; }
+.ster-radio.ok:has(input:checked) { background:var(--ok-bg); border-color:var(--ok); color:var(--ok); }
+.ster-radio.bad:has(input:checked) { background:var(--bad-bg); border-color:var(--bad); color:var(--bad); }
+#sterDlg select, #sterDlg input[type=text], #sterDlg input[type=datetime-local], #sterDlg textarea { width:100%; border:1px solid var(--line); border-radius:12px; padding:9px 12px; font:inherit; background:var(--surface); color:var(--ink); }
+@media (max-width: 760px) { .ster-row { grid-template-columns:1fr 1fr; } .ster-head { display:none; } }
 </style>
 </head>
 <body>
@@ -1582,7 +1602,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v129</div>
+            <div class="menu-who"><span id="who"></span> · v130</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1627,7 +1647,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
               <div class="menu-sw" id="pushBox"><div class="meta">🔔 Notifications sur cet appareil</div>
                 <div class="push-state" id="pushState"></div>
                 <div class="nameedit"><button class="btn sm primary" id="pushOn" type="button">Activer</button><button class="btn sm hidden" id="pushTest" type="button">Envoyer un essai</button><button class="btn sm hidden" id="pushOff" type="button">Désactiver</button></div>
-                <div class="push-prefs hidden" id="pushPrefs"><label class="chk"><input type="checkbox" id="pushMsg" checked> Messages</label><label class="chk"><input type="checkbox" id="pushTasks" checked> Tâches et réponses</label></div>
+                <div class="push-prefs hidden" id="pushPrefs"><label class="chk"><input type="checkbox" id="pushMsg" checked> Messages</label><label class="chk"><input type="checkbox" id="pushTasks" checked> Tâches et réponses</label><label class="chk"><input type="checkbox" id="pushRappels" checked> Rappels (routines, péremptions, échéances)</label></div>
               </div>
               <div class="menu-sw"><div class="meta">Couleur de l'appli</div>
         <div class="swatches" role="group" aria-label="Couleur de fond">
@@ -1694,6 +1714,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
       <button class="tab" role="tab" data-tab="salles" data-mod="materiel" aria-selected="false"><span class="ti">🏠</span><span class="tl">Salles</span></button>
       <button class="tab" role="tab" data-tab="controles" data-mod="materiel" aria-selected="false"><span class="ti">✅</span><span class="tl">Contrôles<span id="ctlBadge"></span></span></button>
       <button class="tab" role="tab" data-tab="equipements" data-mod="materiel" aria-selected="false"><span class="ti">🔧</span><span class="tl">Équipements</span></button>
+      <button class="tab" role="tab" data-tab="sterilisation" data-mod="materiel" aria-selected="false"><span class="ti">♨️</span><span class="tl">Stérilisation</span></button>
     </div>
     <div class="sb-group" data-mod="equipe">
       <button class="tab" role="tab" data-tab="messages" data-mod="equipe" aria-selected="false"><span class="ti">💬</span><span class="tl">Messages <span class="msgbadge hidden" id="msgBadge" aria-label="messages non lus"></span></span></button>
@@ -2065,6 +2086,29 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   </div>
 </dialog>
 
+<dialog id="sterDlg">
+  <div class="dlg">
+    <h2 id="sterTitle">Enregistrer dans le registre</h2>
+    <div class="sub">La date, l'heure et votre nom sont enregistrés automatiquement. Une ligne ne peut plus être modifiée ensuite.</div>
+    <label class="f">Quoi<select id="sterType"></select></label>
+    <div class="rt-row">
+      <label class="f">Appareil<select id="sterApp"></select></label>
+      <label class="f" id="sterAppFreeWrap">Nom de l'appareil<input id="sterAppFree" type="text" maxlength="60" placeholder="Ex : Autoclave Cabinet 1" autocomplete="off"></label>
+    </div>
+    <div class="rt-row" id="sterCycleRow">
+      <label class="f">Programme<select id="sterProg"></select></label>
+      <label class="f">N° du cycle<input id="sterNum" type="text" maxlength="20" placeholder="Ex : 1042" autocomplete="off" inputmode="numeric"></label>
+    </div>
+    <label class="f" id="sterContenuWrap">Contenu<input id="sterContenu" type="text" maxlength="120" list="sterContenuList" placeholder="Ex : Cassette de soins, plateau chirurgie" autocomplete="off"></label>
+    <datalist id="sterContenuList"><option value="Cassette de soins"><option value="Cassette de chirurgie"><option value="Plateau d'examen"><option value="Pièces à main"><option value="Contenu mixte"></datalist>
+    <div class="ster-res" role="radiogroup" aria-label="Résultat"><label class="ster-radio ok"><input type="radio" name="sterRes" value="conforme" checked> ✓ Conforme</label><label class="ster-radio bad"><input type="radio" name="sterRes" value="non_conforme"> ⚠ Non conforme</label></div>
+    <label class="f">Remarque <span class="meta" id="sterNoteHint">(facultative)</span><textarea id="sterNote" rows="2" maxlength="300" placeholder="Obligatoire si non conforme : ce qui a été constaté, ce qui a été fait"></textarea></label>
+    <label class="f">Date et heure <span class="meta">(jusqu'à 7 jours en arrière, jamais dans le futur)</span><input id="sterWhen" type="datetime-local"></label>
+    <div class="umsg bad hidden" id="sterErr" role="alert"></div>
+    <div class="dlg-actions"><button class="btn" id="sterCancel" type="button">Annuler</button><button class="btn primary" id="sterSave" type="button">Enregistrer et signer</button></div>
+  </div>
+</dialog>
+
 <dialog id="repDlg">
   <div class="dlg">
     <h2>📄 Rapport mensuel</h2>
@@ -2084,6 +2128,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     <div class="rt-row">
       <label class="f">Quand<select id="rtFreq"><option value="quotidien">Chaque jour</option><option value="hebdo">Chaque semaine</option><option value="mensuel">Chaque mois</option></select></label>
       <label class="f hidden" id="rtJourWrap">Le<select id="rtJour"></select></label>
+      <label class="f">Rappel<select id="rtRappel"><option value="">Aucun rappel</option><option value="10">Si pas terminée à 10 h</option><option value="12">Si pas terminée à 12 h</option><option value="16">Si pas terminée à 16 h</option><option value="17">Si pas terminée à 17 h</option><option value="18">Si pas terminée à 18 h</option><option value="19">Si pas terminée à 19 h</option><option value="20">Si pas terminée à 20 h</option></select></label>
       <label class="f">Pour<select id="rtProfil"><option value="">Tout le monde</option><option value="assistante">🧑‍⚕️ L'assistante</option><option value="dentiste">🦷 Le dentiste</option></select></label>
     </div>
     <label class="f">Étapes (une par ligne)<textarea id="rtSteps" rows="7" placeholder="Allumer les unités&#10;Purger les eaux&#10;…"></textarea></label>
@@ -4239,7 +4284,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   function goTab(t) { var b = document.querySelector('.tab[data-tab="' + t + '"]'); if (b) b.click(); }   // le clic passe seul dans l'outil qui contient cet onglet
   function kActions() {
     var a = [
-      ["Stock", "section", function () { goTab("inventaire"); }], ["Favoris", "section", function () { goTab("favoris"); }], ["Messages de l'équipe", "section", function () { goTab("messages"); }], ["Kits par acte", "section", function () { goTab("kits"); }], ["Réception de commande (bon de livraison)", "section", function () { goTab("reception"); }], ["Routines (ouverture, fermeture…)", "section", function () { goTab("routines"); }], ["Santé de l'installation", "section", function () { if (isAdmin) openHealth(); else toast("Réservé aux administrateurs."); }], ["Accueil", "section", function () { setModule("accueil"); }], ["Catalogues fournisseurs", "section", function () { goTab("catalogues"); }],
+      ["Stock", "section", function () { goTab("inventaire"); }], ["Favoris", "section", function () { goTab("favoris"); }], ["Messages de l'équipe", "section", function () { goTab("messages"); }], ["Kits par acte", "section", function () { goTab("kits"); }], ["Réception de commande (bon de livraison)", "section", function () { goTab("reception"); }], ["Registre de stérilisation", "section", function () { goTab("sterilisation"); }], ["Routines (ouverture, fermeture…)", "section", function () { goTab("routines"); }], ["Santé de l'installation", "section", function () { if (isAdmin) openHealth(); else toast("Réservé aux administrateurs."); }], ["Accueil", "section", function () { setModule("accueil"); }], ["Catalogues fournisseurs", "section", function () { goTab("catalogues"); }],
       ["À commander", "section", function () { goTab("commande"); }], ["Comptage", "section", function () { goTab("comptage"); }],
       ["Historique", "section", function () { goTab("historique"); }], ["Données et prévisions", "section", function () { goTab("donnees"); }],
       ["Corbeille", "section", function () { goTab("corbeille"); }],
@@ -7082,9 +7127,9 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   var routines = [], rCoches = [], routinesOk = false, rtEdit = null;
   var RT_DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
   var RT_TEMPLATES = [
-    { icon: "🌅", name: "Ouverture du cabinet", freq: "quotidien", jour: null, profil: "assistante", etapes: ["Allumer les unités, le compresseur et l'aspiration", "Purger les eaux des unités", "Lancer le test et le premier cycle du stérilisateur", "Contrôler les salles (lumière, aspirations, plateaux)", "Vérifier l'agenda et les urgences du jour"] },
-    { icon: "🌙", name: "Fermeture du cabinet", freq: "quotidien", jour: null, profil: "assistante", etapes: ["Désinfecter les salles et les crachoirs", "Lancer le dernier cycle de stérilisation", "Éteindre les unités, l'aspiration et le compresseur", "Sortir les déchets (DASRI si besoin)", "Fermer les fenêtres, éteindre les lumières, activer l'alarme"] },
-    { icon: "🧴", name: "Stérilisation de fin de journée", freq: "quotidien", jour: null, profil: "assistante", etapes: ["Vider le bac à ultrasons et le nettoyer", "Ranger les instruments stérilisés", "Remplir le registre de traçabilité", "Vérifier le niveau d'eau du stérilisateur"] },
+    { icon: "🌅", name: "Ouverture du cabinet", freq: "quotidien", jour: null, profil: "assistante", rappel: "", etapes: ["Allumer les unités, le compresseur et l'aspiration", "Purger les eaux des unités", "Lancer le test et le premier cycle du stérilisateur", "Contrôler les salles (lumière, aspirations, plateaux)", "Vérifier l'agenda et les urgences du jour"] },
+    { icon: "🌙", name: "Fermeture du cabinet", freq: "quotidien", jour: null, profil: "assistante", rappel: "18", etapes: ["Désinfecter les salles et les crachoirs", "Lancer le dernier cycle de stérilisation", "Éteindre les unités, l'aspiration et le compresseur", "Sortir les déchets (DASRI si besoin)", "Fermer les fenêtres, éteindre les lumières, activer l'alarme"] },
+    { icon: "🧴", name: "Stérilisation de fin de journée", freq: "quotidien", jour: null, profil: "assistante", rappel: "17", etapes: ["Vider le bac à ultrasons et le nettoyer", "Ranger les instruments stérilisés", "Remplir le registre de traçabilité", "Vérifier le niveau d'eau du stérilisateur"] },
     { icon: "🔬", name: "Contrôle hebdomadaire de l'autoclave", freq: "hebdo", jour: 1, profil: "", etapes: ["Test de pénétration de la vapeur (Bowie-Dick ou hélix)", "Nettoyer le joint et le filtre", "Noter le résultat dans le registre"] }
   ];
   function pad2(n) { return n < 10 ? "0" + n : String(n); }
@@ -7136,7 +7181,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     var card = h("div", { class: "rtcard" + (done ? " done" : "") + (due ? "" : " off") });
     var last = ticks.slice().sort(function (a, b) { return String(a.at) < String(b.at) ? 1 : -1; })[0];
     card.append(h("div", { class: "rt-top" }, h("span", { class: "rt-ic", text: r.icon || "✅" }),
-      h("div", { class: "rt-id" }, h("div", { class: "rt-name", text: r.name }), h("div", { class: "meta", text: (r.freq === "hebdo" ? "Chaque " + RT_DAYS[(r.jour || 1) - 1] : r.freq === "mensuel" ? "Le " + (r.jour || 1) + " du mois" : "Chaque jour") + (r.profil ? " · " + PROFILS[r.profil].ic + " " + PROFILS[r.profil].label : "") })),
+      h("div", { class: "rt-id" }, h("div", { class: "rt-name", text: r.name }), h("div", { class: "meta", text: (r.rappel_heure ? "🔔 rappel à " + r.rappel_heure + " h · " : "") + (r.freq === "hebdo" ? "Chaque " + RT_DAYS[(r.jour || 1) - 1] : r.freq === "mensuel" ? "Le " + (r.jour || 1) + " du mois" : "Chaque jour") + (r.profil ? " · " + PROFILS[r.profil].ic + " " + PROFILS[r.profil].label : "") })),
       h("span", { class: "rt-prog" + (done ? " ok" : ""), text: done ? "✅ Terminée" : ticks.length + " / " + steps.length }),
       isAdmin && !readOnly ? h("button", { class: "btn sm", type: "button", title: "Modifier la routine", "aria-label": "Modifier " + r.name, text: "✎", onclick: function () { openRoutineForm(r); } }) : null));
     card.append(h("div", { class: "rt-bar" }, h("i", { style: "width:" + (steps.length ? Math.round(ticks.length / steps.length * 100) : 0) + "%" })));
@@ -7185,7 +7230,8 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   }
   function addRoutineTemplates() {
     var rows = RT_TEMPLATES.map(function (t, i) { return { cabinet_id: cabinetId, name: t.name, icon: t.icon, freq: t.freq, jour: t.jour, etapes: t.etapes, profil: t.profil, position: i }; });
-    sb.from("routines").insert(rows).then(function (r) { if (r.error) { toast("Les routines n'ont pas pu être ajoutées."); return; } toast("Routines types ajoutées : adaptez-les avec ✎."); loadRoutines(); }, function () { toast("Connexion impossible."); });
+    var withR = rows.map(function (rw, i) { return Object.assign({ rappel_heure: RT_TEMPLATES[i].rappel || "" }, rw); });
+    sb.from("routines").insert(withR).then(function (r) { if (r.error && /rappel_heure/i.test(String(r.error.message || ""))) return sb.from("routines").insert(rows); return r; }).then(function (r) { if (r.error) { toast("Les routines n'ont pas pu être ajoutées."); return; } toast("Routines types ajoutées : adaptez-les avec ✎."); loadRoutines(); }, function () { toast("Connexion impossible."); });
   }
   function drawRtJour() {
     var f = $("rtFreq").value, sel = $("rtJour"), w = $("rtJourWrap"); sel.textContent = "";
@@ -7199,7 +7245,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     rtEdit = r || null; $("rtTitle").textContent = r ? "Modifier la routine" : "Nouvelle routine";
     $("rtIcon").value = r ? r.icon || "✅" : "✅"; $("rtName").value = r ? r.name : ""; $("rtFreq").value = r ? r.freq : "quotidien"; drawRtJour();
     if (r && r.jour) $("rtJour").value = String(r.jour);
-    $("rtProfil").value = r ? r.profil || "" : ""; $("rtSteps").value = r ? rSteps(r).join("\n") : "";
+    $("rtRappel").value = r ? r.rappel_heure || "" : ""; $("rtProfil").value = r ? r.profil || "" : ""; $("rtSteps").value = r ? rSteps(r).join("\n") : "";
     $("rtErr").classList.add("hidden"); $("rtSave").disabled = false; $("rtDel").classList.toggle("hidden", !r); $("rtDel").textContent = "Supprimer";
     $("rtDlg").showModal();
   }
@@ -7212,7 +7258,8 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     if (steps.length > 50) { fail("50 étapes au maximum."); return; }
     var f = $("rtFreq").value, row = { name: name, icon: ($("rtIcon").value || "✅").trim().slice(0, 4) || "✅", freq: f, jour: f === "quotidien" ? null : parseInt($("rtJour").value, 10) || 1, etapes: steps, profil: $("rtProfil").value };
     $("rtSave").disabled = true; err.classList.add("hidden");
-    var req = rtEdit ? sb.from("routines").update(row).eq("id", rtEdit.id) : sb.from("routines").insert(Object.assign({ cabinet_id: cabinetId, position: routines.length }, row));
+    var send = function (rw) { return rtEdit ? sb.from("routines").update(rw).eq("id", rtEdit.id) : sb.from("routines").insert(Object.assign({ cabinet_id: cabinetId, position: routines.length }, rw)); };
+    var req = send(Object.assign({ rappel_heure: $("rtRappel").value }, row)).then(function (res) { if (res.error && /rappel_heure/i.test(String(res.error.message || ""))) { if ($("rtRappel").value) toast("Le rappel n'est pas encore activé : lancez le script SQL « ajout-rappels »."); return send(row); } return res; });
     req.then(function (r) { if (r.error) throw r.error; $("rtDlg").close(); toast(rtEdit ? "Routine modifiée." : "Routine créée."); loadRoutines(); })
       .catch(function (e) { fail(/relation|does not exist|schema cache/i.test(String((e && e.message) || "")) ? "Lancez le script SQL « ajout-routines » dans Supabase." : "L'enregistrement a échoué : seul l'administrateur modifie les routines."); });
   });
@@ -7334,7 +7381,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   function b64ToU8(b64) { var pad = "=".repeat((4 - b64.length % 4) % 4), raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/")), out = new Uint8Array(raw.length); for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out; }
   function pushKey() { return (settings && settings.vapid_public) || VAPID_PUBLIC; }
   function swReady() { return navigator.serviceWorker.register("sw.js").then(function () { return navigator.serviceWorker.ready; }); }
-  function pushPrefsNow() { return { messages: $("pushMsg").checked, taches: $("pushTasks").checked }; }
+  function pushPrefsNow() { return { messages: $("pushMsg").checked, taches: $("pushTasks").checked, rappels: $("pushRappels").checked }; }
   function saveSub(sub) {
     var j = sub.toJSON ? sub.toJSON() : sub; pushSubNow = j.endpoint;
     return sb.from("push_abonnements").upsert({ user_id: sessionUser, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, ua: String(navigator.userAgent || "").slice(0, 160), prefs: pushPrefsNow() }, { onConflict: "user_id,endpoint" }).then(function (r) { if (r && r.error) throw r.error; });
@@ -7348,7 +7395,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     navigator.serviceWorker.getRegistration().then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) {
       pushSubNow = sub ? (sub.endpoint || (sub.toJSON && sub.toJSON().endpoint)) : null;
       show(sub ? "✅ Activées sur cet appareil." : "Désactivées sur cet appareil.", !!sub);
-      if (sub) sb.from("push_abonnements").select("prefs").eq("user_id", sessionUser).eq("endpoint", pushSubNow).then(function (r) { var row = r && r.data && r.data[0]; if (row && row.prefs) { $("pushMsg").checked = row.prefs.messages !== false; $("pushTasks").checked = row.prefs.taches !== false; } }, function () {});
+      if (sub) sb.from("push_abonnements").select("prefs").eq("user_id", sessionUser).eq("endpoint", pushSubNow).then(function (r) { var row = r && r.data && r.data[0]; if (row && row.prefs) { $("pushMsg").checked = row.prefs.messages !== false; $("pushTasks").checked = row.prefs.taches !== false; $("pushRappels").checked = row.prefs.rappels !== false; } }, function () {});
     }, function () { show("Désactivées sur cet appareil.", false); });
   }
   function enablePush() {
@@ -7374,7 +7421,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   $("pushTest").addEventListener("click", function () {
     navigator.serviceWorker.getRegistration().then(function (reg) { if (!reg) throw new Error("sw"); return reg.showNotification("SimSimStock", { body: "Notification d'essai : tout fonctionne 🎉", icon: "icon-192.png", tag: "essai", data: { tab: "messages" } }); }).then(function () { toast("Essai envoyé : regardez en haut de l'écran."); }, function () { toast("L'essai n'a pas pu être affiché."); });
   });
-  ["pushMsg", "pushTasks"].forEach(function (id) { $(id).addEventListener("change", function () { if (pushSubNow) sb.from("push_abonnements").update({ prefs: pushPrefsNow() }).eq("user_id", sessionUser).eq("endpoint", pushSubNow).then(function () { toast("Préférences enregistrées."); }, function () {}); }); });
+  ["pushMsg", "pushTasks", "pushRappels"].forEach(function (id) { $(id).addEventListener("change", function () { if (pushSubNow) sb.from("push_abonnements").update({ prefs: pushPrefsNow() }).eq("user_id", sessionUser).eq("endpoint", pushSubNow).then(function () { toast("Préférences enregistrées."); }, function () {}); }); });
   if ("serviceWorker" in navigator && navigator.serviceWorker.addEventListener) navigator.serviceWorker.addEventListener("message", function (e) { if (e.data && e.data.type === "go" && e.data.tab) goTab(e.data.tab); });
   $("moreBtn").addEventListener("click", drawPush);
   function pushAfterLogin() {
@@ -7412,6 +7459,8 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     ["ajout-profils-taches.sql", "Profils (Dentiste, Assistante, Big boss) et réponses OK", ["equipe_profils"]],
     ["ajout-equipements-factures.sql", "Factures d'équipement", ["equipement_docs"]],
     ["ajout-kits.sql", "Kits par acte", ["kits", "kit_lignes"]],
+    ["ajout-sterilisation.sql", "Registre de stérilisation", ["sterilisation_registre"]],
+    ["ajout-rappels.sql", "Rappels automatiques", ["rappels_envoyes"]],
     ["ajout-routines.sql", "Routines", ["routines", "routine_coches"]],
     ["ajout-notifications.sql", "Notifications", ["push_abonnements"]]
   ];
@@ -7439,6 +7488,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     var fn = function (label, names, hint) { jobs.push(Promise.all(names.map(probeFn)).then(function (rs) { var ok = rs.some(Boolean); add("Services (fonctions Supabase)", label, ok, ok ? "" : hint, "", true); })); };
     fn("Notifications (notifier-push)", ["notifier-push"], "Facultatif : suivez le guide « Notifications » pour les recevoir appli fermée.");
     fn("E-mail du lundi", ["recap-hebdo", "rapid-task"], "Facultatif : suivez le guide du récap du lundi.");
+    fn("Rappels automatiques (rappels)", ["rappels"], "Facultatif : suivez le guide « Rappels automatiques » (routines non terminées, péremptions, échéances).");
     fn("Rapport mensuel par e-mail", ["rapport-mensuel"], "Facultatif : suivez le guide « Rapport mensuel par e-mail ».");
     if (recoFn) fn("Reconnaissance de produit par photo", [recoFn], "Facultatif : suivez le guide de la reconnaissance par photo."); else add("Services (fonctions Supabase)", "Reconnaissance de produit par photo", false, "Facultatif : suivez le guide de la reconnaissance par photo.", "", true);
     // cet appareil
@@ -7624,6 +7674,141 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         rcv.confirm ? h("button", { class: "btn", type: "button", text: "Annuler", onclick: function () { rcv.confirm = false; render(); } }) : null)));
   }
   window.__rcv = { ingest: rcvIngest, state: function () { return rcv; } };   // utilisé par les tests
+  // ---------- registre de stérilisation : cycles, tests Bowie-Dick et hélix, signés et horodatés ----------
+  var ster = [], sterOk = false, sterMonth = "", sterFilter = "";
+  var STER_TYPES = [["cycle", "Cycle de stérilisation", "♨️"], ["bowie_dick", "Test Bowie-Dick", "🧪"], ["helix", "Test hélix", "🧪"], ["autre", "Autre contrôle", "📝"]];
+  var STER_PROGS = ["B 134 °C", "B 121 °C", "Prion 134 °C", "Rapide (S)", "Test à vide", "Autre"];
+  function sterType(t) { return STER_TYPES.filter(function (x) { return x[0] === t; })[0] || STER_TYPES[3]; }
+  function loadSter() {
+    if (!sb || !cabinetId || !db) return; var cid = cabinetId;
+    sb.from("sterilisation_registre").select("*").eq("cabinet_id", cid).order("fait_at", { ascending: false }).limit(3000).then(function (r) {
+      if (cid !== cabinetId) return; if (r.error) { sterOk = false; return; }
+      sterOk = true; ster = r.data || []; if (state.tab === "sterilisation" || state.tab === "accueil" || state.tab === "hub") render();
+    }, function () { sterOk = false; });
+  }
+  function autoclaves() { return eqOk ? eqList.filter(function (e) { return e.kind === "autoclave" && !e.archived; }) : []; }
+  function sterDay(x) { return localIso(new Date(x.fait_at)); }
+  function sterTests(day) { return ster.filter(function (x) { return (x.type === "bowie_dick" || x.type === "helix") && sterDay(x) === day; }); }
+  function sterTodoToday() {
+    if (!sterOk) return false; var d = window.__sterNow ? new Date(window.__sterNow) : new Date(); if (d.getHours() < 9 || d.getDay() === 0 || d.getDay() === 6) return false;
+    var devs = autoclaves(); if (!devs.length && !ster.length) return false;
+    var today = sterTests(localIso());
+    if (!devs.length) return !today.length;
+    return devs.some(function (e) { return !today.some(function (x) { return x.appareil === e.name; }); });
+  }
+  function sterWho(x) { return personLabel(x.par_id, x.par); }
+  function sterSaveRow(rec) {
+    if (readOnly || !db) return Promise.resolve(false);
+    if (!rec.fait_at) rec.fait_at = new Date().toISOString();
+    return sb.from("sterilisation_registre").insert(Object.assign({ cabinet_id: cabinetId }, rec)).select().then(function (r) {
+      if (r.error) { toast(/note_obligatoire/.test(String(r.error.message)) ? "Une remarque est obligatoire quand le résultat n'est pas conforme." : /relation|does not exist|schema cache/i.test(String(r.error.message)) ? "Lancez le script SQL « ajout-sterilisation » dans Supabase." : "L'enregistrement a échoué : réessayez."); return false; }
+      ster.unshift(r.data[0]); render();
+      if (rec.resultat === "non_conforme" && msgOk) sb.from("messages").insert({ cabinet_id: cabinetId, to_user_id: null, body: "⚠️ " + sterType(rec.type)[1] + " NON CONFORME" + (rec.appareil ? " (" + rec.appareil + ")" : "") + " : " + rec.note, kind: "message" }).select().then(function (m) { if (m.data && m.data[0]) addMessage(m.data[0], true); }, function () {});
+      toast(rec.resultat === "non_conforme" ? "⚠ Enregistré. L'équipe est prévenue : ne pas utiliser l'appareil tant que le problème n'est pas réglé." : "✓ Enregistré et signé.");
+      return true;
+    }, function () { toast("Connexion impossible : rien n'a été enregistré."); return false; });
+  }
+  function openSterForm(pre) {
+    if (readOnly) return; pre = pre || {};
+    var devs = autoclaves(), selT = $("sterType"), selA = $("sterApp"), selP = $("sterProg");
+    selT.textContent = ""; STER_TYPES.forEach(function (t) { selT.append(h("option", { value: t[0], text: t[2] + " " + t[1] })); }); selT.value = pre.type || "cycle";
+    selA.textContent = ""; devs.forEach(function (e) { selA.append(h("option", { value: e.name, text: e.name })); }); selA.append(h("option", { value: "", text: devs.length ? "Autre appareil…" : "Saisir le nom de l'appareil" })); selA.value = pre.appareil != null ? pre.appareil : (devs[0] ? devs[0].name : "");
+    selP.textContent = ""; STER_PROGS.forEach(function (x) { selP.append(h("option", { value: x, text: x })); });
+    $("sterAppFree").value = ""; $("sterNum").value = ""; $("sterContenu").value = ""; $("sterNote").value = pre.note || ""; $("sterErr").classList.add("hidden"); $("sterSave").disabled = false;
+    document.querySelector('input[name="sterRes"][value="' + (pre.resultat || "conforme") + '"]').checked = true;
+    var now = new Date(); $("sterWhen").value = now.getFullYear() + "-" + pad2(now.getMonth() + 1) + "-" + pad2(now.getDate()) + "T" + pad2(now.getHours()) + ":" + pad2(now.getMinutes());
+    $("sterTitle").textContent = pre.title || "Enregistrer dans le registre"; syncSterForm(); $("sterDlg").showModal();
+  }
+  function syncSterForm() {
+    var type = $("sterType").value, cyc = type === "cycle";
+    $("sterCycleRow").classList.toggle("hidden", !cyc); $("sterContenuWrap").classList.toggle("hidden", !cyc);
+    $("sterAppFreeWrap").classList.toggle("hidden", $("sterApp").value !== "");
+    var nc = (document.querySelector('input[name="sterRes"]:checked') || {}).value === "non_conforme";
+    $("sterNoteHint").textContent = nc ? "(obligatoire : non conforme)" : "(facultative)";
+  }
+  ["sterType", "sterApp"].forEach(function (id) { $(id).addEventListener("change", syncSterForm); });
+  document.querySelectorAll('input[name="sterRes"]').forEach(function (r) { r.addEventListener("change", syncSterForm); });
+  $("sterCancel").addEventListener("click", function () { $("sterDlg").close(); });
+  $("sterSave").addEventListener("click", function () {
+    var err = $("sterErr"), fail = function (t) { err.textContent = t; err.classList.remove("hidden"); };
+    var type = $("sterType").value, app = $("sterApp").value || $("sterAppFree").value.trim(), res = document.querySelector('input[name="sterRes"]:checked').value, note = $("sterNote").value.trim();
+    if (!app) { fail("Indiquez l'appareil."); return; }
+    if (res === "non_conforme" && !note) { fail("Une remarque est obligatoire quand le résultat n'est pas conforme."); return; }
+    var when = $("sterWhen").value ? new Date($("sterWhen").value) : new Date();
+    if (when.getTime() > Date.now() + 60000) { fail("La date ne peut pas être dans le futur."); return; }
+    if (when.getTime() < Date.now() - 7 * 86400000) { fail("La saisie tardive est limitée à 7 jours."); return; }
+    var eq = autoclaves().filter(function (e) { return e.name === app; })[0];
+    var rec = { type: type, appareil: app, equipement_id: eq ? eq.id : null, programme: type === "cycle" ? $("sterProg").value : "", numero: type === "cycle" ? $("sterNum").value.trim() : "", contenu: type === "cycle" ? $("sterContenu").value.trim() : "", resultat: res, note: note, fait_at: when.toISOString() };
+    $("sterSave").disabled = true;
+    sterSaveRow(rec).then(function (ok) { if (ok) $("sterDlg").close(); else $("sterSave").disabled = false; });
+  });
+  function sterMonths() { var set = {}; set[localIso().slice(0, 7)] = 1; ster.forEach(function (x) { set[sterDay(x).slice(0, 7)] = 1; }); return Object.keys(set).sort().reverse(); }
+  function sterMonthRows() { return ster.filter(function (x) { return sterDay(x).slice(0, 7) === sterMonth && (!sterFilter || x.type === sterFilter || (sterFilter === "nc" && x.resultat === "non_conforme")); }).sort(function (a, b) { return String(a.fait_at) < String(b.fait_at) ? 1 : -1; }); }
+  function sterWhenTxt(x) { var d = new Date(x.fait_at); return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()); }
+  function renderSterilisation(box) {
+    if (!sterOk) { box.append(h("div", { class: "dnote", text: "Le registre n'est pas encore activé : lancez le script SQL « ajout-sterilisation » dans Supabase (voir le guide)." })); return; }
+    if (!sterMonth) sterMonth = localIso().slice(0, 7);
+    box.append(h("div", { class: "rcv-intro" }, h("h3", { text: "Registre de stérilisation" }), h("div", { class: "meta", text: "Chaque cycle et chaque test est daté, signé automatiquement et ne peut plus être modifié. Le mois s'exporte en PDF pour un contrôle." })));
+    // aujourd'hui
+    var devs = autoclaves(), names = devs.length ? devs.map(function (e) { return e.name; }) : (ster.length ? Array.from(new Set(ster.map(function (x) { return x.appareil; }))).slice(0, 4) : ["Autoclave"]), today = localIso();
+    var cards = h("div", { class: "ster-today" });
+    names.forEach(function (n) {
+      var mine = ster.filter(function (x) { return x.appareil === n && sterDay(x) === today; }), bd = mine.filter(function (x) { return x.type === "bowie_dick"; })[0], hx = mine.filter(function (x) { return x.type === "helix"; })[0], cy = mine.filter(function (x) { return x.type === "cycle"; }).length;
+      var chip = function (lab, x) { return h("span", { class: "ster-chip " + (x ? (x.resultat === "conforme" ? "ok" : "bad") : "wait"), text: lab + " : " + (x ? (x.resultat === "conforme" ? "✓ " : "⚠ ") + pad2(new Date(x.fait_at).getHours()) + ":" + pad2(new Date(x.fait_at).getMinutes()) : "à faire") }); };
+      var c = h("div", { class: "ster-card" }, h("div", { class: "ster-name", text: "♨️ " + n }), h("div", { class: "ster-chips" }, chip("Bowie-Dick", bd), chip("Hélix", hx), h("span", { class: "ster-chip", text: cy + " cycle" + (cy > 1 ? "s" : "") })));
+      if (!readOnly) c.append(h("div", { class: "dc-acts" },
+        h("button", { class: "btn sm primary", type: "button", text: "♨️ Cycle", onclick: function () { openSterForm({ type: "cycle", appareil: n }); } }),
+        h("button", { class: "btn sm", type: "button", text: "🧪 Bowie-Dick OK", onclick: function () { sterSaveRow({ type: "bowie_dick", appareil: n, resultat: "conforme" }); } }),
+        h("button", { class: "btn sm", type: "button", text: "🧪 Hélix OK", onclick: function () { sterSaveRow({ type: "helix", appareil: n, resultat: "conforme" }); } }),
+        h("button", { class: "btn sm danger", type: "button", text: "⚠ Non conforme…", onclick: function () { openSterForm({ type: "bowie_dick", appareil: n, resultat: "non_conforme", title: "Résultat non conforme" }); } })));
+      cards.append(c);
+    });
+    box.append(cards);
+    if (!readOnly) box.append(h("div", { class: "eqbar" }, h("button", { class: "btn", type: "button", text: "＋ Autre enregistrement", onclick: function () { openSterForm({}); } })));
+    // registre du mois
+    var months = sterMonths(); if (months.indexOf(sterMonth) === -1) sterMonth = months[0];
+    var sel = h("select", { "aria-label": "Mois" }); months.forEach(function (m) { sel.append(h("option", { value: m, text: ymLabel(m).charAt(0).toUpperCase() + ymLabel(m).slice(1) })); }); sel.value = sterMonth; sel.addEventListener("change", function () { sterMonth = sel.value; render(); });
+    var fsel = h("select", { "aria-label": "Filtrer" }, h("option", { value: "", text: "Tout" }), h("option", { value: "cycle", text: "Cycles" }), h("option", { value: "bowie_dick", text: "Bowie-Dick" }), h("option", { value: "helix", text: "Hélix" }), h("option", { value: "nc", text: "Non conformes" })); fsel.value = sterFilter; fsel.addEventListener("change", function () { sterFilter = fsel.value; render(); });
+    var rows = sterMonthRows(), all = ster.filter(function (x) { return sterDay(x).slice(0, 7) === sterMonth; });
+    var nc = all.filter(function (x) { return x.resultat === "non_conforme"; }).length;
+    box.append(h("div", { class: "rcv-bar" }, h("label", { class: "f" }, "Mois", sel), h("label", { class: "f" }, "Afficher", fsel), h("div", { class: "rcv-btns" }, h("button", { class: "btn primary", type: "button", text: "📄 Exporter le mois en PDF", onclick: function () { sterPdf(); } }))));
+    box.append(h("div", { class: "meta ster-sum", text: all.filter(function (x) { return x.type === "cycle"; }).length + " cycle(s) · " + all.filter(function (x) { return x.type !== "cycle"; }).length + " test(s) · " + (nc ? nc + " non conforme(s)" : "aucun résultat non conforme") }));
+    var tb = h("div", { class: "table ster-table" }); tb.append(h("div", { class: "ster-row ster-head" }, h("span", { text: "Date" }), h("span", { text: "Appareil" }), h("span", { text: "Quoi" }), h("span", { text: "Détail" }), h("span", { text: "Signé par" })));
+    if (!rows.length) tb.append(h("div", { class: "empty", text: "Rien dans le registre pour ce mois." }));
+    rows.forEach(function (x) {
+      var t = sterType(x.type), det = [x.numero ? "n° " + x.numero : "", x.programme, x.contenu, x.note].filter(Boolean).join(" · ");
+      tb.append(h("div", { class: "ster-row" + (x.resultat === "non_conforme" ? " nc" : "") }, h("span", { text: sterWhenTxt(x) }), h("span", { text: x.appareil || "—" }), h("span", {}, t[2] + " " + t[1], h("b", { class: "ster-res-b " + x.resultat, text: x.resultat === "conforme" ? " ✓" : " ⚠ non conforme" })), h("span", { class: "meta", text: det }), h("span", { class: "ster-by" }, sterWho(x), isAdmin && !readOnly ? h("button", { class: "linkbtn", type: "button", title: "Supprimer cette ligne (erreur de saisie)", "aria-label": "Supprimer cette ligne", text: "🗑", onclick: function () { if (confirm("Supprimer cette ligne du registre ? Elle n'apparaîtra plus dans l'export.")) sb.from("sterilisation_registre").delete().eq("id", x.id).then(function (r) { if (r.error) toast("Suppression impossible."); else { ster = ster.filter(function (y) { return y.id !== x.id; }); render(); toast("Ligne supprimée."); } }); } }) : null)));
+    });
+    box.append(tb);
+  }
+  function sterPdf() {
+    var lib = window.jspdf && window.jspdf.jsPDF;
+    if (!lib) { toast("Le PDF n'a pas pu être créé : vérifiez votre accès à internet, puis rechargez la page."); return; }
+    var rows = ster.filter(function (x) { return sterDay(x).slice(0, 7) === sterMonth; }).sort(function (a, b) { return String(a.fait_at) < String(b.fait_at) ? -1 : 1; });
+    var doc = new lib({ unit: "mm", format: "a4", orientation: "landscape" }), W = 297, M = 10, y = 0, ink = [11, 27, 58], muted = [91, 107, 138], line = [225, 230, 244];
+    var cols = [["Date et heure", 27], ["Appareil", 30], ["Quoi", 30], ["N°", 14], ["Programme", 24], ["Contenu", 46], ["Résultat", 22], ["Signé par", 40], ["Remarque", 44]], xs = [], acc = M; cols.forEach(function (c) { xs.push(acc); acc += c[1]; });
+    var T = function (t, x, yy, o) { doc.text(String(t), x, yy, o || {}); };
+    var head = function () { doc.setFillColor(47, 103, 255); doc.rect(M, y, W - 2 * M, 7, "F"); doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); cols.forEach(function (c, i) { T(c[0], xs[i] + 1.5, y + 4.8); }); y += 7; };
+    var top = function () { doc.setFillColor(47, 103, 255); doc.rect(0, 0, W, 22, "F"); doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(17); T("Registre de stérilisation", M, 11); doc.setFont("helvetica", "normal"); doc.setFontSize(10); T(cabinetName + "  ·  " + ymLabel(sterMonth).charAt(0).toUpperCase() + ymLabel(sterMonth).slice(1) + "  ·  édité le " + new Date().toLocaleDateString("fr-FR"), M, 18); y = 28; };
+    top();
+    var nc = rows.filter(function (x) { return x.resultat === "non_conforme"; }).length;
+    doc.setTextColor.apply(doc, ink); doc.setFont("helvetica", "bold"); doc.setFontSize(10); T(rows.filter(function (x) { return x.type === "cycle"; }).length + " cycle(s)  ·  " + rows.filter(function (x) { return x.type !== "cycle"; }).length + " test(s)  ·  " + (nc ? nc + " résultat(s) non conforme(s)" : "aucun résultat non conforme"), M, y); y += 6;
+    head();
+    if (!rows.length) { doc.setFont("helvetica", "normal"); doc.setTextColor.apply(doc, muted); T("Aucun enregistrement ce mois-ci.", M + 2, y + 6); y += 10; }
+    rows.forEach(function (x) {
+      var cells = [sterWhenTxt(x) + " " + new Date(x.fait_at).getFullYear(), x.appareil || "—", sterType(x.type)[1], x.numero || "", x.programme || "", x.contenu || "", x.resultat === "conforme" ? "Conforme" : "NON CONFORME", x.par || "", x.note || ""];
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      var wrapped = cells.map(function (c, i) { return doc.splitTextToSize(String(c), cols[i][1] - 3).slice(0, 3); }), lines = Math.max.apply(null, wrapped.map(function (w) { return w.length; })), hh = Math.max(6, lines * 3.6 + 2.4);
+      if (y + hh > 190) { doc.addPage(); top(); head(); }
+      if (x.resultat === "non_conforme") { doc.setFillColor(253, 232, 235); doc.rect(M, y, W - 2 * M, hh, "F"); }
+      doc.setTextColor.apply(doc, ink); wrapped.forEach(function (w, i) { if (i === 6 && x.resultat !== "conforme") doc.setFont("helvetica", "bold"); else doc.setFont("helvetica", "normal"); w.forEach(function (ln, k) { T(ln, xs[i] + 1.5, y + 4.2 + k * 3.6); }); });
+      doc.setDrawColor.apply(doc, line); doc.setLineWidth(0.2); doc.line(M, y + hh, W - M, y + hh); y += hh;
+    });
+    if (y > 170) { doc.addPage(); top(); }
+    y += 12; doc.setTextColor.apply(doc, ink); doc.setFont("helvetica", "normal"); doc.setFontSize(10); T("Visa du responsable : ________________________        Date : ____ / ____ / ________", M, y);
+    var n = doc.getNumberOfPages(); for (var i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor.apply(doc, muted); T("SimSimStock · Registre de stérilisation · " + cabinetName + " · page " + i + "/" + n, W / 2, 205, { align: "center" }); }
+    doc.save("registre-sterilisation-" + bkSlug(cabinetName) + "-" + sterMonth + ".pdf"); toast("Registre exporté : regardez dans vos téléchargements.");
+  }
   function renderInventory(box) {
     var rsc = roomScope();
     if (rsc) { box.append(roomHeader(rsc)); if (!items.size && !state.cat) box.append(h("div", { class: "dnote", text: "Cette salle est vide. Cliquez sur un domaine pour y ajouter ses produits, ou utilisez « ＋ Ajouter des produits »." })); }
@@ -8260,6 +8445,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     else if (state.tab === "hub") renderHub(box);
     else if (state.tab === "kits") renderKits(box);
     else if (state.tab === "reception") renderReception(box);
+    else if (state.tab === "sterilisation") renderSterilisation(box);
     else if (state.tab === "routines") renderRoutines(box);
     else if (state.tab === "catalogues") renderCatalogues(box);
     else if (state.tab === "commande") renderOrder(box);
@@ -8379,6 +8565,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     if (msgOk) { msgThreads().forEach(function (t) { o.unread += msgUnread(t); }); o.tasks = taskLists().todo.length; }
     o.online = Object.keys(pres.online).filter(function (u) { return u !== sessionUser; }).length;
     o.routines = routinesOk ? routinesTodo() : 0;
+    o.sterTodo = sterTodoToday();
     return o;
   }
   // ---------- mon nom (accueil) : partagé avec l'équipe si la messagerie est prête, sinon gardé sur cet appareil ----------
@@ -8457,6 +8644,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     // alertes de stock et de matériel (pour le dentiste)
     var alertCard = function () {
       var rows = [], add = function (txt, tone, fn) { rows.push(h("div", { class: "dc-row" }, h("div", { class: "dc-main" }, h("div", { class: "dc-text " + (tone || ""), text: txt })), h("button", { class: "tbtn", type: "button", text: "Voir", onclick: fn }))); };
+      if (st.sterTodo) add("Test de l'autoclave pas encore fait aujourd'hui", "warn", function () { setModule("materiel"); goTab("sterilisation"); });
       if (st.rupt.length) add("Rupture : " + st.rupt.slice(0, 4).join(", ") + (st.rupt.length > 4 ? " (+" + (st.rupt.length - 4) + ")" : ""), "bad", function () { setModule("stock"); });
       if (st.need) add(plural(st.need, "article à commander", "articles à commander") + (st.needEur ? " · ≈ " + money(st.needEur) + " HT" : ""), "warn", function () { setModule("achats"); goTab("commande"); });
       if (st.ordered) add(plural(st.ordered, "commande en attente de livraison", "commandes en attente de livraison"), "", function () { setModule("achats"); goTab("reception"); });
@@ -8473,7 +8661,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     };
     var order = assist ? [routinesCard, tasksCard, msgCard, alertCard] : boss ? [alertCard, sentCard, msgCard, tasksCard, routinesCard] : [tasksCard, routinesCard, msgCard, alertCard, sentCard];
     order.forEach(function (f) { var c = f(); if (c) cards.push(c); });
-    if (assist) cards = cards.filter(function (c) { return c.getAttribute("data-card") !== "alertes" || st.need || st.rupt.length; });
+    if (assist) cards = cards.filter(function (c) { return c.getAttribute("data-card") !== "alertes" || st.need || st.rupt.length || st.sterTodo; });
     var box = h("div", { class: "dayboard" }, h("div", { class: "db-head" }, h("h3", { text: "Ma journée" }), me ? h("span", { class: "profchip", text: PROFILS[me].ic + " " + PROFILS[me].label }) : h("button", { class: "linkbtn", type: "button", text: "Choisir mon profil pour une page adaptée", onclick: function () { $("moreBtn").click(); var t = document.querySelector('.mtab[data-mtab="affichage"]'); if (t) t.click(); } })));
     if (!cards.length) box.append(h("div", { class: "dc-empty" }, h("span", { text: "🎉" }), h("div", {}, h("b", { text: "Tout est fait pour le moment." }), h("div", { class: "meta", text: "Aucune tâche, routine ou message en attente." }))));
     else { var grid = h("div", { class: "daygrid" }); cards.forEach(function (c) { grid.append(c); }); box.append(grid); }
@@ -8557,6 +8745,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
       materiel: [
         { ic: "🏠", title: "Salles", sub: "Le stock de chaque salle, réassort", tab: "salles", status: { tone: rooms.length ? "on" : "", text: rooms.length ? pl(rooms.length, "salle", "salles") : "Aucune salle" } },
         { ic: "✅", title: "Contrôles", sub: "Contrôles de salle à faire", tab: "controles", status: lineStatus([[st.ctl, pl(st.ctl, "contrôle à faire", "contrôles à faire"), "bad"]], "Rien à faire") },
+        { ic: "♨️", title: "Registre de stérilisation", sub: "Cycles, tests Bowie-Dick et hélix, signés", tab: "sterilisation", status: sterOk ? (st.sterTodo ? { tone: "warn", text: "Test du jour à faire" } : { tone: "on", text: "À jour" }) : { tone: "", text: "À activer" } },
         { ic: "🔧", title: "Équipements", sub: "Fauteuils, autoclave, radio, contrats", tab: "equipements", status: lineStatus([[st.eqLate, pl(st.eqLate, "maintenance à prévoir", "maintenances à prévoir"), "warn"], [st.eqWarr + st.ct, pl(st.eqWarr + st.ct, "échéance à suivre", "échéances à suivre"), ""]], eqOk ? pl(eqList.filter(function (e) { return !e.archived; }).length, "équipement suivi", "équipements suivis") : "À activer") },
         { ic: "📄", title: "Facture d'équipement", sub: "Ajouter la facture de vos fauteuils : le matériel est créé", act: function () { goTab("equipements"); setTimeout(openEqInvoice, 250); }, action: true, needsWrite: true }
       ],
@@ -11378,6 +11567,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     loadMessages();
     loadKits();
     loadRoutines();
+    loadSter();
     loadConso();
     loadRooms();
     loadControls();
@@ -11399,6 +11589,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         render();
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "movements" }, function (p) { if (p.new && p.new.cabinet_id === cabinetId) addLogRow(p.new); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "sterilisation_registre" }, function (p) { if ((p.new && p.new.cabinet_id === cabinetId) || (p.old && p.eventType === "DELETE")) loadSter(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "routine_coches" }, function (p) {
         if (p.eventType === "DELETE") { var o = p.old || {}; rCoches = rCoches.filter(function (c) { return !(c.routine_id === o.routine_id && c.jour === o.jour && c.etape === o.etape); }); }
         else if (p.new && p.new.cabinet_id === cabinetId) { rCoches = rCoches.filter(function (c) { return !(c.routine_id === p.new.routine_id && c.jour === p.new.jour && c.etape === p.new.etape); }); rCoches.push(p.new); }
@@ -11443,7 +11634,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     stopPresence();
     channels = []; started = false;
-    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqDocs = []; eqDocsOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; ctOk = false; ctList = []; jrnFileOk = false; openOk = false; recoFn = ""; settings = {}; msgOk = false; msgs = []; msgPeople = []; msgReads = {}; msgDraft = {}; kits = []; kitLines = []; kitsOk = false; routines = []; rCoches = []; routinesOk = false; updateMsgBadge(); descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
+    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqDocs = []; eqDocsOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; ctOk = false; ctList = []; jrnFileOk = false; openOk = false; recoFn = ""; settings = {}; msgOk = false; msgs = []; msgPeople = []; msgReads = {}; msgDraft = {}; kits = []; kitLines = []; kitsOk = false; routines = []; rCoches = []; routinesOk = false; ster = []; sterOk = false; updateMsgBadge(); descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
   }
   // ---------- rejoindre un cabinet avec un lien d'invitation (#rejoindre=...) ----------
   var JOIN_KEY = "simsim_join";
