@@ -1417,6 +1417,46 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
 .dc-empty .meta { color:var(--ok); font-size:14px; }
 .daycard .rt-bar { margin:6px 0; }
 @media (max-width: 600px) { .daygrid { grid-template-columns:1fr; } .dc-row { flex-wrap:wrap; } .dc-acts { width:100%; justify-content:flex-start; } }
+
+/* ===== v127 : harmonisation du design (le Stock comme le reste) ===== */
+:root { --r-card:22px; --r-inner:16px; --shadow-card:0 1px 2px rgba(11,27,58,.05), 0 14px 30px -24px rgba(11,27,58,.38); --h-ctl:42px; --h-ctl-sm:34px; }
+/* toutes les cartes : même arrondi, même bordure, même ombre */
+.tile, .favcard, .supplier, .ucard, .fccard, .fpanel, .kpi, .eqcard, .roompanel, .table, .alert, .daycard, .kitcard, .rtcard, .msgpane, .msglist { border-radius:var(--r-card); border:1px solid var(--line); box-shadow:var(--shadow-card); background:var(--surface); }
+.tile { border-left:1px solid var(--line); min-height:124px; padding:16px 18px; }
+.tile:hover { border-color:var(--brand); }
+.favcard { border-top:1px solid var(--line); padding:14px 16px; }
+.alert { border-top:1px solid var(--line); padding:14px 18px; }
+.alert.a-rupt, .alert.a-bas, .alert.a-exp { background:var(--surface); border-top-color:var(--line); }
+.alert.a-rupt strong { color:var(--bad); } .alert.a-bas strong { color:var(--warn); } .alert.a-exp strong { color:var(--exp); }
+.kpi { padding:14px 18px; }
+.kpi b { font-size:26px; font-weight:800; letter-spacing:-.02em; }
+.eqcard { padding:14px 18px; }
+.supplier { overflow:hidden; }
+.tile-num { font-size:38px; font-weight:800; letter-spacing:-.03em; }
+.tile-num.q-none { color:var(--muted); font-weight:700; }
+/* tous les boutons : même hauteur, même police, jamais soulignés */
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:var(--h-ctl); padding:0 18px; font-size:15px; font-weight:600; line-height:1.15; text-decoration:none; }
+a.btn, a.btn:hover, a.btn:visited { text-decoration:none; }
+a.btn:not(.primary):not(.danger) { color:var(--ink); }
+.btn.sm { min-height:var(--h-ctl-sm); padding:0 14px; font-size:14px; }
+.btn.toggle { font-weight:600; }
+.search, #search { min-height:var(--h-ctl); font-size:15px; }
+#viewBar button, .roomchips button { min-height:38px; font-size:14.5px; font-weight:600; }
+html.is-touch .btn { min-height:44px; padding:0 18px; font-size:15px; font-weight:600; }
+html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
+.supplier > header { gap:10px 14px; }
+.supplier > header .qty { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; align-items:center; min-width:0; }
+.supplier > header .qty > span, .supplier > header .qty > .meta { white-space:nowrap; }
+.supplier > header .btn { white-space:nowrap; }
+.totalhead .btn, .eqbar .btn { white-space:nowrap; }
+#content select, .tilebar select { border:1px solid var(--line); border-radius:14px; background:var(--surface); color:var(--ink); min-height:40px; padding:0 14px; font-size:15px; }
+/* titres et en-têtes de sections : une seule échelle */
+.sectitle, .secthead, .eq-title, .totalhead strong { font-size:17px; font-weight:800; letter-spacing:-.01em; }
+.totalhead { padding:14px 18px; }
+.table .th, .table thead th { font-size:12.5px; letter-spacing:.02em; }
+/* l'espace entre les blocs */
+#content > * + * { margin-top:14px; }
+@media (max-width: 600px) { header h1, .topbar h1, #app > header h1 { font-size:20px; line-height:1.15; } :root { --r-card:20px; } .tile { min-height:110px; padding:14px 16px; } .tile-num { font-size:34px; } .kpi { padding:12px 14px; } }
 </style>
 </head>
 <body>
@@ -1510,7 +1550,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v126</div>
+            <div class="menu-who"><span id="who"></span> · v127</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -6357,7 +6397,7 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
       grid.append(h("button", { class: "tile", "aria-label": c + " : " + big + " " + label,
         onclick: function () { state.cat = c; render(); } },
         h("span", { class: "tile-name", text: c }),
-        h("span", { class: "tile-num " + (state.view && !o.n ? "q-none" : qtyClass(bigNum)), text: big }),
+        h("span", { class: "tile-num " + (!o.n ? "q-none" : qtyClass(bigNum)), text: big }),
         shown ? h("span", { class: "tile-unit", text: shown }) : null,
         alertTxt ? h("span", { class: "tile-alert " + alertCls, text: alertTxt }) : null,
         tc && tc[c] ? h("span", { class: "tile-total", text: "+ " + tc[c].toLocaleString("fr-FR") + " au catalogue total" }) : null));
