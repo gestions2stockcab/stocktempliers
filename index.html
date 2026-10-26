@@ -1602,7 +1602,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v130</div>
+            <div class="menu-who"><span id="who"></span> · v131</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -7464,7 +7464,8 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     ["ajout-routines.sql", "Routines", ["routines", "routine_coches"]],
     ["ajout-notifications.sql", "Notifications", ["push_abonnements"]]
   ];
-  function probeTable(t) { return sb.from(t).select("*").limit(1).then(function (r) { return !r.error; }, function () { return false; }); }
+  // une table fermée à la lecture (droits retirés, ex. reglages_recap) existe bien : seule son absence compte
+  function probeTable(t) { return sb.from(t).select("*").limit(1).then(function (r) { return !r.error || r.error.code === "42501"; }, function () { return false; }); }
   function safeFetch(url, opt) { try { return typeof fetch === "function" ? fetch(url, opt) : Promise.reject(new Error("fetch")); } catch (e) { return Promise.reject(e); } }
   function probeFn(name) { return safeFetch(SUPABASE_BASE + "/functions/v1/" + name, { method: "OPTIONS" }).then(function (r) { return r.status < 400; }, function () { return false; }); }
   function probeFile(path) { return safeFetch(path + "?_=" + Date.now(), { method: "HEAD", cache: "no-store" }).then(function (r) { return r.ok; }, function () { return false; }); }
