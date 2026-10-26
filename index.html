@@ -1714,6 +1714,18 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
 :root[data-theme="epure-mission"] dialog::backdrop { background:rgba(0,0,0,.7); }
 @media (max-width: 600px) { :root[data-theme="epure-mission"] .alert { font-size:10.5px; letter-spacing:.06em; } :root[data-theme="epure-mission"] header.top h1 { letter-spacing:.14em; } }
 .sw-epure-mission { background:linear-gradient(135deg,#000 50%,#fff 50%); box-shadow:inset 0 0 0 1px #555; }
+
+/* ===== v138 : notice des notifications ===== */
+.push-help { display:block; margin-top:8px; font-size:13px; }
+.ph-checks, .ph-steps { margin:12px 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px; }
+.ph-checks li { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid var(--line); border-radius:10px; }
+.ph-checks .ph-ic { flex:none; width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-size:13px; font-weight:700; color:#fff; background:var(--muted); }
+.ph-checks li.ok .ph-ic { background:var(--ok); } .ph-checks li.ko .ph-ic { background:var(--bad); } .ph-checks li.wait .ph-ic { background:var(--line); color:var(--muted); }
+.ph-checks b { display:block; font-weight:600; } .ph-checks .meta { font-size:13px; }
+.ph-h { font-size:15px; margin:16px 0 0; }
+.ph-steps { counter-reset:ph; } .ph-steps li { counter-increment:ph; display:flex; gap:10px; align-items:flex-start; line-height:1.45; }
+.ph-steps li::before { content:counter(ph); flex:none; width:24px; height:24px; border-radius:50%; background:var(--ink); color:var(--surface); display:grid; place-items:center; font-size:13px; font-weight:600; }
+.ph-note { margin-top:8px; }
 </style>
 </head>
 <body>
@@ -1807,7 +1819,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v137</div>
+            <div class="menu-who"><span id="who"></span> · v138</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1852,6 +1864,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
               <div class="menu-sw" id="pushBox"><div class="meta">🔔 Notifications sur cet appareil</div>
                 <div class="push-state" id="pushState"></div>
                 <div class="nameedit"><button class="btn sm primary" id="pushOn" type="button">Activer</button><button class="btn sm hidden" id="pushTest" type="button">Envoyer un essai</button><button class="btn sm hidden" id="pushOff" type="button">Désactiver</button></div>
+                <button class="linkbtn push-help" id="pushHelp" type="button">Je ne reçois rien ? Voir comment faire</button>
                 <div class="push-prefs hidden" id="pushPrefs"><label class="chk"><input type="checkbox" id="pushMsg" checked> Messages</label><label class="chk"><input type="checkbox" id="pushTasks" checked> Tâches et réponses</label><label class="chk"><input type="checkbox" id="pushRappels" checked> Rappels (routines, péremptions, échéances)</label></div>
               </div>
               <div class="menu-sw"><div class="meta">Couleur de l'appli</div>
@@ -2692,6 +2705,17 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   </div>
 </dialog>
 
+<dialog id="pushHelpDlg">
+  <div class="dlg">
+    <h2>Recevoir les notifications</h2>
+    <div class="sub">Pour qu'un message de l'équipe s'affiche sur cet appareil, même appli fermée, les 4 points ci-dessous doivent être au vert.</div>
+    <ol class="ph-checks" id="phChecks"></ol>
+    <h3 class="ph-h" id="phStepsTitle"></h3>
+    <ol class="ph-steps" id="phSteps"></ol>
+    <div class="sub ph-note">À faire une fois sur chaque téléphone, tablette ou ordinateur qui doit sonner. Chacun choisit ensuite, dans Plus → Affichage, ce qu'il veut recevoir : messages, tâches, rappels.</div>
+    <div class="dlg-actions"><button class="btn" id="phRecheck" type="button">Vérifier à nouveau</button><button class="btn primary" id="phAct" type="button">Activer sur cet appareil</button><button class="btn" id="phClose" type="button">Fermer</button></div>
+  </div>
+</dialog>
 <dialog id="seuilDlg" class="wide">
   <div class="dlg">
     <h2>Seuils d’alerte suggérés</h2>
@@ -7602,6 +7626,56 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     var j = sub.toJSON ? sub.toJSON() : sub; pushSubNow = j.endpoint;
     return sb.from("push_abonnements").upsert({ user_id: sessionUser, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, ua: String(navigator.userAgent || "").slice(0, 160), prefs: pushPrefsNow() }, { onConflict: "user_id,endpoint" }).then(function (r) { if (r && r.error) throw r.error; });
   }
+  // ---------- notice : vérifie chaque maillon et donne les étapes pour cet appareil ----------
+  function isAndroid() { return /android/i.test(navigator.userAgent); }
+  function pushSteps() {
+    if (isIos()) return { title: "Sur iPad ou iPhone", steps: [
+      "Ouvrez l'appli dans Safari (pas dans Chrome) : stock.simsimstock.fr.",
+      "Touchez le bouton Partager (le carré avec une flèche vers le haut), puis « Sur l'écran d'accueil », puis « Ajouter ».",
+      "Fermez Safari et ouvrez SimSimStock depuis sa nouvelle icône sur l'écran d'accueil. Sur iPad et iPhone, les notifications ne marchent que de cette façon.",
+      "Dans l'appli : Plus → Affichage → Notifications, touchez « Activer », puis « Autoriser ».",
+      "Touchez « Envoyer un essai » : une notification doit apparaître en haut de l'écran.",
+      "Si rien n'apparaît : Réglages de l'iPad → Notifications → SimSimStock, et vérifiez que « Autoriser les notifications » est activé (et que le mode Concentration ne les bloque pas)."] };
+    if (isAndroid()) return { title: "Sur téléphone ou tablette Android", steps: [
+      "Ouvrez l'appli dans Chrome : stock.simsimstock.fr. Pour plus de confort, menu ⋮ → « Ajouter à l'écran d'accueil ».",
+      "Dans l'appli : Plus → Affichage → Notifications, touchez « Activer », puis « Autoriser ».",
+      "Touchez « Envoyer un essai » : une notification doit apparaître.",
+      "Si rien n'apparaît : Paramètres → Applications → Chrome (ou SimSimStock) → Notifications, et activez-les. Désactivez aussi l'économiseur de batterie pour cette appli."] };
+    return { title: "Sur ordinateur", steps: [
+      "Ouvrez l'appli dans Chrome, Edge, Firefox ou Safari.",
+      "Plus → Affichage → Notifications : cliquez sur « Activer », puis « Autoriser » dans la fenêtre du navigateur.",
+      "Cliquez sur « Envoyer un essai ».",
+      "Si rien n'apparaît : cliquez sur le cadenas à gauche de l'adresse du site → Notifications → Autoriser. Sur Mac, vérifiez aussi Réglages Système → Notifications → votre navigateur.",
+      "Le navigateur doit rester ouvert (même en arrière-plan) pour recevoir les notifications sur ordinateur."] };
+  }
+  function drawPushHelp() {
+    var list = $("phChecks"), steps = pushSteps(), rows = {};
+    list.textContent = "";
+    var row = function (key, title) { var li = h("li", { class: "wait" }, h("span", { class: "ph-ic", text: "…" }), h("div", {}, h("b", { text: title }), h("div", { class: "meta", text: "Vérification…" }))); rows[key] = li; list.append(li); };
+    var set = function (key, ok, txt) { var li = rows[key]; li.className = ok ? "ok" : "ko"; li.querySelector(".ph-ic").textContent = ok ? "✓" : "!"; li.querySelector(".meta").textContent = txt; };
+    row("app", isIos() ? "Appli ouverte depuis l'écran d'accueil" : "Navigateur compatible");
+    row("perm", "Notifications autorisées");
+    row("sub", "Appareil inscrit");
+    row("srv", "Envoi automatique en place");
+    $("phStepsTitle").textContent = "Étapes " + steps.title.charAt(0).toLowerCase() + steps.title.slice(1);
+    var ol = $("phSteps"); ol.textContent = ""; steps.steps.forEach(function (t) { ol.append(h("li", { text: t })); });
+    var canPush = pushSupported() && !(isIos() && !isStandalone());
+    set("app", canPush, canPush ? "C'est bon." : (isIos() ? "L'appli est ouverte dans Safari : ajoutez-la à l'écran d'accueil (étapes 1 à 3)." : "Ce navigateur ne gère pas les notifications : essayez Chrome."));
+    var perm = canPush ? Notification.permission : "default";
+    set("perm", perm === "granted", perm === "granted" ? "C'est bon." : perm === "denied" ? "Bloquées : autorisez-les dans les réglages de l'appareil (dernière étape)." : "Pas encore : touchez « Activer sur cet appareil ».");
+    $("phAct").classList.toggle("hidden", !canPush || perm === "denied");
+    var srv = probeFn(PUSH_FN).then(function (ok) { set("srv", ok, ok ? "C'est bon." : "La fonction d'envoi ne répond pas : prévenez l'administrateur de l'appli."); }, function () { set("srv", false, "Vérification impossible (hors connexion ?)."); });
+    if (!canPush || perm !== "granted") { set("sub", false, "Pas encore : il faut d'abord les deux points du dessus."); return srv; }
+    return navigator.serviceWorker.getRegistration().then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) {
+      if (!sub) { set("sub", false, "Pas encore : touchez « Activer sur cet appareil »."); return; }
+      $("phAct").classList.add("hidden");
+      return sb.from("push_abonnements").select("id").eq("user_id", sessionUser).eq("endpoint", sub.endpoint).then(function (r) {
+        if (r.data && r.data.length) { set("sub", true, "C'est bon."); return; }
+        return saveSub(sub).then(function (res) { set("sub", !res.error, res.error ? "L'inscription n'a pas pu être enregistrée : réessayez." : "C'est bon (inscription refaite)."); });
+      });
+    }, function () { set("sub", false, "Vérification impossible : réessayez."); }).then(function () { return srv; });
+  }
+  function openPushHelp() { $("moreMenu").classList.add("hidden"); drawPushHelp(); $("pushHelpDlg").showModal(); }
   function drawPush() {
     var st = $("pushState"); if (!st) return;
     var show = function (txt, on) { st.textContent = txt; $("pushOn").classList.toggle("hidden", on); $("pushOff").classList.toggle("hidden", !on); $("pushTest").classList.toggle("hidden", !on); $("pushPrefs").classList.toggle("hidden", !on); };
@@ -7634,6 +7708,10 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   }
   $("pushOn").addEventListener("click", enablePush);
   $("pushOff").addEventListener("click", disablePush);
+  $("pushHelp").addEventListener("click", openPushHelp);
+  $("phRecheck").addEventListener("click", drawPushHelp);
+  $("phClose").addEventListener("click", function () { $("pushHelpDlg").close(); });
+  $("phAct").addEventListener("click", function () { Promise.resolve(enablePush()).then(function () { setTimeout(drawPushHelp, 600); }); });
   $("pushTest").addEventListener("click", function () {
     // l'essai vérifie toute la chaîne : appareil inscrit dans la base, fonction d'envoi installée, puis affichage
     var reg = null, sub = null;
@@ -7657,6 +7735,9 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     if (!pushSupported() || !db) return;
     if (Notification.permission === "granted") {   // on garde l'abonnement à jour (et rattaché à la personne connectée)
       navigator.serviceWorker.getRegistration().then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) { if (sub) saveSub(sub).catch(function () {}); }, function () {});
+    } else if (isIos() && !isStandalone()) {
+      var seenI = ""; try { seenI = localStorage.getItem("simsim_push_hint_ios") || ""; } catch (e) {}
+      if (!seenI) setTimeout(function () { if (state.tab === "accueil" || state.tab === "messages" || state.tab === "hub") updBar("🔔 Pour recevoir les messages de l'équipe sur cet appareil, installez l'appli sur l'écran d'accueil.", "warn", [{ text: "Comment faire", fn: function () { try { localStorage.setItem("simsim_push_hint_ios", "1"); } catch (e) {} $("updBar").classList.add("hidden"); openPushHelp(); } }, { text: "Plus tard", fn: function () { try { localStorage.setItem("simsim_push_hint_ios", "1"); } catch (e) {} $("updBar").classList.add("hidden"); } }]); }, 2500);
     } else if (Notification.permission === "default" && !(isIos() && !isStandalone())) {
       var seen = ""; try { seen = localStorage.getItem("simsim_push_hint") || ""; } catch (e) {}
       if (!seen) setTimeout(function () { if (state.tab === "accueil" || state.tab === "messages" || state.tab === "hub") updBar("🔔 Activez les notifications : messages et tâches arrivent même quand l'appli est fermée.", "warn", [{ text: "Activer", fn: function () { try { localStorage.setItem("simsim_push_hint", "1"); } catch (e) {} $("updBar").classList.add("hidden"); enablePush(); } }, { text: "Plus tard", fn: function () { try { localStorage.setItem("simsim_push_hint", "1"); } catch (e) {} $("updBar").classList.add("hidden"); } }]); }, 4000);
