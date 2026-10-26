@@ -1457,6 +1457,38 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
 /* l'espace entre les blocs */
 #content > * + * { margin-top:14px; }
 @media (max-width: 600px) { header h1, .topbar h1, #app > header h1 { font-size:20px; line-height:1.15; } :root { --r-card:20px; } .tile { min-height:110px; padding:14px 16px; } .tile-num { font-size:34px; } .kpi { padding:12px 14px; } }
+
+/* ===== v129 : réception de commande, smileys ===== */
+.rcv-intro h3 { margin:0 0 4px; font-size:22px; letter-spacing:-.02em; }
+.rcv-bar { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin:14px 0; }
+.rcv-bar .f { min-width:240px; flex:1; }
+.rcv-btns { display:flex; gap:8px; flex-wrap:wrap; }
+.rcv-table { margin-top:10px; }
+.rcv-row { display:grid; grid-template-columns:minmax(150px, 2.2fr) 82px minmax(150px, 1.3fr) 118px; gap:10px; align-items:center; padding:11px 16px; border-top:1px solid var(--line); }
+.rcv-head { color:var(--muted); font-size:12.5px; font-weight:700; background:var(--surface-2); }
+.rcv-row .r { text-align:right; }
+.rcv-name { display:flex; flex-direction:column; min-width:0; }
+.rcv-in { display:flex; align-items:center; gap:6px; justify-content:flex-end; }
+.rcv-in input { width:64px; text-align:center; border:1px solid var(--line); border-radius:12px; min-height:40px; font:inherit; font-weight:700; background:var(--surface); color:var(--ink); }
+.rcv-b { display:inline-block; font-size:13px; font-weight:700; padding:3px 10px; border-radius:99px; background:var(--surface-2); color:var(--muted); white-space:nowrap; }
+.rcv-b.ok { background:var(--ok-bg); color:var(--ok); } .rcv-b.partial, .rcv-b.excess { background:var(--warn-bg); color:var(--warn); }
+.rcv-extra { margin:12px 0; padding:12px 16px; border-radius:16px; background:var(--warn-bg); color:var(--ink); }
+.rcv-sum { display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin:14px 0; padding:14px 18px; border-radius:22px; background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow-card); }
+.rcv-sum-t { font-weight:700; }
+.rcv-done { margin:14px 0; padding:16px 18px; border-radius:22px; background:var(--ok-bg); border:1px solid color-mix(in srgb, var(--ok) 35%, var(--line)); }
+.rcv-done-t { font-weight:800; font-size:18px; color:var(--ok); }
+.rcv-claim-h { margin-top:12px; font-weight:700; }
+.rcv-claim { white-space:pre-wrap; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px 14px; font:13.5px/1.5 inherit; margin:6px 0 10px; }
+@media (max-width: 700px) { .rcv-row { grid-template-columns:1fr auto; } .rcv-row .r:nth-child(2) { grid-column:2; grid-row:1; } .rcv-head { display:none; } .rcv-in { grid-column:1 / -1; justify-content:flex-start; } .rcv-row .r:last-child { grid-column:1 / -1; text-align:left; } }
+.msgcomposer { position:relative; }
+.emopick { position:absolute; left:0; bottom:calc(100% - 8px); z-index:30; width:min(360px, 100%); background:var(--surface); border:1px solid var(--line); border-radius:20px; box-shadow:0 22px 50px -20px rgba(11,27,58,.55); padding:8px; }
+.emopick.hidden { display:none; }
+.emo-tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); padding-bottom:6px; margin-bottom:6px; }
+.emo-tab { border:0; background:transparent; border-radius:12px; font-size:20px; padding:6px 10px; cursor:pointer; }
+.emo-tab.on { background:color-mix(in srgb, var(--brand) 14%, transparent); }
+.emo-grid { display:grid; grid-template-columns:repeat(8, 1fr); gap:2px; max-height:210px; overflow:auto; }
+.emo { border:0; background:transparent; border-radius:10px; font-size:24px; line-height:1; padding:7px 0; cursor:pointer; }
+.emo:hover, .emo:focus-visible { background:var(--surface-2); outline:none; }
 </style>
 </head>
 <body>
@@ -1550,7 +1582,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v127</div>
+            <div class="menu-who"><span id="who"></span> · v129</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1651,6 +1683,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     </div>
     <div class="sb-group" data-mod="achats">
       <button class="tab" role="tab" data-tab="commande" data-mod="achats" aria-selected="false"><span class="ti">🛒</span><span class="tl">À commander</span></button>
+      <button class="tab" role="tab" data-tab="reception" data-mod="achats" aria-selected="false"><span class="ti">📦</span><span class="tl">Réception <span class="msgbadge hidden" id="rcvBadge" aria-label="commandes à réceptionner"></span></span></button>
       <button class="tab" role="tab" data-tab="catalogues" data-mod="achats" aria-selected="false"><span class="ti">📚</span><span class="tl">Catalogues</span></button>
       <button class="tab" role="tab" data-tab="donnees" data-mod="achats" aria-selected="false"><span class="ti">📊</span><span class="tl">Dépenses et prix</span></button>
       <button type="button" class="tab-act" data-act="jrnBtn" data-mod="achats"><span class="ti">🧾</span><span class="tl">Factures importées</span></button>
@@ -4206,7 +4239,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   function goTab(t) { var b = document.querySelector('.tab[data-tab="' + t + '"]'); if (b) b.click(); }   // le clic passe seul dans l'outil qui contient cet onglet
   function kActions() {
     var a = [
-      ["Stock", "section", function () { goTab("inventaire"); }], ["Favoris", "section", function () { goTab("favoris"); }], ["Messages de l'équipe", "section", function () { goTab("messages"); }], ["Kits par acte", "section", function () { goTab("kits"); }], ["Routines (ouverture, fermeture…)", "section", function () { goTab("routines"); }], ["Santé de l'installation", "section", function () { if (isAdmin) openHealth(); else toast("Réservé aux administrateurs."); }], ["Accueil", "section", function () { setModule("accueil"); }], ["Catalogues fournisseurs", "section", function () { goTab("catalogues"); }],
+      ["Stock", "section", function () { goTab("inventaire"); }], ["Favoris", "section", function () { goTab("favoris"); }], ["Messages de l'équipe", "section", function () { goTab("messages"); }], ["Kits par acte", "section", function () { goTab("kits"); }], ["Réception de commande (bon de livraison)", "section", function () { goTab("reception"); }], ["Routines (ouverture, fermeture…)", "section", function () { goTab("routines"); }], ["Santé de l'installation", "section", function () { if (isAdmin) openHealth(); else toast("Réservé aux administrateurs."); }], ["Accueil", "section", function () { setModule("accueil"); }], ["Catalogues fournisseurs", "section", function () { goTab("catalogues"); }],
       ["À commander", "section", function () { goTab("commande"); }], ["Comptage", "section", function () { goTab("comptage"); }],
       ["Historique", "section", function () { goTab("historique"); }], ["Données et prévisions", "section", function () { goTab("donnees"); }],
       ["Corbeille", "section", function () { goTab("corbeille"); }],
@@ -6745,6 +6778,30 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     sel.value = myProfil(); sel.disabled = !msgPerson(sessionUser);
   }
   $("myProfilSel").addEventListener("change", function () { var v = $("myProfilSel").value; if (v === "bigboss" && myProfil() === "bigboss") return; setProfil(sessionUser, v); });
+  // ---------- smileys dans les discussions ----------
+  var EMOJI_SETS = [
+    ["😀", "Visages", "😀 😃 😄 😁 😆 😅 😂 🤣 🙂 😉 😊 😇 🥰 😍 😘 😋 😛 😜 🤪 🤗 🤔 🤨 😐 🙄 😏 😮 😲 😴 😷 🤒 🤕 🥵 🥶 🤯 🥳 😎 🤓 😕 😟 🙁 😢 😭 😤 😡 😱 😰 😓 🥺".split(" ")],
+    ["👍", "Gestes", "👍 👎 👌 ✌️ 🤞 🤟 🤘 👋 🙌 👏 🙏 💪 👀 🤝 ☝️ 👉 👈 🫶 ✋".split(" ")],
+    ["❤️", "Symboles", "❤️ 🧡 💛 💚 💙 💜 🖤 💯 ✅ ❌ ⚠️ ❓ ❗ ⭐ ✨ 🎉 🔥 💡 🔔 ⏰ ⏳ 📌".split(" ")],
+    ["🦷", "Cabinet", "🦷 🪥 🧴 🧼 🧽 🧪 💉 🩺 🩹 💊 🏥 🧑‍⚕️ 📦 🛒 📋 🧾 📷 🩻 🧰 🔧 🧹 🗑️ ☕ 🍫 🥐".split(" ")]
+  ];
+  function emojiRecent() { try { return JSON.parse(localStorage.getItem("simsim_emoji") || "[]").slice(0, 16); } catch (e) { return []; } }
+  function emojiRemember(e) { try { var r = emojiRecent().filter(function (x) { return x !== e; }); r.unshift(e); localStorage.setItem("simsim_emoji", JSON.stringify(r.slice(0, 16))); } catch (x) {} }
+  function emojiInsert(ta, e) {
+    var a = ta.selectionStart == null ? ta.value.length : ta.selectionStart, b = ta.selectionEnd == null ? a : ta.selectionEnd;
+    ta.value = ta.value.slice(0, a) + e + ta.value.slice(b); var pos = a + e.length; try { ta.setSelectionRange(pos, pos); } catch (x) {}
+    ta.dispatchEvent(new Event("input", { bubbles: true })); emojiRemember(e);
+  }
+  function drawEmoji(panel, ta, tab) {
+    panel.textContent = ""; var rec = emojiRecent();
+    var tabs = h("div", { class: "emo-tabs", role: "tablist" });
+    var sets = (rec.length ? [["🕘", "Récents", rec]] : []).concat(EMOJI_SETS);
+    if (tab === undefined || tab >= sets.length) tab = 0;
+    sets.forEach(function (st, i) { tabs.append(h("button", { type: "button", role: "tab", class: "emo-tab" + (i === tab ? " on" : ""), "aria-selected": i === tab ? "true" : "false", title: st[1], text: st[0], onclick: function (ev) { ev.stopPropagation(); drawEmoji(panel, ta, i); } })); });
+    var grid = h("div", { class: "emo-grid", role: "group", "aria-label": sets[tab][1] });
+    sets[tab][2].forEach(function (e) { grid.append(h("button", { type: "button", class: "emo", "aria-label": e, text: e, onclick: function (ev) { ev.stopPropagation(); emojiInsert(ta, e); ta.focus(); drawEmoji(panel, ta, tab); } })); });
+    panel.append(tabs, grid);
+  }
   function buildMsgUi() {
     var list = h("div", { class: "msglist", role: "navigation", "aria-label": "Conversations" });
     var head = h("div", { class: "msghead" });
@@ -6754,9 +6811,14 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     var btnItem = h("button", { class: "btn sm", type: "button", text: "📦 Article" });
     var btnTask = h("button", { class: "btn sm toggle", type: "button", "aria-pressed": "false", text: "☑ Tâche" });
     var send = h("button", { class: "btn primary", type: "button", text: "Envoyer" });
-    var tools = h("div", { class: "msgtools" }, btnItem, btnTask, h("span", { class: "msgnote", text: "Ni nom de patient, ni information de santé." }), send);
+    var emoPanel = h("div", { class: "emopick hidden", role: "dialog", "aria-label": "Choisir un smiley" });
+    var btnEmo = h("button", { class: "btn sm", type: "button", id: "msgEmoBtn", "aria-label": "Ajouter un smiley", "aria-expanded": "false", title: "Smileys", text: "😊" });
+    btnEmo.addEventListener("click", function () { var open = emoPanel.classList.contains("hidden"); if (open) drawEmoji(emoPanel, ta, 0); emoPanel.classList.toggle("hidden", !open); btnEmo.setAttribute("aria-expanded", open ? "true" : "false"); if (!open) ta.focus(); });
+    document.addEventListener("click", function (e) { if (!emoPanel.classList.contains("hidden") && !emoPanel.contains(e.target) && e.target !== btnEmo) { emoPanel.classList.add("hidden"); btnEmo.setAttribute("aria-expanded", "false"); } });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !emoPanel.classList.contains("hidden")) { emoPanel.classList.add("hidden"); btnEmo.setAttribute("aria-expanded", "false"); } });
+    var tools = h("div", { class: "msgtools" }, btnEmo, btnItem, btnTask, h("span", { class: "msgnote", text: "Ni nom de patient, ni information de santé." }), send);
     var quick = h("div", { class: "msgquick hidden", role: "group", "aria-label": "Demander une tâche" });
-    var composer = h("div", { class: "msgcomposer" }, quick, attachRow, pick, ta, tools);
+    var composer = h("div", { class: "msgcomposer" }, quick, attachRow, pick, ta, emoPanel, tools);
     var pane = h("div", { class: "msgpane" }, head, scroll, composer);
     var root = h("div", { class: "msgwrap" }, list, pane);
     ta.addEventListener("input", function () { msgDraft[state.msgThread] = ta.value; });
@@ -7430,6 +7492,138 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   window.addEventListener("online", function () { updBar("✅ Connexion revenue.", "ok", [{ text: "Actualiser les données", fn: function () { location.reload(); } }], 12000); });
   if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) { try { navigator.serviceWorker.register("sw.js").catch(function () {}); } catch (e) {} }
   setTimeout(offlineBar, 1500);
+  // ---------- réception de commande : le bon de livraison comparé à ce qui avait été commandé ----------
+  var rcv = { sup: "", got: {}, extras: [], file: "", confirm: false, report: null }, lastRecv = null;
+  function pendingOrders() { return Array.from(items.values()).filter(function (it) { return it.ordered_qty > 0 && it.tracked !== false; }); }
+  function rcvSupOf(it) { return it.supplier || "Sans fournisseur"; }
+  function rcvSuppliers() { var m = {}; pendingOrders().forEach(function (it) { m[rcvSupOf(it)] = (m[rcvSupOf(it)] || 0) + 1; }); return Object.keys(m).sort(function (a, b) { return a.localeCompare(b, "fr"); }); }
+  function rcvLines() { return pendingOrders().filter(function (it) { return !rcv.sup || rcvSupOf(it) === rcv.sup; }).sort(function (a, b) { return norm(a.name).localeCompare(norm(b.name)); }); }
+  function rcvGot(it) { return Number(rcv.got[it.id]) || 0; }
+  function rcvState(it) { var g = rcvGot(it), o = Number(it.ordered_qty) || 0; return g === 0 ? "none" : g < o ? "partial" : g > o ? "excess" : "ok"; }
+  function updateRcvBadge() { var b = $("rcvBadge"); if (!b) return; var n = ordOk ? pendingOrders().length : 0; b.textContent = String(n); b.classList.toggle("hidden", !n); }
+  // lignes lues sur un bon de livraison (déjà décodées) : on remplit les quantités reçues
+  function rcvIngest(rows, head, fileName) {
+    var byRef = {}, byName = {}; items.forEach(function (it) { if (it.ref) byRef[norm(it.ref).trim()] = it; byName[norm(it.name).trim()] = it; });
+    var found = 0, extras = [], sums = {};
+    rows.forEach(function (r) {
+      if (!(r.qty > 0) || r.service) return;
+      var it = byRef[norm(r.ref || "").trim()] || byName[norm(r.name || "").trim()] || null;
+      if (it && it.ordered_qty > 0) { sums[it.id] = (sums[it.id] || 0) + Number(r.qty); }
+      else extras.push({ name: r.name || r.ref || "Ligne sans nom", ref: r.ref || "", qty: Number(r.qty), it: it });
+    });
+    Object.keys(sums).forEach(function (id) { rcv.got[id] = r2(sums[id]); found++; });
+    rcv.extras = extras; rcv.file = fileName || "bon de livraison"; rcv.confirm = false; rcv.report = null;
+    var guess = typeof guessSupplier === "function" ? guessSupplier(head || "") : "";
+    if (!rcv.sup && guess) { var gs = rcvSuppliers().filter(function (x) { return norm(x).indexOf(norm(guess)) !== -1 || norm(guess).indexOf(norm(x)) !== -1; })[0]; if (gs) rcv.sup = gs; }
+    toast(found ? found + " article" + (found > 1 ? "s" : "") + " commandé" + (found > 1 ? "s" : "") + " retrouvé" + (found > 1 ? "s" : "") + " sur le bon de livraison : vérifiez les quantités." : "Aucun article commandé retrouvé sur ce document : saisissez les quantités à la main.");
+    render();
+  }
+  function rcvFromFile(file) {
+    if (!file) return;
+    recvHook = function (name, lines) { rcvIngest(parseAny(lines), lines.slice(0, 80).join(" "), name); };
+    setTimeout(function () { recvHook = null; }, 180000);
+    if (/pdf$/i.test(file.type) || /\.pdf$/i.test(file.name)) importPdf(file); else importImage(file);
+  }
+  function rcvDiffs() {
+    var d = { ok: [], partial: [], none: [], excess: [] };
+    rcvLines().forEach(function (it) { var st = rcvState(it); d[st].push(it); });
+    return d;
+  }
+  function rcvClaimText() {
+    var L = [], when = new Date().toLocaleDateString("fr-FR"), sup = rcv.sup || "fournisseur";
+    rcvLines().forEach(function (it) {
+      var g = rcvGot(it), o = Number(it.ordered_qty) || 0, nm = it.name + (it.ref ? " (réf. " + it.ref + ")" : "");
+      if (g === 0) L.push("- " + nm + " : commandé " + fmt(o) + ", non reçu");
+      else if (g < o) L.push("- " + nm + " : commandé " + fmt(o) + ", reçu " + fmt(g) + " (manque " + fmt(r2(o - g)) + ")");
+      else if (g > o) L.push("- " + nm + " : commandé " + fmt(o) + ", reçu " + fmt(g) + " (" + fmt(r2(g - o)) + " en trop)");
+    });
+    rcv.extras.forEach(function (x) { L.push("- " + x.name + " : " + fmt(x.qty) + " reçu sans commande enregistrée"); });
+    if (!L.length) return "";
+    return "Bonjour,\n\nSuite à la livraison du " + when + " (" + sup + "), voici les écarts constatés avec notre commande :\n" + L.join("\n") + "\n\nMerci de nous confirmer l'envoi du reste ou de nous établir un avoir.\n\nCordialement,\n" + cabinetName;
+  }
+  function rcvSetGot(it, v) { v = Math.max(0, r2(Number(String(v).replace(",", ".")) || 0)); if (v) rcv.got[it.id] = v; else delete rcv.got[it.id]; rcv.confirm = false; render(); }
+  function rcvApply() {
+    if (readOnly || !db) return;
+    var lines = rcvLines().filter(function (it) { return rcvGot(it) > 0; }); if (!lines.length) { toast("Indiquez d'abord ce qui est arrivé."); return; }
+    var claim = rcvClaimText(), diffs = rcvDiffs(), done = [];
+    enqueue(function () {
+      toastMute = true; var p = Promise.resolve();
+      lines.forEach(function (it) {
+        p = p.then(function () { var g = rcvGot(it); done.push({ id: it.id, got: g, oq: Number(it.ordered_qty) || 0, oat: it.ordered_at || null }); return doAdjust(it.id, g, "Réception" + (rcv.sup ? " " + rcv.sup : "") + (rcv.file && rcv.file !== "bon de livraison" ? " · " + rcv.file : ""), null, { noUndo: true, reason: "reception" }); });
+      });
+      return p.then(function () {
+        toastMute = false; lastRecv = { done: done };
+        rcv.report = { n: done.length, ok: diffs.ok.length, partial: diffs.partial.length, none: diffs.none.length, excess: diffs.excess.length, claim: claim, extras: rcv.extras.length, sup: rcv.sup };
+        done.forEach(function (d) { delete rcv.got[d.id]; }); rcv.extras = []; rcv.file = ""; rcv.confirm = false; updateRcvBadge();
+        updBar("📦 Réception enregistrée : " + done.length + " article" + (done.length > 1 ? "s" : "") + " ajouté" + (done.length > 1 ? "s" : "") + " au stock.", "ok", [{ text: "Annuler la réception", fn: undoRecv }], 20000);
+        render();
+      }, function () { toastMute = false; toast("La réception n'a pas pu être enregistrée en entier."); render(); });
+    });
+  }
+  function undoRecv() {
+    var lr = lastRecv; if (!lr) return; lastRecv = null; $("updBar").classList.add("hidden"); toastMute = true;
+    lr.done.forEach(function (d) {
+      enqueue(function () { return doAdjust(d.id, -d.got, "Annulation de la réception", null, { noUndo: true, reason: "reception_undo" }).then(function () { return sb.from("items").update({ ordered_qty: d.oq, ordered_at: d.oat }).eq("id", d.id); }).then(function () { var c = items.get(d.id); if (c) { items.set(d.id, Object.assign({}, c, { ordered_qty: d.oq, ordered_at: d.oat || "" })); } }); });
+    });
+    setTimeout(function () { toastMute = false; updateRcvBadge(); render(); toast("Réception annulée : stock et commandes remis comme avant."); }, 800);
+  }
+  function rcvCopy(text) { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { toast("Texte copié : collez-le dans un e-mail ou un message."); }, function () { toast("Copie impossible ici."); }); else toast("Copie impossible ici."); }
+  function renderReception(box) {
+    if (!ordOk) { box.append(h("div", { class: "dnote", text: "Le suivi des commandes n'est pas activé sur cette base (script « ajout-commandes-photos »)." })); return; }
+    var pend = pendingOrders(), sups = rcvSuppliers();
+    if (rcv.sup && sups.indexOf(rcv.sup) === -1) rcv.sup = "";
+    box.append(h("div", { class: "rcv-intro" }, h("h3", { text: "Réception de commande" }), h("div", { class: "meta", text: "À l'arrivée du colis : lisez le bon de livraison (photo ou PDF) ou indiquez à la main ce qui est arrivé. L'appli compare avec la commande, ajoute au stock ce qui est reçu et prépare un message pour le fournisseur s'il y a des écarts." })));
+    if (rcv.report) {
+      var r = rcv.report;
+      var card = h("div", { class: "rcv-done" }, h("div", { class: "rcv-done-t", text: "✅ Réception enregistrée : " + r.n + " article" + (r.n > 1 ? "s" : "") + " ajouté" + (r.n > 1 ? "s" : "") + " au stock" }),
+        h("div", { class: "meta", text: [r.ok ? r.ok + " conforme" + (r.ok > 1 ? "s" : "") : "", r.partial ? r.partial + " partielle" + (r.partial > 1 ? "s" : "") + " (reste en attente)" : "", r.none ? r.none + " non reçu" + (r.none > 1 ? "s" : "") : "", r.excess ? r.excess + " en trop" : "", r.extras ? r.extras + " hors commande" : ""].filter(Boolean).join(" · ") }));
+      if (r.claim) {
+        card.append(h("div", { class: "rcv-claim-h", text: "Message au fournisseur pour les écarts" }), h("pre", { class: "rcv-claim", text: r.claim }),
+          h("div", { class: "dc-acts" },
+            h("button", { class: "btn sm primary", type: "button", text: "📋 Copier", onclick: function () { rcvCopy(r.claim); } }),
+            h("a", { class: "btn sm", href: "mailto:?subject=" + encodeURIComponent("Écarts de livraison — " + cabinetName) + "&body=" + encodeURIComponent(r.claim), text: "✉️ E-mail" }),
+            msgOk && !readOnly ? h("button", { class: "btn sm", type: "button", text: "📣 Prévenir l'équipe", onclick: function () { sb.from("messages").insert({ cabinet_id: cabinetId, to_user_id: null, body: "📦 Livraison reçue" + (r.sup ? " (" + r.sup + ")" : "") + " avec des écarts : " + [r.partial ? r.partial + " partielle(s)" : "", r.none ? r.none + " non reçu(s)" : "", r.excess ? r.excess + " en trop" : ""].filter(Boolean).join(", ") + ". Réclamation à envoyer.", kind: "message" }).select().then(function (res) { if (res.error) { toast("Le message n'a pas pu partir."); return; } addMessage(res.data[0], true); toast("L'équipe est prévenue."); }); } }) : null));
+      }
+      card.append(h("button", { class: "linkbtn", type: "button", text: "Fermer ce résumé", onclick: function () { rcv.report = null; render(); } }));
+      box.append(card);
+    }
+    if (!pend.length) { if (!rcv.report) box.append(h("div", { class: "empty", text: "Aucune commande en attente de livraison. Les commandes se préparent dans « À commander » avec « Marquer comme commandé »." })); return; }
+    // fournisseur et lecture du bon de livraison
+    var sel = h("select", { "aria-label": "Fournisseur livré" }, h("option", { value: "", text: "Tous les fournisseurs (" + pend.length + ")" }));
+    sups.forEach(function (x) { sel.append(h("option", { value: x, text: x + " (" + pend.filter(function (it) { return rcvSupOf(it) === x; }).length + ")" })); });
+    sel.value = rcv.sup; sel.addEventListener("change", function () { rcv.sup = sel.value; rcv.confirm = false; render(); });
+    var fileCam = h("input", { type: "file", accept: "image/*", capture: "environment", class: "hidden", id: "rcvCam" }), fileAny = h("input", { type: "file", accept: "image/*,application/pdf", class: "hidden", id: "rcvFile" });
+    [fileCam, fileAny].forEach(function (f) { f.addEventListener("change", function () { var x = f.files && f.files[0]; f.value = ""; if (x) rcvFromFile(x); }); });
+    box.append(h("div", { class: "rcv-bar" }, h("label", { class: "f" }, "Livraison de", sel),
+      readOnly ? null : h("div", { class: "rcv-btns" }, fileCam, fileAny, h("button", { class: "btn primary", type: "button", text: "📷 Photographier le bon de livraison", onclick: function () { fileCam.click(); } }), h("button", { class: "btn", type: "button", text: "📄 Choisir un PDF ou une photo", onclick: function () { fileAny.click(); } }))));
+    if (rcv.file) box.append(h("div", { class: "banner ok", text: "Bon de livraison lu : « " + rcv.file + " ». Les quantités reçues sont préremplies ; corrigez si besoin." }));
+    var lines = rcvLines(), d = rcvDiffs();
+    var tb = h("div", { class: "table rcv-table" }, h("div", { class: "totalhead" }, h("strong", { text: (rcv.sup || "Toutes les commandes") + " · " + lines.length + " ligne" + (lines.length > 1 ? "s" : "") }),
+      readOnly ? null : h("button", { class: "btn sm", type: "button", text: "✓ Tout reçu comme commandé", onclick: function () { lines.forEach(function (it) { rcv.got[it.id] = Number(it.ordered_qty); }); rcv.confirm = false; render(); } })));
+    tb.append(h("div", { class: "rcv-row rcv-head" }, h("span", { text: "Article" }), h("span", { class: "r", text: "Commandé" }), h("span", { class: "r", text: "Reçu" }), h("span", { class: "r", text: "Écart" })));
+    lines.forEach(function (it) {
+      var g = rcvGot(it), o = Number(it.ordered_qty) || 0, st = rcvState(it);
+      var inp = h("input", { type: "number", min: "0", step: "any", inputmode: "decimal", value: g ? String(g) : "", placeholder: "0", disabled: readOnly, "aria-label": "Quantité reçue de " + it.name });
+      inp.addEventListener("change", function () { rcvSetGot(it, inp.value); });
+      var ecart = st === "none" ? h("span", { class: "rcv-b none", text: "à recevoir" }) : st === "ok" ? h("span", { class: "rcv-b ok", text: "✓ complet" }) : st === "partial" ? h("span", { class: "rcv-b partial", text: "manque " + fmt(r2(o - g)) }) : h("span", { class: "rcv-b excess", text: "+" + fmt(r2(g - o)) + " en trop" });
+      tb.append(h("div", { class: "rcv-row rcv-" + st }, h("span", { class: "rcv-name" }, h("b", { text: it.name }), h("span", { class: "meta", text: [it.ref ? "réf. " + it.ref : "", it.ordered_at ? "commandé le " + new Date(it.ordered_at).toLocaleDateString("fr-FR") : ""].filter(Boolean).join(" · ") })),
+        h("span", { class: "r", text: fmt(o) }), h("span", { class: "r rcv-in" }, readOnly ? h("span", { text: fmt(g) }) : h("button", { class: "step", type: "button", "aria-label": "Un de moins", text: "−", onclick: function () { rcvSetGot(it, Math.max(0, g - 1)); } }), inp, readOnly ? null : h("button", { class: "step", type: "button", "aria-label": "Un de plus", text: "+", onclick: function () { rcvSetGot(it, g + 1); } })), h("span", { class: "r" }, ecart)));
+    });
+    box.append(tb);
+    if (rcv.extras.length) {
+      var ex = h("div", { class: "rcv-extra" }, h("b", { text: "Sur le bon de livraison mais pas dans les commandes en attente (" + rcv.extras.length + ")" }));
+      rcv.extras.forEach(function (x) { ex.append(h("div", { class: "meta", text: x.qty + " × " + x.name + (x.it ? " (article connu, sans commande enregistrée)" : " (article inconnu : à ajouter avec « Importer une facture »)") })); });
+      box.append(ex);
+    }
+    // résumé et validation
+    var got = lines.filter(function (it) { return rcvGot(it) > 0; }).length;
+    box.append(h("div", { class: "rcv-sum" }, h("div", { class: "rcv-sum-t", text: got ? [d.ok.length ? "✓ " + d.ok.length + " complet" + (d.ok.length > 1 ? "s" : "") : "", d.partial.length ? "⚠ " + d.partial.length + " partiel" + (d.partial.length > 1 ? "s" : "") : "", d.excess.length ? "⚠ " + d.excess.length + " en trop" : "", d.none.length ? d.none.length + " pas encore reçu" + (d.none.length > 1 ? "s" : "") : ""].filter(Boolean).join(" · ") : "Indiquez ce qui est arrivé, ou lisez le bon de livraison." }),
+      readOnly ? null : h("div", { class: "dc-acts" },
+        rcvClaimText() ? h("button", { class: "btn", type: "button", text: "📋 Copier la réclamation", onclick: function () { rcvCopy(rcvClaimText()); } }) : null,
+        h("button", { class: "btn primary", type: "button", disabled: !got, text: rcv.confirm ? "Confirmer : ajouter " + got + " article" + (got > 1 ? "s" : "") + " au stock" : "✓ Valider la réception", onclick: function () { if (!rcv.confirm) { rcv.confirm = true; render(); } else rcvApply(); } }),
+        rcv.confirm ? h("button", { class: "btn", type: "button", text: "Annuler", onclick: function () { rcv.confirm = false; render(); } }) : null)));
+  }
+  window.__rcv = { ingest: rcvIngest, state: function () { return rcv; } };   // utilisé par les tests
   function renderInventory(box) {
     var rsc = roomScope();
     if (rsc) { box.append(roomHeader(rsc)); if (!items.size && !state.cat) box.append(h("div", { class: "dnote", text: "Cette salle est vide. Cliquez sur un domaine pour y ajouter ses produits, ou utilisez « ＋ Ajouter des produits »." })); }
@@ -8030,7 +8224,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   document.addEventListener("click", function (e) {
     if (e.target && e.target.id === "optsToggle") { state.optsOpen = $("fopts").classList.contains("hidden"); syncOpts(); }
   });
-  function render() { renderInner(); navTrack(); syncOpts(); }
+  function render() { renderInner(); navTrack(); syncOpts(); updateRcvBadge(); }
   function renderInner() {
     dupCache = null;
     scoped(function () { if (state.cat && domainList().indexOf(state.cat) === -1) state.cat = ""; });
@@ -8065,6 +8259,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     else if (state.tab === "accueil") renderHome(box);
     else if (state.tab === "hub") renderHub(box);
     else if (state.tab === "kits") renderKits(box);
+    else if (state.tab === "reception") renderReception(box);
     else if (state.tab === "routines") renderRoutines(box);
     else if (state.tab === "catalogues") renderCatalogues(box);
     else if (state.tab === "commande") renderOrder(box);
@@ -8264,7 +8459,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
       var rows = [], add = function (txt, tone, fn) { rows.push(h("div", { class: "dc-row" }, h("div", { class: "dc-main" }, h("div", { class: "dc-text " + (tone || ""), text: txt })), h("button", { class: "tbtn", type: "button", text: "Voir", onclick: fn }))); };
       if (st.rupt.length) add("Rupture : " + st.rupt.slice(0, 4).join(", ") + (st.rupt.length > 4 ? " (+" + (st.rupt.length - 4) + ")" : ""), "bad", function () { setModule("stock"); });
       if (st.need) add(plural(st.need, "article à commander", "articles à commander") + (st.needEur ? " · ≈ " + money(st.needEur) + " HT" : ""), "warn", function () { setModule("achats"); goTab("commande"); });
-      if (st.ordered) add(plural(st.ordered, "commande en attente de livraison", "commandes en attente de livraison"), "", function () { goTab("commande"); });
+      if (st.ordered) add(plural(st.ordered, "commande en attente de livraison", "commandes en attente de livraison"), "", function () { setModule("achats"); goTab("reception"); });
       if (st.ctl) add(plural(st.ctl, "contrôle de salle à faire", "contrôles de salle à faire"), "bad", function () { goTab("controles"); });
       if (st.eqLate) add(plural(st.eqLate, "maintenance à prévoir", "maintenances à prévoir"), "warn", function () { goTab("equipements"); });
       if (st.eqWarr + st.ct) add(plural(st.eqWarr + st.ct, "échéance à suivre (garantie, contrat)", "échéances à suivre (garanties, contrats)"), "", function () { goTab("equipements"); });
@@ -8350,6 +8545,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         { ic: "🗑", title: "Corbeille", sub: "Articles supprimés", tab: "corbeille", status: trash.size ? { tone: "", text: pl(trash.size, "article", "articles") } : null }
       ],
       achats: [
+        { ic: "📦", title: "Réception de commande", sub: "Bon de livraison comparé à la commande", tab: "reception", status: lineStatus([[st.ordered, pl(st.ordered, "commande à réceptionner", "commandes à réceptionner"), "warn"]], "Rien en attente") },
         { ic: "🛒", title: "À commander", sub: "Ce qui manque, par fournisseur", tab: "commande", status: lineStatus([[st.need, st.need + " à commander" + (st.needEur ? " · ≈ " + money(st.needEur) + " HT" : ""), "warn"], [st.ordered, pl(st.ordered, "commande en attente", "commandes en attente"), ""]], "Rien à commander") },
         { ic: "📚", title: "Catalogues", sub: "Les catalogues de vos fournisseurs", tab: "catalogues" },
         { ic: "📊", title: "Dépenses et prix", sub: "Où va l'argent, évolution des prix", tab: "donnees" },
@@ -9353,7 +9549,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     return ln;
   }
   function ocrFail(e) {
-    ocrStatus("");
+    recvHook = null; ocrStatus("");
     toast(e && e.message === "chargement" ? "Le lecteur de scans n'a pas pu être chargé : vérifiez votre accès à internet." : "Ce scan n'a pas pu être lu : reprenez-le bien à plat, bien éclairé, ou utilisez un fichier Excel.");
   }
   // lit les pages d'un PDF scanné (une image par page)
@@ -9867,7 +10063,9 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     if (!rows.length) rows = parseLinesE(lines);
     return rows;
   }
+  var recvHook = null;
   function showPdfPreview(fileName, lines, fileCtx) {
+    if (recvHook) { var hook = recvHook; recvHook = null; hook(fileName, lines); return; }   // lecture d'un bon de livraison : on renvoie les lignes à la page Réception
     var rows = parseAny(lines);
     if (!rows.length) {
       var allText = lines.join(" ");
