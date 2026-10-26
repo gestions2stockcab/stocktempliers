@@ -1407,6 +1407,11 @@ dialog::backdrop { background:rgba(11,27,58,.46); -webkit-backdrop-filter:blur(5
 .daycard.warn { border-top-color:#e0a100; } .daycard.bad { border-top-color:#d93a4b; }
 .dc-head { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
 .dc-ic { font-size:22px; } .dc-title { font-weight:800; font-size:17px; flex:1; }
+.dc-fold { width:100%; background:none; border:0; padding:0; font:inherit; color:inherit; text-align:left; cursor:pointer; }
+.dc-chev { font-size:13px; color:var(--muted); transition:transform .2s; }
+.daycard.folded .dc-chev { transform:rotate(-90deg); }
+.daycard.folded .dc-head { margin-bottom:0; }
+.daycard.folded > :not(.dc-head) { display:none; }
 .dc-count { min-width:26px; text-align:center; font-weight:800; font-size:14px; padding:2px 9px; border-radius:99px; background:var(--surface-2); }
 .dc-row { display:flex; gap:10px; align-items:center; padding:10px 0; border-top:1px solid var(--line); }
 .dc-main { flex:1; min-width:0; } .dc-text { font-weight:650; overflow-wrap:anywhere; }
@@ -1602,7 +1607,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v131</div>
+            <div class="menu-who"><span id="who"></span> · v132</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -8614,6 +8619,22 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
       var c = h("section", { class: "daycard " + (tone || ""), "data-card": id }, h("div", { class: "dc-head" }, h("span", { class: "dc-ic", text: ic }), h("span", { class: "dc-title", text: title }), count ? h("span", { class: "dc-count", text: String(count) }) : null));
       rows.forEach(function (r) { c.append(r); }); if (foot) c.append(foot); return c;
     };
+    // carte repliable (fermée par défaut) : seul le titre et le nombre restent visibles
+    var foldable = function (c, key) {
+      var head = c.querySelector(".dc-head"), open = false;
+      try { open = localStorage.getItem("simsim_open_" + key) === "1"; } catch (e) {}
+      var btn = h("button", { class: "dc-head dc-fold", type: "button", "aria-expanded": String(open) });
+      while (head.firstChild) btn.append(head.firstChild);
+      btn.append(h("span", { class: "dc-chev", "aria-hidden": "true", text: "▾" }));
+      head.replaceWith(btn);
+      if (!open) c.classList.add("folded");
+      btn.addEventListener("click", function () {
+        var now = c.classList.toggle("folded") ? "0" : "1";
+        btn.setAttribute("aria-expanded", String(now === "1"));
+        try { localStorage.setItem("simsim_open_" + key, now); } catch (e) {}
+      });
+      return c;
+    };
     var link = function (txt, fn) { return h("button", { class: "linkbtn dc-foot", type: "button", text: txt, onclick: fn }); };
     // tâches qu'on m'a demandées
     var tasksCard = function () {
@@ -8652,7 +8673,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
       if (st.ctl) add(plural(st.ctl, "contrôle de salle à faire", "contrôles de salle à faire"), "bad", function () { goTab("controles"); });
       if (st.eqLate) add(plural(st.eqLate, "maintenance à prévoir", "maintenances à prévoir"), "warn", function () { goTab("equipements"); });
       if (st.eqWarr + st.ct) add(plural(st.eqWarr + st.ct, "échéance à suivre (garantie, contrat)", "échéances à suivre (garanties, contrats)"), "", function () { goTab("equipements"); });
-      return rows.length ? card("alertes", "⚠️", "À surveiller", rows.length, st.rupt.length || st.ctl ? "bad" : "warn", rows.slice(0, 5), null) : null;
+      return rows.length ? foldable(card("alertes", "⚠️", "À surveiller", rows.length, st.rupt.length || st.ctl ? "bad" : "warn", rows.slice(0, 5), null), "alertes") : null;
     };
     // mes demandes en attente (je les ai envoyées)
     var sentCard = function () {
