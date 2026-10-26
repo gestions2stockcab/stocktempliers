@@ -10,6 +10,14 @@ const CORS = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+// Comparaison en temps constant : la durée de la vérification ne renseigne pas sur la clé attendue.
+const sameSecret = (got: string, want: string) => {
+  if (!want) return false;
+  const a = new TextEncoder().encode(got), b = new TextEncoder().encode(want);
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < b.length; i++) diff |= (a[i] ?? 0) ^ b[i];
+  return diff === 0;
+};
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 const DAY = 86400000;
@@ -155,7 +163,7 @@ if (typeof Deno !== "undefined" && Deno.serve) {
   Deno.serve(async (req: Request) => {
     if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
     const secret = Deno.env.get("RECAP_SECRET") || "";
-    if (!secret || req.headers.get("x-cron-secret") !== secret) return json({ ok: false, error: "non_autorise" }, 401);
+    if (!sameSecret(req.headers.get("x-cron-secret") || "", secret)) return json({ ok: false, error: "non_autorise" }, 401);
     let body: Row = {};
     try { body = await req.json(); } catch (_e) { body = {}; }
     const base = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, ""), key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
