@@ -1844,7 +1844,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v140</div>
+            <div class="menu-who"><span id="who"></span> · v141</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -8672,7 +8672,10 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     box.append(h("div", { class: "rcv-intro" }, h("h3", { text: "Affichages et documents obligatoires" }), h("div", { class: "meta", text: "Cochez ce qui est en place : chaque vérification est datée et signée. La liste de départ est indicative : faites-la valider par votre Ordre, votre ARS ou votre assureur, puis adaptez-la à votre cabinet." })));
     var live = qAff.filter(function (a) { return !a.archived; }), late = live.filter(function (a) { return affState(a).tone === "bad"; }).length, soon = live.filter(function (a) { return affState(a).tone === "warn"; }).length;
     box.append(h("div", { class: "meta ster-sum", text: live.length + " élément(s) · " + (late ? late + " en retard ou en problème" : "rien en retard") + (soon ? " · " + soon + " à vérifier bientôt ou pour la première fois" : "") }));
-    if (!readOnly) box.append(h("div", { class: "eqbar" }, h("button", { class: "btn", type: "button", text: "＋ Ajouter un affichage ou un document", onclick: function () { openAffForm(null); } })));
+    var printable = live.map(affAffiche).filter(Boolean).filter(function (m, i, arr) { return arr.indexOf(m) === i; });
+    box.append(h("div", { class: "eqbar" },
+      printable.length ? h("button", { class: "btn primary", type: "button", text: "🖨 Imprimer les affiches (" + printable.length + ")", title: "Toutes les affiches prêtes à imprimer, modifiables avant impression", onclick: function () { printAffiches(printable); } }) : null,
+      readOnly ? null : h("button", { class: "btn", type: "button", text: "＋ Ajouter un affichage ou un document", onclick: function () { openAffForm(null); } })));
     var cats = []; live.forEach(function (a) { if (cats.indexOf(a.categorie || "Autre") === -1) cats.push(a.categorie || "Autre"); });
     var tb = h("div", { class: "table q-table" });
     if (!live.length) tb.append(h("div", { class: "empty", text: "La liste est vide." }));
@@ -8685,11 +8688,40 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
           h("span", {}, h("span", { class: "chip " + (s.tone === "bad" ? "rupture" : s.tone === "warn" ? "bas" : "ok"), text: s.text }), last ? h("div", { class: "meta", text: (last.ok ? "Vérifié" : "Signalé") + " par " + qSignedBy(last) }) : null),
           h("span", { class: "q-acts" }, readOnly ? null : h("button", { class: "btn sm primary", type: "button", text: "✓ Vérifié", title: "En place et à jour aujourd'hui", onclick: function () { affVerif(a, true, ""); } }),
             readOnly ? null : h("button", { class: "btn sm", type: "button", text: "⚠ Problème…", onclick: function () { openAffVerif(a); } }),
+            affAffiche(a) ? h("button", { class: "btn sm", type: "button", text: "🖨 Affiche", title: "Affiche prête à imprimer, modifiable avant impression", onclick: function () { printAffiches([affAffiche(a)]); } }) : null,
             h("button", { class: "btn sm", type: "button", text: "Historique", onclick: function () { affHistory(a); } }),
             readOnly ? null : h("button", { class: "btn sm", type: "button", text: "Modifier", onclick: function () { openAffForm(a); } }))));
       });
     });
     box.append(tb);
+  }
+  // ----- affiches prêtes à imprimer (modèles indicatifs, modifiables dans la page avant impression) -----
+  function affFill(t) { return '<span class="fill">' + t + '</span>'; }
+  var AFF_AFFICHES = [
+    { re: /fumer|vapoter/i, titre: "Interdiction de fumer", corps: function () { return '<div class="sign">🚭</div><h1>Il est interdit<br>de fumer et de vapoter</h1><p class="big">dans l\'ensemble des locaux du cabinet.</p><p class="ref">Décret n° 2006-1386 du 15 novembre 2006 · Décret n° 2017-633 du 25 avril 2017</p>'; } },
+    { re: /numéros d'urgence/i, titre: "Numéros d'urgence", corps: function () { return '<h1>Numéros d\'urgence</h1><table class="nums"><tr><td>15</td><th>SAMU · urgence médicale</th></tr><tr><td>18</td><th>Pompiers · incendie, accident</th></tr><tr><td>17</td><th>Police · gendarmerie</th></tr><tr><td>112</td><th>Numéro d\'urgence européen</th></tr><tr><td>114</td><th>Urgence pour les personnes sourdes ou malentendantes (SMS)</th></tr><tr><td>' + affFill("01 40 05 48 48") + '</td><th>Centre antipoison de votre région</th></tr></table><p>Adresse du cabinet à donner aux secours :<br><b>' + affFill(escHtml(cabinetName) + ", adresse complète, étage, code d'accès") + '</b></p>'; } },
+    { re: /incendie|évacuation/i, titre: "Consignes en cas d'incendie", corps: function () { return '<div class="sign">🔥</div><h1>En cas d\'incendie</h1><ol class="steps"><li>Gardez votre calme et donnez l\'alerte autour de vous.</li><li>Appelez le <b>18</b> (ou le 112).</li><li>Si c\'est possible sans danger, attaquez le feu avec l\'extincteur situé ' + affFill("à l'accueil") + '.</li><li>Évacuez par ' + affFill("la sortie principale") + ' en fermant les portes derrière vous.</li><li>N\'utilisez pas l\'ascenseur.</li><li>Rejoignez le point de rassemblement : ' + affFill("devant l'immeuble") + '.</li></ol><p class="ref">Plan d\'évacuation : à afficher à côté de cette consigne.</p>'; } },
+    { re: /médiateur/i, titre: "Médiateur de la consommation", corps: function () { return '<h1>Médiation de la consommation</h1><p>En cas de litige avec le cabinet que nous n\'aurions pas pu régler ensemble, vous pouvez recourir gratuitement au médiateur de la consommation :</p><p class="box">' + affFill("Nom du médiateur") + '<br>' + affFill("Adresse postale") + '<br>' + affFill("Site internet") + '</p><p>Avant de saisir le médiateur, vous devez d\'abord avoir adressé une réclamation écrite au cabinet.</p><p class="ref">Articles L612-1 et suivants du Code de la consommation.</p>'; } },
+    { re: /honoraires|tarifs/i, titre: "Information sur les honoraires", corps: function () { var rows = ""; for (var i = 0; i < 8; i++) rows += '<tr><td>' + affFill(i === 0 ? "Consultation" : i === 1 ? "Détartrage" : i === 2 ? "Couronne céramo-métallique" : "Acte") + '</td><td class="r">' + affFill("… €") + '</td><td class="r">' + affFill("… €") + '</td></tr>'; return '<h1>Information sur les honoraires</h1><p>' + affFill("Le Dr …, chirurgien-dentiste, est conventionné(e) en secteur …") + '</p><p>Tarifs des actes les plus couramment pratiqués :</p><table class="tarifs"><tr><th>Acte</th><th class="r">Honoraires</th><th class="r">Base de remboursement</th></tr>' + rows + '</table><p>Un devis écrit vous est remis avant tout acte prothétique ou dépassant ' + affFill("… €") + '. Les honoraires sont payables ' + affFill("par carte bancaire, espèces ou chèque") + '.</p>'; } },
+    { re: /convention|tiers payant/i, titre: "Convention et tiers payant", corps: function () { return '<h1>Votre prise en charge</h1><p class="big">' + affFill("Le cabinet est conventionné avec l'Assurance Maladie.") + '</p><ul class="steps"><li>Pensez à présenter votre <b>carte Vitale</b> à chaque rendez-vous.</li><li>Tiers payant : ' + affFill("pratiqué pour les patients bénéficiant de la Complémentaire santé solidaire (C2S) et sur la part obligatoire des soins") + '.</li><li>Mutuelle : ' + affFill("renseignez-vous à l'accueil sur la prise en charge de votre complémentaire") + '.</li></ul>'; } },
+    { re: /données|rgpd/i, titre: "Protection de vos données", corps: function () { return '<h1>Protection de vos données personnelles</h1><p><b>Responsable du traitement :</b> ' + affFill(escHtml(cabinetName) + ", adresse") + '</p><p><b>Pourquoi :</b> tenue de votre dossier médical, prise de rendez-vous, facturation et télétransmission à l\'Assurance Maladie et à votre complémentaire.</p><p><b>Qui y a accès :</b> les praticiens et l\'équipe du cabinet, dans la limite de leurs missions, ainsi que les organismes d\'assurance maladie pour le remboursement.</p><p><b>Combien de temps :</b> ' + affFill("le dossier médical est conservé 20 ans à compter de votre dernière visite") + '.</p><p><b>Vos droits :</b> accès, rectification, limitation, opposition. Pour les exercer : ' + affFill("adresse e-mail ou postale du cabinet") + '. Vous pouvez aussi adresser une réclamation à la CNIL (www.cnil.fr).</p>'; } },
+    { re: /signalisation des zones|zone surveillée|zone contrôlée/i, titre: "Radioprotection", corps: function () { return '<div class="sign trefoil">☢</div><h1>Zone ' + affFill("surveillée") + '</h1><p class="big">Rayonnements ionisants · appareil de radiologie</p><ul class="steps"><li>Accès réservé au personnel autorisé pendant l\'émission.</li><li>Patientes enceintes ou susceptibles de l\'être : signalez-le avant tout examen.</li><li>Personne compétente en radioprotection : ' + affFill("nom, contact") + '.</li></ul>'; } }
+  ];
+  function affAffiche(a) { return AFF_AFFICHES.filter(function (m) { return m.re.test(a.titre); })[0] || null; }
+  function printAffiches(list) {
+    var w = null; try { w = window.open("", "_blank"); } catch (e) {}
+    if (!w) { toast("Autorisez les fenêtres pour imprimer les affiches."); return; }
+    var pages = list.map(function (m) { return '<section class="page">' + m.corps() + '<footer>' + escHtml(cabinetName) + '</footer></section>'; }).join("");
+    var html = '<!doctype html><meta charset="utf-8"><title>Affiches · ' + escHtml(cabinetName) + '</title><style>@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:Inter,Arial,sans-serif;color:#171A20;margin:0;background:#eee}'
+      + '.bar{position:sticky;top:0;background:#171A20;color:#fff;padding:12px 18px;display:flex;gap:16px;align-items:center;font-size:14px;z-index:2}.bar button{font:600 14px Inter,Arial,sans-serif;padding:9px 18px;border:0;border-radius:4px;background:#fff;color:#171A20;cursor:pointer}'
+      + '.page{background:#fff;width:210mm;min-height:297mm;margin:16px auto;padding:22mm 20mm;display:flex;flex-direction:column;gap:6mm;font-size:15pt;line-height:1.45;outline:none}.page footer{margin-top:auto;color:#5C5E62;font-size:10pt;border-top:1px solid #ddd;padding-top:4mm}'
+      + 'h1{font-size:34pt;line-height:1.1;margin:0;font-weight:700;letter-spacing:-.01em}.big{font-size:20pt;margin:0}.ref{font-size:10pt;color:#5C5E62}.sign{font-size:90pt;line-height:1}.trefoil{color:#c9a400}p{margin:0}.box{border:2px solid #171A20;border-radius:3mm;padding:6mm;font-size:16pt}'
+      + 'table{border-collapse:collapse;width:100%}.nums td{font-size:40pt;font-weight:700;width:60mm;padding:3mm 0}.nums th{text-align:left;font-weight:500;font-size:16pt}.nums tr{border-bottom:1px solid #ddd}.tarifs th,.tarifs td{border-bottom:1px solid #ccc;padding:2.5mm 2mm;text-align:left;font-size:13pt}.tarifs .r{text-align:right}'
+      + '.steps{margin:0;padding-left:8mm;display:flex;flex-direction:column;gap:3mm}.fill{background:#fff6c2;border-bottom:1.5px dashed #c9a400;padding:0 2px}[contenteditable]:focus{outline:none}'
+      + '@media print{body{background:#fff}.bar{display:none}.page{margin:0;width:auto;min-height:0;height:269mm;padding:0;break-after:page}.page:last-child{break-after:auto}.fill{background:none;border:0;padding:0}}</style>'
+      + '<div class="bar"><span>Cliquez sur un texte pour le modifier (les zones en jaune sont à compléter), puis imprimez. Modèles indicatifs : vérifiez-les avant affichage.</span><button onclick="window.print()">🖨 Imprimer</button></div>'
+      + '<div contenteditable="true" spellcheck="false">' + pages + '</div>';
+    w.document.write(html); w.document.close();
   }
   function affVerif(a, ok, note) {
     if (readOnly) return Promise.resolve(false);
@@ -11621,7 +11653,8 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   $("recoBtn").addEventListener("click", function () { $("recoPhoto").click(); });
   $("recoPhoto").addEventListener("change", function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; if (f) recognizePhoto(f); });
   function parseGs1(raw) {
-    var s = String(raw || "").replace(/^\][A-Za-z]\d/, "");
+    // préfixe de symbologie (]d2, ]Q3…) et séparateur FNC1 de tête renvoyé par certains lecteurs
+    var s = String(raw || "").replace(/^\][A-Za-z]\d/, "").replace(/^\u001d+/, "");
     var out = {}, m;
     if (s.indexOf("(") !== -1) {
       var re = /\((\d{2,4})\)([^(]*)/g;
