@@ -1726,6 +1726,31 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
 .ph-steps { counter-reset:ph; } .ph-steps li { counter-increment:ph; display:flex; gap:10px; align-items:flex-start; line-height:1.45; }
 .ph-steps li::before { content:counter(ph); flex:none; width:24px; height:24px; border-radius:50%; background:var(--ink); color:var(--surface); display:grid; place-items:center; font-size:13px; font-weight:600; }
 .ph-note { margin-top:8px; }
+
+/* ===== v140 : qualité et traçabilité ===== */
+.q-table { margin-top:8px; }
+.q-row { display:grid; gap:10px; align-items:start; padding:10px 16px; border-top:1px solid var(--line); font-size:14px; }
+.q-row.q-head { font-size:12px; color:var(--muted); font-weight:600; border-top:0; }
+.q-row.q-imp { grid-template-columns:96px minmax(140px, 1.3fr) minmax(160px, 1.6fr) minmax(140px, 1.3fr) minmax(110px, 1fr) auto; }
+.q-row.q-aff { grid-template-columns:minmax(200px, 2fr) minmax(170px, 1.2fr) auto; }
+.q-row.q-sacrow { grid-template-columns:110px minmax(140px, 1.3fr) minmax(150px, 1.4fr) minmax(110px, 1fr) auto; }
+.q-row.q-jrn { grid-template-columns:96px minmax(150px, 1fr) minmax(200px, 2.4fr) minmax(110px, 1fr); }
+.q-row.nc { background:var(--bad-bg); }
+.q-row.q-void > span:not(.q-acts) { text-decoration:line-through; color:var(--muted); }
+.q-row.q-void .q-void-why { text-decoration:none; display:block; }
+.q-acts { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+.q-recall { border:1px solid var(--bad); background:var(--bad-bg); border-radius:10px; padding:12px 14px; margin:8px 0; display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
+.q-narrow { max-width:200px; min-width:140px !important; flex:0 1 200px !important; }
+.q-sac { margin-top:22px; }
+.q-search { padding:9px 12px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); font-size:15px; width:100%; box-sizing:border-box; }
+.q-hist { padding:8px 0; border-top:1px solid var(--line); } .q-hist.bad b { color:var(--bad); }
+.q-histlist { max-height:50vh; overflow:auto; margin:10px 0; }
+#impDlg .rt-row, #sacDlg .rt-row, #affDlg .rt-row, #lblDlg .rt-row { display:flex; gap:10px; flex-wrap:wrap; } #impDlg .rt-row .f, #sacDlg .rt-row .f, #affDlg .rt-row .f, #lblDlg .rt-row .f { flex:1 1 150px; }
+@media (max-width: 760px) {
+  .q-row.q-imp, .q-row.q-aff, .q-row.q-sacrow, .q-row.q-jrn { grid-template-columns:1fr; gap:4px; }
+  .q-row.q-head { display:none; }
+  .q-acts { justify-content:flex-start; }
+}
 </style>
 </head>
 <body>
@@ -1819,7 +1844,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v139</div>
+            <div class="menu-who"><span id="who"></span> · v140</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1942,6 +1967,9 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
       <button class="tab" role="tab" data-tab="controles" data-mod="materiel" aria-selected="false"><span class="ti">✅</span><span class="tl">Contrôles<span id="ctlBadge"></span></span></button>
       <button class="tab" role="tab" data-tab="equipements" data-mod="materiel" aria-selected="false"><span class="ti">🔧</span><span class="tl">Équipements</span></button>
       <button class="tab" role="tab" data-tab="sterilisation" data-mod="materiel" aria-selected="false"><span class="ti">♨️</span><span class="tl">Stérilisation</span></button>
+      <button class="tab" role="tab" data-tab="implants" data-mod="materiel" aria-selected="false"><span class="ti">🦷</span><span class="tl">Implants</span></button>
+      <button class="tab" role="tab" data-tab="affichages" data-mod="materiel" aria-selected="false"><span class="ti">📋</span><span class="tl">Affichages obligatoires</span></button>
+      <button class="tab" role="tab" data-tab="journal" data-mod="materiel" aria-selected="false"><span class="ti">🗂</span><span class="tl">Journal qualité</span></button>
     </div>
     <div class="sb-group" data-mod="equipe">
       <button class="tab" role="tab" data-tab="messages" data-mod="equipe" aria-selected="false"><span class="ti">💬</span><span class="tl">Messages <span class="msgbadge hidden" id="msgBadge" aria-label="messages non lus"></span></span></button>
@@ -2313,6 +2341,113 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   </div>
 </dialog>
 
+<dialog id="impDlg" class="wide">
+  <div class="dlg">
+    <h2>Enregistrer une pose d'implant</h2>
+    <div class="sub">Votre nom, la date et l'heure sont enregistrés automatiquement. La ligne ne se modifie plus ensuite : une erreur s'annule avec un motif.</div>
+    <div class="eqbar"><button class="btn" id="impScan" type="button">📷 Scanner le code de la boîte</button><span class="meta">Le code DataMatrix remplit le lot, le n° de série et la péremption.</span></div>
+    <div class="rt-row">
+      <label class="f">Patient (nom et prénom)<input id="impPatient" type="text" maxlength="120" autocomplete="off" placeholder="Ex : Dupont Marie"></label>
+      <label class="f">N° de dossier <span class="meta">(facultatif)</span><input id="impDossier" type="text" maxlength="40" autocomplete="off"></label>
+    </div>
+    <div class="rt-row">
+      <label class="f">Date de pose<input id="impDate" type="date"></label>
+      <label class="f">Dent ou site<input id="impLoc" type="text" maxlength="40" autocomplete="off" placeholder="Ex : 36"></label>
+      <label class="f">Praticien<input id="impPrat" type="text" maxlength="80" list="impPratList" autocomplete="off"></label>
+    </div>
+    <datalist id="impPratList"></datalist>
+    <div class="rt-row">
+      <label class="f">Produit<input id="impProduit" type="text" maxlength="160" list="impProdList" autocomplete="off" placeholder="Ex : Implant Ø4,1 x 10 mm"></label>
+      <label class="f">Fabricant<input id="impFab" type="text" maxlength="80" autocomplete="off"></label>
+      <label class="f">Référence<input id="impRef" type="text" maxlength="60" autocomplete="off"></label>
+    </div>
+    <datalist id="impProdList"></datalist>
+    <div class="rt-row">
+      <label class="f">N° de lot <span class="meta">(obligatoire)</span><input id="impLot" type="text" maxlength="60" autocomplete="off"></label>
+      <label class="f">N° de série<input id="impSerie" type="text" maxlength="60" autocomplete="off"></label>
+      <label class="f">Péremption<input id="impPer" type="date"></label>
+      <label class="f">Quantité<input id="impQty" type="number" min="1" step="1" value="1"></label>
+    </div>
+    <label class="chk hidden" id="impStockRow"><input type="checkbox" id="impStock"> <span id="impStockTxt"></span></label>
+    <label class="f">Remarque <span class="meta">(facultative)</span><textarea id="impNote" rows="2" maxlength="300"></textarea></label>
+    <input type="hidden" id="impGtin"><input type="hidden" id="impRaw"><input type="hidden" id="impItem">
+    <div class="umsg bad hidden" id="impErr" role="alert"></div>
+    <div class="dlg-actions"><button class="btn" id="impCancel" type="button">Annuler</button><button class="btn primary" id="impSave" type="button">Enregistrer et signer</button></div>
+  </div>
+</dialog>
+<dialog id="annDlg">
+  <div class="dlg">
+    <h2>Annuler un enregistrement</h2>
+    <div class="sub" id="annWhat"></div>
+    <div class="sub">La ligne n'est pas supprimée : elle reste dans le registre, barrée, avec votre motif et votre nom.</div>
+    <label class="f">Motif de l'annulation<textarea id="annMotif" rows="2" maxlength="300" placeholder="Ex : erreur de patient, saisie en double"></textarea></label>
+    <div class="umsg bad hidden" id="annErr" role="alert"></div>
+    <div class="dlg-actions"><button class="btn" id="annCancel" type="button">Retour</button><button class="btn danger" id="annSave" type="button">Annuler la ligne</button></div>
+  </div>
+</dialog>
+<dialog id="affDlg">
+  <div class="dlg">
+    <h2 id="affTitle">Ajouter un affichage ou un document</h2>
+    <label class="f">Titre<input id="affTitre" type="text" maxlength="160" autocomplete="off"></label>
+    <div class="rt-row">
+      <label class="f">Catégorie<input id="affCat" type="text" maxlength="60" list="affCatList" autocomplete="off" placeholder="Ex : Salle d'attente"></label>
+      <label class="f">À revérifier tous les<select id="affFreq"><option value="1">mois</option><option value="3">3 mois</option><option value="6">6 mois</option><option value="12">ans</option><option value="24">2 ans</option><option value="36">3 ans</option><option value="48">4 ans</option><option value="60">5 ans</option><option value="0">jamais (permanent)</option></select></label>
+    </div>
+    <datalist id="affCatList"></datalist>
+    <label class="f">Précisions <span class="meta">(facultatives)</span><textarea id="affDetail" rows="2" maxlength="300"></textarea></label>
+    <div class="umsg bad hidden" id="affErr" role="alert"></div>
+    <div class="dlg-actions"><button class="btn danger hidden" id="affArchive" type="button">Retirer de la liste</button><span class="spacer"></span><button class="btn" id="affCancel" type="button">Annuler</button><button class="btn primary" id="affSave" type="button">Enregistrer</button></div>
+  </div>
+</dialog>
+<dialog id="affvDlg">
+  <div class="dlg">
+    <h2>Signaler un problème</h2>
+    <div class="sub" id="affvWhat"></div>
+    <label class="f">Ce qui ne va pas<textarea id="affvNote" rows="2" maxlength="300" placeholder="Ex : affiche des tarifs pas à jour, contrôle expiré"></textarea></label>
+    <div class="umsg bad hidden" id="affvErr" role="alert"></div>
+    <div class="dlg-actions"><button class="btn" id="affvCancel" type="button">Annuler</button><button class="btn primary" id="affvSave" type="button">Enregistrer et signer</button></div>
+  </div>
+</dialog>
+<dialog id="affhDlg">
+  <div class="dlg">
+    <h2>Historique des vérifications</h2>
+    <div class="sub" id="affhWhat"></div>
+    <div id="affhList" class="q-histlist"></div>
+    <div class="dlg-actions"><button class="btn" id="affhClose" type="button">Fermer</button></div>
+  </div>
+</dialog>
+<dialog id="lblDlg">
+  <div class="dlg">
+    <h2>Étiquettes de sachets</h2>
+    <div class="sub">Une étiquette par sachet du cycle : elle porte le cycle, sa date et la date limite d'utilisation. Son QR se scanne à l'ouverture.</div>
+    <label class="f">Cycle (conforme)<select id="lblCycle"></select></label>
+    <div class="rt-row">
+      <label class="f">Nombre d'étiquettes<input id="lblCount" type="number" min="1" max="96" step="1" value="12"></label>
+      <label class="f">Utilisable pendant (jours)<input id="lblDays" type="number" min="1" max="730" step="1" value="90"></label>
+    </div>
+    <div class="meta">La durée d'utilisation dépend de votre emballage et de votre protocole : réglez-la une fois, elle est retenue.</div>
+    <div class="dlg-actions"><button class="btn" id="lblCancel" type="button">Annuler</button><button class="btn primary" id="lblPrint" type="button">🖨 Imprimer</button></div>
+  </div>
+</dialog>
+<dialog id="sacDlg">
+  <div class="dlg">
+    <h2>Ouverture d'un sachet</h2>
+    <div class="sub">Relie le sachet stérilisé au patient : en cas de problème sur un cycle, on retrouve les patients concernés.</div>
+    <div class="eqbar"><button class="btn" id="sacScan" type="button">📷 Scanner l'étiquette</button></div>
+    <label class="f">Cycle du sachet<select id="sacCycle"></select></label>
+    <div id="sacInfo" class="meta"></div>
+    <div class="rt-row">
+      <label class="f">Patient (nom et prénom)<input id="sacPatient" type="text" maxlength="120" autocomplete="off"></label>
+      <label class="f">N° de dossier <span class="meta">(facultatif)</span><input id="sacDossier" type="text" maxlength="40" autocomplete="off"></label>
+    </div>
+    <div class="rt-row">
+      <label class="f">Soin<input id="sacSoin" type="text" maxlength="120" autocomplete="off" placeholder="Ex : extraction 38"></label>
+      <label class="f">Salle<select id="sacSalle"></select></label>
+    </div>
+    <div class="umsg bad hidden" id="sacErr" role="alert"></div>
+    <div class="dlg-actions"><button class="btn" id="sacCancel" type="button">Annuler</button><button class="btn primary" id="sacSave" type="button">Enregistrer et signer</button></div>
+  </div>
+</dialog>
 <dialog id="sterDlg">
   <div class="dlg">
     <h2 id="sterTitle">Enregistrer dans le registre</h2>
@@ -7771,7 +7906,8 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     ["ajout-sterilisation.sql", "Registre de stérilisation", ["sterilisation_registre"]],
     ["ajout-rappels.sql", "Rappels automatiques", ["rappels_envoyes"]],
     ["ajout-routines.sql", "Routines", ["routines", "routine_coches"]],
-    ["ajout-notifications.sql", "Notifications", ["push_abonnements"]]
+    ["ajout-notifications.sql", "Notifications", ["push_abonnements"]],
+    ["sql/ajout-qualite.sql", "Qualité et traçabilité (implants, affichages)", ["affichages", "affichages_verifs"]]
   ];
   // une table fermée à la lecture (droits retirés, ex. reglages_recap) existe bien : seule son absence compte
   function probeTable(t) { return sb.from(t).select("*").limit(1).then(function (r) { return !r.error || r.error.code === "42501"; }, function () { return false; }); }
@@ -8292,6 +8428,440 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     doc.save("bon-de-commande-" + bkSlug(sup) + "-" + new Date().toISOString().slice(0, 10) + ".pdf");
     toast("Bon de commande créé : regardez dans vos téléchargements.");
   }
+  // ---------- qualité et traçabilité : implants posés, sachets ouverts, affichages obligatoires, journal ----------
+  // Les registres sont signés par la base et ne se suppriment pas : une erreur s'annule avec un motif.
+  // Les données patient ne sont chargées que pour les administrateurs et les membres (jamais en lecture seule).
+  var qImp = [], qImpOk = false, qSac = [], qSacOk = false, qAff = [], qVer = [], qAffOk = false, qSeeded = false;
+  var qImpQ = "", qImpYear = "", qJrnMonth = "", qJrnType = "", qAnnul = null, qAffEdit = null, qAffVerif = null;
+  var AFF_MODELES = [
+    ["Honoraires et tarifs des actes les plus courants", "Salle d'attente", 12, "Tarifs, dépassements, modalités de paiement, visibles depuis la salle d'attente."],
+    ["Situation vis-à-vis de la convention et du tiers payant", "Salle d'attente", 12, "Secteur conventionnel, carte Vitale, tiers payant."],
+    ["Coordonnées du médiateur de la consommation", "Salle d'attente", 12, ""],
+    ["Droits des patients et protection des données (RGPD)", "Salle d'attente", 12, "Qui traite les données, durée de conservation, comment exercer ses droits."],
+    ["Interdiction de fumer et de vapoter", "Locaux", 12, ""],
+    ["Consignes de sécurité incendie et plan d'évacuation", "Sécurité", 12, ""],
+    ["Numéros d'urgence", "Sécurité", 12, "15, 18, 112, centre antipoison."],
+    ["Signalisation des zones et consignes près des appareils de radiologie", "Radioprotection", 12, ""],
+    ["Contrôle qualité des appareils de radiologie", "Radioprotection", 12, "Rapport du dernier contrôle, à classer."],
+    ["Vérification des installations électriques", "Sécurité", 12, ""],
+    ["Vérification des extincteurs", "Sécurité", 12, ""],
+    ["Contrat d'élimination des DASRI et bordereaux de suivi", "Hygiène", 12, ""],
+    ["Document unique d'évaluation des risques (DUERP)", "Employeur", 12, "À mettre à jour au moins une fois par an."],
+    ["Attestation d'assurance responsabilité civile professionnelle", "Administratif", 12, ""],
+    ["Formation de l'équipe aux gestes d'urgence", "Équipe", 48, ""]
+  ];
+  var Q_TYPES = [["", "Tout"], ["ster", "Stérilisation"], ["ctl", "Contrôles"], ["imp", "Implants"], ["sac", "Sachets ouverts"], ["aff", "Affichages"]];
+  function qCanPatients() { return !readOnly; }
+  function loadQualite() {
+    if (!sb || !cabinetId || !db) return; var cid = cabinetId;
+    var jobs = [
+      sb.from("affichages").select("*").eq("cabinet_id", cid).order("position").order("created_at"),
+      sb.from("affichages_verifs").select("*").eq("cabinet_id", cid).order("verifie_le", { ascending: false }).limit(2000)
+    ];
+    if (qCanPatients()) jobs.push(
+      sb.from("implants_poses").select("*").eq("cabinet_id", cid).order("pose_le", { ascending: false }).order("created_at", { ascending: false }).limit(5000),
+      sb.from("sachets_ouvertures").select("*").eq("cabinet_id", cid).order("ouvert_le", { ascending: false }).limit(5000));
+    Promise.all(jobs).then(function (r) {
+      if (cid !== cabinetId) return;
+      qAffOk = !r[0].error; qAff = r[0].data || []; qVer = r[1].error ? [] : (r[1].data || []);
+      if (r[2]) { qImpOk = !r[2].error; qImp = r[2].data || []; } else { qImpOk = false; qImp = []; }
+      if (r[3]) { qSacOk = !r[3].error; qSac = r[3].data || []; } else { qSacOk = false; qSac = []; }
+      if (qAffOk && !qAff.length && !readOnly && !qSeeded) { qSeeded = true; seedAffichages(); }
+      if (["implants", "affichages", "journal", "sterilisation", "hub", "accueil"].indexOf(state.tab) !== -1) render();
+    }, function () { qAffOk = false; qImpOk = false; qSacOk = false; });
+  }
+  function qResetState() { qImp = []; qImpOk = false; qSac = []; qSacOk = false; qAff = []; qVer = []; qAffOk = false; qSeeded = false; }
+  function qErr(res, fallback) {
+    var m = String((res && res.error && res.error.message) || "");
+    if (/relation|does not exist|schema cache/i.test(m)) return "Lancez le script SQL « ajout-qualite » dans Supabase (voir Plus → Cabinet → État de l'installation).";
+    if (/motif_obligatoire/.test(m)) return "Indiquez le motif de l'annulation (3 caractères au moins).";
+    if (/deja_annule/.test(m)) return "Cette ligne est déjà annulée.";
+    if (/row-level security|permission/i.test(m)) return "Votre compte n'a pas le droit d'enregistrer ici.";
+    return fallback || "L'enregistrement a échoué : réessayez.";
+  }
+  function qSignedBy(x) { return personLabel(x.par_id, x.par); }
+  function qInstallNote(box, what) { box.append(h("div", { class: "dnote", text: what + " n'est pas encore activé : lancez le script SQL « ajout-qualite » dans Supabase (Plus → Cabinet → État de l'installation)." })); }
+  function qPatientNote(box) { box.append(h("div", { class: "dnote", text: "Réservé aux administrateurs et aux membres du cabinet : cette page contient des données patient." })); }
+
+  // ----- implants -----
+  function impStats() { var y = String(new Date().getFullYear()), live = qImp.filter(function (x) { return !x.annule; }); return { year: live.filter(function (x) { return String(x.pose_le).slice(0, 4) === y; }).length, total: live.length }; }
+  function impMatches(x, q) { return !q || norm([x.patient_nom, x.patient_dossier, x.produit, x.fabricant, x.ref, x.lot, x.serie, x.praticien, x.localisation].join(" ")).indexOf(q) !== -1; }
+  function impRows() {
+    var q = norm(qImpQ.trim());
+    return qImp.filter(function (x) { return (!qImpYear || String(x.pose_le).slice(0, 4) === qImpYear) && impMatches(x, q); });
+  }
+  function renderImplants(box) {
+    if (!qCanPatients()) { box.append(h("div", { class: "rcv-intro" }, h("h3", { text: "Traçabilité des implants" }))); qPatientNote(box); return; }
+    if (!qImpOk) { qInstallNote(box, "Le registre des implants"); return; }
+    box.append(h("div", { class: "rcv-intro" }, h("h3", { text: "Traçabilité des implants" }), h("div", { class: "meta", text: "Implants, membranes, greffes : chaque pose relie le produit, son lot et sa péremption au patient. La ligne est signée et ne se modifie plus. En cas de rappel de lot, cherchez le lot ci-dessous." })));
+    box.append(h("div", { class: "eqbar" },
+      h("button", { class: "btn primary", type: "button", text: "＋ Enregistrer une pose", onclick: function () { openImpForm(); } }),
+      h("button", { class: "btn", type: "button", text: "📷 Scanner la boîte", onclick: function () { openImpForm(); setTimeout(function () { openScan("implant"); }, 150); } }),
+      h("button", { class: "btn", type: "button", text: "📄 Exporter en PDF", onclick: function () { impPdf(); } })));
+    var years = {}; years[String(new Date().getFullYear())] = 1; qImp.forEach(function (x) { years[String(x.pose_le).slice(0, 4)] = 1; });
+    var ysel = h("select", { "aria-label": "Année" }, h("option", { value: "", text: "Toutes les années" })); Object.keys(years).sort().reverse().forEach(function (y) { ysel.append(h("option", { value: y, text: y })); }); ysel.value = qImpYear;
+    ysel.addEventListener("change", function () { qImpYear = ysel.value; render(); });
+    var qin = h("input", { type: "search", class: "q-search", value: qImpQ, placeholder: "Lot, patient, produit, n° de série…", "aria-label": "Rechercher dans les implants" });
+    qin.addEventListener("input", function () { qImpQ = qin.value; drawImpList(); });
+    box.append(h("div", { class: "rcv-bar" }, h("label", { class: "f" }, "Rechercher", qin), h("label", { class: "f q-narrow" }, "Année", ysel)));
+    var holder = h("div", { id: "impList" }); box.append(holder); drawImpList();
+  }
+  function drawImpList() {
+    var holder = $("impList"); if (!holder) return; holder.textContent = "";
+    var rows = impRows(), q = qImpQ.trim(), st = impStats();
+    var lotHit = q && rows.filter(function (x) { return !x.annule && norm(x.lot) === norm(q); });
+    if (lotHit && lotHit.length) {
+      var pats = Array.from(new Set(lotHit.map(function (x) { return x.patient_nom + (x.patient_dossier ? " (dossier " + x.patient_dossier + ")" : ""); })));
+      holder.append(h("div", { class: "q-recall" }, h("b", { text: "Lot « " + q + " » : " + pats.length + " patient" + (pats.length > 1 ? "s" : "") + " concerné" + (pats.length > 1 ? "s" : "") }), h("div", { class: "meta", text: pats.join(" · ") }),
+        h("button", { class: "btn sm", type: "button", text: "📄 Liste pour le rappel (PDF)", onclick: function () { impPdf(lotHit, "Rappel du lot " + q); } })));
+    }
+    holder.append(h("div", { class: "meta ster-sum", text: st.year + " pose(s) cette année · " + st.total + " au total" + (q || qImpYear ? " · " + rows.length + " affichée(s)" : "") }));
+    var tb = h("div", { class: "table q-table" });
+    tb.append(h("div", { class: "q-row q-imp q-head" }, h("span", { text: "Pose" }), h("span", { text: "Patient" }), h("span", { text: "Produit" }), h("span", { text: "Lot · série · péremption" }), h("span", { text: "Signé par" }), h("span", { text: "" })));
+    if (!rows.length) tb.append(h("div", { class: "empty", text: qImp.length ? "Aucune pose ne correspond à cette recherche." : "Aucune pose enregistrée pour l'instant." }));
+    rows.slice(0, 400).forEach(function (x) {
+      var prod = [x.produit, x.fabricant, x.ref ? "réf. " + x.ref : ""].filter(Boolean).join(" · ");
+      var lot = ["lot " + x.lot, x.serie ? "série " + x.serie : "", x.peremption ? "exp. " + isoToFr(x.peremption) : ""].filter(Boolean).join(" · ");
+      tb.append(h("div", { class: "q-row q-imp" + (x.annule ? " q-void" : "") },
+        h("span", {}, isoToFr(x.pose_le), x.localisation ? h("div", { class: "meta", text: "dent / site " + x.localisation }) : null),
+        h("span", {}, h("b", { text: x.patient_nom }), h("div", { class: "meta", text: [x.patient_dossier ? "dossier " + x.patient_dossier : "", x.praticien ? "par " + x.praticien : ""].filter(Boolean).join(" · ") })),
+        h("span", { text: prod + (x.quantite > 1 ? " ×" + fmt(x.quantite) : "") }),
+        h("span", { text: lot }),
+        h("span", {}, qSignedBy(x), x.annule ? h("div", { class: "meta q-void-why", text: "Annulé par " + (x.annule_par || "?") + " : " + x.annule_motif }) : null),
+        h("span", { class: "q-acts" }, x.annule ? null : h("button", { class: "btn sm", type: "button", text: "🪪 Carte", title: "Imprimer la carte implant du patient", onclick: function () { impCard(x); } }),
+          x.annule ? null : h("button", { class: "btn sm", type: "button", text: "Annuler…", onclick: function () { openAnnul("implants_poses", x); } }))));
+    });
+    holder.append(tb);
+  }
+  function qPeople() {
+    var set = {}, me = myName(); if (me && me !== "?") set[me] = 1;
+    (msgPeople || []).forEach(function (p) { var n = personLabel(p.user_id, p.email); if (n) set[n] = 1; });
+    qImp.forEach(function (x) { if (x.praticien) set[x.praticien] = 1; });
+    return Object.keys(set).sort();
+  }
+  function openImpForm() {
+    if (readOnly) return;
+    ["impPatient", "impDossier", "impLoc", "impProduit", "impFab", "impRef", "impLot", "impSerie", "impPer", "impNote", "impGtin", "impRaw"].forEach(function (id) { $(id).value = ""; });
+    $("impDate").value = localIso(); $("impDate").max = localIso(); $("impQty").value = "1";
+    var pl = $("impPratList"); pl.textContent = ""; qPeople().forEach(function (n) { pl.append(h("option", { value: n })); });
+    var me = myName ? myName() : ""; $("impPrat").value = me && me !== "?" ? me : "";
+    var dl = $("impProdList"); dl.textContent = ""; Array.from(items.values()).filter(function (it) { return !it.archived && /implant|membrane|greffe|os |comblement|vis de cicatrisation|pilier/i.test(it.name + " " + (it.category || "") + " " + (it.subcategory || "")); }).slice(0, 300).forEach(function (it) { dl.append(h("option", { value: it.name })); });
+    $("impItem").value = ""; impSyncItem(); $("impErr").classList.add("hidden"); $("impSave").disabled = false;
+    $("impDlg").showModal(); $("impPatient").focus();
+  }
+  function impFindItem() {
+    var key = $("impGtin").value ? "gtin:" + $("impGtin").value : "", name = norm($("impProduit").value.trim()), all = Array.from(items.values()).filter(function (it) { return !it.archived; });
+    return (key && all.filter(function (it) { return it.barcode === key; })[0]) || (name && all.filter(function (it) { return norm(it.name) === name; })[0]) || null;
+  }
+  function impSyncItem() {
+    var it = impFindItem(); $("impItem").value = it ? it.id : "";
+    var row = $("impStockRow"); row.classList.toggle("hidden", !it);
+    if (it) { $("impStockTxt").textContent = "Retirer du stock : " + it.name + " (en stock : " + fmt(it.qty || 0) + ")"; $("impStock").checked = (Number(it.qty) || 0) > 0; }
+  }
+  function impFromScan(text) {
+    var info = parseGs1(text);
+    $("impRaw").value = String(text).slice(0, 300);
+    if (info) {
+      $("impGtin").value = info["01"] || "";
+      if (info["10"]) $("impLot").value = info["10"];
+      if (info["21"]) $("impSerie").value = info["21"];
+      var d = gs1Date(info["17"]) || gs1Date(info["15"]); if (d) $("impPer").value = d;
+    }
+    var it = impFindItem() || Array.from(items.values()).filter(function (x) { return x.barcode && x.barcode === scanKey(text); })[0];
+    if (it) { if (!$("impProduit").value) $("impProduit").value = it.name; if (!$("impRef").value) $("impRef").value = it.ref || ""; if (!$("impFab").value) $("impFab").value = it.supplier || ""; }
+    impSyncItem();
+    toast(info ? "Code lu : lot" + (info["10"] ? " " + info["10"] : " absent") + (info["17"] ? ", péremption " + isoToFr(gs1Date(info["17"])) : "") + ". Vérifiez puis enregistrez." : "Code lu, mais sans lot ni péremption : complétez à la main.");
+  }
+  function impSave() {
+    var err = $("impErr"), fail = function (t) { err.textContent = t; err.classList.remove("hidden"); };
+    var rec = { cabinet_id: cabinetId, pose_le: $("impDate").value || localIso(), patient_nom: $("impPatient").value.trim(), patient_dossier: $("impDossier").value.trim(), praticien: $("impPrat").value.trim(), localisation: $("impLoc").value.trim(),
+      produit: $("impProduit").value.trim(), fabricant: $("impFab").value.trim(), ref: $("impRef").value.trim(), lot: $("impLot").value.trim(), serie: $("impSerie").value.trim(), peremption: $("impPer").value || null,
+      gtin: $("impGtin").value, code_brut: $("impRaw").value, item_id: $("impItem").value || null, quantite: Math.max(1, Number($("impQty").value) || 1), note: $("impNote").value.trim() };
+    if (!rec.patient_nom) { fail("Indiquez le nom du patient."); return; }
+    if (!rec.produit) { fail("Indiquez le produit posé."); return; }
+    if (!rec.lot) { fail("Le numéro de lot est obligatoire : il permet de retrouver le patient en cas de rappel."); return; }
+    if (rec.pose_le > localIso()) { fail("La date de pose ne peut pas être dans le futur."); return; }
+    if (rec.peremption && rec.peremption < rec.pose_le) { fail("Ce produit était périmé à la date de pose (" + isoToFr(rec.peremption) + ") : vérifiez la boîte."); return; }
+    var it = rec.item_id ? items.get(rec.item_id) : null, take = it && $("impStock").checked;
+    $("impSave").disabled = true;
+    sb.from("implants_poses").insert(rec).select().then(function (r) {
+      if (r.error) { fail(qErr(r)); $("impSave").disabled = false; return; }
+      qImp.unshift(r.data[0]); $("impDlg").close(); render();
+      if (take) adjustQty(it, -rec.quantite, "Pose d'implant · lot " + rec.lot);
+      toast("✓ Pose enregistrée et signée" + (take ? ", stock mis à jour" : "") + ".");
+    }, function () { fail("Connexion impossible : rien n'a été enregistré."); $("impSave").disabled = false; });
+  }
+  function impCard(x) {
+    var w = null; try { w = window.open("", "_blank"); } catch (e) {}
+    if (!w) { toast("Autorisez les fenêtres pour imprimer la carte implant."); return; }
+    var row = function (k, v) { return v ? "<tr><th>" + escHtml(k) + "</th><td>" + escHtml(v) + "</td></tr>" : ""; };
+    var html = '<!doctype html><meta charset="utf-8"><title>Carte implant</title><style>body{font-family:Inter,Arial,sans-serif;color:#171A20;margin:24px}.card{width:85.6mm;min-height:54mm;border:1px solid #171A20;border-radius:3mm;padding:4mm 5mm;box-sizing:border-box;font-size:8.5pt}h1{font-size:11pt;margin:0 0 1mm}.cab{color:#5C5E62;margin-bottom:2mm}table{border-collapse:collapse;width:100%}th{text-align:left;font-weight:500;color:#5C5E62;padding:.4mm 2mm .4mm 0;white-space:nowrap;vertical-align:top}td{font-weight:600;padding:.4mm 0}.foot{margin-top:2mm;color:#5C5E62;font-size:7pt}@media print{body{margin:0}}</style>'
+      + '<div class="card"><h1>Carte de porteur d\'implant</h1><div class="cab">' + escHtml(cabinetName) + '</div><table>'
+      + row("Patient", x.patient_nom) + row("Posé le", isoToFr(x.pose_le)) + row("Dent / site", x.localisation) + row("Produit", x.produit) + row("Fabricant", x.fabricant) + row("Référence", x.ref) + row("Lot", x.lot) + row("N° de série", x.serie) + row("Praticien", x.praticien)
+      + '</table><div class="foot">Conservez cette carte et présentez-la à tout professionnel de santé (examen d\'imagerie, intervention).</div></div>';
+    w.document.write(html); w.document.close(); setTimeout(function () { try { w.print(); } catch (e) {} }, 400);
+  }
+  function qPdfTable(o) {
+    var lib = window.jspdf && window.jspdf.jsPDF;
+    if (!lib) { toast("Le PDF n'a pas pu être créé : vérifiez votre accès à internet, puis rechargez la page."); return; }
+    var doc = new lib({ unit: "mm", format: "a4", orientation: "landscape" }), W = 297, M = 10, y = 0, ink = [23, 26, 32], muted = [92, 94, 98], line = [225, 225, 225];
+    var xs = [], acc = M; o.cols.forEach(function (c) { xs.push(acc); acc += c[1]; });
+    var T = function (t, x, yy, op) { doc.text(String(t), x, yy, op || {}); };
+    var top = function () { doc.setFillColor(23, 26, 32); doc.rect(0, 0, W, 20, "F"); doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(15); T(o.title, M, 10); doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); T(cabinetName + "  ·  " + o.sub + "  ·  édité le " + new Date().toLocaleDateString("fr-FR") + " par " + (myEmail || ""), M, 16); y = 27; };
+    var head = function () { doc.setFillColor(240, 240, 240); doc.rect(M, y, W - 2 * M, 7, "F"); doc.setTextColor.apply(doc, ink); doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); o.cols.forEach(function (c, i) { T(c[0], xs[i] + 1.5, y + 4.8); }); y += 7; };
+    top(); head();
+    if (!o.rows.length) { doc.setFont("helvetica", "normal"); doc.setTextColor.apply(doc, muted); T("Aucun enregistrement.", M + 2, y + 6); y += 10; }
+    o.rows.forEach(function (cells) {
+      var voided = cells.__void; doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      var wrapped = cells.map(function (c, i) { return doc.splitTextToSize(String(c == null ? "" : c), o.cols[i][1] - 3).slice(0, 4); }), lines = Math.max.apply(null, wrapped.map(function (w) { return w.length; })), hh = Math.max(6, lines * 3.6 + 2.4);
+      if (y + hh > 192) { doc.addPage(); top(); head(); }
+      if (voided) { doc.setFillColor(248, 248, 248); doc.rect(M, y, W - 2 * M, hh, "F"); }
+      doc.setTextColor.apply(doc, voided ? muted : ink); wrapped.forEach(function (w, i) { w.forEach(function (ln, k) { T(ln, xs[i] + 1.5, y + 4.2 + k * 3.6); }); });
+      doc.setDrawColor.apply(doc, line); doc.setLineWidth(0.2); doc.line(M, y + hh, W - M, y + hh); y += hh;
+    });
+    if (y > 172) { doc.addPage(); top(); }
+    y += 12; doc.setTextColor.apply(doc, ink); doc.setFont("helvetica", "normal"); doc.setFontSize(10); T("Visa du responsable : ________________________        Date : ____ / ____ / ________", M, y);
+    var n = doc.getNumberOfPages(); for (var i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor.apply(doc, muted); T("SimSimStock · " + o.title + " · " + cabinetName + " · document confidentiel · page " + i + "/" + n, W / 2, 205, { align: "center" }); }
+    doc.save(o.file + ".pdf"); toast("PDF créé : regardez dans vos téléchargements.");
+  }
+  function impPdf(list, title) {
+    var rows = (list || impRows()).slice().sort(function (a, b) { return String(a.pose_le) < String(b.pose_le) ? -1 : 1; }).map(function (x) {
+      var r = [isoToFr(x.pose_le), x.patient_nom + (x.patient_dossier ? " (" + x.patient_dossier + ")" : ""), x.localisation, [x.produit, x.fabricant].filter(Boolean).join(" · "), x.ref, x.lot, x.serie, x.peremption ? isoToFr(x.peremption) : "", x.praticien, qSignedBy(x) + (x.annule ? " · ANNULÉ : " + x.annule_motif : "")];
+      if (x.annule) r.__void = true; return r;
+    });
+    qPdfTable({ title: title || "Registre des implants posés", sub: title ? rows.length + " pose(s)" : (qImpYear || "toutes années") + (qImpQ.trim() ? " · recherche « " + qImpQ.trim() + " »" : ""), file: "implants-" + bkSlug(cabinetName) + "-" + localIso(),
+      cols: [["Pose", 20], ["Patient", 42], ["Dent", 14], ["Produit", 50], ["Réf.", 22], ["Lot", 26], ["Série", 22], ["Péremption", 20], ["Praticien", 26], ["Signé par", 35]], rows: rows });
+  }
+
+  // ----- annulation (implants et sachets) -----
+  function openAnnul(table, x) { if (readOnly) return; qAnnul = { table: table, row: x }; $("annMotif").value = ""; $("annErr").classList.add("hidden"); $("annSave").disabled = false; $("annWhat").textContent = table === "implants_poses" ? "Pose du " + isoToFr(x.pose_le) + " · " + x.patient_nom + " · lot " + x.lot : "Sachet ouvert le " + new Date(x.ouvert_le || x.created_at).toLocaleDateString("fr-FR") + " · " + x.patient_nom; $("annDlg").showModal(); $("annMotif").focus(); }
+  function annSave() {
+    var a = qAnnul, motif = $("annMotif").value.trim(), err = $("annErr"); if (!a) return;
+    if (motif.length < 3) { err.textContent = "Indiquez le motif de l'annulation."; err.classList.remove("hidden"); return; }
+    $("annSave").disabled = true;
+    sb.from(a.table).update({ annule: true, annule_motif: motif }).eq("id", a.row.id).select().then(function (r) {
+      if (r.error || !r.data || !r.data[0]) { err.textContent = qErr(r, "L'annulation a échoué : réessayez."); err.classList.remove("hidden"); $("annSave").disabled = false; return; }
+      var arr = a.table === "implants_poses" ? qImp : qSac, i = arr.findIndex(function (y) { return y.id === a.row.id; }); if (i !== -1) arr[i] = r.data[0];
+      $("annDlg").close(); render(); toast("Ligne annulée. Elle reste visible, barrée, avec votre motif.");
+    }, function () { err.textContent = "Connexion impossible."; err.classList.remove("hidden"); $("annSave").disabled = false; });
+  }
+
+  // ----- affichages et documents obligatoires -----
+  function affDue(a) {
+    if (!a.frequence_mois) return null;
+    if (!a.derniere_verif) return "";
+    var d = new Date(a.derniere_verif + "T12:00:00"); d.setMonth(d.getMonth() + a.frequence_mois); return localIso(d);
+  }
+  function affState(a) {
+    var due = affDue(a), today = localIso(), soon = localIso(new Date(Date.now() + 30 * 86400000));
+    var last = qVer.filter(function (v) { return v.affichage_id === a.id; })[0];
+    if (last && !last.ok) return { tone: "bad", text: "Problème signalé le " + isoToFr(last.verifie_le) + (last.note ? " : " + last.note : "") };
+    if (due === "") return { tone: "warn", text: "À vérifier une première fois" };
+    if (due === null) return { tone: "on", text: a.derniere_verif ? "Vérifié le " + isoToFr(a.derniere_verif) : "Sans échéance" };
+    if (due < today) return { tone: "bad", text: "À revérifier depuis le " + isoToFr(due) };
+    if (due <= soon) return { tone: "warn", text: "À revérifier avant le " + isoToFr(due) };
+    return { tone: "on", text: "À jour jusqu'au " + isoToFr(due) };
+  }
+  function affLateCount() { return qAffOk ? qAff.filter(function (a) { return !a.archived && affState(a).tone === "bad"; }).length : 0; }
+  function seedAffichages() {
+    var rows = AFF_MODELES.map(function (m, i) { return { cabinet_id: cabinetId, titre: m[0], categorie: m[1], frequence_mois: m[2], detail: m[3], position: i + 1 }; });
+    sb.from("affichages").insert(rows).select().then(function (r) { if (!r.error) { qAff = r.data || []; render(); } }, function () {});
+  }
+  function renderAffichages(box) {
+    if (!qAffOk) { qInstallNote(box, "La liste des affichages"); return; }
+    box.append(h("div", { class: "rcv-intro" }, h("h3", { text: "Affichages et documents obligatoires" }), h("div", { class: "meta", text: "Cochez ce qui est en place : chaque vérification est datée et signée. La liste de départ est indicative : faites-la valider par votre Ordre, votre ARS ou votre assureur, puis adaptez-la à votre cabinet." })));
+    var live = qAff.filter(function (a) { return !a.archived; }), late = live.filter(function (a) { return affState(a).tone === "bad"; }).length, soon = live.filter(function (a) { return affState(a).tone === "warn"; }).length;
+    box.append(h("div", { class: "meta ster-sum", text: live.length + " élément(s) · " + (late ? late + " en retard ou en problème" : "rien en retard") + (soon ? " · " + soon + " à vérifier bientôt ou pour la première fois" : "") }));
+    if (!readOnly) box.append(h("div", { class: "eqbar" }, h("button", { class: "btn", type: "button", text: "＋ Ajouter un affichage ou un document", onclick: function () { openAffForm(null); } })));
+    var cats = []; live.forEach(function (a) { if (cats.indexOf(a.categorie || "Autre") === -1) cats.push(a.categorie || "Autre"); });
+    var tb = h("div", { class: "table q-table" });
+    if (!live.length) tb.append(h("div", { class: "empty", text: "La liste est vide." }));
+    cats.forEach(function (c) {
+      tb.append(h("div", { class: "catrow", text: c }));
+      live.filter(function (a) { return (a.categorie || "Autre") === c; }).forEach(function (a) {
+        var s = affState(a), last = qVer.filter(function (v) { return v.affichage_id === a.id; })[0];
+        tb.append(h("div", { class: "q-row q-aff" },
+          h("span", {}, h("b", { text: a.titre }), a.detail ? h("div", { class: "meta", text: a.detail }) : null),
+          h("span", {}, h("span", { class: "chip " + (s.tone === "bad" ? "rupture" : s.tone === "warn" ? "bas" : "ok"), text: s.text }), last ? h("div", { class: "meta", text: (last.ok ? "Vérifié" : "Signalé") + " par " + qSignedBy(last) }) : null),
+          h("span", { class: "q-acts" }, readOnly ? null : h("button", { class: "btn sm primary", type: "button", text: "✓ Vérifié", title: "En place et à jour aujourd'hui", onclick: function () { affVerif(a, true, ""); } }),
+            readOnly ? null : h("button", { class: "btn sm", type: "button", text: "⚠ Problème…", onclick: function () { openAffVerif(a); } }),
+            h("button", { class: "btn sm", type: "button", text: "Historique", onclick: function () { affHistory(a); } }),
+            readOnly ? null : h("button", { class: "btn sm", type: "button", text: "Modifier", onclick: function () { openAffForm(a); } }))));
+      });
+    });
+    box.append(tb);
+  }
+  function affVerif(a, ok, note) {
+    if (readOnly) return Promise.resolve(false);
+    return sb.from("affichages_verifs").insert({ cabinet_id: cabinetId, affichage_id: a.id, ok: ok, note: note || "" }).select().then(function (r) {
+      if (r.error) { toast(qErr(r)); return false; }
+      qVer.unshift(r.data[0]); if (ok) { var i = qAff.indexOf(a); if (i !== -1) qAff[i] = Object.assign({}, a, { derniere_verif: r.data[0].verifie_le }); }
+      render(); toast(ok ? "✓ Vérification enregistrée et signée." : "Problème enregistré : il reste signalé tant qu'une vérification conforme n'est pas faite."); return true;
+    }, function () { toast("Connexion impossible : rien n'a été enregistré."); return false; });
+  }
+  function openAffVerif(a) { qAffVerif = a; $("affvWhat").textContent = a.titre; $("affvNote").value = ""; $("affvErr").classList.add("hidden"); $("affvDlg").showModal(); $("affvNote").focus(); }
+  function affHistory(a) {
+    var list = qVer.filter(function (v) { return v.affichage_id === a.id; }), box = $("affhList"); box.textContent = "";
+    $("affhWhat").textContent = a.titre;
+    if (!list.length) box.append(h("div", { class: "empty", text: "Aucune vérification enregistrée." }));
+    list.forEach(function (v) { box.append(h("div", { class: "q-hist" + (v.ok ? "" : " bad") }, h("b", { text: isoToFr(v.verifie_le) + (v.ok ? " · ✓ conforme" : " · ⚠ problème") }), h("span", { class: "meta", text: " par " + qSignedBy(v) + (v.note ? " · " + v.note : "") }))); });
+    $("affhDlg").showModal();
+  }
+  function openAffForm(a) {
+    if (readOnly) return; qAffEdit = a;
+    $("affTitle").textContent = a ? "Modifier l'élément" : "Ajouter un affichage ou un document";
+    $("affTitre").value = a ? a.titre : ""; $("affCat").value = a ? a.categorie : ""; $("affDetail").value = a ? a.detail : ""; $("affFreq").value = String(a ? a.frequence_mois : 12);
+    var cl = $("affCatList"); cl.textContent = ""; Array.from(new Set(qAff.map(function (x) { return x.categorie; }).filter(Boolean))).forEach(function (c) { cl.append(h("option", { value: c })); });
+    $("affArchive").classList.toggle("hidden", !a); $("affErr").classList.add("hidden"); $("affDlg").showModal(); $("affTitre").focus();
+  }
+  function affSave(archive) {
+    var titre = $("affTitre").value.trim(), err = $("affErr");
+    if (!titre && !archive) { err.textContent = "Indiquez un titre."; err.classList.remove("hidden"); return; }
+    var patch = archive ? { archived: true } : { titre: titre, categorie: $("affCat").value.trim(), detail: $("affDetail").value.trim(), frequence_mois: Math.max(0, Math.min(120, parseInt($("affFreq").value, 10) || 0)) };
+    var q = qAffEdit ? sb.from("affichages").update(patch).eq("id", qAffEdit.id).select() : sb.from("affichages").insert(Object.assign({ cabinet_id: cabinetId, position: qAff.length + 1 }, patch)).select();
+    q.then(function (r) {
+      if (r.error || !r.data || !r.data[0]) { err.textContent = qErr(r); err.classList.remove("hidden"); return; }
+      var row = r.data[0], i = qAffEdit ? qAff.findIndex(function (x) { return x.id === row.id; }) : -1; if (i !== -1) qAff[i] = row; else qAff.push(row);
+      $("affDlg").close(); render(); toast(archive ? "Élément retiré de la liste (son historique est conservé)." : "Enregistré.");
+    }, function () { err.textContent = "Connexion impossible."; err.classList.remove("hidden"); });
+  }
+
+  // ----- sachets stérilisés : étiquettes et ouverture pour un patient -----
+  function sacDaysKey() { return "simsim_sac_days_" + (cabinetId || ""); }
+  function sacDays() { var n = 90; try { n = parseInt(localStorage.getItem(sacDaysKey()), 10) || 90; } catch (e) {} return Math.max(1, Math.min(730, n)); }
+  function sacCycles() { return ster.filter(function (x) { return x.type === "cycle"; }).slice(0, 200); }
+  function sacLimit(cy, days) { var d = new Date(cy.fait_at); d.setDate(d.getDate() + (days || sacDays())); return localIso(d); }
+  function sacCycleLabel(cy) { return sterWhenTxt(cy) + " " + new Date(cy.fait_at).getFullYear() + " · " + (cy.appareil || "autoclave") + (cy.numero ? " · cycle n° " + cy.numero : "") + (cy.resultat !== "conforme" ? " · ⚠ NON CONFORME" : ""); }
+  function sterQualiteSection(box) {
+    if (!sterOk) return;
+    var sec = h("div", { class: "dsec q-sac" }, h("h3", { text: "Du cycle au patient" }), h("div", { class: "meta", text: "Imprimez des étiquettes pour les sachets d'un cycle conforme, puis scannez l'étiquette à l'ouverture du sachet : le patient est relié au cycle." }));
+    if (!readOnly) sec.append(h("div", { class: "eqbar" },
+      h("button", { class: "btn", type: "button", text: "🏷 Étiquettes de sachets", onclick: function () { openSacLabels(); } }),
+      qCanPatients() ? h("button", { class: "btn primary", type: "button", text: "📦 Ouverture d'un sachet", onclick: function () { openSacOpen(null); } }) : null));
+    if (qCanPatients() && qSacOk) {
+      var recent = qSac.slice(0, 8), tb = h("div", { class: "table q-table" });
+      if (!recent.length) tb.append(h("div", { class: "empty", text: "Aucune ouverture de sachet enregistrée." }));
+      recent.forEach(function (x) {
+        tb.append(h("div", { class: "q-row q-sacrow" + (x.annule ? " q-void" : "") },
+          h("span", { text: (function (d) { return d.toLocaleDateString("fr-FR") + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()); })(new Date(x.ouvert_le || x.created_at)) }),
+          h("span", {}, h("b", { text: x.patient_nom }), h("div", { class: "meta", text: [x.patient_dossier ? "dossier " + x.patient_dossier : "", x.soin, x.salle].filter(Boolean).join(" · ") })),
+          h("span", { text: [x.appareil, x.cycle_numero ? "cycle n° " + x.cycle_numero : "", x.cycle_le ? "du " + new Date(x.cycle_le).toLocaleDateString("fr-FR") : ""].filter(Boolean).join(" · ") }),
+          h("span", {}, qSignedBy(x), x.annule ? h("div", { class: "meta q-void-why", text: "Annulé : " + x.annule_motif }) : null),
+          h("span", { class: "q-acts" }, x.annule || readOnly ? null : h("button", { class: "btn sm", type: "button", text: "Annuler…", onclick: function () { openAnnul("sachets_ouvertures", x); } }))));
+      });
+      sec.append(tb);
+      if (qSac.length > 8) sec.append(h("div", { class: "meta", text: "Les " + qSac.length + " ouvertures sont dans le Journal qualité." }));
+    } else if (qCanPatients() && !qSacOk) sec.append(h("div", { class: "dnote", text: "Pour relier les sachets aux patients, lancez le script SQL « ajout-qualite » dans Supabase." }));
+    box.append(sec);
+  }
+  function openSacLabels() {
+    var sel = $("lblCycle"), cys = sacCycles().filter(function (x) { return x.resultat === "conforme"; }); sel.textContent = "";
+    if (!cys.length) { toast("Enregistrez d'abord un cycle conforme dans le registre."); return; }
+    cys.forEach(function (cy) { sel.append(h("option", { value: cy.id, text: sacCycleLabel(cy) })); });
+    $("lblCount").value = "12"; $("lblDays").value = String(sacDays()); $("lblDlg").showModal();
+  }
+  function printSacLabels() {
+    var cy = ster.filter(function (x) { return x.id === $("lblCycle").value; })[0]; if (!cy) return;
+    var n = Math.max(1, Math.min(96, parseInt($("lblCount").value, 10) || 1)), days = Math.max(1, Math.min(730, parseInt($("lblDays").value, 10) || 90));
+    try { localStorage.setItem(sacDaysKey(), String(days)); } catch (e) {}
+    var svg = ""; try { if (window.qrcode) { var qr = window.qrcode(0, "M"); qr.addData("SIMSTER:" + cy.id); qr.make(); svg = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); } } catch (e) {}
+    var w = null; try { w = window.open("", "_blank"); } catch (e) {}
+    if (!w) { toast("Autorisez les fenêtres pour imprimer les étiquettes."); return; }
+    var one = '<div class="lbl"><div class="qr">' + svg + '</div><div class="txt"><b>' + escHtml(cy.appareil || "Autoclave") + (cy.numero ? " · n° " + escHtml(cy.numero) : "") + '</b><br>Stérilisé le ' + escHtml(new Date(cy.fait_at).toLocaleDateString("fr-FR")) + '<br><b>À utiliser avant le ' + escHtml(isoToFr(sacLimit(cy, days))) + '</b><br><span>' + escHtml(cabinetName) + '</span></div></div>';
+    var html = '<!doctype html><meta charset="utf-8"><title>Étiquettes de sachets</title><style>@page{margin:8mm}body{font-family:Inter,Arial,sans-serif;margin:0;color:#171A20}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3mm}.lbl{border:1px dashed #999;border-radius:2mm;padding:2mm;display:flex;gap:2mm;align-items:center;font-size:7.5pt;line-height:1.35;break-inside:avoid}.qr{width:18mm;height:18mm;flex:none}.qr svg{width:100%;height:100%}.txt span{color:#5C5E62}</style><div class="grid">' + new Array(n + 1).join(one) + '</div>';
+    w.document.write(html); w.document.close(); setTimeout(function () { try { w.print(); } catch (e) {} }, 400);
+    $("lblDlg").close();
+  }
+  function openSacOpen(cycleId) {
+    if (readOnly || !qCanPatients()) return;
+    if (!qSacOk) { toast("Lancez le script SQL « ajout-qualite » dans Supabase."); return; }
+    var sel = $("sacCycle"); sel.textContent = ""; sel.append(h("option", { value: "", text: "Choisir le cycle (ou scanner l'étiquette)" }));
+    sacCycles().forEach(function (cy) { sel.append(h("option", { value: cy.id, text: sacCycleLabel(cy) })); });
+    sel.value = cycleId || "";
+    ["sacPatient", "sacDossier", "sacSoin"].forEach(function (id) { $(id).value = ""; });
+    var rs = $("sacSalle"); rs.textContent = ""; rs.append(h("option", { value: "", text: "—" })); (rooms || []).forEach(function (r) { rs.append(h("option", { value: r.name, text: r.name })); });
+    $("sacErr").classList.add("hidden"); $("sacSave").disabled = false; sacSync(); $("sacDlg").showModal();
+  }
+  function sacSync() {
+    var cy = ster.filter(function (x) { return x.id === $("sacCycle").value; })[0], info = $("sacInfo");
+    if (!cy) { info.textContent = ""; info.className = "meta"; return; }
+    var lim = sacLimit(cy), late = lim < localIso();
+    info.className = "umsg " + (cy.resultat !== "conforme" || late ? "bad" : "ok");
+    info.textContent = cy.resultat !== "conforme" ? "⚠ Ce cycle est NON CONFORME : ce sachet ne doit pas être utilisé." : late ? "⚠ Date limite dépassée (" + isoToFr(lim) + ") : ce sachet est à restériliser." : "✓ Cycle conforme, utilisable jusqu'au " + isoToFr(lim) + (cy.contenu ? " · " + cy.contenu : "");
+  }
+  function sacFromScan(text) {
+    var m = /^SIMSTER:([0-9a-f-]{36})$/i.exec(String(text).trim());
+    if (!m) { toast("Ce code n'est pas une étiquette de sachet SimSimStock."); return; }
+    var cy = ster.filter(function (x) { return x.id === m[1]; })[0];
+    if (!cy) { toast("Cycle introuvable dans le registre de ce cabinet."); return; }
+    if (!$("sacDlg").open) openSacOpen(cy.id); else { $("sacCycle").value = cy.id; sacSync(); }
+    toast("Étiquette lue : " + sacCycleLabel(cy));
+  }
+  function sacSave() {
+    var err = $("sacErr"), fail = function (t) { err.textContent = t; err.classList.remove("hidden"); };
+    var cy = ster.filter(function (x) { return x.id === $("sacCycle").value; })[0], nom = $("sacPatient").value.trim();
+    if (!cy) { fail("Choisissez le cycle du sachet, ou scannez son étiquette."); return; }
+    if (cy.resultat !== "conforme") { fail("Ce cycle est non conforme : le sachet ne doit pas être utilisé."); return; }
+    if (sacLimit(cy) < localIso()) { fail("La date limite d'utilisation est dépassée : restérilisez ce sachet."); return; }
+    if (!nom) { fail("Indiquez le nom du patient."); return; }
+    $("sacSave").disabled = true;
+    sb.from("sachets_ouvertures").insert({ cabinet_id: cabinetId, ouvert_le: new Date().toISOString(), cycle_id: cy.id, cycle_numero: cy.numero || "", cycle_le: cy.fait_at, appareil: cy.appareil || "", contenu: cy.contenu || "", patient_nom: nom, patient_dossier: $("sacDossier").value.trim(), soin: $("sacSoin").value.trim(), salle: $("sacSalle").value }).select().then(function (r) {
+      if (r.error) { fail(qErr(r)); $("sacSave").disabled = false; return; }
+      qSac.unshift(r.data[0]); $("sacDlg").close(); render(); toast("✓ Sachet relié au patient, enregistré et signé.");
+    }, function () { fail("Connexion impossible : rien n'a été enregistré."); $("sacSave").disabled = false; });
+  }
+
+  // ----- journal qualité : tout ce qui a été fait, signé, en lecture seule -----
+  function qJournalRows() {
+    var out = [], ctlName = {}; (ctlList || []).forEach(function (c) { ctlName[c.id] = c.name; });
+    if (sterOk) ster.forEach(function (x) { var t = sterType(x.type); out.push({ k: "ster", at: x.fait_at, quoi: t[1] + (x.resultat === "conforme" ? "" : " · NON CONFORME"), det: [x.appareil, x.numero ? "n° " + x.numero : "", x.programme, x.contenu, x.note].filter(Boolean).join(" · "), par: sterWho(x), bad: x.resultat !== "conforme" }); });
+    if (ctlOk) Object.keys(ctlLogs || {}).forEach(function (id) { (ctlLogs[id] || []).forEach(function (l) { out.push({ k: "ctl", at: l.done_at, quoi: "Contrôle : " + (ctlName[id] || "?") + (l.ok === false ? " · PROBLÈME" : ""), det: l.note || "", par: personLabel(null, l.done_by), bad: l.ok === false }); }); });
+    if (qImpOk) qImp.forEach(function (x) { out.push({ k: "imp", at: x.created_at, quoi: "Pose d'implant" + (x.annule ? " · ANNULÉE" : ""), det: [x.patient_nom, x.produit, "lot " + x.lot, x.localisation ? "dent " + x.localisation : "", x.annule ? "motif : " + x.annule_motif : ""].filter(Boolean).join(" · "), par: qSignedBy(x), bad: x.annule }); });
+    if (qSacOk) qSac.forEach(function (x) { out.push({ k: "sac", at: x.created_at, quoi: "Sachet ouvert" + (x.annule ? " · ANNULÉ" : ""), det: [x.patient_nom, x.appareil, x.cycle_numero ? "cycle n° " + x.cycle_numero : "", x.soin, x.annule ? "motif : " + x.annule_motif : ""].filter(Boolean).join(" · "), par: qSignedBy(x), bad: x.annule }); });
+    if (qAffOk) { var tit = {}; qAff.forEach(function (a) { tit[a.id] = a.titre; }); qVer.forEach(function (v) { out.push({ k: "aff", at: v.created_at, quoi: (v.ok ? "Affichage vérifié" : "Affichage : PROBLÈME"), det: [tit[v.affichage_id] || "?", v.note].filter(Boolean).join(" · "), par: qSignedBy(v), bad: !v.ok }); }); }
+    return out.filter(function (r) { return r.at; }).sort(function (a, b) { return String(a.at) < String(b.at) ? 1 : -1; });
+  }
+  function renderJournal(box) {
+    box.append(h("div", { class: "rcv-intro" }, h("h3", { text: "Journal qualité" }), h("div", { class: "meta", text: "Tout ce qui a été fait et signé dans le cabinet : stérilisation, contrôles, implants, sachets, affichages. Rien ne s'y modifie ; exportez le mois en PDF pour une inspection." + (qCanPatients() ? "" : " Les lignes contenant des données patient ne sont pas affichées pour les comptes en lecture seule.") })));
+    var all = qJournalRows(), months = {}; months[localIso().slice(0, 7)] = 1; all.forEach(function (r) { months[localIso(new Date(r.at)).slice(0, 7)] = 1; });
+    var ml = Object.keys(months).sort().reverse(); if (ml.indexOf(qJrnMonth) === -1) qJrnMonth = ml[0];
+    var msel = h("select", { "aria-label": "Mois" }); ml.forEach(function (m) { msel.append(h("option", { value: m, text: ymLabel(m).charAt(0).toUpperCase() + ymLabel(m).slice(1) })); }); msel.value = qJrnMonth; msel.addEventListener("change", function () { qJrnMonth = msel.value; render(); });
+    var tsel = h("select", { "aria-label": "Type" }); Q_TYPES.forEach(function (t) { tsel.append(h("option", { value: t[0], text: t[1] })); }); tsel.value = qJrnType; tsel.addEventListener("change", function () { qJrnType = tsel.value; render(); });
+    var rows = all.filter(function (r) { return localIso(new Date(r.at)).slice(0, 7) === qJrnMonth && (!qJrnType || r.k === qJrnType); });
+    box.append(h("div", { class: "rcv-bar" }, h("label", { class: "f" }, "Mois", msel), h("label", { class: "f" }, "Afficher", tsel), h("div", { class: "rcv-btns" }, h("button", { class: "btn primary", type: "button", text: "📄 Exporter en PDF", onclick: function () { journalPdf(rows); } }))));
+    var bad = rows.filter(function (r) { return r.bad; }).length;
+    box.append(h("div", { class: "meta ster-sum", text: rows.length + " enregistrement(s) · " + (bad ? bad + " point(s) d'attention" : "aucun point d'attention") }));
+    var tb = h("div", { class: "table q-table" }); tb.append(h("div", { class: "q-row q-jrn q-head" }, h("span", { text: "Date" }), h("span", { text: "Quoi" }), h("span", { text: "Détail" }), h("span", { text: "Signé par" })));
+    if (!rows.length) tb.append(h("div", { class: "empty", text: "Rien pour ce mois." }));
+    rows.slice(0, 500).forEach(function (r) { var d = new Date(r.at); tb.append(h("div", { class: "q-row q-jrn" + (r.bad ? " nc" : "") }, h("span", { text: d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()) }), h("span", { text: r.quoi }), h("span", { text: r.det }), h("span", { text: r.par }))); });
+    box.append(tb);
+  }
+  function journalPdf(rows) {
+    qPdfTable({ title: "Journal qualité", sub: ymLabel(qJrnMonth) + (qJrnType ? " · " + Q_TYPES.filter(function (t) { return t[0] === qJrnType; })[0][1] : ""), file: "journal-qualite-" + bkSlug(cabinetName) + "-" + qJrnMonth,
+      cols: [["Date et heure", 30], ["Quoi", 62], ["Détail", 125], ["Signé par", 60]],
+      rows: rows.slice().reverse().map(function (r) { var d = new Date(r.at), c = [d.toLocaleDateString("fr-FR") + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()), r.quoi, r.det, r.par]; if (r.bad) c.__void = true; return c; }) });
+  }
+  function qualiteBindings() {
+    $("impCancel").addEventListener("click", function () { $("impDlg").close(); });
+    $("impSave").addEventListener("click", impSave);
+    $("impScan").addEventListener("click", function () { openScan("implant"); });
+    ["impProduit"].forEach(function (id) { $(id).addEventListener("change", impSyncItem); });
+    $("annCancel").addEventListener("click", function () { $("annDlg").close(); });
+    $("annSave").addEventListener("click", annSave);
+    $("affCancel").addEventListener("click", function () { $("affDlg").close(); });
+    $("affSave").addEventListener("click", function () { affSave(false); });
+    $("affArchive").addEventListener("click", function () { affSave(true); });
+    $("affvCancel").addEventListener("click", function () { $("affvDlg").close(); });
+    $("affvSave").addEventListener("click", function () { var note = $("affvNote").value.trim(); if (!note) { $("affvErr").textContent = "Décrivez le problème."; $("affvErr").classList.remove("hidden"); return; } affVerif(qAffVerif, false, note).then(function (ok) { if (ok) $("affvDlg").close(); }); });
+    $("affhClose").addEventListener("click", function () { $("affhDlg").close(); });
+    $("lblCancel").addEventListener("click", function () { $("lblDlg").close(); });
+    $("lblPrint").addEventListener("click", printSacLabels);
+    $("sacCancel").addEventListener("click", function () { $("sacDlg").close(); });
+    $("sacSave").addEventListener("click", sacSave);
+    $("sacScan").addEventListener("click", function () { openScan("sachet"); });
+    $("sacCycle").addEventListener("change", sacSync);
+  }
+  qualiteBindings();
   // ---------- petit menu « ⋯ » ----------
   var miniMenu = null;
   function closeMiniMenu() {
@@ -8755,7 +9325,10 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     else if (state.tab === "hub") renderHub(box);
     else if (state.tab === "kits") renderKits(box);
     else if (state.tab === "reception") renderReception(box);
-    else if (state.tab === "sterilisation") renderSterilisation(box);
+    else if (state.tab === "sterilisation") { renderSterilisation(box); sterQualiteSection(box); }
+    else if (state.tab === "implants") renderImplants(box);
+    else if (state.tab === "affichages") renderAffichages(box);
+    else if (state.tab === "journal") renderJournal(box);
     else if (state.tab === "routines") renderRoutines(box);
     else if (state.tab === "catalogues") renderCatalogues(box);
     else if (state.tab === "commande") renderOrder(box);
@@ -8979,6 +9552,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
       if (st.ordered) add(plural(st.ordered, "commande en attente de livraison", "commandes en attente de livraison"), "", function () { setModule("achats"); goTab("reception"); });
       if (st.ctl) add(plural(st.ctl, "contrôle de salle à faire", "contrôles de salle à faire"), "bad", function () { goTab("controles"); });
       if (st.eqLate) add(plural(st.eqLate, "maintenance à prévoir", "maintenances à prévoir"), "warn", function () { goTab("equipements"); });
+      if (affLateCount()) add(plural(affLateCount(), "affichage ou document obligatoire à traiter", "affichages ou documents obligatoires à traiter"), "bad", function () { setModule("materiel"); goTab("affichages"); });
       if (st.eqWarr + st.ct) add(plural(st.eqWarr + st.ct, "échéance à suivre (garantie, contrat)", "échéances à suivre (garanties, contrats)"), "", function () { goTab("equipements"); });
       return rows.length ? foldable(card("alertes", "⚠️", "À surveiller", rows.length, st.rupt.length || st.ctl ? "bad" : "warn", rows.slice(0, 5), null), "alertes") : null;
     };
@@ -9038,7 +9612,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   drawStartOpt();
   // ---------- page centrale d'un espace : ses sous-sections en grandes tuiles (comme le menu de gauche) ----------
   var SPACE_COLOR = { stock: "#2F67FF", achats: "#6B5BFF", materiel: "#0BA5D6", equipe: "#A05BFF" };
-  var SPACE_SUB = { stock: "Le stock au quotidien", achats: "Commandes, catalogues, factures, dépenses", materiel: "Salles, contrôles, équipements, contrats", equipe: "Messages, tâches, qui est connecté" };
+  var SPACE_SUB = { stock: "Le stock au quotidien", achats: "Commandes, catalogues, factures, dépenses", materiel: "Salles, contrôles, stérilisation, implants, affichages obligatoires", equipe: "Messages, tâches, qui est connecté" };
   var SPACE_NAME = { stock: "Stock", achats: "Achats", materiel: "Matériel", equipe: "Équipe" };
   var SPACE_IC = { stock: "📦", achats: "🛒", materiel: "🏥", equipe: "💬" };
   function lineStatus(lines, okText) {
@@ -9075,6 +9649,9 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         { ic: "🏠", title: "Salles", sub: "Le stock de chaque salle, réassort", tab: "salles", status: { tone: rooms.length ? "on" : "", text: rooms.length ? pl(rooms.length, "salle", "salles") : "Aucune salle" } },
         { ic: "✅", title: "Contrôles", sub: "Contrôles de salle à faire", tab: "controles", status: lineStatus([[st.ctl, pl(st.ctl, "contrôle à faire", "contrôles à faire"), "bad"]], "Rien à faire") },
         { ic: "♨️", title: "Registre de stérilisation", sub: "Cycles, tests Bowie-Dick et hélix, signés", tab: "sterilisation", status: sterOk ? (st.sterTodo ? { tone: "warn", text: "Test du jour à faire" } : { tone: "on", text: "À jour" }) : { tone: "", text: "À activer" } },
+        { ic: "🦷", title: "Implants", sub: "Traçabilité des poses : produit, lot, patient", tab: "implants", status: qImpOk ? { tone: "on", text: pl(impStats().year, "pose cette année", "poses cette année") } : { tone: "", text: readOnly ? "Réservé à l'équipe" : "À activer" } },
+        { ic: "📋", title: "Affichages obligatoires", sub: "Ce qui doit être affiché et à jour", tab: "affichages", status: qAffOk ? lineStatus([[affLateCount(), pl(affLateCount(), "élément à traiter", "éléments à traiter"), "bad"]], "Tout est à jour") : { tone: "", text: "À activer" } },
+        { ic: "🗂", title: "Journal qualité", sub: "Tout ce qui a été fait et signé, en PDF", tab: "journal" },
         { ic: "🔧", title: "Équipements", sub: "Fauteuils, autoclave, radio, contrats", tab: "equipements", status: lineStatus([[st.eqLate, pl(st.eqLate, "maintenance à prévoir", "maintenances à prévoir"), "warn"], [st.eqWarr + st.ct, pl(st.eqWarr + st.ct, "échéance à suivre", "échéances à suivre"), ""]], eqOk ? pl(eqList.filter(function (e) { return !e.archived; }).length, "équipement suivi", "équipements suivis") : "À activer") },
         { ic: "📄", title: "Facture d'équipement", sub: "Ajouter la facture de vos fauteuils : le matériel est créé", act: function () { goTab("equipements"); setTimeout(openEqInvoice, 250); }, action: true, needsWrite: true }
       ],
@@ -10861,7 +11438,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     } catch (e) {}
   }
   function feedback(bad) { beep(bad); try { if (navigator.vibrate) navigator.vibrate(bad ? [80, 60, 80] : 60); } catch (e) {} }
-  function scanTitleText() { var rm = roomScope(); return scanMode === "capture" ? "Scanner le code de l'article" : (scanFast ? "Sortie rapide" + (rm ? " · " + rm.name : "") : "Scanner un article"); }
+  function scanTitleText() { var rm = roomScope(); if (scanMode === "implant") return "Scanner la boîte de l'implant"; if (scanMode === "sachet") return "Scanner l'étiquette du sachet"; return scanMode === "capture" ? "Scanner le code de l'article" : (scanFast ? "Sortie rapide" + (rm ? " · " + rm.name : "") : "Scanner un article"); }
   function drawScanLog() {
     var panel = $("scanPanel"); panel.textContent = "";
     if (!scanLog.length) return;
@@ -11135,6 +11712,8 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
       toast("Code lu : cliquez sur Enregistrer pour le garder dans la fiche.");
       return;
     }
+    if (scanMode === "implant") { closeScan(); impFromScan(text); return; }
+    if (scanMode === "sachet" || (scanMode === "stock" && /^SIMSTER:/i.test(text))) { closeScan(); sacFromScan(text); return; }
     var kitHit = scanMode === "stock" ? kitByCode(text) : null;
     if (kitHit) { scanKit(kitHit); return; }
     var it = Array.from(items.values()).find(function (x) { return x.barcode && x.barcode === key; });
@@ -11901,6 +12480,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     loadKits();
     loadRoutines();
     loadSter();
+    loadQualite();
     loadConso();
     loadRooms();
     loadControls();
@@ -11922,6 +12502,9 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         render();
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "movements" }, function (p) { if (p.new && p.new.cabinet_id === cabinetId) addLogRow(p.new); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "implants_poses" }, function (p) { if (p.new && p.new.cabinet_id === cabinetId) loadQualite(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "sachets_ouvertures" }, function (p) { if (p.new && p.new.cabinet_id === cabinetId) loadQualite(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "affichages_verifs" }, function (p) { if (p.new && p.new.cabinet_id === cabinetId) loadQualite(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "sterilisation_registre" }, function (p) { if ((p.new && p.new.cabinet_id === cabinetId) || (p.old && p.eventType === "DELETE")) loadSter(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "routine_coches" }, function (p) {
         if (p.eventType === "DELETE") { var o = p.old || {}; rCoches = rCoches.filter(function (c) { return !(c.routine_id === o.routine_id && c.jour === o.jour && c.etape === o.etape); }); }
@@ -11967,7 +12550,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     channels.forEach(function (c) { try { sb.removeChannel(c); } catch (e) {} });
     stopPresence();
     channels = []; started = false;
-    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqDocs = []; eqDocsOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; ctOk = false; ctList = []; jrnFileOk = false; openOk = false; recoFn = ""; settings = {}; msgOk = false; msgs = []; msgPeople = []; msgReads = {}; msgDraft = {}; kits = []; kitLines = []; kitsOk = false; routines = []; rCoches = []; routinesOk = false; ster = []; sterOk = false; updateMsgBadge(); descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
+    items = new Map(); trash = new Map(); arcOk = false; achOk = false; achLines = []; logEntries = []; logIds = new Set(); countDraft = {}; docCounts = {}; barcodeOk = false; eqOk = false; eqDocs = []; eqDocsOk = false; eqList = []; eqInts = []; eqOpen = {}; eqvOk = false; eqvRows = []; ctOk = false; ctList = []; jrnFileOk = false; openOk = false; recoFn = ""; settings = {}; msgOk = false; msgs = []; msgPeople = []; msgReads = {}; msgDraft = {}; kits = []; kitLines = []; kitsOk = false; routines = []; rCoches = []; routinesOk = false; ster = []; sterOk = false; qResetState(); updateMsgBadge(); descOk = false; trackedOk = false; subOk = false; favOk = false; lotsOk = false; lotsByItem = {}; ordOk = false; photoOk = false; jrnOk = false; consoOk = false; jrnByNumber = {}; conso = {}; consoDebut = 0; reasonOk = false; packOk = false; pertes = { ok: false, rows: [] }; sallesOk = false; rooms = []; roomItems = {}; restocks = {}; roomIdx = {}; ctlOk = false; ctlList = []; ctlItems = {}; ctlLogs = {};
   }
   // ---------- rejoindre un cabinet avec un lien d'invitation (#rejoindre=...) ----------
   var JOIN_KEY = "simsim_join";
