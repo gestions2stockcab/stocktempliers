@@ -1890,7 +1890,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v142</div>
+            <div class="menu-who"><span id="who"></span> · v143</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1902,6 +1902,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
               <button class="mi" id="catSupBtn">Catalogues fournisseurs</button>
               <button class="mi" id="importBtn">Importer un fichier</button>
               <button class="mi" id="photoInvBtn">Photographier une facture</button>
+              <button class="mi" id="lblBtn">🏷 Étiquettes QR (bacs, tiroirs)</button>
               <button class="mi" id="tplBtn">Modèle Excel</button>
               <button class="mi" id="exportBtn">Exporter en CSV</button>
               <button class="mi" id="dupBtn">Doublons possibles</button>
@@ -2071,6 +2072,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
         <button class="btn sm toggle" id="hideTotalBtn" aria-pressed="true">✓ Catalogue total masqué</button>
         <button class="btn sm toggle" id="hideDupBtn" aria-pressed="false">Masquer les doublons</button>
         <button class="btn sm toggle" id="selToggle" aria-pressed="false">Sélectionner</button>
+        <button class="btn sm" id="lblOptBtn" type="button">🏷 Étiquettes QR</button>
       </span>
       <span class="sub" id="filtersSummary"></span>
     </div>
@@ -2400,6 +2402,20 @@ html.mural-on, html.mural-on body { overflow:hidden; }
   <button class="mu-x" id="muralClose" type="button" aria-label="Quitter l'écran mural">✕ Quitter</button>
   <div class="mu-body" id="muralBody"></div>
 </div>
+<dialog id="lblItemsDlg">
+  <div class="dlg">
+    <h2>🏷 Étiquettes QR</h2>
+    <div class="sub">Collez-les sur les bacs, tiroirs ou étagères. Au scan, l'article s'ouvre avec ses boutons − / +, ou le tiroir affiche son contenu.</div>
+    <label class="f">Type<select id="lblKind"><option value="item">Une étiquette par article</option><option value="loc">Une étiquette par tiroir (emplacement)</option></select></label>
+    <div class="rt-row">
+      <label class="f">Quels articles<select id="lblWhat"><option value="all">Tous les articles suivis</option><option value="cat">Un domaine</option><option value="loc">Un emplacement</option><option value="sel">Articles sélectionnés</option></select></label>
+      <label class="f" id="lblValWrap">Lequel<select id="lblVal"></select></label>
+    </div>
+    <label class="f">Planche d'étiquettes<select id="lblFmt"><option value="l7159">24 par page · 63,5 × 33,9 mm (Avery L7159)</option><option value="l7163">14 par page · 99,1 × 38,1 mm (Avery L7163)</option><option value="l7165">8 par page · 99,1 × 67,7 mm (Avery L7165)</option></select></label>
+    <div class="meta" id="lblCountTxt"></div>
+    <div class="dlg-actions"><button class="btn" id="lblItemsCancel" type="button">Annuler</button><button class="btn primary" id="lblGo" type="button">🖨 Préparer l'impression</button></div>
+  </div>
+</dialog>
 <dialog id="voiceDlg">
   <div class="dlg">
     <h2>Dicter</h2>
@@ -9341,6 +9357,83 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     ["sympaMural", "sympaMois", "sympaAsk"].forEach(function (id) { var b = $(id); if (b) b.addEventListener("click", function () { $("moreMenu").classList.add("hidden"); if (id === "sympaMural") openMural(); else if (id === "sympaMois") openWrapped(); else openAsk(); }); });
   }
   sympaBindings();
+  // ---------- étiquettes QR pour les bacs, tiroirs et étagères ----------
+  // Un QR « SIMITEM:<id> » ouvre l'article au scan ; un QR « SIMLOC:<emplacement> » affiche le contenu du tiroir.
+  var LBL_FORMATS = {
+    l7159: { nom: "24 par page · 63,5 × 33,9 mm (Avery L7159)", w: 63.5, h: 33.9, cols: 3, rows: 8, top: 12.9, left: 7.2, gx: 2.5, gy: 0 },
+    l7163: { nom: "14 par page · 99,1 × 38,1 mm (Avery L7163)", w: 99.1, h: 38.1, cols: 2, rows: 7, top: 15.1, left: 4.6, gx: 2.5, gy: 0 },
+    l7165: { nom: "8 par page · 99,1 × 67,7 mm (Avery L7165)", w: 99.1, h: 67.7, cols: 2, rows: 4, top: 13.1, left: 4.6, gx: 2.5, gy: 0 }
+  };
+  function itemLocations() { var set = {}; items.forEach(function (it) { if (!it.archived && (it.location || "").trim()) set[it.location.trim()] = 1; }); return Object.keys(set).sort(function (a, b) { return a.localeCompare(b, "fr"); }); }
+  function lblPool() {
+    var how = $("lblWhat").value, val = $("lblVal").value, all = Array.from(items.values()).filter(function (it) { return !it.archived; });
+    var list = how === "cat" ? all.filter(function (it) { return (it.category || "Sans domaine") === val; })
+      : how === "loc" ? all.filter(function (it) { return (it.location || "").trim() === val; })
+      : how === "sel" ? all.filter(function (it) { return state.sel.has(it.id); })
+      : all.filter(function (it) { return it.tracked !== false; });
+    return list.sort(function (a, b) { return norm(a.name).localeCompare(norm(b.name)); });
+  }
+  function lblSync() {
+    var how = $("lblWhat").value, kind = $("lblKind").value, sel = $("lblVal"), keep = sel.value, opts = [];
+    if (how === "cat") { var c = {}; items.forEach(function (it) { if (!it.archived) c[it.category || "Sans domaine"] = 1; }); opts = Object.keys(c).sort(); }
+    if (how === "loc") opts = itemLocations();
+    sel.textContent = ""; opts.forEach(function (o) { sel.append(h("option", { value: o, text: o })); }); if (opts.indexOf(keep) !== -1) sel.value = keep;
+    $("lblValWrap").classList.toggle("hidden", how !== "cat" && how !== "loc");
+    var n;
+    if (kind === "loc") { var locs = {}; lblPool().forEach(function (it) { if ((it.location || "").trim()) locs[it.location.trim()] = 1; }); n = Object.keys(locs).length; $("lblCountTxt").textContent = n ? n + " étiquette(s) de tiroir, une par emplacement" : "Aucun emplacement : renseignez le champ « Emplacement » des articles (ex. « Réserve – tiroir 3 »)."; }
+    else { n = lblPool().length; $("lblCountTxt").textContent = n + " étiquette(s) d'article"; }
+    $("lblGo").disabled = !n;
+  }
+  function openLabels(preset) {
+    if (!items.size) { toast("Ajoutez d'abord des articles."); return; }
+    $("moreMenu").classList.add("hidden");
+    var w = $("lblWhat"); w.querySelector('option[value="sel"]').disabled = !state.sel.size; w.querySelector('option[value="sel"]').textContent = "Articles sélectionnés (" + state.sel.size + ")";
+    w.value = preset || (state.sel.size ? "sel" : state.cat ? "cat" : "all"); lblSync(); if (state.cat && w.value === "cat") { $("lblVal").value = state.cat; lblSync(); }
+    $("lblItemsDlg").showModal();
+  }
+  function qrSvg(text, cell) { try { if (!window.qrcode) return ""; var qr = window.qrcode(0, "M"); qr.addData(text); qr.make(); return qr.createSvgTag({ cellSize: cell || 4, margin: 0, scalable: true }); } catch (e) { return ""; } }
+  function printItemLabels() {
+    var F = LBL_FORMATS[$("lblFmt").value] || LBL_FORMATS.l7159, kind = $("lblKind").value, pool = lblPool(), cells = [];
+    if (kind === "loc") {
+      var byLoc = {}; pool.forEach(function (it) { var l = (it.location || "").trim(); if (l) (byLoc[l] = byLoc[l] || []).push(it); });
+      Object.keys(byLoc).sort().forEach(function (l) {
+        var names = byLoc[l].map(function (it) { return escHtml(it.name); }), max = F.h > 60 ? 9 : 3;
+        cells.push('<div class="qr">' + qrSvg("SIMLOC:" + l) + '</div><div class="tx"><b class="big">' + escHtml(l) + '</b><span>' + byLoc[l].length + ' article(s) · scannez pour voir le contenu</span>' + (F.h > 30 ? '<ul>' + names.slice(0, max).map(function (n) { return "<li>" + n + "</li>"; }).join("") + (names.length > max ? "<li>…</li>" : "") + '</ul>' : "") + '</div>');
+      });
+    } else pool.forEach(function (it) {
+      cells.push('<div class="qr">' + qrSvg("SIMITEM:" + it.id) + '</div><div class="tx"><b>' + escHtml(it.name) + '</b>' + [it.ref ? "réf. " + escHtml(it.ref) : "", it.supplier ? escHtml(it.supplier) : ""].filter(Boolean).map(function (x) { return "<span>" + x + "</span>"; }).join("") + (it.tracked !== false ? '<span class="seuil">seuil ' + fmt(it.min || 0) + (it.unit ? " " + escHtml(it.unit) : "") + '</span>' : "") + (it.location ? '<span>' + escHtml(it.location) + '</span>' : "") + '</div>');
+    });
+    if (!cells.length) return;
+    var per = F.cols * F.rows, pages = [];
+    for (var i = 0; i < cells.length; i += per) pages.push('<section class="sheet">' + cells.slice(i, i + per).map(function (c) { return '<div class="lbl">' + c + '</div>'; }).join("") + '</section>');
+    var qrmm = Math.min(F.h - 6, 28);
+    var css = '@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;color:#171A20;background:#e8e8e8}'
+      + '.bar{position:sticky;top:0;background:#171A20;color:#fff;padding:12px 18px;display:flex;gap:16px;align-items:center;font-size:14px;z-index:2}.bar button{font:600 14px Inter,Arial,sans-serif;padding:9px 18px;border:0;border-radius:4px;background:#fff;color:#171A20;cursor:pointer}'
+      + '.sheet{width:210mm;height:297mm;margin:12px auto;background:#fff;padding:' + F.top + 'mm 0 0 ' + F.left + 'mm;display:grid;grid-template-columns:repeat(' + F.cols + ',' + F.w + 'mm);grid-auto-rows:' + F.h + 'mm;column-gap:' + F.gx + 'mm;row-gap:' + F.gy + 'mm;align-content:start;break-after:page}'
+      + '.lbl{display:flex;gap:2.5mm;align-items:center;padding:2.5mm 3mm;overflow:hidden;outline:1px dashed #ccc}.qr{width:' + qrmm + 'mm;height:' + qrmm + 'mm;flex:none}.qr svg{width:100%;height:100%;display:block}'
+      + '.tx{display:flex;flex-direction:column;gap:.6mm;min-width:0;font-size:7pt;line-height:1.25}.tx b{font-size:8.5pt;line-height:1.2;max-height:3.6em;overflow:hidden}.tx b.big{font-size:12pt}.tx span{color:#5C5E62}.tx .seuil{color:#171A20;font-weight:600}.tx ul{margin:.8mm 0 0;padding-left:3.5mm;font-size:7pt}'
+      + '@media print{body{background:#fff}.bar{display:none}.sheet{margin:0}.lbl{outline:0}}';
+    var w = null; try { w = window.open("", "_blank"); } catch (e) {}
+    if (!w) { toast("Autorisez les fenêtres pour imprimer les étiquettes."); return; }
+    w.document.write('<!doctype html><meta charset="utf-8"><title>Étiquettes · ' + escHtml(cabinetName) + '</title><style>' + css + '</style><div class="bar"><span>' + cells.length + ' étiquette(s) · ' + escHtml(F.nom) + ' · imprimez à l\'échelle 100 % (« taille réelle »)</span><button onclick="window.print()">🖨 Imprimer</button></div>' + pages.join(""));
+    w.document.close(); $("lblItemsDlg").close();
+  }
+  // un QR d'emplacement scanné : le stock filtré sur ce tiroir
+  function showLocation(loc) {
+    var list = Array.from(items.values()).filter(function (it) { return !it.archived && (it.location || "").trim() === loc; });
+    if (!list.length) { toast("Aucun article rangé à « " + loc + " » dans ce cabinet."); return; }
+    setModule("stock"); clearFilters(); state.f.location = loc; state.cat = ""; state.q = ""; goTab("inventaire"); render();
+    var low = list.filter(function (it) { return it.tracked !== false && (Number(it.qty) || 0) <= (Number(it.min) || 0); }).length;
+    toast("📦 " + loc + " : " + list.length + " article(s)" + (low ? ", dont " + low + " à réapprovisionner" : ", rien à réapprovisionner") + ".");
+  }
+  function etiqBindings() {
+    $("lblWhat").addEventListener("change", lblSync); $("lblVal").addEventListener("change", lblSync); $("lblKind").addEventListener("change", lblSync);
+    $("lblItemsCancel").addEventListener("click", function () { $("lblItemsDlg").close(); });
+    $("lblGo").addEventListener("click", printItemLabels);
+    $("lblBtn").addEventListener("click", function () { openLabels(); });
+    $("lblOptBtn").addEventListener("click", function () { openLabels(); });
+  }
+  etiqBindings();
   // ---------- petit menu « ⋯ » ----------
   var miniMenu = null;
   function closeMiniMenu() {
@@ -12199,7 +12292,11 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     if (scanMode === "sachet" || (scanMode === "stock" && /^SIMSTER:/i.test(text))) { closeScan(); sacFromScan(text); return; }
     var kitHit = scanMode === "stock" ? kitByCode(text) : null;
     if (kitHit) { scanKit(kitHit); return; }
-    var it = Array.from(items.values()).find(function (x) { return x.barcode && x.barcode === key; });
+    var locHit = /^SIMLOC:(.+)$/.exec(String(text).trim());
+    if (locHit && scanMode === "stock") { closeScan(); showLocation(locHit[1]); return; }
+    var tagHit = /^SIMITEM:([0-9a-f-]{36})$/i.exec(String(text).trim());
+    var it = tagHit ? items.get(tagHit[1]) : Array.from(items.values()).find(function (x) { return x.barcode && x.barcode === key; });
+    if (tagHit && !it) { scanBusy = true; stopScanner(); $("scanStatus").className = "sub scanbad"; $("scanStatus").textContent = "Cette étiquette correspond à un article d'un autre cabinet ou supprimé."; setTimeout(resetScan, 2500); return; }
     if (scanFast && scanMode === "stock") { fastScan(it, key, info); return; }
     scanBusy = true;
     stopScanner();
