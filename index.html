@@ -2413,7 +2413,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
 <dialog id="askDlg" class="wide">
   <div class="dlg">
     <h2>✨ Demander à SimSim</h2>
-    <div class="sub">Posez une question en français sur le stock, les achats, la stérilisation, les implants ou les contrôles. Les noms des patients ne sont jamais envoyés à l'IA. Vérifiez les chiffres importants : l'IA peut se tromper.</div>
+    <div class="sub">Les réponses sont calculées directement dans l'appli à partir de vos données : gratuit, et rien ne sort du cabinet.</div>
     <div class="ask-thread" id="askThread"></div>
     <div class="vc-row"><textarea id="askQ" rows="2" maxlength="600" placeholder="Votre question…" aria-label="Votre question"></textarea><button class="btn primary" id="askSend" type="button">Envoyer</button></div>
     <div class="dlg-actions"><button class="btn" id="askNew" type="button">Nouvelle conversation</button><button class="btn" id="askClose" type="button">Fermer</button></div>
@@ -9216,48 +9216,92 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     $("voiceDlg").close();
   }
 
-  // ---------- « Demander à SimSim » : questions en français sur les données du cabinet ----------
-  var ASK_FN = "demander", askBusy = false, askHist = [];
-  var ASK_EXAMPLES = ["Qu'est-ce qui risque de manquer cette semaine ?", "Combien a-t-on dépensé chez chaque fournisseur ce trimestre ?", "Quels sont les 10 produits les plus chers en stock ?", "Combien d'implants posés ce mois-ci, et de quelles marques ?", "Les tests d'autoclave ont-ils été faits tous les jours ce mois-ci ?"];
-  function askContext() {
-    var since = new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10), c = { cabinet: cabinetName, aujourdhui: localIso(), stock: [], achats: [], sterilisation: [], implants: [], controles: [], consommation_90j: {} };
-    items.forEach(function (it) { if (it.archived) return; c.stock.push([it.name, it.category || "", it.subcategory || "", it.supplier || "", it.ref || "", Number(it.qty) || 0, Number(it.min) || 0, it.unit || "", Number(it.price) || 0, it.tracked !== false ? 1 : 0, it.expiry || "", Number(it.ordered_qty) || 0]); });
-    c.stock_colonnes = ["nom", "domaine", "sous_domaine", "fournisseur", "ref", "quantite", "seuil", "unite", "prix_ht", "suivi", "peremption", "commande_en_cours"];
-    if (achOk) achLines.filter(function (l) { return (l.doc_date || "") >= since; }).forEach(function (l) { c.achats.push([l.doc_date, l.doc_type, l.supplier, l.name, Number(l.qty) || 0, Number(l.unit_price) || 0, Number(l.total_ht) || 0]); });
-    c.achats_colonnes = ["date", "type", "fournisseur", "produit", "quantite", "prix_unitaire_ht", "total_ht"];
-    if (sterOk) ster.filter(function (x) { return String(x.fait_at) >= since; }).forEach(function (x) { c.sterilisation.push([String(x.fait_at).slice(0, 16), x.type, x.appareil, x.resultat, x.numero || "", x.programme || ""]); });
-    c.sterilisation_colonnes = ["date_heure", "type", "appareil", "resultat", "numero", "programme"];
-    // les implants partent sans aucune donnée patient (ni nom, ni dossier)
-    if (qImpOk) qImp.filter(function (x) { return !x.annule; }).forEach(function (x) { c.implants.push([x.pose_le, x.produit, x.fabricant, x.ref, x.lot, x.localisation, x.praticien]); });
-    c.implants_colonnes = ["date_pose", "produit", "fabricant", "ref", "lot", "dent", "praticien"];
-    if (ctlOk) ctlList.forEach(function (k) { c.controles.push([k.name, k.every_days, k.last_done_at ? String(k.last_done_at).slice(0, 10) : ""]); });
-    if (consoOk) items.forEach(function (it) { var x = conso[it.id]; if (x && x.out > 0) c.consommation_90j[it.name] = x.out; });
-    return c;
+  // ---------- « Demander à SimSim » : réponses calculées sur l'appareil, sans IA ni abonnement ----------
+  var askHist = [];
+  var ASK_EXAMPLES = ["Qu'est-ce qui va manquer ?", "Combien a-t-on dépensé par fournisseur ?", "Quelle est la valeur du stock ?", "Qu'est-ce qui périme bientôt ?", "Les tests d'autoclave sont-ils à jour ?", "Combien d'implants ce mois-ci ?"];
+  function askList(rows, max) { max = max || 10; return rows.slice(0, max).map(function (r) { return "• " + r; }).join("\n") + (rows.length > max ? "\n… et " + (rows.length - max) + " autre(s)" : ""); }
+  function askManque() {
+    var rows = [];
+    items.forEach(function (it) {
+      if (it.archived || it.tracked === false) return;
+      var q = Number(it.qty) || 0, dl = daysLeft(it), low = q <= (Number(it.min) || 0);
+      if (q <= 0) rows.push([0, it.name + " : en rupture" + (it.ordered_qty > 0 ? " (commandé)" : "")]);
+      else if (dl !== null && dl < 10) rows.push([1, it.name + " : environ " + fmtDays(dl) + " de stock (" + fmt(q) + " restant)"]);
+      else if (low) rows.push([2, it.name + " : " + fmt(q) + " restant, seuil " + fmt(it.min)]);
+    });
+    rows.sort(function (a, b) { return a[0] - b[0]; });
+    if (!rows.length) return "Rien ne devrait manquer : tous les articles suivis sont au-dessus de leur seuil.";
+    return rows.length + " article(s) à surveiller :\n" + askList(rows.map(function (r) { return r[1]; }), 12) + "\n\nLa liste complète est dans Achats → À commander.";
+  }
+  function askDepenses(months) {
+    if (!achOk || !achLines.length) return "Aucune facture importée : importez vos factures (Achats → Importer une facture) pour suivre les dépenses.";
+    var since = new Date(); since.setMonth(since.getMonth() - months); var lim = localIso(since), by = {}, tot = 0;
+    achLines.forEach(function (l) { if ((l.doc_date || "") < lim) return; var v = (l.doc_type === "avoir" ? -1 : 1) * (Number(l.total_ht) || 0); by[l.supplier || "?"] = (by[l.supplier || "?"] || 0) + v; tot += v; });
+    var keys = Object.keys(by).sort(function (a, b) { return by[b] - by[a]; });
+    if (!keys.length) return "Aucune facture sur les " + months + " derniers mois.";
+    return "Sur les " + months + " derniers mois : " + money(tot) + " HT.\n" + askList(keys.map(function (k) { return k + " : " + money(by[k]) + " HT (" + Math.round(by[k] / tot * 100) + " %)"; }));
+  }
+  function askValeur() {
+    var tot = 0, rows = [], sansPrix = 0;
+    items.forEach(function (it) { if (it.archived) return; var q = Number(it.qty) || 0, p = Number(it.price) || 0; if (q > 0 && !p) sansPrix++; if (q > 0 && p) { tot += q * p; rows.push([q * p, it.name + " : " + money(q * p) + " (" + fmt(q) + " × " + money(p) + ")"]); } });
+    rows.sort(function (a, b) { return b[0] - a[0]; });
+    return "Valeur du stock : " + money(tot) + " HT." + (rows.length ? "\nLes plus grosses valeurs :\n" + askList(rows.map(function (r) { return r[1]; }), 8) : "") + (sansPrix ? "\n\n" + sansPrix + " article(s) en stock n'ont pas de prix : ils ne sont pas comptés." : "");
+  }
+  function askPeremption() {
+    var lim = localIso(new Date(Date.now() + 60 * 86400000)), today = localIso(), rows = [];
+    items.forEach(function (it) {
+      if (it.archived) return;
+      var lots = lotsOk ? (lotsByItem[it.id] || []) : [];
+      if (lots.length) lots.forEach(function (l) { if (l.expiry && l.expiry <= lim && Number(l.qty) > 0) rows.push([l.expiry, it.name + " · lot " + (l.lot || "?") + " : " + (l.expiry < today ? "PÉRIMÉ depuis le " : "périme le ") + isoToFr(l.expiry)]); });
+      else if (it.expiry && it.expiry <= lim && (Number(it.qty) || 0) > 0) rows.push([it.expiry, it.name + " : " + (it.expiry < today ? "PÉRIMÉ depuis le " : "périme le ") + isoToFr(it.expiry)]);
+    });
+    rows.sort(function (a, b) { return a[0] < b[0] ? -1 : 1; });
+    return rows.length ? rows.length + " produit(s) périmé(s) ou qui périment dans les 60 jours :\n" + askList(rows.map(function (r) { return r[1]; }), 12) : "Aucun produit ne périme dans les 60 prochains jours.";
+  }
+  function askAutoclave() {
+    if (!sterOk) return "Le registre de stérilisation n'est pas activé.";
+    var ym = localIso().slice(0, 7), done = {}, miss = [];
+    ster.forEach(function (x) { if ((x.type === "bowie_dick" || x.type === "helix") && x.resultat === "conforme") done[sterDay(x)] = 1; });
+    var wd = 0; for (var t = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1, 1); localIso(t) <= localIso(); t.setDate(t.getDate() + 1)) if (isWorkday(t)) { wd++; if (!done[localIso(t)] && localIso(t) !== localIso()) miss.push(t.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" })); }
+    var nc = ster.filter(function (x) { return sterDay(x).slice(0, 7) === ym && x.resultat !== "conforme"; }).length;
+    var today = done[localIso()] ? "Le test du jour est fait." : "Le test du jour n'est pas encore fait.";
+    return today + "\nCe mois-ci : " + (wd - miss.length) + " jour(s) testé(s) sur " + wd + " jour(s) ouvré(s)" + (nc ? ", " + nc + " résultat(s) non conforme(s)." : ", aucun résultat non conforme.") + (miss.length ? "\nJours sans test : " + miss.slice(0, 10).join(", ") + (miss.length > 10 ? "…" : "") + "." : "");
+  }
+  function askImplants() {
+    if (!qImpOk) return readOnly ? "Les implants sont réservés aux administrateurs et aux membres du cabinet." : "Le registre des implants n'est pas activé.";
+    var ym = localIso().slice(0, 7), y = ym.slice(0, 4), live = qImp.filter(function (x) { return !x.annule; }), mois = live.filter(function (x) { return String(x.pose_le).slice(0, 7) === ym; }), an = live.filter(function (x) { return String(x.pose_le).slice(0, 4) === y; }), fab = {};
+    mois.forEach(function (x) { var k = x.fabricant || "fabricant non précisé"; fab[k] = (fab[k] || 0) + 1; });
+    return mois.length + " pose(s) ce mois-ci, " + an.length + " cette année." + (mois.length ? "\n" + askList(Object.keys(fab).sort(function (a, b) { return fab[b] - fab[a]; }).map(function (k) { return k + " : " + fab[k]; })) : "");
+  }
+  function askCombien(q) {
+    var found = voiceFindItem(q);
+    if (!found.length) return "Je ne trouve aucun article qui ressemble à « " + q + " ».";
+    return askList(found.slice(0, 5).map(function (it) { return it.name + " : " + fmt(it.qty || 0) + (it.unit ? " " + it.unit : "") + (it.min ? " (seuil " + fmt(it.min) + ")" : "") + (it.location ? " · " + it.location : ""); }));
+  }
+  function askAnswer(text) {
+    var t = norm(text), m;
+    if ((m = /(?:combien (?:de |d'|reste-t-il de |il reste de |on a de |y a-t-il de )|il reste combien de |stock de |ou (?:sont|est) (?:les |le |la )?)(.+?)\s*\??$/.exec(t)) && !/depens|implant|fournisseur|valeur|test/.test(t)) return askCombien(m[1]);
+    if (/manqu|rupture|commander|bientot plus|seuil|reste-t-il|va finir/.test(t)) return askManque();
+    if (/depens|achat|fournisseur|factur|coute|budget/.test(t)) return askDepenses(/annee|an |12 mois/.test(t) ? 12 : /mois dernier|ce mois/.test(t) ? 1 : 3);
+    if (/valeur|cher|vaut|argent immobilise/.test(t)) return askValeur();
+    if (/perim|peremption|expir/.test(t)) return askPeremption();
+    if (/autoclave|steril|bowie|helix|test/.test(t)) return askAutoclave();
+    if (/implant|membrane|greffe|pose/.test(t)) return askImplants();
+    return "Je sais répondre à ces questions :\n" + askList(ASK_EXAMPLES) + "\n• Combien de [produit] ?\nReformulez avec l'un de ces mots, ou touchez un exemple.";
   }
   function openAsk() { $("askDlg").showModal(); drawAsk(); setTimeout(function () { $("askQ").focus(); }, 50); }
   function drawAsk() {
     var box = $("askThread"); box.textContent = "";
-    if (!askHist.length) { var ex = h("div", { class: "ask-ex" }); ASK_EXAMPLES.forEach(function (q) { ex.append(h("button", { class: "btn sm", type: "button", text: q, onclick: function () { $("askQ").value = q; askSend(); } })); }); box.append(h("div", { class: "meta", text: "Exemples :" }), ex); }
+    var ex = h("div", { class: "ask-ex" }); ASK_EXAMPLES.forEach(function (q) { ex.append(h("button", { class: "btn sm", type: "button", text: q, onclick: function () { $("askQ").value = q; askSend(); } })); });
+    if (!askHist.length) box.append(h("div", { class: "meta", text: "Touchez une question, ou écrivez-la :" }));
     askHist.forEach(function (m) { box.append(h("div", { class: "ask-m " + m.role }, m.role === "user" ? h("b", { text: m.text }) : h("div", { class: "ask-a", text: m.text }))); });
-    if (askBusy) box.append(h("div", { class: "ask-m bot" }, h("div", { class: "ask-a wait", text: "SimSim réfléchit…" })));
-    box.scrollTop = box.scrollHeight;
+    box.append(ex); box.scrollTop = box.scrollHeight;
   }
   function askSend() {
-    var q = $("askQ").value.trim(); if (!q || askBusy) return;
-    if (!sb.functions || !sb.functions.invoke) { toast("Cette version ne sait pas appeler les fonctions Supabase."); return; }
-    askHist.push({ role: "user", text: q }); $("askQ").value = ""; askBusy = true; drawAsk();
-    var body = { question: q, historique: askHist.slice(-7, -1).map(function (m) { return { role: m.role === "user" ? "user" : "assistant", text: m.text }; }), contexte: askContext() };
-    var done = function (txt) { askBusy = false; askHist.push({ role: "bot", text: txt }); drawAsk(); };
-    (sb.auth && sb.auth.getSession ? sb.auth.getSession().then(function (r) { return r && r.data && r.data.session ? r.data.session.access_token : ""; }, function () { return ""; }) : Promise.resolve("")).then(function (token) {
-      var opts = { body: body };
-      if (token && /^eyJ/.test(cfg.key)) opts.headers = { "x-user-token": token, Authorization: "Bearer " + cfg.key };
-      return sb.functions.invoke(ASK_FN, opts);
-    }).then(function (res) {
-      if (res.error) { done(/404|not found/i.test(String(res.error.message || res.error)) || (res.error.context && res.error.context.status === 404) ? "« Demander à SimSim » n'est pas encore installé dans Supabase : voir la notice d'installation (fonction « demander »)." : "Je n'ai pas pu répondre (" + String(res.error.message || "erreur") + ")."); return; }
-      var d = res.data || {};
-      if (!d.ok) { done(d.error === "cle_manquante" ? "La clé de l'IA (ANTHROPIC_API_KEY) manque dans les secrets Supabase." : d.error === "non_connecte" ? "Reconnectez-vous puis réessayez." : d.error === "refus" ? "Je ne peux pas répondre à cette question." : "Je n'ai pas pu répondre (" + (d.error || "erreur") + ")."); return; }
-      done(d.reponse || "(pas de réponse)");
-    }, function () { done("Connexion impossible. Vérifiez votre accès à internet."); });
+    var q = $("askQ").value.trim(); if (!q) return;
+    askHist.push({ role: "user", text: q }); $("askQ").value = "";
+    var a; try { a = askAnswer(q); } catch (e) { a = "Je n'ai pas pu calculer la réponse : réessayez dans un instant."; }
+    askHist.push({ role: "bot", text: a }); drawAsk();
   }
 
   // ---------- ouverture directe (raccourcis de l'icône, liens ?go=) ----------
