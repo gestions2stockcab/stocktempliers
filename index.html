@@ -1751,6 +1751,52 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   .q-row.q-head { display:none; }
   .q-acts { justify-content:flex-start; }
 }
+
+/* ===== v142 : séries, mois du cabinet, écran mural, dictée, SimSim ===== */
+.ask-bar { display:flex; align-items:center; gap:12px; width:100%; margin:0 0 18px; padding:14px 18px; border:1px solid var(--line); border-radius:12px; background:var(--surface); color:var(--muted); font:inherit; font-size:15px; text-align:left; cursor:pointer; }
+.ask-bar:hover { border-color:var(--ink); color:var(--ink); } .ask-spark { font-size:20px; }
+.wrap-banner { display:flex; align-items:center; gap:14px; width:100%; margin:0 0 14px; padding:14px 18px; border:0; border-radius:12px; background:linear-gradient(120deg,#171A20,#3E6AE1); color:#fff; font:inherit; text-align:left; cursor:pointer; }
+.wrap-banner > span:first-child { font-size:28px; } .wrap-banner b { display:block; font-size:16px; } .wrap-banner span span { opacity:.8; font-size:13px; } .wb-go { margin-left:auto; font-size:22px; }
+.streaks { margin:18px 0 22px; } .sk-head { display:flex; align-items:center; gap:12px; margin:0 2px 10px; } .sk-head h3 { margin:0; font-size:18px; }
+.sk-row { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:10px; }
+.sk { display:flex; gap:10px; align-items:center; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--surface); color:var(--muted); font-size:13px; }
+.sk.on { color:var(--ink); } .sk-ic { font-size:24px; } .sk b { display:block; font-size:18px; color:var(--ink); }
+.wrap-ov { position:fixed; inset:0; z-index:200; background:#0B0B0D; color:#fff; display:flex; flex-direction:column; }
+.wr-bar { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; } .wrap-ov .wr-bar select { background:#1a1a1e !important; color:#fff !important; border:1px solid #333 !important; border-radius:6px; padding:6px 10px; font:inherit; }
+.wr-x, .mu-x { background:none; border:0; color:#fff; font-size:20px; cursor:pointer; padding:6px 10px; }
+.wr-stage { flex:1; display:flex; flex-direction:column; padding:0 24px; cursor:pointer; user-select:none; overflow:hidden; }
+.wr-dots { display:flex; gap:4px; margin:4px 0 18px; } .wr-dots i { flex:1; height:3px; border-radius:2px; background:#333; } .wr-dots i.done, .wr-dots i.cur { background:#fff; }
+.wr-slide { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; gap:10px; max-width:900px; margin:0 auto; width:100%; animation:wrIn .5s ease; border-radius:20px; padding:28px; }
+.wr-slide.t-a { background:radial-gradient(120% 80% at 0% 0%, #3E6AE1 0%, transparent 60%); } .wr-slide.t-b { background:radial-gradient(120% 80% at 100% 0%, #E0452B 0%, transparent 60%); }
+.wr-slide.t-c { background:radial-gradient(120% 80% at 0% 100%, #1E9E62 0%, transparent 60%); } .wr-slide.t-d { background:radial-gradient(120% 80% at 100% 100%, #8A5CF6 0%, transparent 60%); }
+.wr-ic { font-size:64px; } .wr-big { font-size:clamp(48px, 11vw, 120px); font-weight:700; line-height:1; letter-spacing:-.03em; } .wr-slide.small .wr-big { font-size:clamp(34px, 7vw, 72px); }
+.wr-unit { font-size:clamp(20px, 3.2vw, 32px); font-weight:500; } .wr-sub { font-size:clamp(15px, 2vw, 19px); opacity:.78; white-space:pre-line; max-width:640px; line-height:1.5; }
+.wr-load { margin:auto; opacity:.7; }
+.wr-nav { display:flex; gap:10px; justify-content:flex-end; padding:18px 24px 24px; } .wr-nav .btn { background:#1a1a1e; color:#fff; border:1px solid #333; } .wr-nav .btn.primary { background:#fff; color:#000; border-color:#fff; }
+@keyframes wrIn { from { opacity:0; transform:translateY(18px) scale(.98); } to { opacity:1; transform:none; } }
+html.mural-on, html.mural-on body { overflow:hidden; }
+.mural-ov { position:fixed; inset:0; z-index:210; background:#000; color:#fff; font-family:"Barlow","Inter",system-ui,sans-serif; overflow:auto; }
+.mu-x { position:absolute; top:12px; right:14px; font-size:14px; letter-spacing:.1em; text-transform:uppercase; opacity:.5; } .mu-x:hover { opacity:1; }
+.mu-body { padding:clamp(16px, 3vw, 40px); display:flex; flex-direction:column; gap:clamp(14px, 2vw, 28px); min-height:100%; box-sizing:border-box; }
+.mu-top { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:1px solid #222; padding-bottom:14px; }
+.mu-cab { font-size:clamp(14px, 1.6vw, 18px); letter-spacing:.24em; text-transform:uppercase; color:#8E8E93; } .mu-day { font-size:clamp(24px, 3.4vw, 44px); font-weight:500; }
+.mu-clock { font-size:clamp(48px, 8vw, 110px); font-weight:300; line-height:1; font-variant-numeric:tabular-nums; }
+.mu-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:clamp(12px, 1.6vw, 22px); flex:1; }
+.mu-p { border:1px solid #232326; border-radius:4px; padding:clamp(14px, 1.6vw, 22px); display:flex; flex-direction:column; gap:10px; } .mu-p.bad { border-color:#FF453A; }
+.mu-p h3 { margin:0 0 4px; font-size:13px; letter-spacing:.2em; text-transform:uppercase; color:#8E8E93; font-weight:500; }
+.mu-dev b { font-size:clamp(18px, 2vw, 24px); font-weight:500; } .mu-chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.mu-chip { font-size:clamp(15px, 1.6vw, 20px); padding:6px 12px; border-radius:4px; background:#161618; } .mu-chip.ok { color:#30D158; } .mu-chip.bad { color:#fff; background:#FF453A; } .mu-chip.wait { color:#FFB020; }
+.mu-line { font-size:clamp(16px, 1.7vw, 22px); line-height:1.35; } .mu-line.bad { color:#FF6961; } .mu-line.warn { color:#FFB020; } .mu-line.ok { color:#8E8E93; text-decoration:line-through; }
+.mu-good { font-size:clamp(18px, 2vw, 26px); color:#30D158; } .mu-empty { color:#5c5c60; font-size:16px; }
+.mu-msg { font-size:clamp(15px, 1.5vw, 19px); line-height:1.4; } .mu-msg i { color:#5c5c60; font-style:normal; }
+.mu-sk { display:flex; gap:22px; flex-wrap:wrap; font-size:clamp(15px, 1.5vw, 19px); color:#8E8E93; border-top:1px solid #222; padding-top:14px; }
+.vc-row { display:flex; gap:8px; align-items:stretch; margin:10px 0; } .vc-row input, .vc-row textarea { flex:1; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); font:inherit; font-size:16px; }
+.vc-mic { width:52px; border-radius:50%; border:1px solid var(--line); background:var(--surface-2); font-size:22px; cursor:pointer; } .vc-mic.on { background:var(--bad); color:#fff; animation:vcPulse 1.2s infinite; }
+@keyframes vcPulse { 50% { box-shadow:0 0 0 10px rgba(214,44,63,.18); } }
+.vc-plan { display:flex; flex-direction:column; gap:8px; margin:12px 0; padding:12px; border:1px solid var(--line); border-radius:10px; } .vc-ans { font-size:17px; font-weight:500; }
+.ask-thread { max-height:52vh; overflow:auto; display:flex; flex-direction:column; gap:10px; margin:12px 0; }
+.ask-ex { display:flex; flex-wrap:wrap; gap:6px; } .ask-m.user { align-self:flex-end; max-width:85%; background:var(--surface-2); padding:10px 14px; border-radius:12px; }
+.ask-a { white-space:pre-wrap; line-height:1.5; max-width:95%; } .ask-a.wait { color:var(--muted); font-style:italic; }
 </style>
 </head>
 <body>
@@ -1844,7 +1890,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v141</div>
+            <div class="menu-who"><span id="who"></span> · v142</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -1863,6 +1909,9 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
             <div class="menu-group" data-mtab="factures"><div class="menu-title">Factures et suivi</div>
               <button class="mi" id="jrnBtn">Factures importées</button>
               <button class="mi" id="recapBtn">Récap de la semaine</button>
+              <button class="mi" id="sympaMois">🎉 Le mois du cabinet</button>
+              <button class="mi" id="sympaAsk">✨ Demander à SimSim</button>
+              <button class="mi" id="sympaMural">📺 Écran mural</button>
             </div>
             <div class="menu-group" data-mtab="cabinet"><div class="menu-title">Cabinet et équipe</div>
               <button class="mi hidden" id="switchBtn">Changer de cabinet</button>
@@ -2008,6 +2057,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   <div class="bar" id="bar">
     <input class="search" id="search" type="search" placeholder="Rechercher un article" aria-label="Rechercher">
     <button class="btn" id="scanBtn">Scanner</button>
+    <button class="btn" id="voiceBtn" title="Dicter un mouvement : « sortie de 2 boîtes de gants M »" aria-label="Dicter">🎤</button>
     <button class="btn" id="importBar" title="Importer des articles ou une facture (Excel, CSV ou PDF)">Importer</button>
     <button class="btn" id="addBtn">+ Ajouter</button>
   </div>
@@ -2341,6 +2391,34 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   </div>
 </dialog>
 
+<div class="wrap-ov hidden" id="wrapOv" role="dialog" aria-modal="true" aria-label="Le mois du cabinet" aria-hidden="true">
+  <div class="wr-bar"><select id="wrapMonthSel" aria-label="Mois"></select><button class="wr-x" id="wrapClose" type="button" aria-label="Fermer">✕</button></div>
+  <div class="wr-stage" id="wrapStage"></div>
+  <div class="wr-nav"><button class="btn" id="wrapPrev" type="button">← Précédent</button><button class="btn hidden" id="wrapShare" type="button">📤 Partager le résumé</button><button class="btn primary" id="wrapNext" type="button">Suivant →</button></div>
+</div>
+<div class="mural-ov hidden" id="muralOv" aria-hidden="true">
+  <button class="mu-x" id="muralClose" type="button" aria-label="Quitter l'écran mural">✕ Quitter</button>
+  <div class="mu-body" id="muralBody"></div>
+</div>
+<dialog id="voiceDlg">
+  <div class="dlg">
+    <h2>Dicter</h2>
+    <div class="sub" id="voiceState"></div>
+    <div class="vc-row"><button class="vc-mic" id="voiceMic" type="button" aria-label="Parler">🎤</button><input id="voiceText" type="text" autocomplete="off" placeholder="Ex : sortie de 2 boîtes de gants M" aria-label="Phrase"><button class="btn" id="voiceOk" type="button">Comprendre</button></div>
+    <div class="meta">Exemples : « sortie de 3 compresses », « entrée de 10 gants M », « ajoute les masques à la commande », « combien de gants M ? »</div>
+    <div id="voiceResult"></div>
+    <div class="dlg-actions"><button class="btn" id="voiceCancel" type="button">Fermer</button><button class="btn primary hidden" id="voiceGo" type="button">Valider</button></div>
+  </div>
+</dialog>
+<dialog id="askDlg" class="wide">
+  <div class="dlg">
+    <h2>✨ Demander à SimSim</h2>
+    <div class="sub">Posez une question en français sur le stock, les achats, la stérilisation, les implants ou les contrôles. Les noms des patients ne sont jamais envoyés à l'IA. Vérifiez les chiffres importants : l'IA peut se tromper.</div>
+    <div class="ask-thread" id="askThread"></div>
+    <div class="vc-row"><textarea id="askQ" rows="2" maxlength="600" placeholder="Votre question…" aria-label="Votre question"></textarea><button class="btn primary" id="askSend" type="button">Envoyer</button></div>
+    <div class="dlg-actions"><button class="btn" id="askNew" type="button">Nouvelle conversation</button><button class="btn" id="askClose" type="button">Fermer</button></div>
+  </div>
+</dialog>
 <dialog id="impDlg" class="wide">
   <div class="dlg">
     <h2>Enregistrer une pose d'implant</h2>
@@ -7866,7 +7944,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   if ("serviceWorker" in navigator && navigator.serviceWorker.addEventListener) navigator.serviceWorker.addEventListener("message", function (e) { if (e.data && e.data.type === "go" && e.data.tab) goTab(e.data.tab); });
   $("moreBtn").addEventListener("click", drawPush);
   function pushAfterLogin() {
-    if (goParam) { var g = goParam; goParam = ""; try { history.replaceState(history.state, "", location.pathname + location.hash); } catch (e) {} setTimeout(function () { if (["messages", "taches", "routines"].indexOf(g) !== -1) goTab(g); }, 400); }
+    if (goParam) { var g = goParam; goParam = ""; try { history.replaceState(history.state, "", location.pathname + location.hash); } catch (e) {} setTimeout(function () { if (handleGo(g)) return; if (["messages", "taches", "routines"].indexOf(g) !== -1) goTab(g); }, 400); }
     if (!pushSupported() || !db) return;
     if (Notification.permission === "granted") {   // on garde l'abonnement à jour (et rattaché à la personne connectée)
       navigator.serviceWorker.getRegistration().then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; }).then(function (sub) { if (sub) saveSub(sub).catch(function () {}); }, function () {});
@@ -8894,6 +8972,331 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
     $("sacCycle").addEventListener("change", sacSync);
   }
   qualiteBindings();
+  // ---------- séries et défis : ce que l'équipe tient au quotidien ----------
+  function isWorkday(d) { var w = d.getDay(); return w !== 0 && w !== 6; }
+  function workdayStreak(hasDay) {
+    var d = new Date(), n = 0, guard = 0;
+    if (!hasDay(localIso(d))) d.setDate(d.getDate() - 1);   // la journée en cours ne casse pas la série
+    while (guard++ < 400) {
+      if (isWorkday(d)) { if (!hasDay(localIso(d))) break; n++; }
+      d.setDate(d.getDate() - 1);
+    }
+    return n;
+  }
+  function streaks() {
+    var out = [];
+    if (sterOk && ster.some(function (x) { return x.type === "bowie_dick" || x.type === "helix"; })) {
+      var days = {}; ster.forEach(function (x) { if ((x.type === "bowie_dick" || x.type === "helix") && x.resultat === "conforme") days[sterDay(x)] = 1; });
+      var n = workdayStreak(function (d) { return !!days[d]; });
+      out.push({ ic: "🔥", n: n, unit: n > 1 ? "jours" : "jour", label: "de tests d'autoclave sans oubli", on: n >= 5 });
+    }
+    if (routinesOk && rCoches.length) {
+      var rd = {}; rCoches.forEach(function (c) { rd[c.jour] = 1; });
+      var nr = workdayStreak(function (d) { return !!rd[d]; });
+      out.push({ ic: "📋", n: nr, unit: nr > 1 ? "jours" : "jour", label: "de routines cochées", on: nr >= 5 });
+    }
+    var st = homeStats();
+    if (items.size) out.push({ ic: st.rupt.length ? "📦" : "🏅", n: st.rupt.length, unit: "", label: st.rupt.length ? (st.rupt.length > 1 ? "articles en rupture" : "article en rupture") : "Aucune rupture de stock", on: !st.rupt.length, hideN: !st.rupt.length });
+    if (ctlOk && ctlList.length) out.push({ ic: st.ctl ? "✅" : "🏅", n: st.ctl, unit: "", label: st.ctl ? "contrôle(s) en retard" : "Tous les contrôles à jour", on: !st.ctl, hideN: !st.ctl });
+    if (qAffOk && qAff.length) { var al = affLateCount(); out.push({ ic: al ? "📋" : "🏅", n: al, unit: "", label: al ? "affichage(s) à traiter" : "Affichages obligatoires à jour", on: !al, hideN: !al }); }
+    if (qImpOk) { var y = impStats().year; if (y) out.push({ ic: "🦷", n: y, unit: "", label: y > 1 ? "implants tracés cette année" : "implant tracé cette année", on: true }); }
+    return out;
+  }
+  function streaksCard() {
+    var s = streaks(); if (!s.length) return null;
+    var box = h("section", { class: "streaks" }, h("div", { class: "sk-head" }, h("h3", { text: "Vos séries" }), h("button", { class: "linkbtn", type: "button", text: "🎉 Le mois du cabinet", onclick: function () { openWrapped(); } })));
+    var row = h("div", { class: "sk-row" });
+    s.forEach(function (x) { row.append(h("div", { class: "sk" + (x.on ? " on" : "") }, h("span", { class: "sk-ic", text: x.ic }), h("div", {}, x.hideN ? null : h("b", { text: fmt(x.n) + (x.unit ? " " + x.unit : "") }), h("span", { text: x.label })))); });
+    box.append(row); return box;
+  }
+
+  // ---------- « Le mois du cabinet » : le récap animé, façon bilan de l'année ----------
+  var wrapSlides = [], wrapIdx = 0, wrapMonth = "";
+  function monthBounds(ym) { var p = ym.split("-"), a = new Date(+p[0], +p[1] - 1, 1), b = new Date(+p[0], +p[1], 1); return { a: a, b: b, ia: a.toISOString(), ib: b.toISOString() }; }
+  function lastMonth() { var d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); return localIso(d).slice(0, 7); }
+  function wrapData(ym) {
+    var B = monthBounds(ym), inM = function (iso) { return iso && String(iso) >= B.ia && String(iso) < B.ib; }, inD = function (day) { return day && localIso(new Date(day + "T12:00:00")).slice(0, 7) === ym; };
+    var cid = cabinetId;
+    var mv = fetchAll(function () { return sb.from("movements").select("item,item_id,delta,type,created_at").eq("cabinet_id", cid).gte("created_at", B.ia).lt("created_at", B.ib).order("id"); }).then(function (r) { return r.error ? [] : (r.data || []); }, function () { return []; });
+    return mv.then(function (moves) {
+      var d = { ym: ym, label: ymLabel(ym) };
+      var outs = {}; moves.forEach(function (m) { if (m.type === "move" && Number(m.delta) < 0) { var k = m.item || "?"; outs[k] = (outs[k] || 0) - Number(m.delta); } });
+      d.top = Object.keys(outs).map(function (k) { return [k, outs[k]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 3);
+      d.sorties = Object.keys(outs).reduce(function (a, k) { return a + outs[k]; }, 0);
+      d.moves = moves.filter(function (m) { return m.type === "move"; }).length;
+      var sm = sterOk ? ster.filter(function (x) { return inM(x.fait_at); }) : [];
+      d.cycles = sm.filter(function (x) { return x.type === "cycle"; }).length;
+      d.tests = sm.filter(function (x) { return x.type !== "cycle"; }).length;
+      d.nc = sm.filter(function (x) { return x.resultat !== "conforme"; }).length;
+      var wd = 0, done = {}; sm.forEach(function (x) { if (x.type === "bowie_dick" || x.type === "helix") done[sterDay(x)] = 1; });
+      for (var t = new Date(B.a); t < B.b && t <= new Date(); t.setDate(t.getDate() + 1)) if (isWorkday(t)) wd++;
+      d.testDays = Object.keys(done).length; d.workdays = wd;
+      d.implants = qImpOk ? qImp.filter(function (x) { return !x.annule && inD(x.pose_le); }).length : 0;
+      d.sachets = qSacOk ? qSac.filter(function (x) { return !x.annule && inM(x.ouvert_le || x.created_at); }).length : 0;
+      var ach = achOk ? achLines.filter(function (l) { return inD(l.doc_date); }) : [];
+      d.achats = ach.reduce(function (a, l) { return a + (l.doc_type === "avoir" ? -1 : 1) * (Number(l.total_ht) || 0); }, 0);
+      var sup = {}; ach.forEach(function (l) { if (l.doc_type !== "avoir") sup[l.supplier || "?"] = (sup[l.supplier || "?"] || 0) + (Number(l.total_ht) || 0); });
+      d.topSup = Object.keys(sup).sort(function (a, b) { return sup[b] - sup[a]; })[0] || "";
+      d.factures = Array.from(new Set(ach.map(function (l) { return l.doc_number; }))).length;
+      var mm = msgOk ? msgs.filter(function (m) { return inM(m.created_at); }) : [];
+      d.messages = mm.filter(function (m) { return m.kind !== "tache"; }).length; d.taches = msgOk ? msgs.filter(function (m) { return m.kind === "tache" && inM(m.done_at); }).length : 0;
+      d.verifs = qAffOk ? qVer.filter(function (v) { return inM(v.created_at); }).length : 0;
+      var ctlN = 0; if (ctlOk) Object.keys(ctlLogs).forEach(function (k) { (ctlLogs[k] || []).forEach(function (l) { if (inM(l.done_at)) ctlN++; }); }); d.controles = ctlN;
+      return d;
+    });
+  }
+  function wrapBuild(d) {
+    var S = [], cap = function (t) { return t.charAt(0).toUpperCase() + t.slice(1); };
+    S.push({ k: "intro", big: cap(d.label), sub: "Le mois de " + cabinetName + " en quelques chiffres", tone: "a" });
+    if (d.cycles || d.tests) S.push({ k: "ster", ic: "♨️", big: fmt(d.cycles), unit: d.cycles > 1 ? "cycles d'autoclave" : "cycle d'autoclave", sub: d.tests + " test(s) Bowie-Dick et hélix" + (d.workdays ? " · " + d.testDays + " jour(s) testé(s) sur " + d.workdays + " jour(s) ouvré(s)" : "") + (d.nc ? " · " + d.nc + " non conforme(s), traité(s)" : " · aucun résultat non conforme"), tone: "b" });
+    if (d.top.length) S.push({ k: "top", ic: "🏆", big: d.top[0][0], unit: "", sub: "le produit le plus utilisé : " + fmt(d.top[0][1]) + " sortie(s)" + (d.top[1] ? " · puis " + d.top.slice(1).map(function (t) { return t[0] + " (" + fmt(t[1]) + ")"; }).join(", ") : ""), tone: "c", small: true });
+    if (d.sorties) S.push({ k: "moves", ic: "📦", big: fmt(d.sorties), unit: "produits sortis du stock", sub: d.moves + " mouvement(s) enregistré(s)", tone: "d" });
+    if (d.achats) S.push({ k: "ach", ic: "🛒", big: money(d.achats), unit: "d'achats HT", sub: d.factures + " facture(s)" + (d.topSup ? " · premier fournisseur : " + d.topSup : ""), tone: "a" });
+    if (d.implants || d.sachets) S.push({ k: "trace", ic: "🦷", big: fmt(d.implants), unit: d.implants > 1 ? "implants tracés" : "implant tracé", sub: d.sachets + " sachet(s) stérile(s) relié(s) à un patient", tone: "b" });
+    if (d.messages || d.taches) S.push({ k: "team", ic: "💬", big: fmt(d.taches), unit: d.taches > 1 ? "tâches accomplies" : "tâche accomplie", sub: d.messages + " message(s) échangé(s) dans l'équipe", tone: "c" });
+    if (d.controles || d.verifs) S.push({ k: "qual", ic: "✅", big: fmt(d.controles + d.verifs), unit: "vérifications qualité signées", sub: d.controles + " contrôle(s) · " + d.verifs + " affichage(s) vérifié(s)", tone: "d" });
+    var sk = streaks().filter(function (x) { return x.on; });
+    S.push({ k: "end", ic: "🎉", big: "Bravo à toute l'équipe", unit: "", sub: sk.length ? sk.map(function (x) { return x.ic + " " + (x.hideN ? "" : fmt(x.n) + (x.unit ? " " + x.unit : "") + " ") + x.label; }).join("\n") : "Rendez-vous le mois prochain !", tone: "a", small: true, last: true });
+    return S;
+  }
+  function wrapText(d) {
+    return "🎉 " + cabinetName + " · " + d.label + "\n" + [d.cycles ? "♨️ " + d.cycles + " cycles d'autoclave" : "", d.top.length ? "🏆 produit star : " + d.top[0][0] : "", d.sorties ? "📦 " + fmt(d.sorties) + " produits sortis" : "", d.achats ? "🛒 " + money(d.achats) + " HT d'achats" : "", d.implants ? "🦷 " + d.implants + " implants tracés" : "", d.taches ? "💬 " + d.taches + " tâches accomplies" : ""].filter(Boolean).join("\n") + "\n— SimSimStock";
+  }
+  function openWrapped(ym) {
+    if (!sb || !cabinetId) return;
+    wrapMonth = ym || (new Date().getDate() <= 10 ? lastMonth() : localIso().slice(0, 7));
+    var ov = $("wrapOv"); ov.classList.remove("hidden"); ov.setAttribute("aria-hidden", "false"); $("wrapStage").textContent = ""; $("wrapStage").append(h("div", { class: "wr-load", text: "Préparation de votre mois…" }));
+    var sel = $("wrapMonthSel"); sel.textContent = ""; for (var i = 0; i < 12; i++) { var dd = new Date(); dd.setDate(1); dd.setMonth(dd.getMonth() - i); var m = localIso(dd).slice(0, 7); sel.append(h("option", { value: m, text: ymLabel(m) })); } sel.value = wrapMonth;
+    wrapData(wrapMonth).then(function (d) { if ($("wrapOv").classList.contains("hidden")) return; $("wrapOv").__data = d; wrapSlides = wrapBuild(d); wrapIdx = 0; drawWrap(); });
+    try { localStorage.setItem("simsim_wrap_seen_" + cabinetId, wrapMonth); } catch (e) {}
+  }
+  function drawWrap() {
+    var st = $("wrapStage"), s = wrapSlides[wrapIdx]; st.textContent = ""; if (!s) return;
+    var dots = h("div", { class: "wr-dots" }); wrapSlides.forEach(function (x, i) { dots.append(h("i", { class: i < wrapIdx ? "done" : i === wrapIdx ? "cur" : "" })); });
+    st.append(dots, h("div", { class: "wr-slide t-" + s.tone + (s.small ? " small" : "") }, s.ic ? h("div", { class: "wr-ic", text: s.ic }) : null, h("div", { class: "wr-big", text: s.big }), s.unit ? h("div", { class: "wr-unit", text: s.unit }) : null, h("div", { class: "wr-sub", text: s.sub })));
+    $("wrapPrev").disabled = wrapIdx === 0; $("wrapNext").textContent = s.last ? "Fermer" : "Suivant →"; $("wrapShare").classList.toggle("hidden", !s.last);
+  }
+  function wrapStep(dir) { if (dir > 0 && wrapIdx >= wrapSlides.length - 1) { closeWrapped(); return; } wrapIdx = Math.max(0, Math.min(wrapSlides.length - 1, wrapIdx + dir)); drawWrap(); }
+  function closeWrapped() { $("wrapOv").classList.add("hidden"); $("wrapOv").setAttribute("aria-hidden", "true"); }
+  function wrapShare() {
+    var d = $("wrapOv").__data; if (!d) return; var txt = wrapText(d);
+    if (navigator.share) { navigator.share({ title: "Le mois du cabinet", text: txt }).catch(function () {}); return; }
+    try { navigator.clipboard.writeText(txt).then(function () { toast("Résumé copié : collez-le dans un message à l'équipe."); }, function () { toast(txt); }); } catch (e) { toast(txt); }
+  }
+  function wrapBanner() {
+    if (!db || !cabinetId || new Date().getDate() > 10) return null;
+    var seen = ""; try { seen = localStorage.getItem("simsim_wrap_seen_" + cabinetId) || ""; } catch (e) {}
+    if (seen === lastMonth()) return null;
+    return h("button", { class: "wrap-banner", type: "button", onclick: function () { openWrapped(lastMonth()); } }, h("span", { text: "🎉" }), h("span", {}, h("b", { text: "Votre mois de " + ymLabel(lastMonth()).split(" ")[0] + " est prêt" }), h("span", { text: "Les chiffres du cabinet, en 1 minute" })), h("span", { class: "wb-go", text: "→" }));
+  }
+
+  // ---------- écran mural : pour une tablette fixée en stérilisation ou en salle de pause ----------
+  var muralTimer = null, muralClock = null, muralLock = null;
+  function openMural() {
+    var ov = $("muralOv"); ov.classList.remove("hidden"); ov.setAttribute("aria-hidden", "false"); document.documentElement.classList.add("mural-on");
+    drawMural(); clearInterval(muralTimer); muralTimer = setInterval(drawMural, 30000);
+    clearInterval(muralClock); muralClock = setInterval(function () { var c = $("muClock"); if (c) c.textContent = pad2(new Date().getHours()) + ":" + pad2(new Date().getMinutes()); }, 5000);
+    try { if (navigator.wakeLock && navigator.wakeLock.request) navigator.wakeLock.request("screen").then(function (l) { muralLock = l; }, function () {}); } catch (e) {}
+    try { if (ov.requestFullscreen && !document.fullscreenElement) ov.requestFullscreen().catch(function () {}); } catch (e) {}
+  }
+  function closeMural() {
+    $("muralOv").classList.add("hidden"); $("muralOv").setAttribute("aria-hidden", "true"); document.documentElement.classList.remove("mural-on");
+    clearInterval(muralTimer); clearInterval(muralClock); muralTimer = muralClock = null;
+    try { if (muralLock) muralLock.release(); } catch (e) {} muralLock = null;
+    try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {}); } catch (e) {}
+  }
+  function drawMural() {
+    var box = $("muralBody"); if (!box || $("muralOv").classList.contains("hidden")) return; box.textContent = "";
+    var now = new Date(), st = homeStats(), day = now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    box.append(h("div", { class: "mu-top" }, h("div", {}, h("div", { class: "mu-cab", text: cabinetName }), h("div", { class: "mu-day", text: day.charAt(0).toUpperCase() + day.slice(1) })), h("div", { class: "mu-clock", id: "muClock", text: pad2(now.getHours()) + ":" + pad2(now.getMinutes()) })));
+    var grid = h("div", { class: "mu-grid" });
+    var panel = function (title, cls) { var p = h("section", { class: "mu-p " + (cls || "") }, h("h3", { text: title })); grid.append(p); return p; };
+    // stérilisation du jour
+    var ps = panel("Autoclave aujourd'hui");
+    var devs = autoclaves(), names = devs.length ? devs.map(function (e) { return e.name; }) : (sterOk && ster.length ? Array.from(new Set(ster.map(function (x) { return x.appareil; }))).slice(0, 3) : []), today = localIso();
+    if (!sterOk) ps.append(h("div", { class: "mu-empty", text: "Registre non activé" }));
+    else if (!names.length) ps.append(h("div", { class: "mu-empty", text: "Aucun autoclave enregistré" }));
+    names.forEach(function (n) {
+      var mine = ster.filter(function (x) { return x.appareil === n && sterDay(x) === today; }), bd = mine.filter(function (x) { return x.type === "bowie_dick"; })[0], hx = mine.filter(function (x) { return x.type === "helix"; })[0], cy = mine.filter(function (x) { return x.type === "cycle"; }).length;
+      var chip = function (lab, x) { return h("span", { class: "mu-chip " + (x ? (x.resultat === "conforme" ? "ok" : "bad") : "wait"), text: (x ? (x.resultat === "conforme" ? "✓ " : "⚠ ") : "… ") + lab }); };
+      ps.append(h("div", { class: "mu-dev" }, h("b", { text: n }), h("div", { class: "mu-chips" }, chip("Bowie-Dick", bd), chip("Hélix", hx), h("span", { class: "mu-chip", text: cy + " cycle" + (cy > 1 ? "s" : "") }))));
+    });
+    // à surveiller
+    var pa = panel("À surveiller", st.rupt.length || st.ctl ? "bad" : "");
+    var lines = [];
+    if (st.rupt.length) lines.push(["bad", st.rupt.length + " en rupture : " + st.rupt.slice(0, 5).join(", ") + (st.rupt.length > 5 ? "…" : "")]);
+    if (st.bas) lines.push(["warn", st.bas + " sous le seuil"]);
+    if (st.need) lines.push(["warn", st.need + " à commander"]);
+    if (st.ctl) lines.push(["bad", st.ctl + " contrôle(s) à faire"]);
+    if (affLateCount()) lines.push(["bad", affLateCount() + " affichage(s) obligatoire(s) à traiter"]);
+    if (st.exp) lines.push(["warn", st.exp + " péremption(s) à surveiller"]);
+    if (!lines.length) pa.append(h("div", { class: "mu-good", text: "✓ Tout est en ordre" }));
+    lines.forEach(function (l) { pa.append(h("div", { class: "mu-line " + l[0], text: l[1] })); });
+    // tâches et routines
+    var pt = panel("Tâches et routines");
+    var L = msgOk ? taskLists() : { todo: [], sent: [] }, open = msgOk ? msgs.filter(function (m) { return m.kind === "tache" && !m.done_at; }) : [];
+    if (routinesOk) routinesList().forEach(function (r) { if (!routineDue(r)) return; var steps = rSteps(r), n = rTicks(r, localIso()).length; pt.append(h("div", { class: "mu-line" + (n >= steps.length ? " ok" : "") }, (r.icon || "📋") + " " + r.name + " · " + n + "/" + steps.length)); });
+    open.slice(0, 6).forEach(function (m) { pt.append(h("div", { class: "mu-line" }, "☐ " + m.body + (m.to_user_id ? " · " + msgThreadTitle(m.to_user_id) : ""))); });
+    if (!open.length && !(routinesOk && routinesList().some(routineDue))) pt.append(h("div", { class: "mu-good", text: "✓ Rien en attente" }));
+    // messages récents
+    var pm = panel("Derniers messages");
+    var recent = msgOk ? msgs.filter(function (m) { return m.kind !== "tache"; }).slice(-4).reverse() : [];
+    if (!recent.length) pm.append(h("div", { class: "mu-empty", text: "Pas de message récent" }));
+    recent.forEach(function (m) { pm.append(h("div", { class: "mu-msg" }, h("b", { text: personLabel(m.author_id, m.author_email) }), h("span", { text: " " + String(m.body || "").slice(0, 120) }), h("i", { text: " · " + ago(m.created_at) }))); });
+    box.append(grid);
+    var sk = streaks().filter(function (x) { return x.on; });
+    if (sk.length) box.append(h("div", { class: "mu-sk" }, sk.map(function (x) { return h("span", { text: x.ic + " " + (x.hideN ? "" : fmt(x.n) + (x.unit ? " " + x.unit : "") + " ") + x.label }); })));
+  }
+
+  // ---------- dictée vocale : « sortie de 2 boîtes de gants M » ----------
+  var NUMS = { un: 1, une: 1, deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6, sept: 7, huit: 8, neuf: 9, dix: 10, onze: 11, douze: 12, quinze: 15, vingt: 20, trente: 30, cinquante: 50, cent: 100 };
+  var UNITS = /^(boites?|paquets?|sachets?|cartons?|unites?|pieces?|flacons?|seringues?|tubes?|rouleaux?|lots?|x)$/;
+  function voiceNum(w) { if (/^\d+([.,]\d+)?$/.test(w)) return Number(w.replace(",", ".")); return NUMS[w] || 0; }
+  function voiceFindItem(q) {
+    var words = norm(q).replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).filter(function (w) { return w.length > 1 && !/^(de|des|du|la|le|les|en|au|aux|et|d|l)$/.test(w); });
+    if (!words.length) return [];
+    var scored = [];
+    items.forEach(function (it) {
+      if (it.archived) return;
+      var name = " " + norm(it.name + " " + (it.description || "")).replace(/[^a-z0-9 ]+/g, " ") + " ", hit = 0;
+      words.forEach(function (w) { if (name.indexOf(" " + w + " ") !== -1) hit += 1; else if (w.length > 3 && name.indexOf(w.slice(0, -1)) !== -1) hit += 0.7; });
+      if (hit) scored.push({ it: it, s: hit / words.length + (it.tracked !== false ? 0.05 : 0) });
+    });
+    return scored.sort(function (a, b) { return b.s - a.s; }).filter(function (x) { return x.s >= 0.5; }).slice(0, 5).map(function (x) { return x.it; });
+  }
+  function voiceParse(text) {
+    var t = norm(text).replace(/[.,!?;]+$/g, "").replace(/\s+/g, " ").trim(), m;
+    if ((m = /^(?:ajoute|ajouter|mets|mettre|commande|commander)\s+(.+?)\s+(?:a|dans) la (?:liste de )?commande$/.exec(t)) || (m = /^(?:a commander|il faut commander|on n'a plus de|il n'y a plus de|plus de)\s+(.+)$/.exec(t))) return { kind: "commande", q: m[1] };
+    if ((m = /^(?:combien (?:de|d'|reste-t-il de|il reste de|on a de)?|il reste combien de|stock de)\s*(.+)$/.exec(t))) return { kind: "combien", q: m[1].replace(/^(?:de |d')/, "") };
+    var verb = /^(sortie|sortir|sors|sort|retire|retirer|enleve|enlever|utilise|utilises|prends|prend|prendre|entree|entrer|rentre|rentrer|ajoute|ajouter|recu|reception|recois|livraison)\s*(?:de |d')?(.*)$/.exec(t);
+    if (!verb) return null;
+    var sign = /^(entree|entrer|rentre|rentrer|ajoute|ajouter|recu|reception|recois|livraison)$/.test(verb[1]) ? 1 : -1, rest = verb[2].split(" "), n = 1;
+    if (rest.length && voiceNum(rest[0])) { n = voiceNum(rest[0]); rest.shift(); }
+    if (rest.length && UNITS.test(rest[0])) rest.shift();
+    if (rest.length && /^(de|d'|du|des)$/.test(rest[0])) rest.shift();
+    var q = rest.join(" ").replace(/^d'/, "").replace(/ (au|du|dans le) stock$/, "").trim();
+    return q ? { kind: "move", delta: sign * n, q: q } : null;
+  }
+  var voiceRec = null;
+  function voiceSupported() { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
+  function openVoice() {
+    if (readOnly || !db) { toast("La dictée est réservée aux comptes qui peuvent modifier le stock."); return; }
+    $("voiceText").value = ""; $("voiceResult").textContent = ""; $("voiceGo").classList.add("hidden"); $("voiceDlg").showModal();
+    if (voiceSupported()) voiceListen(); else $("voiceState").textContent = "La dictée n'est pas disponible dans ce navigateur : tapez la phrase ci-dessous.";
+  }
+  function voiceListen() {
+    var R = window.SpeechRecognition || window.webkitSpeechRecognition; if (!R) return;
+    try { if (voiceRec) voiceRec.abort(); } catch (e) {}
+    var rec = new R(); voiceRec = rec; rec.lang = "fr-FR"; rec.interimResults = true; rec.maxAlternatives = 1;
+    $("voiceState").textContent = "🎙 Je vous écoute… dites par exemple « sortie de 2 boîtes de gants M »"; $("voiceMic").classList.add("on");
+    rec.onresult = function (e) { var txt = ""; for (var i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript; $("voiceText").value = txt; if (e.results[e.results.length - 1].isFinal) voiceUnderstand(); };
+    rec.onerror = function (e) { $("voiceState").textContent = e && e.error === "not-allowed" ? "Le micro est bloqué : autorisez-le dans les réglages du navigateur, ou tapez la phrase." : "Je n'ai pas bien entendu : réessayez, ou tapez la phrase."; };
+    rec.onend = function () { $("voiceMic").classList.remove("on"); if ($("voiceState").textContent.indexOf("écoute") !== -1) $("voiceState").textContent = "Touchez le micro pour parler à nouveau."; };
+    try { rec.start(); } catch (e) { $("voiceState").textContent = "La dictée n'a pas pu démarrer : tapez la phrase."; }
+  }
+  var voicePlan = null;
+  function voiceUnderstand() {
+    var text = $("voiceText").value.trim(), out = $("voiceResult"); out.textContent = ""; voicePlan = null; $("voiceGo").classList.add("hidden");
+    if (!text) return;
+    var p = voiceParse(text);
+    if (!p) { out.append(h("div", { class: "umsg bad", text: "Je n'ai pas compris. Essayez : « sortie de 2 gants M », « entrée de 5 compresses », « ajoute les masques à la commande », « combien de gants ? »." })); return; }
+    var found = voiceFindItem(p.q);
+    if (!found.length) { out.append(h("div", { class: "umsg bad", text: "Aucun article ne ressemble à « " + p.q + " »." })); return; }
+    var sel = h("select", { "aria-label": "Article" }); found.forEach(function (it) { sel.append(h("option", { value: it.id, text: it.name + " · en stock " + fmt(it.qty || 0) + (it.unit ? " " + it.unit : "") })); });
+    var what = p.kind === "move" ? (p.delta < 0 ? "Sortie de " : "Entrée de ") + fmt(Math.abs(p.delta)) : p.kind === "commande" ? "Ajouter à « À commander »" : "Quantité en stock";
+    out.append(h("div", { class: "vc-plan" }, h("b", { text: what }), h("label", { class: "f" }, "Article compris", sel)));
+    var show = function () { var it = items.get(sel.value); if (p.kind === "combien" && it) { $("voiceAns").textContent = "Il reste " + fmt(it.qty || 0) + (it.unit ? " " + it.unit : "") + " de « " + it.name + " »" + (it.min ? " (seuil " + fmt(it.min) + ")" : "") + "."; } };
+    out.append(h("div", { class: "vc-ans", id: "voiceAns" })); sel.addEventListener("change", show); show();
+    if (p.kind !== "combien") { voicePlan = { p: p, sel: sel }; $("voiceGo").textContent = p.kind === "move" ? "✓ Valider le mouvement" : "✓ Ajouter à la commande"; $("voiceGo").classList.remove("hidden"); }
+  }
+  function voiceApply() {
+    if (!voicePlan) return; var it = items.get(voicePlan.sel.value); if (!it) return; var p = voicePlan.p;
+    if (p.kind === "move") { adjustQty(it, p.delta, "Dictée vocale"); toast((p.delta < 0 ? "Sortie" : "Entrée") + " de " + fmt(Math.abs(p.delta)) + " · " + it.name + ". « ↶ Annuler » pour revenir en arrière."); }
+    else if (p.kind === "commande") { if (!it.flag_at) toggleFlag(it); else toast("« " + it.name + " » est déjà dans « À commander »."); }
+    $("voiceDlg").close();
+  }
+
+  // ---------- « Demander à SimSim » : questions en français sur les données du cabinet ----------
+  var ASK_FN = "demander", askBusy = false, askHist = [];
+  var ASK_EXAMPLES = ["Qu'est-ce qui risque de manquer cette semaine ?", "Combien a-t-on dépensé chez chaque fournisseur ce trimestre ?", "Quels sont les 10 produits les plus chers en stock ?", "Combien d'implants posés ce mois-ci, et de quelles marques ?", "Les tests d'autoclave ont-ils été faits tous les jours ce mois-ci ?"];
+  function askContext() {
+    var since = new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10), c = { cabinet: cabinetName, aujourdhui: localIso(), stock: [], achats: [], sterilisation: [], implants: [], controles: [], consommation_90j: {} };
+    items.forEach(function (it) { if (it.archived) return; c.stock.push([it.name, it.category || "", it.subcategory || "", it.supplier || "", it.ref || "", Number(it.qty) || 0, Number(it.min) || 0, it.unit || "", Number(it.price) || 0, it.tracked !== false ? 1 : 0, it.expiry || "", Number(it.ordered_qty) || 0]); });
+    c.stock_colonnes = ["nom", "domaine", "sous_domaine", "fournisseur", "ref", "quantite", "seuil", "unite", "prix_ht", "suivi", "peremption", "commande_en_cours"];
+    if (achOk) achLines.filter(function (l) { return (l.doc_date || "") >= since; }).forEach(function (l) { c.achats.push([l.doc_date, l.doc_type, l.supplier, l.name, Number(l.qty) || 0, Number(l.unit_price) || 0, Number(l.total_ht) || 0]); });
+    c.achats_colonnes = ["date", "type", "fournisseur", "produit", "quantite", "prix_unitaire_ht", "total_ht"];
+    if (sterOk) ster.filter(function (x) { return String(x.fait_at) >= since; }).forEach(function (x) { c.sterilisation.push([String(x.fait_at).slice(0, 16), x.type, x.appareil, x.resultat, x.numero || "", x.programme || ""]); });
+    c.sterilisation_colonnes = ["date_heure", "type", "appareil", "resultat", "numero", "programme"];
+    // les implants partent sans aucune donnée patient (ni nom, ni dossier)
+    if (qImpOk) qImp.filter(function (x) { return !x.annule; }).forEach(function (x) { c.implants.push([x.pose_le, x.produit, x.fabricant, x.ref, x.lot, x.localisation, x.praticien]); });
+    c.implants_colonnes = ["date_pose", "produit", "fabricant", "ref", "lot", "dent", "praticien"];
+    if (ctlOk) ctlList.forEach(function (k) { c.controles.push([k.name, k.every_days, k.last_done_at ? String(k.last_done_at).slice(0, 10) : ""]); });
+    if (consoOk) items.forEach(function (it) { var x = conso[it.id]; if (x && x.out > 0) c.consommation_90j[it.name] = x.out; });
+    return c;
+  }
+  function openAsk() { $("askDlg").showModal(); drawAsk(); setTimeout(function () { $("askQ").focus(); }, 50); }
+  function drawAsk() {
+    var box = $("askThread"); box.textContent = "";
+    if (!askHist.length) { var ex = h("div", { class: "ask-ex" }); ASK_EXAMPLES.forEach(function (q) { ex.append(h("button", { class: "btn sm", type: "button", text: q, onclick: function () { $("askQ").value = q; askSend(); } })); }); box.append(h("div", { class: "meta", text: "Exemples :" }), ex); }
+    askHist.forEach(function (m) { box.append(h("div", { class: "ask-m " + m.role }, m.role === "user" ? h("b", { text: m.text }) : h("div", { class: "ask-a", text: m.text }))); });
+    if (askBusy) box.append(h("div", { class: "ask-m bot" }, h("div", { class: "ask-a wait", text: "SimSim réfléchit…" })));
+    box.scrollTop = box.scrollHeight;
+  }
+  function askSend() {
+    var q = $("askQ").value.trim(); if (!q || askBusy) return;
+    if (!sb.functions || !sb.functions.invoke) { toast("Cette version ne sait pas appeler les fonctions Supabase."); return; }
+    askHist.push({ role: "user", text: q }); $("askQ").value = ""; askBusy = true; drawAsk();
+    var body = { question: q, historique: askHist.slice(-7, -1).map(function (m) { return { role: m.role === "user" ? "user" : "assistant", text: m.text }; }), contexte: askContext() };
+    var done = function (txt) { askBusy = false; askHist.push({ role: "bot", text: txt }); drawAsk(); };
+    (sb.auth && sb.auth.getSession ? sb.auth.getSession().then(function (r) { return r && r.data && r.data.session ? r.data.session.access_token : ""; }, function () { return ""; }) : Promise.resolve("")).then(function (token) {
+      var opts = { body: body };
+      if (token && /^eyJ/.test(cfg.key)) opts.headers = { "x-user-token": token, Authorization: "Bearer " + cfg.key };
+      return sb.functions.invoke(ASK_FN, opts);
+    }).then(function (res) {
+      if (res.error) { done(/404|not found/i.test(String(res.error.message || res.error)) || (res.error.context && res.error.context.status === 404) ? "« Demander à SimSim » n'est pas encore installé dans Supabase : voir la notice d'installation (fonction « demander »)." : "Je n'ai pas pu répondre (" + String(res.error.message || "erreur") + ")."); return; }
+      var d = res.data || {};
+      if (!d.ok) { done(d.error === "cle_manquante" ? "La clé de l'IA (ANTHROPIC_API_KEY) manque dans les secrets Supabase." : d.error === "non_connecte" ? "Reconnectez-vous puis réessayez." : d.error === "refus" ? "Je ne peux pas répondre à cette question." : "Je n'ai pas pu répondre (" + (d.error || "erreur") + ")."); return; }
+      done(d.reponse || "(pas de réponse)");
+    }, function () { done("Connexion impossible. Vérifiez votre accès à internet."); });
+  }
+
+  // ---------- ouverture directe (raccourcis de l'icône, liens ?go=) ----------
+  function goWhenReady(test, fn, tries) { tries = tries || 0; if (test() || tries > 40) { fn(); return; } setTimeout(function () { goWhenReady(test, fn, tries + 1); }, 250); }
+  function handleGo(g) {
+    if (g === "scan") { setModule("stock"); setTimeout(function () { $("scanBtn").click(); }, 300); return true; }
+    if (g === "mural") { goWhenReady(function () { return sterOk || items.size; }, openMural); return true; }
+    if (g === "implant") { setModule("materiel"); goTab("implants"); goWhenReady(function () { return qImpOk; }, function () { if (qImpOk) openImpForm(); }); return true; }
+    if (g === "sachet") { setModule("materiel"); goTab("sterilisation"); goWhenReady(function () { return sterOk && qSacOk; }, function () { openSacOpen(null); }); return true; }
+    if (g === "dicter") { setModule("stock"); goWhenReady(function () { return items.size; }, openVoice); return true; }
+    if (g === "demander") { goWhenReady(function () { return items.size; }, openAsk); return true; }
+    if (g === "mois") { goWhenReady(function () { return items.size; }, function () { openWrapped(); }); return true; }
+    return false;
+  }
+  function sympaBindings() {
+    $("wrapPrev").addEventListener("click", function () { wrapStep(-1); });
+    $("wrapNext").addEventListener("click", function () { wrapStep(1); });
+    $("wrapClose").addEventListener("click", closeWrapped);
+    $("wrapShare").addEventListener("click", wrapShare);
+    $("wrapMonthSel").addEventListener("change", function () { openWrapped($("wrapMonthSel").value); });
+    $("wrapStage").addEventListener("click", function (e) { if (e.target.closest && e.target.closest("button,select")) return; var r = $("wrapStage").getBoundingClientRect(); wrapStep(e.clientX < r.left + r.width / 3 ? -1 : 1); });
+    $("muralClose").addEventListener("click", closeMural);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") { if (!$("muralOv").classList.contains("hidden")) closeMural(); if (!$("wrapOv").classList.contains("hidden")) closeWrapped(); }
+      if (!$("wrapOv").classList.contains("hidden") && (e.key === "ArrowRight" || e.key === "ArrowLeft")) wrapStep(e.key === "ArrowRight" ? 1 : -1);
+    });
+    $("voiceMic").addEventListener("click", voiceListen);
+    $("voiceText").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); voiceUnderstand(); } });
+    $("voiceOk").addEventListener("click", voiceUnderstand);
+    $("voiceGo").addEventListener("click", voiceApply);
+    $("voiceCancel").addEventListener("click", function () { try { if (voiceRec) voiceRec.abort(); } catch (e) {} $("voiceDlg").close(); });
+    $("voiceBtn").addEventListener("click", openVoice);
+    $("askSend").addEventListener("click", askSend);
+    $("askQ").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askSend(); } });
+    $("askClose").addEventListener("click", function () { $("askDlg").close(); });
+    $("askNew").addEventListener("click", function () { askHist = []; drawAsk(); });
+    ["sympaMural", "sympaMois", "sympaAsk"].forEach(function (id) { var b = $(id); if (b) b.addEventListener("click", function () { $("moreMenu").classList.add("hidden"); if (id === "sympaMural") openMural(); else if (id === "sympaMois") openWrapped(); else openAsk(); }); });
+  }
+  sympaBindings();
   // ---------- petit menu « ⋯ » ----------
   var miniMenu = null;
   function closeMiniMenu() {
@@ -9611,7 +10014,10 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
         h("div", { class: "homegreet" }, h("h2", null, "Bonjour ", h("span", { class: "hg-name", text: me && me !== "?" ? me : "" }), h("span", { class: "hg-emo", text: myProfil() === "bigboss" ? " 👑" : " 👋" }))),
         h("div", { class: "hg-date", text: day.charAt(0).toUpperCase() + day.slice(1) })));
     wrap.append(head);
+    var wb = wrapBanner(); if (wb) wrap.append(wb);
+    wrap.append(h("button", { class: "ask-bar", type: "button", onclick: function () { openAsk(); } }, h("span", { class: "ask-spark", text: "✨" }), h("span", { text: "Posez une question à SimSim : « qu'est-ce qui va manquer cette semaine ? »" })));
     wrap.append(dayBoard(st));
+    var skc = streaksCard(); if (skc) wrap.append(skc);
     var plural = function (n, a, b) { return n + " " + (n > 1 ? b : a); };
     // une seule ligne par espace : ce qui compte le plus, sinon « tout va bien »
     var tiles = [
