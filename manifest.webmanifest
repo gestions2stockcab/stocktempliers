@@ -26,5 +26,55 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Scanner",
+      "short_name": "Scanner",
+      "description": "Scanner un article du stock",
+      "url": "./?go=scan",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Ouverture d'un sachet",
+      "short_name": "Sachet",
+      "description": "Relier un sachet stérilisé à un patient",
+      "url": "./?go=sachet",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Pose d'implant",
+      "short_name": "Implant",
+      "description": "Enregistrer une pose d'implant",
+      "url": "./?go=implant",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Écran mural",
+      "short_name": "Mural",
+      "description": "Affichage plein écran pour la stérilisation",
+      "url": "./?go=mural",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }
