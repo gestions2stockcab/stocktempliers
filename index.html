@@ -843,6 +843,9 @@ dialog::backdrop { background:rgba(11,27,58,.45); backdrop-filter:blur(4px); }
 /* ===== v89 : menu Plus en onglets ===== */
 .menu { min-width:300px; }
 .menu-tabs { display:flex; gap:4px; padding:6px 4px 4px; overflow-x:auto; border-bottom:1px solid var(--line); }
+/* le menu défile : ses blocs gardent leur hauteur (sinon la rangée d'onglets s'écrase quand un onglet est long) et les onglets restent visibles en haut */
+.menu > * { flex-shrink:0; }
+.menu-tabs { position:sticky; top:-6px; z-index:2; background:var(--surface); }
 .mtab { flex:1 0 auto; border:0; background:var(--surface-2); color:var(--muted); border-radius:8px; padding:7px 10px; font-size:13px; font-weight:600; white-space:nowrap; cursor:pointer; }
 .mtab[aria-selected="true"] { background:var(--brand); color:#fff; }
 .mtab.hidden { display:none; }
@@ -1938,7 +1941,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v150</div>
+            <div class="menu-who"><span id="who"></span> · v151</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
