@@ -1628,6 +1628,7 @@ html.is-touch .btn.sm { min-height:40px; padding:0 14px; font-size:14px; }
   :root[data-theme^="epure"] .alert span, :root[data-theme^="epure"] .alert { font-size:13px; }
   :root[data-theme^="epure"] .bar { display:grid; grid-template-columns:1fr 1.55fr 1fr; gap:8px; }
   :root[data-theme^="epure"] .bar .search { grid-column:1 / -1; }
+  :root[data-theme^="epure"] .bar #addBtn { grid-column:span 2; }
   :root[data-theme^="epure"] .bar .btn { width:auto; min-width:0; padding-left:6px; padding-right:6px; font-size:14px; white-space:nowrap; }
 }
 
@@ -1806,6 +1807,12 @@ html.mural-on, html.mural-on body { overflow:hidden; }
 .cl-chip span { color:var(--muted); font-size:12px; } .cl-chip.stale span:last-child { color:var(--warn); }
 .cl-chip.on { border-color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink); }
 .cl-next { color:var(--brand) !important; font-weight:600; font-size:11px !important; text-transform:uppercase; letter-spacing:.06em; }
+/* ===== v147 : reconnaître un article sur une photo (gratuit, sur l'appareil) ===== */
+.ph-shot { text-align:center; margin:8px 0; } .ph-shot img { max-width:100%; max-height:34vh; border-radius:10px; border:1px solid var(--line); }
+.ph-cands { display:flex; flex-direction:column; gap:6px; margin:8px 0; }
+.ph-cand { display:flex; justify-content:space-between; align-items:center; gap:10px; width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); font:inherit; text-align:left; cursor:pointer; }
+.ph-cand:hover { background:var(--hover); } .ph-cand .meta { font-size:12px; }
+.ph-read { font-size:12px; color:var(--muted); max-height:6.5em; overflow:auto; white-space:pre-wrap; border:1px dashed var(--line); border-radius:8px; padding:6px 8px; }
 /* ===== v146 : compter un tiroir au scan ===== */
 .cscan { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
 .cscan-row { display:grid; grid-template-columns:1fr auto auto auto; gap:8px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
@@ -1916,7 +1923,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v146</div>
+            <div class="menu-who"><span id="who"></span> · v147</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -2084,8 +2091,10 @@ html.mural-on, html.mural-on body { overflow:hidden; }
   <div class="bar" id="bar">
     <input class="search" id="search" type="search" placeholder="Rechercher un article" aria-label="Rechercher">
     <button class="btn" id="scanBtn">Scanner</button>
-    <button class="btn" id="voiceBtn" title="Dicter un mouvement : « sortie de 2 boîtes de gants M »" aria-label="Dicter">🎤</button>
+    <button class="btn" id="photoBtn" title="Prendre ou envoyer une photo : l'appli reconnaît le code-barres ou le texte de la boîte">📷 Photo</button>
+    <input id="photoFile" type="file" accept="image/*" class="hidden" aria-label="Photo d'un article">
     <button class="btn" id="importBar" title="Importer des articles ou une facture (Excel, CSV ou PDF)">Importer</button>
+    <button class="btn" id="voiceBtn" title="Dicter un mouvement : « sortie de 2 boîtes de gants M »" aria-label="Dicter">🎤</button>
     <button class="btn" id="addBtn">+ Ajouter</button>
   </div>
   <div class="roomchips hidden" id="viewBar" role="group" aria-label="Vue du stock : total ou par salle"></div>
@@ -2454,6 +2463,16 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     <h3 class="meta" id="tirGalHead">Photos précédentes de ce tiroir</h3>
     <div class="tir-gal" id="tirGal"></div>
     <div class="dlg-actions"><button class="btn" id="tirClose" type="button">Fermer</button><button class="btn primary hidden" id="tirApply" type="button">Reporter dans le comptage</button></div>
+  </div>
+</dialog>
+<dialog id="photoDlg" class="wide">
+  <div class="dlg">
+    <h2>📷 Reconnaître une photo</h2>
+    <div class="sub" id="photoState"></div>
+    <div class="ph-shot" id="photoShot"></div>
+    <div id="photoResult"></div>
+    <div id="photoReader" class="hidden"></div>
+    <div class="dlg-actions"><button class="btn" id="photoAgain" type="button">Autre photo</button><button class="btn" id="photoClose" type="button">Fermer</button></div>
   </div>
 </dialog>
 <dialog id="voiceDlg">
@@ -9390,7 +9409,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     $("voiceGo").addEventListener("click", voiceApply);
     $("voiceCancel").addEventListener("click", function () { try { if (voiceRec) voiceRec.abort(); } catch (e) {} $("voiceDlg").close(); });
     $("voiceBtn").addEventListener("click", openVoice);
-    wireTiroir();
+    wireTiroir(); wirePhoto();
     $("askSend").addEventListener("click", askSend);
     $("askQ").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askSend(); } });
     $("askClose").addEventListener("click", function () { $("askDlg").close(); });
@@ -12522,6 +12541,100 @@ html.mural-on, html.mural-on body { overflow:hidden; }
       miss.forEach(function (x) { cscanSet(x, 0); }); drawCountScan();
     } }) : null;
     panel.append(box, h("div", { class: "meta", text: miss.length ? miss.length + " article(s) de ce tiroir pas encore scanné(s)." : (inLoc.length ? "Tous les articles du tiroir ont été scannés." : "") }), h("div", { class: "dlg-actions" }, zero, done));
+  }
+
+  // ---------- 📷 Photo : reconnaître un article sur une photo, gratuitement et sur l'appareil ----------
+  // 1) code-barres / QR lu sur la photo ; 2) sinon, lecture du texte de la boîte (référence, nom) et rapprochement avec le stock
+  var PH_STOP = { de: 1, des: 1, du: 1, la: 1, le: 1, les: 1, et: 1, pour: 1, avec: 1, sans: 1, boite: 1, boites: 1, x: 1, ml: 1, mm: 1, the: 1, and: 1, "for": 1 };
+  function phWords(t) { return norm(t).replace(/[^a-z0-9]+/g, " ").split(" ").filter(function (w) { return w.length >= 3 && !PH_STOP[w]; }); }
+  function phMatch(lines) {
+    var text = lines.join(" "), flat = norm(text).replace(/[^a-z0-9]/g, ""), digits = text.replace(/\D/g, "");
+    var words = phWords(text), set = {}; words.forEach(function (w) { set[w] = 1; });
+    var near = function (w) { if (set[w]) return 1; if (w.length < 5) return 0; var p = w.slice(0, 5); return words.some(function (x) { return x.slice(0, 5) === p; }) ? 0.7 : 0; };
+    var out = [];
+    items.forEach(function (it) {
+      if (it.archived) return;
+      var sc = 0, why = [];
+      var ref = norm(it.ref || "").replace(/[^a-z0-9]/g, "");
+      if (ref.length >= 4 && flat.indexOf(ref) !== -1) { sc += 10; why.push("référence " + it.ref); }
+      var bc = String(it.barcode || "").replace(/\D/g, "");
+      if (bc.length >= 8 && digits.indexOf(bc) !== -1) { sc += 10; why.push("code " + it.barcode); }
+      var nw = phWords(labelOf(it)); if (nw.length) {
+        var hit = 0, got = []; nw.forEach(function (w) { var k = near(w); hit += k; if (k) got.push(w); });
+        var ratio = hit / nw.length; if (ratio >= 0.34 && hit >= 1) { sc += 6 * ratio + Math.min(2, hit * 0.5); why.push("mots : " + got.slice(0, 4).join(", ")); }
+      }
+      if (sc >= 2) out.push({ it: it, sc: sc, sure: sc >= 10, why: why.join(" · ") });
+    });
+    return out.sort(function (a, b) { return b.sc - a.sc; }).slice(0, 6);
+  }
+  function openPhoto() {
+    if (!items.size) { toast("Ajoutez d'abord des articles au stock."); return; }
+    $("photoFile").value = ""; $("photoFile").click();
+  }
+  function phCode(file) {
+    if (!window.Html5Qrcode) return Promise.resolve("");
+    var F = window.Html5QrcodeSupportedFormats, tmp;
+    try { tmp = new window.Html5Qrcode("photoReader", { formatsToSupport: [F.QR_CODE, F.EAN_13, F.EAN_8, F.CODE_128, F.CODE_39, F.UPC_A, F.UPC_E, F.DATA_MATRIX, F.ITF], experimentalFeatures: { useBarCodeDetectorIfSupported: true }, verbose: false }); } catch (e) { return Promise.resolve(""); }
+    var done = function () { try { tmp.clear(); } catch (e) {} };
+    return tmp.scanFile(file, false).then(function (t) { done(); return t; }, function () { done(); return ""; });
+  }
+  // ouvre la fenêtre du scanner directement sur le résultat (sans caméra)
+  function phToScan(text) {
+    $("photoDlg").close();
+    scanMode = "stock"; lastCode = ""; scanBusy = true;
+    $("scanFastRow").classList.add("hidden"); updateScanButtons();
+    $("scanTitle").textContent = "Article reconnu"; $("scanStatus").className = "sub"; $("scanStatus").textContent = "";
+    $("scanPanel").textContent = ""; $("scanDlg").showModal();
+    var info = parseGs1(text), key = scanKey(text), t = String(text).trim();
+    var tagHit = /^SIMITEM:([0-9a-f-]{36})$/i.exec(t);
+    var it = tagHit ? items.get(tagHit[1]) : Array.from(items.values()).find(function (x) { return x.barcode && x.barcode === key; });
+    if (it) showScanItem(it, info); else if (tagHit) { $("scanStatus").textContent = "Cette étiquette correspond à un article d'un autre cabinet ou supprimé."; } else showScanUnknown(key, info);
+  }
+  function phItem(it) {
+    $("photoDlg").close();
+    scanMode = "stock"; lastCode = ""; scanBusy = true;
+    $("scanFastRow").classList.add("hidden"); updateScanButtons();
+    $("scanTitle").textContent = "Article reconnu"; $("scanStatus").className = "sub"; $("scanStatus").textContent = "";
+    $("scanPanel").textContent = ""; $("scanDlg").showModal(); showScanItem(it, null);
+  }
+  function phLooksInvoice(lines) { var t = lines.join(" "); return lines.length >= 12 && /(facture|bon de livraison|total\s*(ht|ttc)|tva|montant)/i.test(t); }
+  function photoChosen(file) {
+    var st = $("photoState"), res = $("photoResult"); res.textContent = ""; $("photoShot").textContent = "";
+    var url = URL.createObjectURL(file); $("photoShot").append(h("img", { src: url, alt: "Photo envoyée", onload: function () { setTimeout(function () { URL.revokeObjectURL(url); }, 1000); } }));
+    if (!$("photoDlg").open) $("photoDlg").showModal();
+    st.textContent = "Je cherche un code-barres ou un QR code…";
+    phCode(file).then(function (code) {
+      if (code) { feedback(false); phToScan(code); return; }
+      st.textContent = "Pas de code lisible : je lis le texte de la boîte… (quelques secondes)";
+      return Promise.all([loadOcr(), shrinkImage(file, 2000)]).then(function (a) { ocrStatus.pre = "Lecture de la photo"; return a[0].recognize(a[1]); }).then(function (r) {
+        ocrStatus("");
+        var lines = ocrLines(r.data), cands = phMatch(lines), inv = phLooksInvoice(lines);
+        if (inv) {
+          res.append(h("div", { class: "tir-note" }, h("b", { text: "On dirait une facture ou un bon de livraison. " }),
+            h("button", { class: "btn sm primary", type: "button", text: "L'importer comme facture", onclick: function () { $("photoDlg").close(); importImage(file); } })));
+        }
+        if (cands.length) {
+          st.textContent = inv ? "Pour ajouter tout le document au stock, importez-le comme facture. Sinon, touchez un article." : cands.length === 1 ? "J'ai reconnu cet article : touchez-le pour faire une entrée ou une sortie." : "C'est peut-être l'un de ces articles : touchez le bon.";
+          var box = h("div", { class: "ph-cands" });
+          cands.forEach(function (c) {
+            box.append(h("button", { class: "ph-cand", type: "button", onclick: function () { phItem(c.it); } },
+              h("div", null, h("div", { class: "item-name", text: labelOf(c.it) }), h("div", { class: "meta", text: c.why + " · stock " + fmt(c.it.qty) + (c.it.unit ? " " + c.it.unit : "") })),
+              h("span", { class: "tir-conf " + (c.sure ? "haute" : c.sc >= 5 ? "moyenne" : "basse"), text: c.sure ? "sûr" : c.sc >= 5 ? "probable" : "possible" })));
+          });
+          res.append(box);
+        } else {
+          st.textContent = "Je n'ai pas reconnu d'article. Photographiez de près l'étiquette avec le nom ou la référence, ou le code-barres, bien à plat et éclairé.";
+        }
+        var txt = lines.join("\n").trim();
+        if (txt) res.append(h("details", null, h("summary", { class: "meta", text: "Texte lu sur la photo" }), h("div", { class: "ph-read", text: txt.slice(0, 1500) })));
+      });
+    }).catch(function (e) { ocrStatus(""); st.textContent = e && e.message === "chargement" ? "Le lecteur n'a pas pu être chargé : vérifiez votre accès à internet." : "La photo n'a pas pu être lue. Réessayez, bien éclairée et nette."; });
+  }
+  function wirePhoto() {
+    $("photoBtn").addEventListener("click", openPhoto);
+    $("photoFile").addEventListener("change", function () { var f = this.files && this.files[0]; if (f) photoChosen(f); });
+    $("photoAgain").addEventListener("click", function () { $("photoFile").value = ""; $("photoFile").click(); });
+    $("photoClose").addEventListener("click", function () { $("photoDlg").close(); });
   }
   function onScan(text) {
     var now = Date.now();
