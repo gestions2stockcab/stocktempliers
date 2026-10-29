@@ -1807,6 +1807,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
 .cl-chip span { color:var(--muted); font-size:12px; } .cl-chip.stale span:last-child { color:var(--warn); }
 .cl-chip.on { border-color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink); }
 .cl-next { color:var(--brand) !important; font-weight:600; font-size:11px !important; text-transform:uppercase; letter-spacing:.06em; }
+.vc-dir { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:6px 0; }
 /* ===== v147 : reconnaître un article sur une photo (gratuit, sur l'appareil) ===== */
 .ph-cam { text-align:center; margin:8px 0; } .ph-cam video { width:100%; max-height:52vh; background:#000; border-radius:12px; object-fit:cover; display:block; margin:0 auto 10px; } .ph-snap { min-width:220px; font-size:17px; padding:12px 20px; }
 .ph-shot { text-align:center; margin:8px 0; } .ph-shot img { max-width:100%; max-height:34vh; border-radius:10px; border:1px solid var(--line); }
@@ -2482,8 +2483,9 @@ html.mural-on, html.mural-on body { overflow:hidden; }
   <div class="dlg">
     <h2>Dicter</h2>
     <div class="sub" id="voiceState"></div>
+    <div class="vc-dir" role="group" aria-label="Sens du mouvement"><button class="btn sm toggle" id="voiceOut" type="button" aria-pressed="true">➖ Sortie</button><button class="btn sm toggle" id="voiceIn" type="button" aria-pressed="false">➕ Entrée</button><span class="meta">si la phrase ne le dit pas</span></div>
     <div class="vc-row"><button class="vc-mic" id="voiceMic" type="button" aria-label="Parler">🎤</button><input id="voiceText" type="text" autocomplete="off" placeholder="Ex : sortie de 2 boîtes de gants M" aria-label="Phrase"><button class="btn" id="voiceOk" type="button">Comprendre</button></div>
-    <div class="meta">Exemples : « sortie de 3 compresses », « entrée de 10 gants M », « ajoute les masques à la commande », « combien de gants M ? »</div>
+    <div class="meta">Exemples : « sortie de 3 compresses », « entrée de 10 gants M », « j'ai reçu 5 boîtes de masques », « rajoute 2 aiguilles », « ajoute les masques à la commande », « combien de gants M ? »</div>
     <div id="voiceResult"></div>
     <div class="dlg-actions"><button class="btn" id="voiceCancel" type="button">Fermer</button><button class="btn primary hidden" id="voiceGo" type="button">Valider</button></div>
   </div>
@@ -9243,30 +9245,32 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     return scored.sort(function (a, b) { return b.s - a.s; }).filter(function (x) { return x.s >= 0.5; }).slice(0, 5).map(function (x) { return x.it; });
   }
   function voiceParse(text) {
-    var t = norm(text).replace(/[.,!?;]+$/g, "").replace(/\s+/g, " ").trim(), m;
+    var t = norm(text).replace(/[’`]/g, "'").replace(/[.,!?;]+$/g, "").replace(/\s+/g, " ").trim(), m;
     if ((m = /^(?:ajoute|ajouter|mets|mettre|commande|commander)\s+(.+?)\s+(?:a|dans) la (?:liste de )?commande$/.exec(t)) || (m = /^(?:a commander|il faut commander|on n'a plus de|il n'y a plus de|plus de)\s+(.+)$/.exec(t))) return { kind: "commande", q: m[1] };
     if ((m = /^(?:combien (?:de|d'|reste-t-il de|il reste de|on a de)?|il reste combien de|stock de)\s*(.+)$/.exec(t))) return { kind: "combien", q: m[1].replace(/^(?:de |d')/, "") };
-    var verb = /^(sortie|sortir|sors|sort|retire|retirer|enleve|enlever|utilise|utilises|prends|prend|prendre|entree|entrer|rentre|rentrer|ajoute|ajouter|recu|reception|recois|livraison)\s*(?:de |d')?(.*)$/.exec(t);
-    if (!verb) return null;
-    var sign = /^(entree|entrer|rentre|rentrer|ajoute|ajouter|recu|reception|recois|livraison)$/.test(verb[1]) ? 1 : -1, rest = verb[2].split(" "), n = 1;
+    t = t.replace(/^(?:j'ai|j ai|on a|nous avons|vous avez|il y a eu)\s+/, "").replace(/^(?:une |la )?(?=(?:entree|sortie|reception|livraison)\b)/, "");
+    var verb = /^(sortie|sortir|sors|sort|sortez|retire|retirer|retirez|enleve|enlever|enlevez|utilise|utilises|utilisez|prends|prend|pris|prendre|prenez|consomme|consommer|jete|jeter|moins|-|entree|entrer|entre|entrez|rentre|rentrer|rentrez|ajoute|ajouter|ajoutez|rajoute|rajouter|rajoutez|remets|remettre|range|ranger|rangez|stocke|stocker|recu|recus|recue|recues|reception|recois|recevoir|livraison|livre|livres|plus|\+)(?=\s|\d|$)\s*(?:de |d')?(.*)$/.exec(t);
+    if (!verb && /^(\d|un |une |deux |trois |quatre |cinq |six |sept |huit |neuf |dix )/.test(t)) verb = [t, "", t];   // « 10 boîtes de gants » : le sens vient du bouton Sortie / Entrée
+    var sign = !verb[1] ? voiceDir : /^(entree|entrer|entre|entrez|rentre|rentrer|rentrez|ajoute|ajouter|ajoutez|rajoute|rajouter|rajoutez|remets|remettre|range|ranger|rangez|stocke|stocker|recu|recus|recue|recues|reception|recois|recevoir|livraison|livre|livres|plus|\+)$/.test(verb[1]) ? 1 : -1, rest = verb[2].split(" "), n = 1;
     if (rest.length && voiceNum(rest[0])) { n = voiceNum(rest[0]); rest.shift(); }
     if (rest.length && UNITS.test(rest[0])) rest.shift();
     if (rest.length && /^(de|d'|du|des)$/.test(rest[0])) rest.shift();
     var q = rest.join(" ").replace(/^d'/, "").replace(/ (au|du|dans le) stock$/, "").trim();
     return q ? { kind: "move", delta: sign * n, q: q } : null;
   }
-  var voiceRec = null;
+  var voiceRec = null, voiceDir = -1;
+  function voiceDirSync() { $("voiceOut").setAttribute("aria-pressed", voiceDir < 0 ? "true" : "false"); $("voiceIn").setAttribute("aria-pressed", voiceDir > 0 ? "true" : "false"); }
   function voiceSupported() { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
   function openVoice() {
     if (readOnly || !db) { toast("La dictée est réservée aux comptes qui peuvent modifier le stock."); return; }
-    $("voiceText").value = ""; $("voiceResult").textContent = ""; $("voiceGo").classList.add("hidden"); $("voiceDlg").showModal();
+    $("voiceText").value = ""; $("voiceResult").textContent = ""; $("voiceGo").classList.add("hidden"); voiceDirSync(); $("voiceDlg").showModal();
     if (voiceSupported()) voiceListen(); else $("voiceState").textContent = "La dictée n'est pas disponible dans ce navigateur : tapez la phrase ci-dessous.";
   }
   function voiceListen() {
     var R = window.SpeechRecognition || window.webkitSpeechRecognition; if (!R) return;
     try { if (voiceRec) voiceRec.abort(); } catch (e) {}
     var rec = new R(); voiceRec = rec; rec.lang = "fr-FR"; rec.interimResults = true; rec.maxAlternatives = 1;
-    $("voiceState").textContent = "🎙 Je vous écoute… dites par exemple « sortie de 2 boîtes de gants M »"; $("voiceMic").classList.add("on");
+    $("voiceState").textContent = "🎙 Je vous écoute… dites par exemple « sortie de 2 boîtes de gants M » ou « entrée de 10 compresses »"; $("voiceMic").classList.add("on");
     rec.onresult = function (e) { var txt = ""; for (var i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript; $("voiceText").value = txt; if (e.results[e.results.length - 1].isFinal) voiceUnderstand(); };
     rec.onerror = function (e) { $("voiceState").textContent = e && e.error === "not-allowed" ? "Le micro est bloqué : autorisez-le dans les réglages du navigateur, ou tapez la phrase." : "Je n'ai pas bien entendu : réessayez, ou tapez la phrase."; };
     rec.onend = function () { $("voiceMic").classList.remove("on"); if ($("voiceState").textContent.indexOf("écoute") !== -1) $("voiceState").textContent = "Touchez le micro pour parler à nouveau."; };
@@ -9277,15 +9281,22 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     var text = $("voiceText").value.trim(), out = $("voiceResult"); out.textContent = ""; voicePlan = null; $("voiceGo").classList.add("hidden");
     if (!text) return;
     var p = voiceParse(text);
-    if (!p) { out.append(h("div", { class: "umsg bad", text: "Je n'ai pas compris. Essayez : « sortie de 2 gants M », « entrée de 5 compresses », « ajoute les masques à la commande », « combien de gants ? »." })); return; }
+    if (!p) { out.append(h("div", { class: "umsg bad", text: "Je n'ai pas compris. Essayez : « sortie de 2 gants M », « entrée de 5 compresses », « j'ai reçu 10 boîtes de masques », « ajoute les masques à la commande », « combien de gants ? »." })); return; }
     var found = voiceFindItem(p.q);
     if (!found.length) { out.append(h("div", { class: "umsg bad", text: "Aucun article ne ressemble à « " + p.q + " »." })); return; }
     var sel = h("select", { "aria-label": "Article" }); found.forEach(function (it) { sel.append(h("option", { value: it.id, text: it.name + " · en stock " + fmt(it.qty || 0) + (it.unit ? " " + it.unit : "") })); });
-    var what = p.kind === "move" ? (p.delta < 0 ? "Sortie de " : "Entrée de ") + fmt(Math.abs(p.delta)) : p.kind === "commande" ? "Ajouter à « À commander »" : "Quantité en stock";
-    out.append(h("div", { class: "vc-plan" }, h("b", { text: what }), h("label", { class: "f" }, "Article compris", sel)));
+    var what = p.kind === "commande" ? "Ajouter à « À commander »" : p.kind === "combien" ? "Quantité en stock" : "";
+    var head = h("b", { text: what });
+    if (p.kind === "move") {
+      var bOut = h("button", { class: "btn sm toggle", type: "button" }), bIn = h("button", { class: "btn sm toggle", type: "button" });
+      var paint = function () { var n = fmt(Math.abs(p.delta)); bOut.textContent = "➖ Sortie de " + n; bIn.textContent = "➕ Entrée de " + n; bOut.setAttribute("aria-pressed", p.delta < 0 ? "true" : "false"); bIn.setAttribute("aria-pressed", p.delta > 0 ? "true" : "false"); $("voiceGo").textContent = p.delta < 0 ? "✓ Valider la sortie" : "✓ Valider l'entrée"; };
+      bOut.addEventListener("click", function () { p.delta = -Math.abs(p.delta); paint(); }); bIn.addEventListener("click", function () { p.delta = Math.abs(p.delta); paint(); });
+      head = h("div", { class: "vc-dir" }, bOut, bIn); setTimeout(paint, 0);
+    }
+    out.append(h("div", { class: "vc-plan" }, head, h("label", { class: "f" }, "Article compris", sel)));
     var show = function () { var it = items.get(sel.value); if (p.kind === "combien" && it) { $("voiceAns").textContent = "Il reste " + fmt(it.qty || 0) + (it.unit ? " " + it.unit : "") + " de « " + it.name + " »" + (it.min ? " (seuil " + fmt(it.min) + ")" : "") + "."; } };
     out.append(h("div", { class: "vc-ans", id: "voiceAns" })); sel.addEventListener("change", show); show();
-    if (p.kind !== "combien") { voicePlan = { p: p, sel: sel }; $("voiceGo").textContent = p.kind === "move" ? "✓ Valider le mouvement" : "✓ Ajouter à la commande"; $("voiceGo").classList.remove("hidden"); }
+    if (p.kind !== "combien") { voicePlan = { p: p, sel: sel }; $("voiceGo").textContent = p.kind === "move" ? (p.delta < 0 ? "✓ Valider la sortie" : "✓ Valider l'entrée") : "✓ Ajouter à la commande"; $("voiceGo").classList.remove("hidden"); }
   }
   function voiceApply() {
     if (!voicePlan) return; var it = items.get(voicePlan.sel.value); if (!it) return; var p = voicePlan.p;
@@ -9412,6 +9423,8 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     $("voiceGo").addEventListener("click", voiceApply);
     $("voiceCancel").addEventListener("click", function () { try { if (voiceRec) voiceRec.abort(); } catch (e) {} $("voiceDlg").close(); });
     $("voiceBtn").addEventListener("click", openVoice);
+    $("voiceOut").addEventListener("click", function () { voiceDir = -1; voiceDirSync(); if ($("voiceText").value.trim()) voiceUnderstand(); });
+    $("voiceIn").addEventListener("click", function () { voiceDir = 1; voiceDirSync(); if ($("voiceText").value.trim()) voiceUnderstand(); });
     wireTiroir(); wirePhoto();
     $("askSend").addEventListener("click", askSend);
     $("askQ").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askSend(); } });
