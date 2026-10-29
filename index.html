@@ -1797,6 +1797,15 @@ html.mural-on, html.mural-on body { overflow:hidden; }
 .ask-thread { max-height:52vh; overflow:auto; display:flex; flex-direction:column; gap:10px; margin:12px 0; }
 .ask-ex { display:flex; flex-wrap:wrap; gap:6px; } .ask-m.user { align-self:flex-end; max-width:85%; background:var(--surface-2); padding:10px 14px; border-radius:12px; }
 .ask-a { white-space:pre-wrap; line-height:1.5; max-width:95%; } .ask-a.wait { color:var(--muted); font-style:italic; }
+
+/* ===== v144 : inventaire tiroir par tiroir ===== */
+.cl-bar { border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:10px 0 14px; background:var(--surface); }
+.cl-head { display:flex; flex-direction:column; gap:2px; margin-bottom:10px; } .cl-head b { font-size:16px; }
+.cl-chips { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; }
+.cl-chip { flex:none; display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:9px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); font:inherit; font-size:13px; text-align:left; cursor:pointer; min-width:140px; }
+.cl-chip span { color:var(--muted); font-size:12px; } .cl-chip.stale span:last-child { color:var(--warn); }
+.cl-chip.on { border-color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink); }
+.cl-next { color:var(--brand) !important; font-weight:600; font-size:11px !important; text-transform:uppercase; letter-spacing:.06em; }
 </style>
 </head>
 <body>
@@ -1890,7 +1899,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v143</div>
+            <div class="menu-who"><span id="who"></span> · v144</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -9424,7 +9433,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     if (!list.length) { toast("Aucun article rangé à « " + loc + " » dans ce cabinet."); return; }
     setModule("stock"); clearFilters(); state.f.location = loc; state.cat = ""; state.q = ""; goTab("inventaire"); render();
     var low = list.filter(function (it) { return it.tracked !== false && (Number(it.qty) || 0) <= (Number(it.min) || 0); }).length;
-    toast("📦 " + loc + " : " + list.length + " article(s)" + (low ? ", dont " + low + " à réapprovisionner" : ", rien à réapprovisionner") + ".");
+    updBar("📦 " + loc + " : " + list.length + " article(s)" + (low ? ", dont " + low + " à réapprovisionner" : ", rien à réapprovisionner") + ".", "", readOnly ? [] : [{ text: "📋 Inventorier ce tiroir", fn: function () { $("updBar").classList.add("hidden"); state.countLoc = loc; countDraft = {}; clearFilters(); goTab("comptage"); } }], 20000);
   }
   function etiqBindings() {
     $("lblWhat").addEventListener("change", lblSync); $("lblVal").addEventListener("change", lblSync); $("lblKind").addEventListener("change", lblSync);
@@ -9734,6 +9743,41 @@ html.mural-on, html.mural-on body { overflow:hidden; }
   }
 
   var countDraft = {};
+  // ---------- inventaire tournant, tiroir par tiroir (emplacements) ----------
+  var locCounts = {}, locCountsAt = 0, locCountsCab = "";
+  function countLocMatch(it) { var l = (it.location || "").trim(); return !state.countLoc || (state.countLoc === "__none" ? !l : l === state.countLoc); }
+  function loadLocCounts(force) {
+    if (!sb || !cabinetId || (!force && locCountsCab === cabinetId && Date.now() - locCountsAt < 60000)) return;
+    var cid = cabinetId; locCountsAt = Date.now(); locCountsCab = cid;
+    sb.from("movements").select("item,created_at").eq("cabinet_id", cid).eq("type", "count").like("item", "Inventaire tiroir · %").order("created_at", { ascending: false }).limit(1000).then(function (r) {
+      if (cid !== cabinetId || r.error) return;
+      var m = {}; (r.data || []).forEach(function (x) { var l = String(x.item).replace(/^Inventaire tiroir · /, ""); if (!m[l]) m[l] = x.created_at; });
+      locCounts = m; if (state.tab === "comptage") render();
+    }, function () {});
+  }
+  function locAgo(iso) { if (!iso) return "jamais inventorié"; var d = Math.floor((Date.now() - Date.parse(iso)) / 86400000); return d <= 0 ? "inventorié aujourd'hui" : d === 1 ? "inventorié hier" : "inventorié il y a " + d + " j"; }
+  function countLocDone(loc, total, changed) {
+    if (!loc || loc === "__none" || readOnly || !db) return;
+    locCounts[loc] = new Date().toISOString();
+    enqueue(function () { return appendLog({ type: "count", itemId: "", item: "Inventaire tiroir · " + loc, delta: 0, qty: 0, note: total + " article(s) vérifié(s)" + (changed ? ", " + changed + " corrigé(s)" : ", tout était juste") }); });
+  }
+  function countLocBar() {
+    var locs = itemLocations(); if (!locs.length) return null;
+    loadLocCounts();
+    var order = locs.slice().sort(function (a, b) { var x = locCounts[a] || "", y = locCounts[b] || ""; return x === y ? a.localeCompare(b, "fr") : (x < y ? -1 : 1); });
+    var next = order[0];
+    var sec = h("div", { class: "cl-bar" }, h("div", { class: "cl-head" }, h("b", { text: "Inventaire tiroir par tiroir" }), h("span", { class: "meta", text: "Un tiroir à la fois : scannez son étiquette ou choisissez-le, comptez, enregistrez. Le plus ancien passe en premier." })));
+    var chips = h("div", { class: "cl-chips" });
+    chips.append(h("button", { class: "cl-chip" + (!state.countLoc ? " on" : ""), type: "button", onclick: function () { state.countLoc = ""; render(); } }, h("b", { text: "Tout le stock" })));
+    order.forEach(function (l) {
+      var n = Array.from(items.values()).filter(function (it) { return !it.archived && it.tracked !== false && (it.location || "").trim() === l; }).length, stale = !locCounts[l] || Date.now() - Date.parse(locCounts[l]) > 30 * 86400000;
+      chips.append(h("button", { class: "cl-chip" + (state.countLoc === l ? " on" : "") + (stale ? " stale" : ""), type: "button", onclick: function () { state.countLoc = l; countDraft = {}; render(); } },
+        l === next ? h("span", { class: "cl-next", text: "À faire ensuite" }) : null, h("b", { text: l }), h("span", { text: n + " article(s) · " + locAgo(locCounts[l]) })));
+    });
+    if (Array.from(items.values()).some(function (it) { return !it.archived && it.tracked !== false && !(it.location || "").trim(); }))
+      chips.append(h("button", { class: "cl-chip" + (state.countLoc === "__none" ? " on" : ""), type: "button", onclick: function () { state.countLoc = "__none"; render(); } }, h("b", { text: "Sans emplacement" }), h("span", { text: "à ranger dans un tiroir" })));
+    sec.append(chips); return sec;
+  }
   function renderCount(box) {
     if (!items.size) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" },
@@ -9744,7 +9788,8 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     box.append(h("div", { class: "crumb" },
       h("div", { class: "sub", text: "Saisissez ce que vous avez compté en rayon, puis enregistrez. Les seuils peuvent aussi être calculés d'après votre consommation." }),
       readOnly ? null : h("button", { class: "btn sm", type: "button", onclick: openSeuils, text: "Proposer des seuils d'après ma consommation" })));
-    var list = Array.from(items.values()).filter(function (it) { return it.tracked !== false; }).sort(function (a, b) {
+    var clb = countLocBar(); if (clb) box.append(clb);
+    var list = Array.from(items.values()).filter(function (it) { return it.tracked !== false && !it.archived && countLocMatch(it); }).sort(function (a, b) {
       var ca = norm(a.category || "zz"), cb = norm(b.category || "zz");
       if (ca !== cb) return ca.localeCompare(cb);
       var sa = norm(a.subcategory || "zz"), sb2 = norm(b.subcategory || "zz");
@@ -9780,11 +9825,13 @@ html.mural-on, html.mural-on body { overflow:hidden; }
         });
       });
       countDraft = {};
-      toast(ch.length + " article" + (ch.length > 1 ? "s" : "") + " mis à jour.");
+      countLocDone(state.countLoc, list.length, ch.length);
+      toast(ch.length + " article" + (ch.length > 1 ? "s" : "") + " mis à jour" + (state.countLoc && state.countLoc !== "__none" ? " · inventaire de « " + state.countLoc + " » enregistré" : "") + ".");
       enqueue(function () { render(); });
     });
     box.append(h("p", { class: "sub", text: "Comptez ce qu'il y a réellement en rayon, corrigez la quantité et fixez le seuil d'alerte sous lequel l'article doit être commandé, puis enregistrez. Chaque correction de quantité est inscrite dans l'historique." }));
-    box.append(h("div", { class: "countbar" }, saveBtn, info));
+    var okBtn = state.countLoc && state.countLoc !== "__none" && !readOnly ? h("button", { class: "btn", type: "button", text: "✓ Tout est juste", title: "Les quantités de ce tiroir sont exactes : l'inventaire est enregistré sans correction", onclick: function () { if (changedList().length) { toast("Des quantités ont été modifiées : utilisez « Enregistrer le comptage »."); return; } countLocDone(state.countLoc, list.length, 0); toast("✓ Inventaire de « " + state.countLoc + " » enregistré : tout était juste."); render(); } }) : null;
+    box.append(h("div", { class: "countbar" }, saveBtn, okBtn, info));
     var table = h("div", { class: "table" });
     table.append(h("div", { class: "crow head" }, h("div", { text: "Article" }), h("div", { text: "Compté" }), h("div", { text: "Seuil d'alerte" })));
     list.forEach(function (it, i) {
