@@ -1816,6 +1816,34 @@ html.mural-on, html.mural-on body { overflow:hidden; }
 .cl-chip.on { border-color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink); }
 .cl-next { color:var(--brand) !important; font-weight:600; font-size:11px !important; text-transform:uppercase; letter-spacing:.06em; }
 .vc-dir { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:6px 0; }
+/* ===== v153 : tableau de bord du propriétaire ===== */
+.adv { display:flex; gap:6px; margin:4px 0 14px; flex-wrap:wrap; }
+.adv .btn.toggle[aria-pressed="true"] { background:var(--ink); color:var(--surface); border-color:var(--ink); }
+.ad-kpis { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:10px; }
+.ad-kpi { border:1px solid var(--line); border-radius:12px; background:var(--surface); padding:12px 14px; }
+.ad-kpi b { display:block; font-size:26px; line-height:1.1; font-variant-numeric:tabular-nums; } .ad-kpi span { font-size:12.5px; color:var(--muted); }
+.ad-card { border:1px solid var(--line); border-radius:12px; background:var(--surface); padding:14px 16px; margin-top:12px; }
+.ad-card h3 { margin:0 0 4px; font-size:16px; } .ad-card > .meta { margin-bottom:8px; }
+.ad-chart { display:flex; align-items:flex-end; gap:2px; height:120px; padding-top:8px; border-bottom:1px solid var(--line); }
+.ad-bar { flex:1; min-width:3px; background:var(--brand); border-radius:4px 4px 0 0; position:relative; cursor:default; opacity:.9; }
+.ad-bar:hover, .ad-bar:focus { opacity:1; outline:2px solid var(--ink); outline-offset:1px; }
+.ad-bar.zero { background:var(--line); height:2px !important; border-radius:2px; }
+.ad-axis { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:4px; }
+.ad-tip { position:fixed; z-index:99; pointer-events:none; background:var(--ink); color:var(--surface); font-size:12px; padding:6px 8px; border-radius:8px; white-space:nowrap; }
+.ad-alerts { display:flex; flex-direction:column; gap:6px; }
+.ad-alert { display:flex; gap:10px; align-items:flex-start; padding:8px 10px; border-radius:10px; border:1px solid var(--line); font-size:14px; }
+.ad-alert .ic { flex:none; }
+.ad-tbl { width:100%; border-collapse:collapse; font-size:13.5px; } .ad-wrap { overflow-x:auto; }
+.ad-tbl th { text-align:left; font-weight:600; color:var(--muted); font-size:12px; padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap; cursor:pointer; user-select:none; }
+.ad-tbl td { padding:8px; border-bottom:1px solid var(--line); white-space:nowrap; font-variant-numeric:tabular-nums; } .ad-tbl td.num, .ad-tbl th.num { text-align:right; }
+.ad-tbl tr.click:hover td { background:var(--row-hover, var(--hover)); cursor:pointer; }
+.ad-st { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; } .ad-st i { width:8px; height:8px; border-radius:50%; background:var(--muted); display:inline-block; }
+.ad-st.ok i { background:#1a7f37; } .ad-st.calme i { background:#b58100; } .ad-st.off i { background:#c62828; } .ad-st.jamais i { background:var(--faint, #999); }
+.ad-feat { display:grid; grid-template-columns:minmax(120px, 180px) 1fr 44px; gap:8px; align-items:center; font-size:13.5px; margin:5px 0; }
+.ad-feat .trk { height:10px; background:var(--surface-2, var(--hover)); border-radius:5px; overflow:hidden; } .ad-feat .trk i { display:block; height:100%; background:var(--brand); border-radius:5px; }
+.ad-chips { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; } .ad-chip { font-size:12.5px; padding:3px 9px; border-radius:99px; border:1px solid var(--line); } .ad-chip.on { border-color:var(--brand); }
+.ad-chip.off { color:var(--muted); text-decoration:line-through; }
+.ad-detail { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:4px 18px; font-size:13.5px; } .ad-detail div { display:flex; justify-content:space-between; gap:10px; border-bottom:1px dashed var(--line); padding:4px 0; } .ad-detail span { color:var(--muted); }
 /* ===== v150 : centre d'aide ===== */
 #aideDlg { width:min(860px, 96vw); } #aideDlg .dlg { max-height:88vh; display:flex; flex-direction:column; }
 .aide-top { flex:none; display:flex; gap:8px; align-items:center; margin:6px 0 8px; } .aide-top input { flex:1; }
@@ -1944,10 +1972,11 @@ html.mural-on, html.mural-on body { overflow:hidden; }
         <button class="btn sm" id="kBtn" type="button" title="Rechercher partout (Ctrl + K)" aria-label="Rechercher partout"><span class="kb-ic">🔍</span><span class="kb-lb"> Rechercher</span></button>
         <button class="btn sm hidden" id="undoBtn" type="button">↶ Annuler</button>
         <span class="sub live" id="live" title="Connexion en direct au cabinet" aria-label="Connexion en direct"><i></i><span id="liveText">Connexion…</span></span>
+        <button class="btn sm hidden" id="ownerTopBtn" type="button" title="Tableau de bord du propriétaire : usage de tous les cabinets">👑 Admin</button>
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v152</div>
+            <div class="menu-who"><span id="who"></span> · v153</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -5624,7 +5653,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
   }
 
   // ---------- administration (propriétaire) ----------
-  var adminData = { ok: null, err: "", cabinets: [], users: [], invitations: [], q: "", tab: "" };
+  var adminData = { ok: null, err: "", cabinets: [], users: [], invitations: [], q: "", tab: "", view: "stats" };
   var ADMIN_ROLES = [["none", "Aucun accès"], ["viewer", "Lecture seule"], ["member", "Membre"], ["admin", "Administrateur"]];
   var ROLE_SHORT = { admin: "Administrateur", member: "Membre", viewer: "Lecture seule" };
   function adminErr(e) {
@@ -5902,10 +5931,157 @@ html.mural-on, html.mural-on body { overflow:hidden; }
         h("div", { class: "meta", text: st.kind === "pending" ? "invitation en attente · envoyée " + agoText(st.inv.last_sent_at || st.inv.created_at) : adminStatus(p) })),
       acts);
   }
+
+  // ---------- tableau de bord du propriétaire : usage de chaque cabinet (fonction SQL admin_stats) ----------
+  var adStats = { data: null, err: "", loading: false, at: 0, sort: "act", dir: 1, open: "", ufilter: "" };
+  function loadAdminStats(force) {
+    if (!sb || !ownerOk || adStats.loading || (!force && adStats.data && Date.now() - adStats.at < 120000)) return;
+    adStats.loading = true;
+    sb.rpc("admin_stats").then(function (r) {
+      adStats.loading = false; adStats.at = Date.now();
+      if (r.error) { adStats.err = /admin_stats|function|schema cache|does not exist/.test(r.error.message || "") ? "sql" : adminErr(r.error); }
+      else { adStats.err = ""; adStats.data = r.data; }
+      if (state.tab === "administration") render();
+    }, function () { adStats.loading = false; adStats.err = "Connexion impossible."; if (state.tab === "administration") render(); });
+  }
+  function adDays(iso) { var t = Date.parse(iso || ""); return t ? Math.floor((Date.now() - t) / 86400000) : null; }
+  function adAgo(iso) { var d = adDays(iso); return d === null ? "jamais" : agoText(iso); }
+  function adLast(c) { return [c.dernier_mouvement, c.dernier_message, c.derniere_steril, c.derniere_vue, c.derniere_facture, c.derniere_routine, c.dernier_controle].filter(Boolean).sort().pop() || ""; }
+  function adStatus(c) {
+    var last = adLast(c), d = adDays(last);
+    if (!last && !Number(c.mouvements_total)) return { k: "jamais", t: "Jamais utilisé", o: 3 };
+    if (d !== null && d <= 7) return { k: "ok", t: "Actif", o: 0 };
+    if (d !== null && d <= 30) return { k: "calme", t: "Calme", o: 1 };
+    return { k: "off", t: "Inactif", o: 2 };
+  }
+  function adBytes(n) { n = Number(n) || 0; return n < 1e6 ? Math.round(n / 1e3) + " Ko" : n < 1e9 ? (n / 1e6).toFixed(1).replace(".", ",") + " Mo" : (n / 1e9).toFixed(2).replace(".", ",") + " Go"; }
+  var AD_FEATS = [["Stock (mouvements)", "mouvements_30j"], ["Inventaire par tiroir", "inventaires_tiroir"], ["Photos de tiroir", "photos_tiroirs"], ["Messages", "messages_30j"], ["Tâches", "taches_total"], ["Routines", "routines"], ["Stérilisation", "steril_30j"], ["Implants", "implants_total"], ["Sachets tracés", "sachets_ouverts"], ["Affichages vérifiés", "affichages_verifs"], ["Factures importées", "factures"], ["Équipements", "equipements"], ["Contrats", "contrats"], ["Salles", "salles"], ["Contrôles", "controles"], ["Kits", "kits"], ["Notifications", "appareils_notifies"]];
+  function adTip(el, text) {
+    var tip = null;
+    var show = function (e) { if (!tip) { tip = h("div", { class: "ad-tip", text: text }); document.body.append(tip); } var r = el.getBoundingClientRect(); tip.style.left = Math.max(8, Math.min(window.innerWidth - tip.offsetWidth - 8, r.left + r.width / 2 - tip.offsetWidth / 2)) + "px"; tip.style.top = (r.top - tip.offsetHeight - 8) + "px"; };
+    var hide = function () { if (tip) { tip.remove(); tip = null; } };
+    el.addEventListener("mouseenter", show); el.addEventListener("mouseleave", hide); el.addEventListener("focus", show); el.addEventListener("blur", hide);
+    el.addEventListener("click", function () { tip ? hide() : show(); });
+  }
+  function adCsv(rows) {
+    var head = ["Cabinet", "Statut", "Dernière activité", "Dernière connexion", "Membres", "Articles suivis", "Ruptures", "Mouvements 7 j", "Mouvements 30 j", "Mouvements total", "Valeur stock HT", "Achats 12 mois HT", "Factures", "Messages 30 j", "Stérilisations 30 j", "Implants", "Fichiers", "Créé le"];
+    var esc = function (v) { v = v == null ? "" : String(v); return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var lines = [head.join(";")].concat(rows.map(function (c) { return [c.name, adStatus(c).t, frDate(adLast(c)), frDate(c.derniere_connexion), c.membres, c.articles_suivis, c.ruptures, c.mouvements_7j, c.mouvements_30j, c.mouvements_total, String(c.valeur_stock_ht).replace(".", ","), String(c.achats_12m_ht).replace(".", ","), c.factures, c.messages_30j, c.steril_30j, c.implants_total, c.fichiers, frDate(c.created_at)].map(esc).join(";"); }));
+    var a = h("a", { href: URL.createObjectURL(new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" })), download: "simsimstock-cabinets-" + new Date().toISOString().slice(0, 10) + ".csv" });
+    document.body.append(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+  function renderAdminStats(box) {
+    if (!adStats.data && !adStats.err) { loadAdminStats(); box.append(h("div", { class: "meta", text: "Chargement des statistiques de tous les cabinets…" })); return; }
+    if (adStats.err === "sql") {
+      box.append(h("div", { class: "ad-card" }, h("h3", { text: "Une étape à faire une seule fois" }),
+        h("div", { text: "Le tableau de bord a besoin d'un petit script dans Supabase : « ajout-admin-stats ». Ouvrez Supabase → SQL Editor → New query, collez le script et cliquez sur Run, puis revenez ici." }),
+        h("div", { class: "adv" }, h("button", { class: "btn primary", type: "button", text: "📋 Copier le script SQL", onclick: function () { safeFetch("sql/ajout-admin-stats.sql", { cache: "no-store" }).then(function (r) { return r.text(); }).then(function (t) { return navigator.clipboard.writeText(t); }).then(function () { toast("Script copié : collez-le dans Supabase → SQL Editor."); }, function () { toast("Copie impossible : le script est dans le dossier sql du projet."); }); } }),
+          h("button", { class: "btn", type: "button", text: "↻ Réessayer", onclick: function () { adStats.err = ""; loadAdminStats(true); render(); } }))));
+      return;
+    }
+    if (adStats.err) { box.append(h("div", { class: "ad-card" }, h("h3", { text: "Statistiques indisponibles" }), h("div", { text: adStats.err }), h("button", { class: "btn", type: "button", text: "↻ Réessayer", onclick: function () { adStats.err = ""; loadAdminStats(true); render(); } }))); return; }
+    var D = adStats.data || {}, cabs = (D.cabinets || []).slice(), users = D.utilisateurs || [], days = D.jours || [];
+    var sum = function (k) { return cabs.reduce(function (a, c) { return a + (Number(c[k]) || 0); }, 0); };
+    var st = cabs.map(function (c) { return adStatus(c); });
+    var act7 = st.filter(function (x) { return x.k === "ok"; }).length;
+    var u7 = users.filter(function (u) { var d = adDays(u.derniere_connexion); return d !== null && d <= 7; }).length;
+    box.append(h("div", { class: "adminhead" }, h("h3", { text: "Tableau de bord · tous les cabinets" }),
+      h("div", { class: "adv" }, h("span", { class: "meta", text: "Mis à jour " + (D.genere_le ? new Date(D.genere_le).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "") }),
+        h("button", { class: "btn sm", type: "button", text: adStats.loading ? "…" : "↻ Actualiser", onclick: function () { loadAdminStats(true); render(); } }),
+        h("button", { class: "btn sm", type: "button", text: "⬇ Exporter (CSV)", onclick: function () { adCsv(cabs); } }))));
+    var kp = h("div", { class: "ad-kpis" });
+    [[act7 + " / " + cabs.length, "cabinets actifs cette semaine"], [u7 + " / " + users.length, "personnes connectées en 7 jours"], [fmt(sum("mouvements_30j")), "mouvements de stock en 30 jours"], [fmt(sum("articles_suivis")), "articles suivis"], [money(sum("valeur_stock_ht")), "valeur des stocks (HT)"], [money(sum("achats_12m_ht")), "achats importés sur 12 mois (HT)"], [fmt(sum("fichiers")) + " · " + adBytes(sum("fichiers_octets")), "fichiers stockés"], [fmt(users.filter(function (u) { return u.notifications > 0; }).length), "personnes avec notifications"]].forEach(function (k) { kp.append(h("div", { class: "ad-kpi" }, h("b", { text: k[0] }), h("span", { text: k[1] }))); });
+    box.append(kp);
+    // à surveiller
+    var al = [];
+    cabs.forEach(function (c, i) {
+      var s0 = st[i], d = adDays(adLast(c));
+      if (s0.k === "jamais") al.push(["⚪", "« " + c.name + " » n'a jamais été utilisé (créé " + adAgo(c.created_at) + ")."]);
+      else if (s0.k === "off") al.push(["🔴", "« " + c.name + " » est inactif depuis " + d + " jours."]);
+      if (!Number(c.admins) && Number(c.membres)) al.push(["👤", "« " + c.name + " » n'a aucun administrateur."]);
+      if (Number(c.invitations_attente)) al.push(["✉️", "« " + c.name + " » : " + c.invitations_attente + " invitation(s) jamais acceptée(s)."]);
+      if (Number(c.articles_suivis) && (adDays(c.derniere_sauvegarde) === null || adDays(c.derniere_sauvegarde) > 35)) al.push(["💾", "« " + c.name + " » : pas de sauvegarde depuis plus d'un mois."]);
+    });
+    users.forEach(function (u) { if (u.cabinets && u.cabinets.some(function (x) { return x.role === "admin"; }) && !u.double_auth) al.push(["🔓", u.email + " (administrateur) n'a pas la double authentification."]); });
+    var alc = h("div", { class: "ad-card" }, h("h3", { text: "À surveiller" + (al.length ? " (" + al.length + ")" : "") }));
+    if (!al.length) alc.append(h("div", { class: "meta", text: "Rien à signaler : tous les cabinets sont utilisés." }));
+    else { var ab = h("div", { class: "ad-alerts" }); al.slice(0, 30).forEach(function (a) { ab.append(h("div", { class: "ad-alert" }, h("span", { class: "ic", text: a[0] }), h("span", { text: a[1] }))); }); alc.append(ab); }
+    box.append(alc);
+    // activité 30 jours
+    var max = Math.max.apply(null, days.map(function (d) { return Number(d.mouvements) || 0; }).concat([1]));
+    var ch = h("div", { class: "ad-chart", role: "img", "aria-label": "Mouvements de stock par jour sur 30 jours" });
+    days.forEach(function (d) {
+      var n = Number(d.mouvements) || 0, b = h("div", { class: "ad-bar" + (n ? "" : " zero"), tabindex: "0", style: "height:" + Math.max(2, Math.round(n / max * 100)) + "%" });
+      adTip(b, new Date(d.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }) + " · " + n + " mouvement" + (n > 1 ? "s" : "") + " · " + d.cabinets_actifs + " cabinet" + (d.cabinets_actifs > 1 ? "s" : "") + " actif" + (d.cabinets_actifs > 1 ? "s" : "") + " · " + d.messages + " message" + (d.messages > 1 ? "s" : ""));
+      ch.append(b);
+    });
+    var tot30 = days.reduce(function (a, d) { return a + (Number(d.mouvements) || 0); }, 0);
+    box.append(h("div", { class: "ad-card" }, h("h3", { text: "Mouvements de stock par jour" }), h("div", { class: "meta", text: "30 derniers jours, tous cabinets : " + fmt(tot30) + " mouvements. Survolez ou touchez une barre pour le détail." }), ch,
+      h("div", { class: "ad-axis" }, h("span", { text: days.length ? frDate(days[0].jour + "T12:00:00") : "" }), h("span", { text: "aujourd'hui" }))));
+    // tableau des cabinets
+    var cols = [["name", "Cabinet", 0], ["act", "Statut · dernière activité", 0], ["derniere_connexion", "Dernière connexion", 0], ["membres", "Membres", 1], ["articles_suivis", "Articles", 1], ["mouvements_7j", "Mvts 7 j", 1], ["mouvements_30j", "Mvts 30 j", 1], ["valeur_stock_ht", "Stock HT", 1], ["achats_12m_ht", "Achats 12 m", 1], ["fichiers", "Fichiers", 1]];
+    var key = adStats.sort, dir = adStats.dir;
+    cabs.sort(function (a, b) {
+      var x, y;
+      if (key === "act") { x = adStatus(a).o; y = adStatus(b).o; if (x === y) { x = adLast(b); y = adLast(a); } }
+      else if (key === "name") { x = norm(a.name); y = norm(b.name); }
+      else if (key === "derniere_connexion") { x = b[key] || ""; y = a[key] || ""; }
+      else { x = -(Number(a[key]) || 0); y = -(Number(b[key]) || 0); }
+      return (x < y ? -1 : x > y ? 1 : 0) * dir;
+    });
+    var tbl = h("table", { class: "ad-tbl" }), trh = h("tr");
+    cols.forEach(function (c) { trh.append(h("th", { class: c[2] ? "num" : "", text: c[1] + (key === c[0] ? (dir > 0 ? " ▾" : " ▴") : ""), onclick: function () { if (adStats.sort === c[0]) adStats.dir = -adStats.dir; else { adStats.sort = c[0]; adStats.dir = 1; } render(); } })); });
+    tbl.append(h("thead", null, trh));
+    var tb = h("tbody");
+    cabs.forEach(function (c) {
+      var s0 = adStatus(c), last = adLast(c);
+      tb.append(h("tr", { class: "click", onclick: function () { adStats.open = adStats.open === c.id ? "" : c.id; render(); } },
+        h("td", null, h("b", { text: c.name })), h("td", null, h("span", { class: "ad-st " + s0.k }, h("i"), s0.t + (last ? " · " + adAgo(last) : ""))), h("td", { text: adAgo(c.derniere_connexion) }),
+        h("td", { class: "num", text: fmt(c.membres) }), h("td", { class: "num", text: fmt(c.articles_suivis) }), h("td", { class: "num", text: fmt(c.mouvements_7j) }), h("td", { class: "num", text: fmt(c.mouvements_30j) }),
+        h("td", { class: "num", text: money(c.valeur_stock_ht || 0) }), h("td", { class: "num", text: money(c.achats_12m_ht || 0) }), h("td", { class: "num", text: fmt(c.fichiers) })));
+      if (adStats.open === c.id) {
+        var feats = h("div", { class: "ad-chips" }); AD_FEATS.forEach(function (f) { var n = Number(c[f[1]]) || 0; feats.append(h("span", { class: "ad-chip " + (n ? "on" : "off"), text: (n ? "✓ " : "") + f[0] + (n ? " · " + fmt(n) : "") })); });
+        var det = h("div", { class: "ad-detail" });
+        [["Créé", frDate(c.created_at)], ["Administrateurs", c.admins], ["Invitations en attente", c.invitations_attente], ["Ruptures", c.ruptures], ["Sous le seuil", c.sous_seuil], ["Articles avec prix", c.articles_avec_prix + " / " + c.articles], ["Avec code-barres", c.articles_avec_code], ["Avec tiroir", c.articles_avec_tiroir], ["Mouvements (total)", fmt(c.mouvements_total)], ["Personnes actives 30 j", c.personnes_actives_30j], ["Dernier mouvement", adAgo(c.dernier_mouvement)], ["Dernier message", adAgo(c.dernier_message)], ["Dernière stérilisation", adAgo(c.derniere_steril)], ["Dernière facture", adAgo(c.derniere_facture)], ["Dernier contrôle", adAgo(c.dernier_controle)], ["Dernière routine", adAgo(c.derniere_routine)], ["Dernière sauvegarde", adAgo(c.derniere_sauvegarde)], ["Espace stocké", adBytes(c.fichiers_octets)], ["Appareils", (c.appareils || []).map(function (x) { return x.appareil + " ×" + x.n; }).join(", ") || "—"], ["Dernier espace ouvert", (c.espaces || []).map(function (x) { return x.espace + " ×" + x.vues; }).join(", ") || "—"]].forEach(function (r) { det.append(h("div", null, h("span", { text: r[0] }), h("b", { text: String(r[1] == null ? "—" : r[1]) }))); });
+        var ac = adminCabById(c.id);
+        tb.append(h("tr", null, h("td", { colspan: String(cols.length), style: "white-space:normal;background:var(--surface-2, transparent)" },
+          h("div", { class: "meta", text: "Fonctions utilisées" }), feats, det,
+          h("div", { class: "adv", style: "margin-top:10px" }, ac ? h("button", { class: "btn sm primary", type: "button", text: c.id === cabinetId ? "Ouvert" : "Ouvrir ce cabinet", onclick: function (e) { e.stopPropagation(); adminOpen(ac); } }) : null,
+            h("button", { class: "btn sm", type: "button", text: "Voir ses personnes", onclick: function (e) { e.stopPropagation(); adminData.view = "gestion"; adminData.tab = c.id; render(); } })))));
+      }
+    });
+    tbl.append(tb);
+    box.append(h("div", { class: "ad-card" }, h("h3", { text: "Cabinets (" + cabs.length + ")" }), h("div", { class: "meta", text: "Touchez un cabinet pour tout voir. Touchez un titre de colonne pour trier." }), h("div", { class: "ad-wrap" }, tbl)));
+    // adoption des fonctions
+    var fc = h("div", { class: "ad-card" }, h("h3", { text: "Fonctions utilisées" }), h("div", { class: "meta", text: "Nombre de cabinets qui utilisent chaque fonction (au moins une fois)." }));
+    AD_FEATS.map(function (f) { return [f[0], cabs.filter(function (c) { return Number(c[f[1]]) > 0; }).length]; }).sort(function (a, b) { return b[1] - a[1]; }).forEach(function (f) {
+      var row = h("div", { class: "ad-feat" }, h("span", { text: f[0] }), h("span", { class: "trk" }, h("i", { style: "width:" + (cabs.length ? Math.round(f[1] / cabs.length * 100) : 0) + "%" })), h("b", { class: "num", style: "text-align:right", text: f[1] + "/" + cabs.length }));
+      fc.append(row);
+    });
+    box.append(fc);
+    // personnes
+    var q = norm(adStats.ufilter || "");
+    var uin = h("input", { class: "search", type: "search", placeholder: "Chercher une personne ou un cabinet", value: adStats.ufilter || "", "aria-label": "Chercher une personne" });
+    uin.addEventListener("input", function () { adStats.ufilter = uin.value; clearTimeout(uin._t); uin._t = setTimeout(function () { render(); var x = document.querySelector(".ad-users input"); if (x) { x.focus(); x.setSelectionRange(x.value.length, x.value.length); } }, 200); });
+    var ut = h("table", { class: "ad-tbl" }, h("thead", null, h("tr", null, h("th", { text: "Personne" }), h("th", { text: "Cabinets" }), h("th", { text: "Dernière connexion" }), h("th", { text: "Appareil" }), h("th", { class: "num", text: "Mvts 30 j" }), h("th", { text: "Notifs" }), h("th", { text: "Double auth." }))));
+    var ub = h("tbody");
+    users.filter(function (u) { return !q || norm(u.email + " " + (u.cabinets || []).map(function (x) { return x.cabinet; }).join(" ")).indexOf(q) !== -1; }).forEach(function (u) {
+      var d = adDays(u.derniere_connexion);
+      ub.append(h("tr", null, h("td", null, h("b", { text: u.email || "?" }), h("div", { class: "meta", text: "inscrit " + adAgo(u.cree_le) })),
+        h("td", { style: "white-space:normal", text: (u.cabinets || []).map(function (x) { return x.cabinet + " (" + (ROLE_SHORT[x.role] || x.role).toLowerCase() + ")"; }).join(", ") || "aucun" }),
+        h("td", null, h("span", { class: "ad-st " + (d === null ? "jamais" : d <= 7 ? "ok" : d <= 30 ? "calme" : "off") }, h("i"), adAgo(u.derniere_connexion))),
+        h("td", { text: u.appareil || "—" }), h("td", { class: "num", text: fmt(u.mouvements_30j) }), h("td", { text: u.notifications ? "🔔 " + u.notifications : "—" }), h("td", { text: u.double_auth ? "✓" : "—" })));
+    });
+    ut.append(ub);
+    box.append(h("div", { class: "ad-card ad-users" }, h("h3", { text: "Personnes (" + users.length + ")" }), uin, h("div", { class: "ad-wrap" }, ut)));
+  }
   function renderAdmin(box) {
     if (!ownerOk) { box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Réservé au propriétaire" })))); return; }
     if (adminData.ok === null) { box.append(h("div", { class: "meta", text: "Chargement…" })); return; }
     if (!adminData.ok) { box.append(h("div", { class: "table" }, h("div", { class: "empty" }, h("h2", { text: "Administration indisponible" }), h("div", { text: adminData.err })))); return; }
+    box.append(h("div", { class: "adv", role: "tablist" }, h("button", { class: "btn toggle", type: "button", "aria-pressed": adminData.view !== "gestion" ? "true" : "false", text: "📈 Tableau de bord", onclick: function () { adminData.view = "stats"; loadAdminStats(); render(); } }),
+      h("button", { class: "btn toggle", type: "button", "aria-pressed": adminData.view === "gestion" ? "true" : "false", text: "🏥 Cabinets et personnes", onclick: function () { adminData.view = "gestion"; render(); } })));
+    if (adminData.view !== "gestion") { renderAdminStats(box); return; }
     var people = adminPeople();
     var cabs = h("div", { class: "dsec" });
     cabs.append(h("div", { class: "adminhead" }, h("h3", { text: "Cabinets (" + adminData.cabinets.length + ")" }),
@@ -14333,7 +14509,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
   function updateOwnerBtns() {
     $("newCabBtn").classList.toggle("hidden", !ownerOk);
     $("pickNew").classList.toggle("hidden", !ownerOk);
-    $("adminBtn").classList.toggle("hidden", !ownerOk);
+    $("adminBtn").classList.toggle("hidden", !ownerOk); $("ownerTopBtn").classList.toggle("hidden", !ownerOk);
     document.querySelector('.tab[data-tab="administration"]').classList.toggle("hidden", !ownerOk);
   }
   function openNewCab() {
@@ -14454,6 +14630,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
   $("seuilCancel").addEventListener("click", function () { $("seuilDlg").close(); });
   $("seuilApply").addEventListener("click", applySeuils);
   $("adminBtn").addEventListener("click", function () { state.tab = "administration"; state.filter = "all"; syncTabs(); render(); loadAdmin(); });
+  $("ownerTopBtn").addEventListener("click", function () { adminData.view = "stats"; state.tab = "administration"; state.filter = "all"; syncTabs(); render(); loadAdmin(); loadAdminStats(true); });
   $("adminRenCancel").addEventListener("click", function () { $("adminRenDlg").close(); });
   $("adminRenOk").addEventListener("click", saveAdminRename);
   $("adminRenName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); saveAdminRename(); } });
