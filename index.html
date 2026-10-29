@@ -1806,6 +1806,11 @@ html.mural-on, html.mural-on body { overflow:hidden; }
 .cl-chip span { color:var(--muted); font-size:12px; } .cl-chip.stale span:last-child { color:var(--warn); }
 .cl-chip.on { border-color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink); }
 .cl-next { color:var(--brand) !important; font-weight:600; font-size:11px !important; text-transform:uppercase; letter-spacing:.06em; }
+/* ===== v146 : compter un tiroir au scan ===== */
+.cscan { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+.cscan-row { display:grid; grid-template-columns:1fr auto auto auto; gap:8px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+.cscan-row b.n { min-width:2.2em; text-align:center; font-size:18px; }
+.cscan-row.last { border-color:var(--accent, #3e6ae1); }
 /* ===== v145 : photo du tiroir et comptage par l'IA ===== */
 .tir-shot { margin:10px 0; text-align:center; } .tir-shot img { max-width:100%; max-height:42vh; border-radius:10px; border:1px solid var(--line); }
 .tir-tools { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
@@ -1911,7 +1916,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v145</div>
+            <div class="menu-who"><span id="who"></span> · v146</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -9961,15 +9966,16 @@ html.mural-on, html.mural-on body { overflow:hidden; }
           });
         });
       });
-      countDraft = {};
+      countDraft = {}; cscan = { loc: null, n: {}, order: [], last: "" };
       countLocDone(state.countLoc, list.length, ch.length);
       toast(ch.length + " article" + (ch.length > 1 ? "s" : "") + " mis à jour" + (state.countLoc && state.countLoc !== "__none" ? " · inventaire de « " + state.countLoc + " » enregistré" : "") + ".");
       enqueue(function () { render(); });
     });
     box.append(h("p", { class: "sub", text: "Comptez ce qu'il y a réellement en rayon, corrigez la quantité et fixez le seuil d'alerte sous lequel l'article doit être commandé, puis enregistrez. Chaque correction de quantité est inscrite dans l'historique." }));
     var okBtn = state.countLoc && state.countLoc !== "__none" && !readOnly ? h("button", { class: "btn", type: "button", text: "✓ Tout est juste", title: "Les quantités de ce tiroir sont exactes : l'inventaire est enregistré sans correction", onclick: function () { if (changedList().length) { toast("Des quantités ont été modifiées : utilisez « Enregistrer le comptage »."); return; } countLocDone(state.countLoc, list.length, 0); toast("✓ Inventaire de « " + state.countLoc + " » enregistré : tout était juste."); render(); } }) : null;
+    var scanCntBtn = !readOnly && db ? h("button", { class: "btn", type: "button", text: "▦ Compter au scan", title: "Scannez chaque boîte : chaque scan compte 1, sans rien taper", onclick: openCountScan }) : null;
     var photoBtn = okBtn ? h("button", { class: "btn", type: "button", text: "📷 Photo du tiroir", title: "Joindre une photo du tiroir à l'inventaire, et faire proposer le comptage par l'IA", onclick: function () { openTiroir(state.countLoc, list); } }) : null;
-    box.append(h("div", { class: "countbar" }, saveBtn, okBtn, photoBtn, info));
+    box.append(h("div", { class: "countbar" }, saveBtn, scanCntBtn, okBtn, photoBtn, info));
     var table = h("div", { class: "table" });
     table.append(h("div", { class: "crow head" }, h("div", { text: "Article" }), h("div", { text: "Compté" }), h("div", { text: "Seuil d'alerte" })));
     list.forEach(function (it, i) {
@@ -12198,7 +12204,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     } catch (e) {}
   }
   function feedback(bad) { beep(bad); try { if (navigator.vibrate) navigator.vibrate(bad ? [80, 60, 80] : 60); } catch (e) {} }
-  function scanTitleText() { var rm = roomScope(); if (scanMode === "implant") return "Scanner la boîte de l'implant"; if (scanMode === "sachet") return "Scanner l'étiquette du sachet"; return scanMode === "capture" ? "Scanner le code de l'article" : (scanFast ? "Sortie rapide" + (rm ? " · " + rm.name : "") : "Scanner un article"); }
+  function scanTitleText() { var rm = roomScope(); if (scanMode === "count") return state.countLoc && state.countLoc !== "__none" ? "Compter « " + state.countLoc + " »" : "Compter au scan"; if (scanMode === "implant") return "Scanner la boîte de l'implant"; if (scanMode === "sachet") return "Scanner l'étiquette du sachet"; return scanMode === "capture" ? "Scanner le code de l'article" : (scanFast ? "Sortie rapide" + (rm ? " · " + rm.name : "") : "Scanner un article"); }
   function drawScanLog() {
     var panel = $("scanPanel"); panel.textContent = "";
     if (!scanLog.length) return;
@@ -12256,7 +12262,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
       return tmp.scanFile(file, false).then(function (t) { done(); return t; }, function (er) { done(); throw er; });
     }).then(function (text) {
       lastCode = ""; scanBusy = false; onScan(text);
-      if (scanFast && scanMode === "stock" && !scanBusy) startScanner();
+      if ((scanFast && scanMode === "stock" || scanMode === "count") && !scanBusy) startScanner();
     }, function () {
       $("scanStatus").className = "sub scanbad"; $("scanStatus").textContent = "Aucun code lu sur la photo : rapprochez-vous, évitez les reflets et gardez le code bien à plat.";
       startScanner();
@@ -12457,9 +12463,69 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     $("scanStatus").className = "sub"; $("scanStatus").textContent = "Placez le code devant la caméra.";
     startScanner();
   }
+
+  // ---------- compter au scan : chaque boîte scannée compte pour 1, le total remplace la quantité dans le comptage ----------
+  var cscan = { loc: null, n: {}, order: [], last: "" };
+  function openCountScan() {
+    if (readOnly || !db) { toast("Le comptage est réservé aux comptes qui peuvent modifier le stock."); return; }
+    if (cscan.loc !== state.countLoc || cscan.order.some(function (id) { return !countDraft[id]; })) cscan = { loc: state.countLoc, n: {}, order: [], last: "" };
+    openScan("count");
+    $("scanStatus").textContent = "Scannez chaque boîte du tiroir, une par une : chaque scan compte 1. Puis « Terminer ».";
+    drawCountScan();
+  }
+  function cscanSet(it, n) {
+    n = Math.max(0, n); cscan.n[it.id] = n;
+    if (cscan.order.indexOf(it.id) === -1) cscan.order.unshift(it.id);
+    var min = countDraft[it.id] ? countDraft[it.id].min : Number(it.min) || 0;
+    countDraft[it.id] = { qty: n, min: min };
+  }
+  function countScan(text) {
+    var st = $("scanStatus"), t = String(text).trim();
+    var locHit = /^SIMLOC:(.+)$/.exec(t);
+    if (locHit) {
+      if (locHit[1] !== state.countLoc) { state.countLoc = locHit[1]; countDraft = {}; cscan = { loc: state.countLoc, n: {}, order: [], last: "" }; render(); }
+      feedback(false); st.className = "sub scanok"; st.textContent = "Tiroir « " + locHit[1] + " » : scannez maintenant ses boîtes.";
+      $("scanTitle").textContent = scanTitleText(); drawCountScan(); return;
+    }
+    var tagHit = /^SIMITEM:([0-9a-f-]{36})$/i.exec(t), key = scanKey(text);
+    var it = tagHit ? items.get(tagHit[1]) : Array.from(items.values()).find(function (x) { return x.barcode && x.barcode === key; });
+    var bad = function (msg) { feedback(true); st.className = "sub scanbad"; st.textContent = "✗ " + msg; };
+    if (!it || it.archived) { bad("Code inconnu : cet article n'est pas (encore) dans le stock. Ajoutez-le depuis le scanner normal."); return; }
+    if (it.tracked === false) { bad(it.name + " n'est pas suivi en stock."); return; }
+    if (!countLocMatch(it)) { bad(it.name + " est rangé dans « " + ((it.location || "").trim() || "aucun tiroir") + " » : non compté ici. Remettez-le à sa place ou changez son emplacement."); return; }
+    if (hasLots(it)) { bad(it.name + " est suivi par lots : comptez-le dans sa fiche."); return; }
+    cscanSet(it, (cscan.n[it.id] || 0) + 1); cscan.last = it.id;
+    feedback(false); st.className = "sub scanok"; st.textContent = "✓ " + it.name + " : " + fmt(cscan.n[it.id]) + " — présentez la boîte suivante";
+    // une même boîte reste devant la caméra : on attend un peu avant d'accepter le même code
+    scanBusy = true; setTimeout(function () { if (scanMode === "count") scanBusy = false; }, 1300);
+    drawCountScan();
+  }
+  function drawCountScan() {
+    var panel = $("scanPanel"); panel.textContent = "";
+    var box = h("div", { class: "cscan" });
+    cscan.order.forEach(function (id) {
+      var it = items.get(id); if (!it) return;
+      var minus = h("button", { class: "btn sm", type: "button", text: "−", "aria-label": "Un de moins : " + it.name, onclick: function () { cscanSet(it, (cscan.n[id] || 0) - 1); drawCountScan(); } });
+      var plus = h("button", { class: "btn sm", type: "button", text: "+", "aria-label": "Un de plus : " + it.name, onclick: function () { cscanSet(it, (cscan.n[id] || 0) + 1); drawCountScan(); } });
+      box.append(h("div", { class: "cscan-row" + (cscan.last === id ? " last" : "") },
+        h("div", null, h("div", { class: "item-name", text: labelOf(it) }), h("div", { class: "meta", text: "Avant : " + fmt(it.qty) + (it.unit ? " " + it.unit : "") })),
+        minus, h("b", { class: "n", text: fmt(cscan.n[id] || 0) }), plus));
+    });
+    var inLoc = Array.from(items.values()).filter(function (x) { return !x.archived && x.tracked !== false && countLocMatch(x) && !hasLots(x); });
+    var miss = inLoc.filter(function (x) { return !(x.id in cscan.n); });
+    var done = h("button", { class: "btn primary", type: "button", text: "✓ Terminer (" + cscan.order.length + " article" + (cscan.order.length > 1 ? "s" : "") + ")", onclick: function () {
+      closeScan(); render();
+      toast(cscan.order.length ? "Comptage reporté : vérifiez puis « Enregistrer le comptage »." + (miss.length ? " " + miss.length + " article(s) non scanné(s) gardent leur quantité." : "") : "Aucune boîte scannée.");
+    } });
+    var zero = state.countLoc && state.countLoc !== "__none" && miss.length && cscan.order.length ? h("button", { class: "btn", type: "button", text: "Non scannés = 0 (" + miss.length + ")", title: "Le tiroir est entièrement scanné : ce qui n'a pas été scanné n'y est plus", onclick: function () {
+      if (!confirm(miss.length + " article(s) du tiroir n'ont pas été scannés :\n" + miss.slice(0, 12).map(function (x) { return "• " + x.name; }).join("\n") + (miss.length > 12 ? "\n…" : "") + "\n\nLes mettre à 0 dans le comptage ?")) return;
+      miss.forEach(function (x) { cscanSet(x, 0); }); drawCountScan();
+    } }) : null;
+    panel.append(box, h("div", { class: "meta", text: miss.length ? miss.length + " article(s) de ce tiroir pas encore scanné(s)." : (inLoc.length ? "Tous les articles du tiroir ont été scannés." : "") }), h("div", { class: "dlg-actions" }, zero, done));
+  }
   function onScan(text) {
     var now = Date.now();
-    if (scanBusy || (text === lastCode && now - lastAt < (scanFast && scanMode === "stock" ? 1200 : 2500))) return;
+    if (scanBusy || (text === lastCode && now - lastAt < (scanMode === "count" ? 1300 : scanFast && scanMode === "stock" ? 1200 : 2500))) return;
     lastCode = text; lastAt = now;
     var info = parseGs1(text), key = scanKey(text);
     if (scanMode === "capture") {
@@ -12474,6 +12540,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
       return;
     }
     if (scanMode === "implant") { closeScan(); impFromScan(text); return; }
+    if (scanMode === "count") { countScan(text); return; }
     if (scanMode === "sachet" || (scanMode === "stock" && /^SIMSTER:/i.test(text))) { closeScan(); sacFromScan(text); return; }
     var kitHit = scanMode === "stock" ? kitByCode(text) : null;
     if (kitHit) { scanKit(kitHit); return; }
@@ -12670,7 +12737,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
   $("scanBtn").addEventListener("click", function () { openScan("stock"); });
   $("barScan").addEventListener("click", function () { openScan("capture"); });
   $("scanClose").addEventListener("click", function () { closeScan(); });
-  $("scanDlg").addEventListener("close", function () { stopScanner(); scanBusy = false; });
+  $("scanDlg").addEventListener("close", function () { stopScanner(); scanBusy = false; if (scanMode === "count" && state.tab === "comptage") render(); });
   $("scanFast").addEventListener("change", function () {
     scanFast = $("scanFast").checked; try { localStorage.setItem("simsim_scanfast", scanFast ? "1" : "0"); } catch (e) {}
     $("scanTitle").textContent = scanTitleText(); $("scanPanel").textContent = ""; $("scanStatus").className = "sub";
