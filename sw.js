@@ -1,6 +1,6 @@
 // SimSimStock - service worker : notifications + ouverture hors connexion.
 // A placer a cote de index.html, a la racine du site. Changer VERSION a chaque nouvelle version de l'appli.
-var VERSION = "v148";
+var VERSION = "v149";
 var SHELL = "simsim-shell-" + VERSION, LIBS = "simsim-libs", DATA = "simsim-data";
 var PRECACHE = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "apple-touch-icon.png",
   "vendor.js", "vendor-pdf-worker.js"];

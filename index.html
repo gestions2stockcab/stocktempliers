@@ -1808,6 +1808,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
 .cl-chip.on { border-color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink); }
 .cl-next { color:var(--brand) !important; font-weight:600; font-size:11px !important; text-transform:uppercase; letter-spacing:.06em; }
 /* ===== v147 : reconnaître un article sur une photo (gratuit, sur l'appareil) ===== */
+.ph-cam { text-align:center; margin:8px 0; } .ph-cam video { width:100%; max-height:52vh; background:#000; border-radius:12px; object-fit:cover; display:block; margin:0 auto 10px; } .ph-snap { min-width:220px; font-size:17px; padding:12px 20px; }
 .ph-shot { text-align:center; margin:8px 0; } .ph-shot img { max-width:100%; max-height:34vh; border-radius:10px; border:1px solid var(--line); }
 .ph-cands { display:flex; flex-direction:column; gap:6px; margin:8px 0; }
 .ph-cand { display:flex; justify-content:space-between; align-items:center; gap:10px; width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); font:inherit; text-align:left; cursor:pointer; }
@@ -1923,7 +1924,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v148</div>
+            <div class="menu-who"><span id="who"></span> · v149</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -2470,6 +2471,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
   <div class="dlg">
     <h2>📷 Reconnaître une photo</h2>
     <div class="sub" id="photoState"></div>
+    <div class="ph-cam hidden" id="photoCam"><video id="photoVideo" playsinline muted autoplay></video><button class="btn primary ph-snap" id="photoSnap" type="button">📸 Prendre la photo</button></div>
     <div class="ph-shot" id="photoShot"></div>
     <div id="photoResult"></div>
     <div id="photoReader" class="hidden"></div>
@@ -12568,9 +12570,34 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     });
     return out.sort(function (a, b) { return b.sc - a.sc; }).slice(0, 6);
   }
+  // la caméra s'ouvre dans l'appli (comme le scanner) : marche même quand le navigateur ignore « ouvrir l'appareil photo »
+  var phStream = null;
+  function phStop() { if (phStream) { phStream.getTracks().forEach(function (t) { try { t.stop(); } catch (e) {} }); phStream = null; } try { $("photoVideo").srcObject = null; } catch (e) {} $("photoCam").classList.add("hidden"); }
+  function phCamera() {
+    $("photoShot").textContent = ""; $("photoResult").textContent = "";
+    if (!$("photoDlg").open) $("photoDlg").showModal();
+    var md = navigator.mediaDevices;
+    if (!md || !md.getUserMedia || !window.isSecureContext) { $("photoState").textContent = "La caméra n'est pas accessible ici : choisissez une photo."; $("photoFile").value = ""; $("photoFile").click(); return; }
+    $("photoState").textContent = "Ouverture de la caméra…";
+    md.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }).then(function (st) {
+      if (!$("photoDlg").open) { st.getTracks().forEach(function (t) { t.stop(); }); return; }
+      phStop(); phStream = st; var v = $("photoVideo"); v.srcObject = st; $("photoCam").classList.remove("hidden");
+      var p = v.play(); if (p && p.catch) p.catch(function () {});
+      $("photoState").textContent = "Cadrez de près l'étiquette (nom, référence) ou le code-barres, puis « Prendre la photo ».";
+    }, function () {
+      var apple = /iPad|iPhone|Macintosh/.test(navigator.userAgent);
+      $("photoState").textContent = "La caméra n'a pas pu s'ouvrir. " + (apple ? "Sur iPad : Réglages, Safari, Caméra, « Autoriser ». " : "Autorisez la caméra pour ce site dans le navigateur. ") + "Vous pouvez aussi choisir une photo dans la galerie.";
+    });
+  }
+  function phSnap() {
+    var v = $("photoVideo"); if (!phStream || !v.videoWidth) return;
+    var c = document.createElement("canvas"); c.width = v.videoWidth; c.height = v.videoHeight; c.getContext("2d").drawImage(v, 0, 0);
+    phStop(); feedback(false);
+    c.toBlob(function (b) { if (b) photoChosen(new File([b], "photo.jpg", { type: "image/jpeg" })); }, "image/jpeg", 0.9);
+  }
   function openPhoto() {
     if (!items.size) { toast("Ajoutez d'abord des articles au stock."); return; }
-    $("photoFile").value = ""; $("photoFile").click();
+    phCamera();
   }
   function phCode(file) {
     if (!window.Html5Qrcode) return Promise.resolve("");
@@ -12635,8 +12662,10 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     $("photoBtn").addEventListener("click", openPhoto);
     $("photoFile").addEventListener("change", function () { var f = this.files && this.files[0]; if (f) photoChosen(f); });
     $("photoPick").addEventListener("change", function () { var f = this.files && this.files[0]; if (f) photoChosen(f); });
-    $("photoPickBtn").addEventListener("click", function () { $("photoPick").value = ""; $("photoPick").click(); });
-    $("photoAgain").addEventListener("click", function () { $("photoFile").value = ""; $("photoFile").click(); });
+    $("photoPickBtn").addEventListener("click", function () { phStop(); $("photoPick").value = ""; $("photoPick").click(); });
+    $("photoAgain").addEventListener("click", phCamera);
+    $("photoSnap").addEventListener("click", phSnap);
+    $("photoDlg").addEventListener("close", phStop);
     $("photoClose").addEventListener("click", function () { $("photoDlg").close(); });
   }
   function onScan(text) {
