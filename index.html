@@ -1923,7 +1923,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v147</div>
+            <div class="menu-who"><span id="who"></span> · v148</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -2091,8 +2091,9 @@ html.mural-on, html.mural-on body { overflow:hidden; }
   <div class="bar" id="bar">
     <input class="search" id="search" type="search" placeholder="Rechercher un article" aria-label="Rechercher">
     <button class="btn" id="scanBtn">Scanner</button>
-    <button class="btn" id="photoBtn" title="Prendre ou envoyer une photo : l'appli reconnaît le code-barres ou le texte de la boîte">📷 Photo</button>
-    <input id="photoFile" type="file" accept="image/*" class="hidden" aria-label="Photo d'un article">
+    <button class="btn" id="photoBtn" title="Ouvre l'appareil photo : l'appli reconnaît le code-barres ou le texte de la boîte">📷 Photo</button>
+    <input id="photoFile" type="file" accept="image/*" capture="environment" class="hidden" aria-label="Photo d'un article">
+    <input id="photoPick" type="file" accept="image/*" class="hidden" aria-label="Choisir une photo">
     <button class="btn" id="importBar" title="Importer des articles ou une facture (Excel, CSV ou PDF)">Importer</button>
     <button class="btn" id="voiceBtn" title="Dicter un mouvement : « sortie de 2 boîtes de gants M »" aria-label="Dicter">🎤</button>
     <button class="btn" id="addBtn">+ Ajouter</button>
@@ -2472,7 +2473,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     <div class="ph-shot" id="photoShot"></div>
     <div id="photoResult"></div>
     <div id="photoReader" class="hidden"></div>
-    <div class="dlg-actions"><button class="btn" id="photoAgain" type="button">Autre photo</button><button class="btn" id="photoClose" type="button">Fermer</button></div>
+    <div class="dlg-actions"><button class="btn" id="photoPickBtn" type="button">🖼 Choisir dans la galerie</button><button class="btn" id="photoAgain" type="button">📷 Reprendre une photo</button><button class="btn" id="photoClose" type="button">Fermer</button></div>
   </div>
 </dialog>
 <dialog id="voiceDlg">
@@ -12633,6 +12634,8 @@ html.mural-on, html.mural-on body { overflow:hidden; }
   function wirePhoto() {
     $("photoBtn").addEventListener("click", openPhoto);
     $("photoFile").addEventListener("change", function () { var f = this.files && this.files[0]; if (f) photoChosen(f); });
+    $("photoPick").addEventListener("change", function () { var f = this.files && this.files[0]; if (f) photoChosen(f); });
+    $("photoPickBtn").addEventListener("click", function () { $("photoPick").value = ""; $("photoPick").click(); });
     $("photoAgain").addEventListener("click", function () { $("photoFile").value = ""; $("photoFile").click(); });
     $("photoClose").addEventListener("click", function () { $("photoDlg").close(); });
   }
