@@ -1806,6 +1806,18 @@ html.mural-on, html.mural-on body { overflow:hidden; }
 .cl-chip span { color:var(--muted); font-size:12px; } .cl-chip.stale span:last-child { color:var(--warn); }
 .cl-chip.on { border-color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink); }
 .cl-next { color:var(--brand) !important; font-weight:600; font-size:11px !important; text-transform:uppercase; letter-spacing:.06em; }
+/* ===== v145 : photo du tiroir et comptage par l'IA ===== */
+.tir-shot { margin:10px 0; text-align:center; } .tir-shot img { max-width:100%; max-height:42vh; border-radius:10px; border:1px solid var(--line); }
+.tir-tools { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
+.tir-gal { display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:8px; margin:6px 0 10px; }
+.tir-gal a { display:block; text-decoration:none; color:var(--muted); font-size:11px; text-align:center; }
+.tir-gal img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; border:1px solid var(--line); display:block; margin-bottom:2px; }
+.tir-res { display:flex; flex-direction:column; gap:6px; margin:8px 0; }
+.tir-row { display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+.tir-row .meta { font-size:12px; } .tir-row b.diff { color:var(--warn); }
+.tir-conf { font-size:11px; padding:2px 8px; border-radius:99px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
+.tir-conf.haute { color:var(--ok, #1a7f37); } .tir-conf.basse { color:var(--warn); }
+.tir-note { padding:8px 10px; border-radius:10px; background:var(--surface); border:1px dashed var(--line); font-size:13px; margin:6px 0; }
 </style>
 </head>
 <body>
@@ -1899,7 +1911,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v144</div>
+            <div class="menu-who"><span id="who"></span> · v145</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -2423,6 +2435,20 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     <label class="f">Planche d'étiquettes<select id="lblFmt"><option value="l7159">24 par page · 63,5 × 33,9 mm (Avery L7159)</option><option value="l7163">14 par page · 99,1 × 38,1 mm (Avery L7163)</option><option value="l7165">8 par page · 99,1 × 67,7 mm (Avery L7165)</option></select></label>
     <div class="meta" id="lblCountTxt"></div>
     <div class="dlg-actions"><button class="btn" id="lblItemsCancel" type="button">Annuler</button><button class="btn primary" id="lblGo" type="button">🖨 Préparer l'impression</button></div>
+  </div>
+</dialog>
+<dialog id="tirDlg" class="wide">
+  <div class="dlg">
+    <h2 id="tirTitle">📷 Photo du tiroir</h2>
+    <div class="sub">La photo est jointe à l'inventaire comme preuve, gratuitement. L'IA peut en plus proposer un comptage : vous vérifiez toujours avant d'enregistrer.</div>
+    <input id="tirFile" type="file" accept="image/*" capture="environment" class="hidden">
+    <div class="tir-tools"><button class="btn primary" id="tirShoot" type="button">📷 Prendre la photo</button><button class="btn" id="tirAi" type="button" disabled>✨ Compter avec l'IA</button></div>
+    <div class="sub" id="tirState"></div>
+    <div class="tir-shot" id="tirShot"></div>
+    <div id="tirResult"></div>
+    <h3 class="meta" id="tirGalHead">Photos précédentes de ce tiroir</h3>
+    <div class="tir-gal" id="tirGal"></div>
+    <div class="dlg-actions"><button class="btn" id="tirClose" type="button">Fermer</button><button class="btn primary hidden" id="tirApply" type="button">Reporter dans le comptage</button></div>
   </div>
 </dialog>
 <dialog id="voiceDlg">
@@ -9359,6 +9385,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     $("voiceGo").addEventListener("click", voiceApply);
     $("voiceCancel").addEventListener("click", function () { try { if (voiceRec) voiceRec.abort(); } catch (e) {} $("voiceDlg").close(); });
     $("voiceBtn").addEventListener("click", openVoice);
+    wireTiroir();
     $("askSend").addEventListener("click", askSend);
     $("askQ").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askSend(); } });
     $("askClose").addEventListener("click", function () { $("askDlg").close(); });
@@ -9759,7 +9786,8 @@ html.mural-on, html.mural-on body { overflow:hidden; }
   function countLocDone(loc, total, changed) {
     if (!loc || loc === "__none" || readOnly || !db) return;
     locCounts[loc] = new Date().toISOString();
-    enqueue(function () { return appendLog({ type: "count", itemId: "", item: "Inventaire tiroir · " + loc, delta: 0, qty: 0, note: total + " article(s) vérifié(s)" + (changed ? ", " + changed + " corrigé(s)" : ", tout était juste") }); });
+    var photo = tir.photos[loc]; delete tir.photos[loc];
+    enqueue(function () { return appendLog({ type: "count", itemId: "", item: "Inventaire tiroir · " + loc, delta: 0, qty: 0, note: total + " article(s) vérifié(s)" + (changed ? ", " + changed + " corrigé(s)" : ", tout était juste") + (photo ? ", photo jointe" : "") }); });
   }
   function countLocBar() {
     var locs = itemLocations(); if (!locs.length) return null;
@@ -9777,6 +9805,115 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     if (Array.from(items.values()).some(function (it) { return !it.archived && it.tracked !== false && !(it.location || "").trim(); }))
       chips.append(h("button", { class: "cl-chip" + (state.countLoc === "__none" ? " on" : ""), type: "button", onclick: function () { state.countLoc = "__none"; render(); } }, h("b", { text: "Sans emplacement" }), h("span", { text: "à ranger dans un tiroir" })));
     sec.append(chips); return sec;
+  }
+
+  // ---------- photo du tiroir (preuve d'inventaire, gratuite) et comptage proposé par l'IA (fonction « tiroir », clé à activer) ----------
+  var tir = { loc: "", list: [], b64: "", sug: null, aiOff: false, photos: {} };
+  function tirSlug(loc) { return String(loc || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60) || "tiroir"; }
+  function tirDir(loc) { return cabinetId + "/inventaires/" + tirSlug(loc); }
+  function tirAiLabel() { $("tirAi").textContent = tir.aiOff ? "✨ Compter avec l'IA (à activer)" : "✨ Compter avec l'IA"; }
+  function openTiroir(loc, list) {
+    if (readOnly || !db || !sb) { toast("La photo du tiroir est réservée aux comptes qui peuvent modifier le stock."); return; }
+    tir.loc = loc; tir.list = list.slice(); tir.b64 = ""; tir.sug = null;
+    $("tirTitle").textContent = "📷 " + loc; $("tirState").textContent = "Ouvrez bien le tiroir, éclairez-le et cadrez-le en entier, vu du dessus.";
+    $("tirShot").textContent = ""; $("tirResult").textContent = ""; $("tirApply").classList.add("hidden");
+    $("tirAi").disabled = true; tirAiLabel();
+    $("tirDlg").showModal(); tirGallery();
+  }
+  function tirGallery() {
+    var gal = $("tirGal"), loc = tir.loc, dir = tirDir(loc); gal.textContent = "";
+    sb.storage.from("docs").list(dir, { limit: 12, sortBy: { column: "name", order: "desc" } }).then(function (r) {
+      if (tir.loc !== loc) return;
+      var files = (r && r.data || []).filter(function (f) { return /\.jpg$/i.test(f.name); });
+      $("tirGalHead").textContent = files.length ? "Photos précédentes de ce tiroir" : "Aucune photo de ce tiroir pour l'instant";
+      if (!files.length) return;
+      return sb.storage.from("docs").createSignedUrls(files.map(function (f) { return dir + "/" + f.name; }), 600).then(function (s) {
+        if (tir.loc !== loc || !s || s.error) return;
+        (s.data || []).forEach(function (u, i) {
+          if (!u || !u.signedUrl) return;
+          var t = parseInt(files[i].name, 10), d = t ? new Date(t) : null;
+          gal.append(h("a", { href: u.signedUrl, target: "_blank", rel: "noopener" }, h("img", { src: u.signedUrl, alt: "Photo du tiroir", loading: "lazy" }), h("span", { text: d ? d.toLocaleDateString("fr-FR") + " " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : files[i].name })));
+        });
+      });
+    }).catch(function () { $("tirGalHead").textContent = "Les photos précédentes n'ont pas pu être chargées."; });
+  }
+  function tirPhoto(file) {
+    var loc = tir.loc; $("tirState").textContent = "Envoi de la photo…";
+    shrinkImage(file, 1568).then(function (c) {
+      var url = c.toDataURL("image/jpeg", 0.82); tir.b64 = url.replace(/^data:[^,]*,/, ""); tir.sug = null;
+      $("tirShot").textContent = ""; $("tirShot").append(h("img", { src: url, alt: "Photo du tiroir " + loc }));
+      $("tirResult").textContent = ""; $("tirApply").classList.add("hidden"); $("tirAi").disabled = false;
+      return new Promise(function (ok) { c.toBlob(ok, "image/jpeg", 0.82); }).then(function (blob) {
+        var path = tirDir(loc) + "/" + Date.now() + ".jpg";
+        return sb.storage.from("docs").upload(path, blob, { contentType: "image/jpeg", upsert: false }).then(function (up) { if (up && up.error) throw up.error; });
+      });
+    }).then(function () {
+      tir.photos[loc] = true;
+      if (tir.loc === loc) { $("tirState").textContent = "✓ Photo jointe à l'inventaire de ce tiroir."; tirGallery(); }
+    }).catch(function () { if (tir.loc === loc) $("tirState").textContent = "La photo n'a pas pu être enregistrée (connexion ?). Réessayez."; });
+  }
+  var TIR_ERR = { non_connecte: "Votre session a expiré : reconnectez-vous.", refus: "L'IA n'a pas voulu analyser cette photo.", trop_de_demandes: "L'IA est très sollicitée : réessayez dans une minute.", cle_invalide: "La clé de l'IA est refusée : vérifiez-la dans Supabase.", image_invalide: "La photo est trop lourde ou illisible.", liste_vide: "Aucun article n'est rangé dans ce tiroir." };
+  function tirExplainOff() {
+    var r = $("tirResult"); r.textContent = "";
+    r.append(h("div", { class: "tir-note" }, h("b", { text: "Le comptage par l'IA n'est pas encore activé. " }),
+      h("span", { text: "La photo, elle, est bien jointe et gratuite. Pour activer l'IA (environ 2 à 3 centimes par photo), il faut ajouter une clé Anthropic dans Supabase et y installer la fonction « tiroir » : demandez-le à Claude." })));
+  }
+  function tirAsk() {
+    if (!tir.b64) return;
+    if (tir.aiOff) { tirExplainOff(); return; }
+    var loc = tir.loc, arts = tir.list.map(function (it) { return { id: it.id, nom: labelOf(it), unite: it.unit || "", quantite: Number(it.qty) || 0 }; });
+    $("tirAi").disabled = true; $("tirState").textContent = "L'IA regarde la photo… (10 à 30 secondes)";
+    invokeAuthed(String(settings.tiroir_fn || "tiroir").trim(), { image: tir.b64, media_type: "image/jpeg", emplacement: loc, articles: arts }).then(function (res) {
+      if (tir.loc !== loc) return;
+      $("tirAi").disabled = false;
+      var d = res && res.data;
+      if (!d || res.error) { tir.aiOff = true; tirAiLabel(); $("tirState").textContent = ""; tirExplainOff(); return; }
+      if (!d.ok) {
+        if (d.error === "cle_manquante") { tir.aiOff = true; tirAiLabel(); $("tirState").textContent = ""; tirExplainOff(); return; }
+        $("tirState").textContent = TIR_ERR[d.error] || "L'analyse n'a pas abouti. Réessayez ou comptez à la main."; return;
+      }
+      tirShow(d.analyse || {});
+    }, function () { $("tirAi").disabled = false; $("tirState").textContent = "L'IA n'a pas pu être jointe (connexion ?)."; });
+  }
+  function tirShow(a) {
+    var r = $("tirResult"); r.textContent = ""; tir.sug = {};
+    if (a.photo_exploitable === false) { $("tirState").textContent = "La photo est trop floue ou trop sombre : reprenez-la, tiroir bien éclairé."; return; }
+    $("tirState").textContent = "Proposition de l'IA : cochez ce qui est juste, puis « Reporter dans le comptage ». Rien n'est enregistré sans vous.";
+    var byId = {}; (a.articles || []).forEach(function (x) { if (x && x.id) byId[x.id] = x; });
+    var box = h("div", { class: "tir-res" });
+    tir.list.forEach(function (it) {
+      var x = byId[it.id]; if (!x) return;
+      var q = Math.max(0, Math.round(Number(x.quantite) * 100) / 100 || 0), cur = countDraft[it.id] ? countDraft[it.id].qty : Number(it.qty) || 0, lot = hasLots(it);
+      var cb = h("input", { type: "checkbox", "aria-label": "Reporter : " + it.name, disabled: lot });
+      cb.checked = !lot && q !== cur && x.confiance !== "basse";
+      tir.sug[it.id] = { qty: q, cb: cb };
+      box.append(h("label", { class: "tir-row" }, cb,
+        h("div", null, h("div", { class: "item-name", text: labelOf(it) }),
+          h("div", { class: "meta", text: "Enregistré : " + fmt(cur) + (it.unit ? " " + it.unit : "") + (x.etat ? " · " + x.etat : "") + (lot ? " · stock par lots : à corriger dans la fiche" : "") })),
+        h("div", { style: "text-align:right" }, h("b", { class: q !== cur ? "diff" : "", text: fmt(q) }), h("div", null, h("span", { class: "tir-conf " + (x.confiance || ""), text: "confiance " + (x.confiance || "?") })))));
+    });
+    r.append(box);
+    if ((a.inconnus || []).length) r.append(h("div", { class: "tir-note" }, h("b", { text: "Vu aussi, mais pas dans la liste du tiroir : " }), h("span", { text: a.inconnus.join(" · ") })));
+    if ((a.remarques || []).length) r.append(h("div", { class: "tir-note" }, h("b", { text: "Remarques : " }), h("span", { text: a.remarques.join(" · ") })));
+    $("tirApply").classList.toggle("hidden", !Object.keys(tir.sug).length);
+  }
+  function tirApply() {
+    var n = 0;
+    Object.keys(tir.sug || {}).forEach(function (id) {
+      var s = tir.sug[id], it = items.get(id); if (!s.cb.checked || !it) return;
+      var min = countDraft[id] ? countDraft[id].min : Number(it.min) || 0;
+      countDraft[id] = { qty: s.qty, min: min }; n++;
+    });
+    $("tirDlg").close();
+    toast(n ? n + " quantité" + (n > 1 ? "s" : "") + " reportée" + (n > 1 ? "s" : "") + " : vérifiez puis « Enregistrer le comptage »." : "Rien n'a été reporté.");
+    render();
+  }
+  function wireTiroir() {
+    $("tirShoot").addEventListener("click", function () { $("tirFile").value = ""; $("tirFile").click(); });
+    $("tirFile").addEventListener("change", function () { var f = this.files && this.files[0]; if (f) tirPhoto(f); });
+    $("tirAi").addEventListener("click", tirAsk);
+    $("tirApply").addEventListener("click", tirApply);
+    $("tirClose").addEventListener("click", function () { $("tirDlg").close(); });
   }
   function renderCount(box) {
     if (!items.size) {
@@ -9831,7 +9968,8 @@ html.mural-on, html.mural-on body { overflow:hidden; }
     });
     box.append(h("p", { class: "sub", text: "Comptez ce qu'il y a réellement en rayon, corrigez la quantité et fixez le seuil d'alerte sous lequel l'article doit être commandé, puis enregistrez. Chaque correction de quantité est inscrite dans l'historique." }));
     var okBtn = state.countLoc && state.countLoc !== "__none" && !readOnly ? h("button", { class: "btn", type: "button", text: "✓ Tout est juste", title: "Les quantités de ce tiroir sont exactes : l'inventaire est enregistré sans correction", onclick: function () { if (changedList().length) { toast("Des quantités ont été modifiées : utilisez « Enregistrer le comptage »."); return; } countLocDone(state.countLoc, list.length, 0); toast("✓ Inventaire de « " + state.countLoc + " » enregistré : tout était juste."); render(); } }) : null;
-    box.append(h("div", { class: "countbar" }, saveBtn, okBtn, info));
+    var photoBtn = okBtn ? h("button", { class: "btn", type: "button", text: "📷 Photo du tiroir", title: "Joindre une photo du tiroir à l'inventaire, et faire proposer le comptage par l'IA", onclick: function () { openTiroir(state.countLoc, list); } }) : null;
+    box.append(h("div", { class: "countbar" }, saveBtn, okBtn, photoBtn, info));
     var table = h("div", { class: "table" });
     table.append(h("div", { class: "crow head" }, h("div", { text: "Article" }), h("div", { text: "Compté" }), h("div", { text: "Seuil d'alerte" })));
     list.forEach(function (it, i) {
