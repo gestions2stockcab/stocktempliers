@@ -36,6 +36,8 @@ export function routineDue(r: Row, p: { dow: number; day: number }): boolean {
   return true;
 }
 
+// statuts référents : la Dentiste référente (bigboss) compte comme dentiste, l'Assistante référente comme assistante
+export const baseProfil = (p: string) => (p === "bigboss" ? "dentiste" : p === "assistante_ref" ? "assistante" : p || "");
 export type Plan = { cabinet_id: string; cle: string; roles: "tous" | "admin"; profil?: string; payload: { title: string; body: string; tag: string; tab: string } };
 
 // Routines du jour pas terminees a l'heure de rappel (fonction pure, testee)
@@ -130,7 +132,7 @@ export async function run(body: Row, env: { base: string; key: string; pub: stri
   for (const pl of plans) {
     const cab = members.filter((m) => m.cabinet_id === pl.cabinet_id && m.role !== "viewer");
     let targets = pl.roles === "admin" ? cab.filter((m) => m.role === "admin") : cab;
-    if (pl.profil) { const withProfil = targets.filter((m) => profils.some((x) => x.cabinet_id === m.cabinet_id && x.user_id === m.user_id && x.profil === pl.profil)); if (withProfil.length) targets = withProfil; }
+    if (pl.profil) { const withProfil = targets.filter((m) => profils.some((x) => x.cabinet_id === m.cabinet_id && x.user_id === m.user_id && baseProfil(x.profil) === pl.profil)); if (withProfil.length) targets = withProfil; }
     if (body.test) targets = targets.filter((m) => m.user_id === body.test);
     if (!targets.length) { skipped++; continue; }
     if (!body.dry && !body.test) {   // déjà envoyé aujourd'hui ?
