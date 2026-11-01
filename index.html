@@ -1816,6 +1816,16 @@ html.mural-on, html.mural-on body { overflow:hidden; }
 .cl-chip.on { border-color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink); }
 .cl-next { color:var(--brand) !important; font-weight:600; font-size:11px !important; text-transform:uppercase; letter-spacing:.06em; }
 .vc-dir { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:6px 0; }
+/* ===== v156 : l'équipe en premier pour les dentistes ===== */
+.teamcard { border:1px solid var(--line); border-radius:14px; background:var(--surface); padding:14px 16px; margin:4px 0 14px; }
+.teamcard .tc-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; } .teamcard .tc-head b { font-size:17px; } .teamcard .tc-head .meta { margin-left:auto; }
+.tc-chips { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 10px; }
+@media (max-width:760px) { .tc-chips { flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; } .tc-chips .qchip { flex:none; } .teamcard .tc-head { flex-wrap:wrap; } .teamcard .tc-head .meta { margin-left:0; flex-basis:100%; } }
+.tc-msgs { display:flex; flex-direction:column; gap:4px; margin:6px 0 10px; font-size:13.5px; }
+.tc-msgs div { padding:6px 10px; border-radius:10px; background:var(--surface-2, var(--hover)); } .tc-msgs div.mine { background:color-mix(in srgb, var(--brand) 12%, transparent); }
+.tc-msgs .who { font-weight:600; margin-right:6px; } .tc-msgs .when { color:var(--muted); font-size:11.5px; margin-left:6px; }
+.tc-write { display:flex; gap:8px; } .tc-write input { flex:1; }
+html.prof-dent .bottombar [data-module="equipe"] { order:-1; }
 /* ===== v155 : saisies hors connexion gardées sur l'appareil ===== */
 #pendBtn { border-color:var(--warn, #b58100); color:var(--warn, #b58100); font-weight:600; }
 .pend-list { display:flex; flex-direction:column; gap:6px; margin:8px 0; max-height:50vh; overflow:auto; }
@@ -1986,7 +1996,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v155</div>
+            <div class="menu-who"><span id="who"></span> · v156</div>
             <div class="menu-tabs" id="menuTabs" role="tablist" aria-label="Rubriques du menu">
               <button class="mtab" type="button" role="tab" data-mtab="catalogue" aria-selected="false">📚 Catalogue</button>
               <button class="mtab" type="button" role="tab" data-mtab="factures" aria-selected="false">🧾 Factures</button>
@@ -10785,6 +10795,45 @@ html.mural-on, html.mural-on body { overflow:hidden; }
   });
   // ---------- « Ma journée » : ce qui m'attend aujourd'hui, selon mon profil ----------
   function ago(iso) { var m = Math.round((Date.now() - new Date(iso).getTime()) / 60000); return m < 1 ? "à l'instant" : m < 60 ? "il y a " + m + " min" : m < 1440 ? "il y a " + Math.round(m / 60) + " h" : "il y a " + Math.round(m / 1440) + " j"; }
+
+  // ---------- pour les dentistes : l'équipe en premier sur l'accueil (demandes rapides, derniers messages, écrire) ----------
+  function isDentist() { var p = myProfil(); return p === "dentiste" || p === "bigboss"; }
+  function homeSendTeam(body, kind, done) {
+    if (readOnly || !db || !msgOk) return;
+    body = String(body || "").trim(); if (!body) return;
+    sb.from("messages").insert({ cabinet_id: cabinetId, to_user_id: null, body: body.slice(0, 2000), kind: kind, item_id: null, item_name: "" }).select().then(function (res) {
+      if (res.error || !res.data || !res.data[0]) { toast(msgErrText(res.error)); return; }
+      addMessage(res.data[0], true); markRead("equipe");
+      toast(kind === "tache" ? "☑ Demande envoyée à toute l'équipe." : "💬 Message envoyé à l'équipe.");
+      if (done) done(); render();
+    }, function () { toast("Connexion impossible : rien n'a été envoyé."); });
+  }
+  function teamCard(st) {
+    if (!msgOk) return null;
+    var c = h("section", { class: "teamcard", "data-card": "equipe" });
+    var unread = msgUnread("equipe");
+    c.append(h("div", { class: "tc-head" }, h("span", { text: "💬" }), h("b", { text: "L'équipe" }), unread ? h("span", { class: "dc-count bad", text: unread + " non lu" + (unread > 1 ? "s" : ""), style: "white-space:nowrap" }) : null,
+      h("span", { class: "meta", text: st.online ? "🟢 " + st.online + " en ligne" : "Personne d'autre en ligne" })));
+    if (!readOnly) {
+      var chips = h("div", { class: "tc-chips" }, h("span", { class: "meta qlab", text: "⚡ Demander à l'équipe :" }));
+      TASK_PRESETS.forEach(function (pr) { chips.append(h("button", { class: "btn sm qchip", type: "button", text: pr[0] + " " + pr[1], onclick: function () { homeSendTeam(pr[1], "tache"); } })); });
+      c.append(chips);
+    }
+    var last = msgs.filter(function (m) { return msgThreadOf(m) === "equipe"; }).slice().sort(function (a, b) { return a.created_at < b.created_at ? -1 : 1; }).slice(-3);
+    if (last.length) {
+      var box = h("div", { class: "tc-msgs" });
+      last.forEach(function (m) { box.append(h("div", { class: m.author_id === sessionUser ? "mine" : "" }, h("span", { class: "who", text: m.author_id === sessionUser ? "Vous" : personLabel(m.author_id, m.author_email) }), (m.kind === "tache" ? "☑ " : "") + String(m.body).replace(/\s+/g, " ").slice(0, 140), h("span", { class: "when", text: ago(m.created_at) }))); });
+      c.append(box);
+    }
+    if (!readOnly) {
+      var inp = h("input", { type: "text", maxlength: "2000", placeholder: "Écrire à l'équipe…", title: "Ni nom de patient, ni donnée de santé", "aria-label": "Message à l'équipe" });
+      var send = function () { homeSendTeam(inp.value, "message", function () { inp.value = ""; }); };
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); send(); } });
+      c.append(h("div", { class: "tc-write" }, inp, h("button", { class: "btn primary", type: "button", text: "Envoyer", onclick: send })));
+    }
+    c.append(h("button", { class: "linkbtn dc-foot", type: "button", text: "Ouvrir la discussion →", onclick: function () { state.msgThread = "equipe"; state.msgView = "thread"; goTab("messages"); } }));
+    return c;
+  }
   function dayBoard(st) {
     var me = myProfil(), assist = me === "assistante", boss = me === "dentiste" || me === "bigboss";
     var L = msgOk ? taskLists() : { todo: [], sent: [], done: [] }, cards = [];
@@ -10856,7 +10905,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
       var rows = L.sent.slice(0, 4).map(function (m) { return h("div", { class: "dc-row" }, h("div", { class: "dc-main" }, h("div", { class: "dc-text", text: m.body }), h("div", { class: "meta", text: (m.to_user_id ? "Pour " + msgThreadTitle(m.to_user_id) : "Pour l'équipe") + " · " + (m.ack_at ? "👍 OK reçu" : "⏳ pas encore de réponse") + " · " + ago(m.created_at) }))); });
       return card("demandes", "⏭", "Mes demandes en attente", L.sent.length, "", rows, link("Voir toutes les tâches", function () { goTab("taches"); }));
     };
-    var order = assist ? [routinesCard, tasksCard, msgCard, alertCard] : boss ? [alertCard, sentCard, msgCard, tasksCard, routinesCard] : [tasksCard, routinesCard, msgCard, alertCard, sentCard];
+    var order = assist ? [routinesCard, tasksCard, msgCard, alertCard] : boss ? [msgCard, sentCard, tasksCard, alertCard, routinesCard] : [tasksCard, routinesCard, msgCard, alertCard, sentCard];
     order.forEach(function (f) { var c = f(); if (c) cards.push(c); });
     if (assist) cards = cards.filter(function (c) { return c.getAttribute("data-card") !== "alertes" || st.need || st.rupt.length || st.sterTodo; });
     var box = h("div", { class: "dayboard" }, h("div", { class: "db-head" }, h("h3", { text: "Ma journée" }), me ? h("span", { class: "profchip", text: PROFILS[me].ic + " " + PROFILS[me].label }) : h("button", { class: "linkbtn", type: "button", text: "Choisir mon profil pour une page adaptée", onclick: function () { $("moreBtn").click(); var t = document.querySelector('.mtab[data-mtab="affichage"]'); if (t) t.click(); } })));
@@ -10873,6 +10922,8 @@ html.mural-on, html.mural-on body { overflow:hidden; }
         h("div", { class: "homegreet" }, h("h2", null, "Bonjour ", h("span", { class: "hg-name", text: me && me !== "?" ? me : "" }), h("span", { class: "hg-emo", text: myProfil() === "bigboss" ? " 👑" : " 👋" }))),
         h("div", { class: "hg-date", text: day.charAt(0).toUpperCase() + day.slice(1) })));
     wrap.append(head);
+    var dent = isDentist(); document.documentElement.classList.toggle("prof-dent", dent);
+    if (dent) { var tcd = teamCard(st); if (tcd) wrap.append(tcd); }
     var wb = wrapBanner(); if (wb) wrap.append(wb);
     wrap.append(h("button", { class: "ask-bar", type: "button", onclick: function () { openAsk(); } }, h("span", { class: "ask-spark", text: "✨" }), h("span", { text: "Posez une question à SimSim : « qu'est-ce qui va manquer cette semaine ? »" })));
     wrap.append(dayBoard(st));
@@ -10891,6 +10942,7 @@ html.mural-on, html.mural-on body { overflow:hidden; }
       { mod: "equipe", ic: "💬", prod: "Communication interne", title: "Équipe", color: "#A05BFF",
         lines: [[st.unread, plural(st.unread, "message non lu", "messages non lus"), "bad"], [st.tasks, plural(st.tasks, "tâche à faire", "tâches à faire"), "warn"], [st.routines, plural(st.routines, "routine à faire", "routines à faire"), "warn"], [st.online, st.online + " en ligne", "on"]], okText: msgOk ? "Rien de nouveau" : "Messagerie à activer" }
     ];
+    if (isDentist()) tiles.sort(function (a, b) { return (a.mod === "equipe" ? 0 : 1) - (b.mod === "equipe" ? 0 : 1); });
     var grid = h("div", { class: "hometiles" });
     tiles.forEach(function (t) {
       var on = t.lines.filter(function (l) { return l[0] > 0; }), tone = on.length ? (on.some(function (l) { return l[2] === "bad"; }) ? "bad" : on.some(function (l) { return l[2] === "warn"; }) ? "warn" : "on") : "ok";
