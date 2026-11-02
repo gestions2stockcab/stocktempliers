@@ -2066,7 +2066,7 @@ html.prof-dent .bottombar [data-module="equipe"] { order:-1; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v164</div>
+            <div class="menu-who"><span id="who"></span> · v165</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -9172,6 +9172,18 @@ html.prof-dent .bottombar [data-module="equipe"] { order:-1; }
   function renderInventory(box) {
     var rsc = roomScope();
     if (rsc) { box.append(roomHeader(rsc)); if (!items.size && !state.cat) box.append(h("div", { class: "dnote", text: "Cette salle est vide. Cliquez sur un domaine pour y ajouter ses produits, ou utilisez « ＋ Ajouter des produits »." })); }
+    if (!items.size && !rsc && trash.size && !readOnly) {
+      // stock vidé par la corbeille : on propose tout de suite de remettre les fiches et les domaines
+      var cats = Array.from(trash.values()).map(function (it) { return it.category || ""; }).filter(function (c, i, a) { return c && a.indexOf(c) === i; });
+      var ids = Array.from(trash.keys());
+      box.append(h("div", { class: "table" }, h("div", { class: "empty" },
+        h("h2", { text: "Vos " + ids.length + " articles sont dans la corbeille" }),
+        h("div", { text: cats.length ? cats.length + " domaines : " + cats.slice(0, 6).join(", ") + (cats.length > 6 ? "…" : "") + "." : "" }),
+        h("div", { class: "actions" },
+          h("button", { class: "btn primary", type: "button", text: "♻️ Remettre les articles et les domaines, stock à 0", onclick: function () { restoreItems(ids, { zero: true }); toast("♻️ " + ids.length + " fiches et leurs domaines sont revenues, avec un stock à 0."); } }),
+          h("button", { class: "btn", type: "button", text: "♻️ Tout remettre avec les quantités", onclick: function () { restoreItems(ids); toast("♻️ " + ids.length + " articles restaurés avec leurs quantités."); } })))));
+      return;
+    }
     if (!items.size && !rsc) {
       box.append(h("div", { class: "table" }, h("div", { class: "empty" },
         h("h2", { text: "Aucun article pour l'instant" }),
