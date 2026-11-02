@@ -52,12 +52,12 @@ async function rest(base: string, key: string, path: string, init: RequestInit =
 async function sendMail(m: { to: string; cc: string[]; replyTo: string; subject: string; text: string; html: string }) {
   const hook = (globalThis as any).__sendMail;
   if (hook) return hook(m);
-  const host = Deno.env.get("SMTP_HOST") || "", port = Number(Deno.env.get("SMTP_PORT") || "465");
+  const host = Deno.env.get("SMTP_HOST") || "", port = Number(String(Deno.env.get("SMTP_PORT") || "").replace(/\D/g, "")) || 465;   // tolère « 465 », « port 587 »…
   const user = Deno.env.get("SMTP_USER") || "", pass = Deno.env.get("SMTP_PASS") || "", from = Deno.env.get("SMTP_FROM") || user;
   if (!host || !user || !pass) throw new Error("smtp_non_configure");
   const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
   const client = new SMTPClient({ connection: { hostname: host, port, tls: port === 465, auth: { username: user, password: pass } } });
-  try { await client.send({ from, to: m.to, cc: m.cc.length ? m.cc : undefined, replyTo: m.replyTo || undefined, subject: m.subject, content: m.text, html: m.html }); } finally { await client.close(); }
+  try { await client.send({ from, to: m.to, cc: m.cc.length ? m.cc : undefined, replyTo: m.replyTo || undefined, subject: m.subject, content: m.text, html: m.html }); } finally { try { await client.close(); } catch (_e) { /* connexion jamais ouverte : on garde l'erreur d'envoi */ } }
 }
 
 export async function run(body: Row, token: string, env: { base: string; anon: string; key: string }) {
