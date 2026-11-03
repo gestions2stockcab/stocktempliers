@@ -2040,6 +2040,50 @@ html.prof-dent .bottombar [data-module="equipe"] { order:-1; }
   .msgcomposer .emopick { grid-column:1 / -1; }
   .msglist .msgthread, .msglist button { min-height:56px; }
 }
+
+/* ===== v169 : chaque espace a sa couleur, et les espaces sont bien séparés ===== */
+.modbtn[data-module="accueil"], .bottombar [data-module="accueil"], html[data-space="accueil"] { --sc:var(--ink); }
+.modbtn[data-module="stock"], .bottombar [data-module="stock"], .hometile.mod-stock, html[data-space="stock"] { --sc:#2F67FF; }
+.modbtn[data-module="achats"], .bottombar [data-module="achats"], .hometile.mod-achats, html[data-space="achats"] { --sc:#6B5BFF; }
+.modbtn[data-module="materiel"], .bottombar [data-module="materiel"], .hometile.mod-materiel, html[data-space="materiel"] { --sc:#0B8FBA; }
+.modbtn[data-module="qualite"], .bottombar [data-module="qualite"], .hometile.mod-qualite, html[data-space="qualite"] { --sc:#12A37F; }
+.modbtn[data-module="equipe"], .bottombar [data-module="equipe"], .hometile.mod-equipe, html[data-space="equipe"] { --sc:#A05BFF; }
+/* barre des espaces : un bloc à part, groupes séparés, outils repoussés à droite */
+:root[data-theme^="epure"] .modsw { background:var(--surface-2) !important; border:1px solid var(--line) !important; border-radius:14px !important; padding:4px !important; gap:4px !important; margin-right:auto; }
+:root[data-theme^="epure"] .moddiv { opacity:1 !important; width:1px !important; background:var(--line); margin:6px 4px !important; align-self:stretch; }
+:root[data-theme^="epure"] .modgrp { gap:4px; }
+:root[data-theme^="epure"] .modbtn { border-radius:10px !important; padding:7px 12px !important; gap:7px !important; color:var(--muted) !important; }
+:root[data-theme^="epure"] .modbtn .mi-ic { display:inline-block !important; filter:none !important; opacity:1 !important; background:var(--sc) !important; width:18px !important; height:18px !important; }
+:root[data-theme^="epure"] .modbtn:hover { background:color-mix(in srgb, var(--sc) 10%, var(--surface)) !important; color:var(--ink) !important; }
+:root[data-theme^="epure"] .modbtn[aria-selected="true"] { background:var(--surface) !important; color:var(--ink) !important; font-weight:600 !important; box-shadow:0 1px 3px rgba(0,0,0,.08), inset 0 -3px 0 var(--sc) !important; }
+.who-row { gap:8px; }
+/* ordinateur : tout tient sur une ligne ; la connexion n'écrit son texte que si elle est coupée (le point vert suffit sinon) */
+@media (min-width: 761px) {
+  .who-row { flex-wrap:nowrap !important; }
+  #live.on #liveText { display:none; }
+  #presBtn .presl, #presBtn > span:not(.pdot) { max-width:84px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  :root[data-theme^="epure"] .modbtn { padding:7px 10px !important; }
+}
+@media (min-width: 761px) and (max-width: 1180px) { :root[data-theme^="epure"] .modbtn .mi-lb { display:none; } :root[data-theme^="epure"] .modbtn[aria-selected="true"] .mi-lb { display:inline; } }
+/* liseré de couleur sous l'en-tête : on sait toujours dans quel espace on est */
+header.top { box-shadow:0 2px 0 color-mix(in srgb, var(--sc, transparent) 85%, transparent); }
+html[data-space="accueil"] header.top { box-shadow:none; }
+.sidebar #sbTitle { color:var(--sc, inherit); }
+/* accueil : tuiles plus espacées, chacune à la couleur de son espace */
+.hometiles { gap:18px !important; }
+:root[data-theme^="epure"] .hometile { border-left:5px solid var(--sc) !important; padding-left:18px !important; }
+:root[data-theme^="epure"] .hometile .ht-ic { display:grid !important; filter:none !important; background:color-mix(in srgb, var(--sc) 12%, var(--surface)) !important; width:52px; height:52px; font-size:26px; border-radius:14px !important; }
+:root[data-theme^="epure"] .hometile .ht-prod { color:var(--sc) !important; }
+:root[data-theme^="epure"] .hometile:hover { border-color:var(--sc) !important; }
+/* barre du bas de l'accueil : icônes de couleur */
+:root[data-theme^="epure"] .bottombar [data-module] > span:first-child { background:var(--sc) !important; }
+@media (max-width: 760px) {
+  :root[data-theme^="epure"] .modsw { padding:3px !important; gap:2px !important; }
+  :root[data-theme^="epure"] .modbtn { padding:6px 8px !important; }
+  :root[data-theme^="epure"] .modbtn[aria-selected="true"] { background:color-mix(in srgb, var(--sc) 14%, var(--surface)) !important; }
+  :root[data-theme^="epure"] .moddiv { margin:5px 2px !important; }
+  .hometiles { gap:12px !important; }
+}
 </style>
 </head>
 <body>
@@ -2136,7 +2180,7 @@ html.prof-dent .bottombar [data-module="equipe"] { order:-1; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v168</div>
+            <div class="menu-who"><span id="who"></span> · v169</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -11498,6 +11542,7 @@ html.prof-dent .bottombar [data-module="equipe"] { order:-1; }
   function applyModule(m) {
     if (!MODS[m]) m = "stock";
     state.module = m;
+    document.documentElement.setAttribute("data-space", m);
     try { localStorage.setItem("simsim_module", m); } catch (e) {}
     document.documentElement.classList.toggle("mod-equipe", m === "equipe");
     Array.prototype.forEach.call(document.querySelectorAll("[data-mod]"), function (e) { var dm = e.getAttribute("data-mod"); e.classList.toggle("mod-off", dm !== "all" && dm.split(/\s+/).indexOf(m) === -1); });
