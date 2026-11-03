@@ -2084,6 +2084,18 @@ html[data-space="accueil"] header.top { box-shadow:none; }
   :root[data-theme^="epure"] .moddiv { margin:5px 2px !important; }
   .hometiles { gap:12px !important; }
 }
+
+/* ===== v170 : groupes dans les espaces et dans le menu de gauche ===== */
+.hub-grp { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--tc, var(--muted)); margin:26px 2px 10px; display:flex; align-items:center; gap:10px; }
+.hub-grp::after { content:""; flex:1; height:1px; background:color-mix(in srgb, var(--tc, var(--line)) 30%, var(--line)); }
+.hub .hub-grp:first-of-type { margin-top:6px; }
+.sb-sub { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--sc, var(--muted)); opacity:.85; margin:14px 12px 4px; padding-top:10px; border-top:1px solid var(--line); }
+.sb-group > .sb-sub:first-child, .sb-group > .tab-act:first-child + .sb-sub { border-top:0; padding-top:0; margin-top:6px; }
+#sidebar .sb-group { padding-bottom:6px; }
+@media (max-width: 760px) { .hub-grp { margin:20px 2px 8px; font-size:12px; } }
+.hubtile .ht-title { font-size:clamp(18px, 1.6vw, 22px) !important; line-height:1.2 !important; word-break:normal; hyphens:manual; }
+.hubtile .ht-ic { width:44px !important; height:44px !important; font-size:22px !important; }
+#liveText { white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -2180,7 +2192,7 @@ html[data-space="accueil"] header.top { box-shadow:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v169</div>
+            <div class="menu-who"><span id="who"></span> · v170</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -11958,16 +11970,42 @@ html[data-space="accueil"] header.top { box-shadow:none; }
       h("div", { class: "hero-in" },
         h("div", { class: "hub-crumb" }, h("button", { class: "linkbtn", type: "button", text: "Accueil", onclick: function () { setModule("accueil"); } }), h("span", { text: " › " + MODS[m].prod })),
         h("h2", null, h("span", { class: "hub-ic", text: SPACE_IC[m] }), " " + SPACE_NAME[m]), h("div", { class: "hg-date", text: SPACE_SUB[m] }))));
+    // sections rangées en petits groupes titrés
+    var defs = hubDefs(m), groups = (HUB_GROUPS[m] || []).map(function (g) { return { name: g[0], titles: g[1], tiles: [] }; }), other = { name: "Autres", titles: [], tiles: [] };
+    defs.forEach(function (t) { var g = groups.find(function (x) { return x.titles.indexOf(t.title) !== -1; }) || other; g.tiles.push(t); });
+    groups.forEach(function (g) { g.tiles.sort(function (a, b) { return g.titles.indexOf(a.title) - g.titles.indexOf(b.title); }); });
+    if (other.tiles.length) groups.push(other);
+    groups.filter(function (g) { return g.tiles.length; }).forEach(function (g) {
+    wrap.append(h("h3", { class: "hub-grp", style: "--tc:" + SPACE_COLOR[m], text: g.name }));
     var grid = h("div", { class: "hometiles hubtiles" });
-    hubDefs(m).forEach(function (t) {
+    g.tiles.forEach(function (t) {
       var dis = t.needsWrite && (readOnly || !db);
       var status = t.status ? h("span", { class: "ht-status " + (t.status.tone || ""), }, h("i", { class: "ht-dot" }), h("span", { text: t.status.text })) : null;
       grid.append(h("button", { class: "hometile hubtile" + (t.action ? " act" : ""), type: "button", disabled: dis, style: "--tc:" + SPACE_COLOR[m], "aria-label": t.title + " : " + t.sub,
         onclick: function () { if (t.tab) goTab(t.tab); else if (t.act) t.act(); } },
         h("span", { class: "ht-ic", text: t.ic }), h("span", { class: "ht-main" }, t.action ? h("span", { class: "ht-prod", text: "Action rapide" }) : h("span", { class: "ht-prod", text: "Section" }), h("span", { class: "ht-title", text: t.title }), h("span", { class: "ht-sub", text: t.sub }), status), h("span", { class: "ht-go", "aria-hidden": "true", text: "→" })));
     });
-    wrap.append(grid); box.append(wrap);
+    wrap.append(grid);
+    });
+    box.append(wrap);
   }
+  var HUB_GROUPS = {
+    stock: [["Au quotidien", ["Stock", "Favoris", "Péremptions"]], ["Inventaire", ["Comptage", "Kits par acte"]], ["Suivi", ["Historique", "Récap de la semaine", "Corbeille"]]],
+    achats: [["Commander", ["À commander", "Réception de commande", "Catalogues"]], ["Factures", ["Importer une facture", "Photo d'une facture", "Factures importées"]], ["Analyser", ["Dépenses et prix", "Tendances de consommation", "Valorisation du stock", "Rapport mensuel"]]],
+    materiel: [["Équipements", ["Équipements", "Facture d'équipement", "Agenda des échéances"]], ["Salles et contrôles", ["Salles", "Contrôles"]]],
+    qualite: [["Hygiène", ["Registre de stérilisation"]], ["Traçabilité", ["Implants", "Laboratoire"]], ["Conformité", ["Affichages obligatoires", "Journal qualité"]]],
+    equipe: [["Discuter", ["Messages", "Tâches", "Passation de fin de journée"]], ["Organisation", ["Routines", "Annuaire", "Qui est connecté", "Utilisateurs"]]]
+  };
+  // menu de gauche : mêmes groupes, avec un petit titre avant chacun
+  (function () {
+    var heads = { inventaire: "Au quotidien", comptage: "Inventaire", historique: "Suivi", commande: "Commander", donnees: "Analyser", jrnBtn: "Factures", equipements: "Équipements", salles: "Salles et contrôles", sterilisation: "Hygiène", implants: "Traçabilité", affichages: "Conformité", messages: "Discuter", annuaire: "Organisation" };
+    var sb = $("sidebar"); if (!sb) return;
+    var labo = sb.querySelector('.tab[data-tab="labo"]'), aff = sb.querySelector('.tab[data-tab="affichages"]'); if (labo && aff) aff.parentNode.insertBefore(labo, aff);
+    Object.keys(heads).forEach(function (k) {
+      var el = sb.querySelector('.sb-group [data-tab="' + k + '"], .sb-group [data-act="' + k + '"]'); if (!el) return;
+      el.parentNode.insertBefore(h("div", { class: "sb-sub", "aria-hidden": "true", text: heads[k] }), el);
+    });
+  })();
   var sbMoreOpen = false; try { sbMoreOpen = localStorage.getItem("simsim_sbmore") === "1"; } catch (e) {}
   function syncSbMore() {
     var sub = $("sbSub"); if (!sub) return;
