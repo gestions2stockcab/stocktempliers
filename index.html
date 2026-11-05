@@ -2162,6 +2162,13 @@ html.is-touch .rxhov { display:none; }
 .rxp:hover, .rxp:active { transform:scale(1.28); } .rxp.me { background:color-mix(in srgb, var(--brand) 20%, transparent); }
 @keyframes rxIn { from { opacity:0; transform:translateY(6px) scale(.85); } to { opacity:1; transform:none; } }
 @media (max-width:760px) { .rxp { width:39px; height:39px; font-size:24px; } }
+
+/* v180 : micro bien visible dans le stock */
+#voiceBtn.voicebtn, :root[data-theme] #voiceBtn.voicebtn { background:color-mix(in srgb, #2F67FF 12%, var(--surface, #fff)); color:#2F67FF; font-weight:600; border-color:color-mix(in srgb, #2F67FF 30%, transparent); }
+#voiceBtn.voicebtn:hover { background:color-mix(in srgb, #2F67FF 18%, var(--surface, #fff)); }
+.bottombar .bb-voice > span:first-child { color:#2F67FF; }
+:root[data-theme^="epure"] .bottombar .bb-voice > span:first-child { -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%229%22 y=%222%22 width=%226%22 height=%2212%22 rx=%223%22/%3E%3Cpath d=%22M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8%22/%3E%3C/svg%3E"); mask-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%221.75%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%229%22 y=%222%22 width=%226%22 height=%2212%22 rx=%223%22/%3E%3Cpath d=%22M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8%22/%3E%3C/svg%3E"); background:#2F67FF; }
+:root[data-theme^="epure"] .bottombar .bb-voice > span:last-child { color:#2F67FF; font-weight:600; }
 </style>
 </head>
 <body>
@@ -2258,7 +2265,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v179</div>
+            <div class="menu-who"><span id="who"></span> · v180</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -2432,6 +2439,7 @@ html.is-touch .rxhov { display:none; }
     <button type="button" data-module="qualite" data-mod="accueil"><span>🛡</span><span>Qualité</span></button>
     <button type="button" data-module="equipe" data-mod="accueil"><span>💬</span><span>Équipe</span></button>
     <button type="button" data-go="inventaire" data-mod="stock"><span>📦</span><span>Stock</span></button>
+    <button type="button" class="bb-voice" data-act="voiceBtn" data-mod="stock" aria-label="Dicter une sortie ou une entrée"><span>🎤</span><span>Dicter</span></button>
     <button type="button" class="bb-scan" id="bbScan" data-mod="stock materiel qualite"><span>📷</span><span>Scanner</span></button>
     <button type="button" data-go="commande" data-mod="achats"><span>🛒</span><span>À commander</span></button>
     <button type="button" data-go="catalogues" data-mod="achats"><span>📚</span><span>Catalogues</span></button>
@@ -2457,7 +2465,7 @@ html.is-touch .rxhov { display:none; }
     <input id="photoFile" type="file" accept="image/*" capture="environment" class="hidden" aria-label="Photo d'un article">
     <input id="photoPick" type="file" accept="image/*" class="hidden" aria-label="Choisir une photo">
     <button class="btn" id="importBar" title="Importer des articles ou une facture (Excel, CSV ou PDF)">Importer</button>
-    <button class="btn" id="voiceBtn" title="Dicter un mouvement : « sortie de 2 boîtes de gants M »" aria-label="Dicter">🎤</button>
+    <button class="btn voicebtn" id="voiceBtn" title="Dicter un mouvement : « sortie de 2 boîtes de gants M »" aria-label="Dicter une sortie ou une entrée">🎤 Dicter</button>
     <button class="btn" id="addBtn">+ Ajouter</button>
   </div>
   <div class="roomchips hidden" id="viewBar" role="group" aria-label="Vue du stock : total ou par salle"></div>
