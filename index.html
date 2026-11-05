@@ -2255,7 +2255,7 @@ html[data-space="accueil"] header.top { box-shadow:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v177</div>
+            <div class="menu-who"><span id="who"></span> · v178</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -10554,22 +10554,34 @@ html[data-space="accueil"] header.top { box-shadow:none; }
     $("voiceText").value = ""; $("voiceResult").textContent = ""; $("voiceGo").classList.add("hidden"); voiceDirSync(); $("voiceDlg").showModal();
     // iPhone / iPad : la reconnaissance vocale du navigateur est souvent refusée (surtout dans l'appli de l'écran d'accueil) ; la dictée du clavier, elle, marche partout
     if (isIos() || !voiceSupported()) { voiceKeyboard(voiceSupported() ? "" : "La dictée directe n'est pas disponible ici."); return; }
-    voiceListen();
+    voiceMode = "directe"; voiceListen();
   }
   function voiceKeyboard(why) {
-    $("voiceMic").classList.remove("on");
-    $("voiceState").textContent = (why ? why + " " : "") + "Touchez le champ ci-dessous puis le 🎤 du clavier, et parlez : « sortie de 2 boîtes de gants M ». La phrase est comprise dès que vous vous arrêtez.";
-    setTimeout(function () { try { $("voiceText").focus(); } catch (e) {} }, 250);
+    $("voiceMic").classList.remove("on"); voiceMode = "clavier";
+    $("voiceState").textContent = (why ? why + " " : "") + "Touchez le 🎤 du clavier (en bas à droite) et parlez : « sortie de 2 boîtes de gants M ». La phrase est comprise dès que vous vous arrêtez." + (isIos() ? " Pas de 🎤 sur le clavier ? Réglages → Général → Clavier → activez « Dictée »." : "");
+    // le clavier ne s'ouvre que si le champ est activé pendant le toucher lui-même (pas après un délai)
+    try { $("voiceText").focus(); } catch (e) {}
+    voiceWatch();
+  }
+  // la dictée du clavier ne prévient pas toujours l'appli quand elle écrit : on surveille le champ tant qu'il est actif
+  var voiceMode = "", voicePoll = 0, voiceLast = "";
+  function voiceWatch() {
+    clearInterval(voicePoll); voiceLast = $("voiceText").value;
+    voicePoll = setInterval(function () {
+      if (!$("voiceDlg").open) { clearInterval(voicePoll); return; }
+      var v = $("voiceText").value; if (v !== voiceLast) { voiceLast = v; voiceSoon(); }
+    }, 500);
   }
   var voiceTimer = 0;
   function voiceSoon() { clearTimeout(voiceTimer); voiceTimer = setTimeout(function () { if ($("voiceText").value.trim()) voiceUnderstand(true); }, 1400); }
   function voiceListen() {
-    var R = window.SpeechRecognition || window.webkitSpeechRecognition; if (!R) return;
+    if (isIos() || voiceMode === "clavier") { voiceKeyboard(""); return; }
+    var R = window.SpeechRecognition || window.webkitSpeechRecognition; if (!R) { voiceKeyboard(""); return; }
     try { if (voiceRec) voiceRec.abort(); } catch (e) {}
     var rec = new R(); voiceRec = rec; rec.lang = "fr-FR"; rec.interimResults = true; rec.maxAlternatives = 1;
     $("voiceState").textContent = "🎙 Je vous écoute… dites par exemple « sortie de 2 boîtes de gants M » ou « entrée de 10 compresses »"; $("voiceMic").classList.add("on");
     var done = false, understood = function () { if (done) return; done = true; voiceUnderstand(true); };
-    rec.onresult = function (e) { var txt = ""; for (var i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript; $("voiceText").value = txt; if (e.results[e.results.length - 1].isFinal) understood(); };
+    rec.onresult = function (e) { heard = true; var txt = ""; for (var i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript; $("voiceText").value = txt; if (e.results[e.results.length - 1].isFinal) understood(); };
     rec.onerror = function (e) {
       var c = e && e.error;
       if (c === "not-allowed" || c === "service-not-allowed") voiceKeyboard(isIos() ? "Sur iPhone et iPad, la dictée directe est bloquée." : "Le micro est bloqué pour l'appli (autorisez-le dans les réglages du navigateur).");
@@ -10580,7 +10592,10 @@ html[data-space="accueil"] header.top { box-shadow:none; }
     };
     // certains téléphones ne marquent jamais la phrase comme « finie » : on la comprend quand l'écoute s'arrête
     rec.onend = function () { $("voiceMic").classList.remove("on"); if ($("voiceText").value.trim()) understood(); else if ($("voiceState").textContent.indexOf("écoute") !== -1) $("voiceState").textContent = "Touchez le micro pour parler à nouveau."; };
-    try { rec.start(); } catch (e) { voiceKeyboard("La dictée directe n'a pas pu démarrer."); }
+    var heard = false, guard = setTimeout(function () { if (!heard && voiceRec === rec && !done) { try { rec.abort(); } catch (e) {} voiceKeyboard("La dictée directe ne répond pas sur ce téléphone."); } }, 7000);
+    rec.onaudiostart = function () { heard = true; }; rec.onspeechstart = function () { heard = true; };
+    var oldEnd = rec.onend; rec.onend = function () { clearTimeout(guard); oldEnd(); };
+    try { rec.start(); } catch (e) { clearTimeout(guard); voiceKeyboard("La dictée directe n'a pas pu démarrer."); }
   }
   var voicePlan = null;
   function voiceUnderstand(auto) {
@@ -10735,7 +10750,7 @@ html[data-space="accueil"] header.top { box-shadow:none; }
     });
     $("voiceMic").addEventListener("click", voiceListen);
     $("voiceText").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); clearTimeout(voiceTimer); voiceUnderstand(true); } });
-    $("voiceText").addEventListener("input", function () { if (!(voiceRec && $("voiceMic").classList.contains("on"))) voiceSoon(); });
+    $("voiceText").addEventListener("input", function () { voiceLast = $("voiceText").value; if (!(voiceRec && $("voiceMic").classList.contains("on"))) voiceSoon(); });
     $("voiceOk").addEventListener("click", voiceUnderstand);
     $("voiceGo").addEventListener("click", voiceApply);
     $("voiceCancel").addEventListener("click", function () { try { if (voiceRec) voiceRec.abort(); } catch (e) {} $("voiceDlg").close(); });
