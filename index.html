@@ -2332,7 +2332,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v188</div>
+            <div class="menu-who"><span id="who"></span> · v189</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -15705,7 +15705,7 @@ html.is-touch .rxhov { display:none; }
     try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () { applyTheme(cur()); }); } catch (e) {}
   })();
   try { var ts = localStorage.getItem("simsim_tilesort"); if (ts) state.tileSort = ts; } catch (e) {}
-  try { state.hideCat = localStorage.getItem("simsim_hidecat") === "1"; state.hideDup = localStorage.getItem("simsim_hidedup") === "1"; state.hideTotal = localStorage.getItem("simsim_hidetotal") !== "0"; state.hideZero = localStorage.getItem("simsim_hidezero") !== "0"; } catch (e) { state.hideZero = true; }
+  try { if (!localStorage.getItem("simsim_hidecat_v189")) { localStorage.setItem("simsim_hidecat", "1"); localStorage.setItem("simsim_hidecat_v189", "1"); } state.hideCat = localStorage.getItem("simsim_hidecat") !== "0"; state.hideDup = localStorage.getItem("simsim_hidedup") === "1"; state.hideTotal = localStorage.getItem("simsim_hidetotal") !== "0"; state.hideZero = localStorage.getItem("simsim_hidezero") !== "0"; } catch (e) { state.hideZero = true; state.hideCat = true; }
   function closeMenu() { $("moreMenu").classList.add("hidden"); $("moreBtn").setAttribute("aria-expanded", "false"); }
   // Menu Plus en onglets : un onglet n'apparaît que si au moins un de ses boutons est disponible pour cette personne ; seul l'onglet choisi est affiché
   var menuTab = "essentiel";
