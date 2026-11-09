@@ -2306,7 +2306,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v184</div>
+            <div class="menu-who"><span id="who"></span> · v185</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -2496,7 +2496,7 @@ html.is-touch .rxhov { display:none; }
     <button type="button" id="bbMenu"><span>☰</span><span>Menu</span></button>
   </nav>
 
-  <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.txt,.pdf,application/pdf,text/csv,text/plain,text/comma-separated-values,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*,.jpg,.jpeg,.png,.webp" class="hidden">
+  <input type="file" id="importFile" accept=".xlsx,.xls,.xlsm,.xlsb,.ods,.numbers,.csv,.txt,.pdf,application/pdf,text/csv,text/plain,text/comma-separated-values,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*,.jpg,.jpeg,.png,.webp" class="hidden">
   <div id="banner"></div>
 
   <div class="bar" id="bar">
@@ -12934,16 +12934,53 @@ html.is-touch .rxhov { display:none; }
     var n = norm(v).trim();
     return !(n === "non" || n === "n" || n === "no" || n === "0" || n === "false" || n === "faux" || n === "catalogue");
   }
+  // v185 : l'en-tête peut être sur n'importe laquelle des 15 premières lignes (titre, logo, lignes vides au-dessus),
+  // et les intitulés sont reconnus même approximatifs (« Désignation produit », « Qté en stock », « Prix unitaire HT € »…)
+  function headNorm(c) { return norm(cellText(c)).replace(/[^a-z0-9'° -]+/g, " ").replace(/\s+/g, " ").trim(); }
+  function mapHeads(heads) {
+    var map = {}, used = {};
+    [2, 1].forEach(function (level) {
+      Object.keys(SYN).forEach(function (f) {
+        if (map[f] != null) return;
+        var idx = heads.findIndex(function (hd, i) {
+          if (used[i] || !hd) return false;
+          if (level === 2) return SYN[f].indexOf(hd) !== -1;
+          return hd.length <= 40 && SYN[f].some(function (sy) { return sy.length >= 3 && (" " + hd + " ").indexOf(" " + sy + " ") !== -1; });
+        });
+        if (idx !== -1) { map[f] = idx; used[idx] = 1; }
+      });
+    });
+    return map;
+  }
+  function findHeader(rows) {
+    var best = null;
+    for (var i = 0; i < Math.min(15, rows.length - 1); i++) {
+      var map = mapHeads((rows[i] || []).map(headNorm)), n = Object.keys(map).length;
+      if (map.name != null && (!best || n > best.n)) best = { i: i, map: map, n: n };
+    }
+    if (best) return best;
+    // aucun intitulé reconnu : on devine la colonne du nom (la plus « textuelle ») et celle de la quantité (la plus numérique)
+    var start = rows.findIndex(function (r) { return (r || []).filter(function (c) { return cellText(c) !== ""; }).length >= 2; });
+    if (start < 0) return null;
+    var body = rows.slice(start + 1, start + 60), W = Math.max.apply(null, rows.slice(start, start + 60).map(function (r) { return (r || []).length; }));
+    var txt = [], nb = [];
+    for (var c = 0; c < W; c++) {
+      txt[c] = 0; nb[c] = 0;
+      body.forEach(function (r) { var v = cellText((r || [])[c]); if (!v) return; if (/^-?\d+([.,]\d+)?$/.test(v.replace(/\s|€/g, ""))) nb[c]++; else if (v.length > 2) txt[c] += Math.min(v.length, 40); });
+    }
+    var nameC = txt.indexOf(Math.max.apply(null, txt)); if (!(txt[nameC] > 0)) return null;
+    // si la première ligne ressemble déjà à des données (pas d'en-tête du tout), on la garde
+    var first = (rows[start] || []).map(function (c) { return cellText(c); }), headerLike = first.every(function (v) { return !/^-?\d+([.,]\d+)?$/.test(v.replace(/\s|€/g, "")); });
+    var map2 = { name: nameC }, qC = nb.reduce(function (b, v, i) { return i !== nameC && v > (nb[b] || 0) ? i : b; }, -1);
+    if (qC >= 0 && nb[qC] >= body.length / 3) map2.qty = qC;
+    return { i: headerLike ? start : start - 1, map: map2, n: 1, guessed: true };
+  }
   function itemsFromRows(rows, defaultCat) {
     if (!rows || rows.length < 2) return { ok: false, items: [] };
-    var heads = (rows[0] || []).map(function (c) { return norm(cellText(c)).trim(); });
-    var map = {};
-    Object.keys(SYN).forEach(function (f) {
-      var idx = heads.findIndex(function (hd) { return SYN[f].indexOf(hd) !== -1; });
-      if (idx !== -1) map[f] = idx;
-    });
-    if (map.name == null) return { ok: false, items: [] };
-    var out = rows.slice(1).map(function (r) {
+    var hd = findHeader(rows);
+    if (!hd) return { ok: false, items: [] };
+    var map = hd.map;
+    var out = rows.slice(hd.i + 1).map(function (r) {
       var get = function (f) { return map[f] != null ? cellText(r[map[f]]) : ""; };
       var exp = get("expiry");
       var m = exp.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
@@ -12955,8 +12992,8 @@ html.is-touch .rxhov { display:none; }
         target: Math.max(0, num(get("target"))), lot: get("lot"), expiry: exp, price: Math.max(0, num(get("price"))),
         tracked: parseTracked(get("tracked")), subcategory: get("subcategory")
       };
-    }).filter(function (d) { return d.name; });
-    return { ok: true, items: out };
+    }).filter(function (d) { return d.name && !/^(total|sous-total|sous total)\b/i.test(d.name); });
+    return { ok: true, items: out, guessed: !!hd.guessed };
   }
   function importSheets(sheets) {
     var all = [], bad = 0;
@@ -12968,7 +13005,7 @@ html.is-touch .rxhov { display:none; }
       all = all.concat(res.items);
     });
     if (!all.length) {
-      toast(bad ? "Colonne « Article » introuvable. Ajoutez-la en première ligne du fichier." : "Aucune ligne exploitable dans le fichier.");
+      toast(bad ? "Je n'ai pas trouvé la colonne des noms d'articles. Ajoutez une colonne « Article » (ou « Désignation ») au-dessus de la liste, puis réessayez." : "Aucune ligne exploitable dans le fichier : vérifiez qu'il contient bien une liste d'articles.");
       return;
     }
     var have = new Map();
@@ -14977,12 +15014,21 @@ html.is-touch .rxhov { display:none; }
   $("importBar").addEventListener("click", function () { $("importFile").click(); });
   $("exportBtn").addEventListener("click", exportCsv);
   // Choix d'un fichier (téléphone ou ordinateur) : on reconnaît le type par le nom OU par le type annoncé par l'appareil
+  var xlsxP = null;
+  function xlsxLoad() {
+    if (window.XLSX) return Promise.resolve();
+    if (xlsxP) return xlsxP;
+    xlsxP = new Promise(function (ok, ko) { var sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; sc.integrity = "sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw"; sc.crossOrigin = "anonymous"; sc.onload = function () { window.XLSX ? ok() : ko(); }; sc.onerror = function () { xlsxP = null; ko(); }; document.head.appendChild(sc); });
+    return xlsxP;
+  }
   function importFileChosen(f) {
     var name = String(f.name || ""), type = String(f.type || "").toLowerCase();
     if (!f.size) { toast("Le fichier est vide ou n'a pas pu être lu. Sur téléphone, téléchargez-le d'abord sur l'appareil (pas seulement dans un nuage ou un e-mail), puis réessayez."); return; }
     var isPdf = /\.pdf$/i.test(name) || type === "application/pdf";
     var isCsv = /\.(csv|txt)$/i.test(name) || /^text\//.test(type) || /csv/.test(type);
-    var isXls = !isCsv && (/\.xlsx?$/i.test(name) || /spreadsheetml|ms-excel/.test(type));
+    var isXls = !isCsv && (/\.(xlsx|xlsm|xlsb|xls|ods|numbers)$/i.test(name) || /spreadsheet|ms-excel|opendocument/.test(type));
+    // fichier sans extension ni type reconnu (envoyé par WhatsApp, un e-mail…) : on tente quand même de le lire comme un tableur
+    if (!isCsv && !isXls && !/\.(pdf|jpe?g|png|webp|heic|heif|tiff?)$/i.test(name) && !/^image\/|pdf/.test(type)) isXls = true;
     var isImg = /^image\//.test(type) || /\.(jpe?g|png|webp|heic|heif|tiff?)$/i.test(name);
     if (isPdf) { importPdf(f); return; }
     if (isImg) { importImage(f); return; }
@@ -14990,7 +15036,7 @@ html.is-touch .rxhov { display:none; }
     var r = new FileReader();
     r.onerror = function () { toast("Le fichier n'a pas pu être lu. Sur téléphone, téléchargez-le d'abord sur l'appareil, puis réessayez."); };
     if (isXls) {
-      if (!window.XLSX) { toast("Impossible de lire un fichier Excel : vérifiez votre accès à internet."); return; }
+      if (!window.XLSX) { toast("Chargement du lecteur Excel…"); xlsxLoad().then(function () { importFileChosen(f); }, function () { toast("Impossible de lire un fichier Excel : vérifiez votre accès à internet, ou enregistrez le fichier en CSV."); }); return; }
       r.onload = function () {
         try {
           var wb = window.XLSX.read(new Uint8Array(r.result), { type: "array", cellDates: true });
@@ -14998,7 +15044,7 @@ html.is-touch .rxhov { display:none; }
             return { name: n, rows: window.XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: "" }) };
           });
           importSheets(sheets);
-        } catch (err) { toast("Ce fichier Excel n'a pas pu être lu."); }
+        } catch (err) { toast(/password|encrypt|protected/i.test(String(err && err.message)) ? "Ce fichier Excel est protégé par un mot de passe : enregistrez-en une copie sans mot de passe, puis réessayez." : "Ce fichier n'a pas pu être lu comme un tableur. Ouvrez-le dans Excel et enregistrez-le en .xlsx ou en .csv, puis réessayez."); }
       };
       r.readAsArrayBuffer(f);
     } else {
