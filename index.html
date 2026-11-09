@@ -2226,6 +2226,13 @@ html.is-touch .rxhov { display:none; }
 .imp-tag { font-size:11px; font-weight:600; border-radius:999px; padding:1px 8px; text-align:center; }
 .imp-tag.new { background:#E3F4EC; color:#0B6B4D; } .imp-tag.old { background:#E6EDFF; color:#2F67FF; }
 @media (max-width:760px) { .imp-row { grid-template-columns:minmax(0,2fr) 62px minmax(0,1fr); } .imp-row span:nth-child(4), .imp-row span:nth-child(5) { display:none; } }
+
+/* v187 : corriger les colonnes, articles importés */
+.imp-map { margin:6px 0 10px; } .imp-map summary { cursor:pointer; font-weight:600; font-size:14px; color:var(--brand); }
+.imp-map-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:8px; margin-top:8px; }
+.imp-map-f { display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--muted); }
+.imp-map-f select { font-size:14px; padding:6px 8px; border-radius:8px; border:1px solid var(--line); background:var(--surface, #fff); color:var(--ink); }
+.imp-only { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; margin:0 0 10px; border-radius:12px; background:color-mix(in srgb, #2F67FF 10%, var(--surface, #fff)); }
 </style>
 </head>
 <body>
@@ -2322,7 +2329,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v186</div>
+            <div class="menu-who"><span id="who"></span> · v187</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -7647,6 +7654,7 @@ html.is-touch .rxhov { display:none; }
   function visibleItems() {
     var q = norm(state.q);
     var arr = Array.from(items.values()).filter(function (it) {
+      if (state.onlyIds) return state.onlyIds.has(it.id);
       var s = statusOf(it);
       if (state.cat && (it.category || "Sans domaine") !== state.cat) return false;
       if (hiddenByToggle(it)) return false;
@@ -7794,7 +7802,7 @@ html.is-touch .rxhov { display:none; }
     panel.append(field("Trier par", "sort", [["", "Ordre habituel"], ["nom", "Nom A → Z"], ["nom-desc", "Nom Z → A"], ["qty-asc", "Quantité croissante"], ["qty-desc", "Quantité décroissante"], ["prix-asc", "Prix croissant"], ["prix-desc", "Prix décroissant"], ["exp", "Péremption la plus proche"], ["autonomie", "Durée de stock restante"]]));
     panel.append(h("button", { class: "btn sm fclear", disabled: !n, onclick: function () { clearFilters(); render(); }, text: "Tout effacer" }));
   }
-  function isHome() { return !state.cat && state.filter === "all" && !state.q && !filtersActive(); }
+  function isHome() { return !state.cat && state.filter === "all" && !state.q && !filtersActive() && !state.onlyIds; }
 
   function renderAlerts() {
     var all = Array.from(items.values());
@@ -9611,6 +9619,7 @@ html.is-touch .rxhov { display:none; }
       return;
     }
     if (isHome()) { renderTiles(box); return; }
+    if (state.onlyIds) box.append(h("div", { class: "imp-only" }, h("b", { text: "📥 Articles du dernier import (" + state.onlyIds.size + ")" }), h("button", { class: "btn sm", type: "button", text: "✕ Tout le stock", onclick: function () { state.onlyIds = null; render(); } })));
     var list = visibleItems(), totalNode = totalSection();
     if (!list.length && totalNode) { box.append(totalNode); return; }
     if (!list.length) {
@@ -12991,9 +13000,9 @@ html.is-touch .rxhov { display:none; }
     if (qC >= 0 && nb[qC] >= body.length / 3) map2.qty = qC;
     return { i: headerLike ? start : start - 1, map: map2, n: 1, guessed: true };
   }
-  function itemsFromRows(rows, defaultCat) {
+  function itemsFromRows(rows, defaultCat, forced) {
     if (!rows || rows.length < 2) return { ok: false, items: [] };
-    var hd = findHeader(rows);
+    var hd = forced || findHeader(rows);
     if (!hd) return { ok: false, items: [] };
     var map = hd.map, headRow = rows[hd.i] || [];
     var cols = Object.keys(map).map(function (f) { return { f: f, h: hd.guessed ? "(deviné)" : cellText(headRow[map[f]]) }; });
@@ -13011,19 +13020,21 @@ html.is-touch .rxhov { display:none; }
       };
     }).filter(function (d) { return d.name && !/^(total|sous-total|sous total)\b/i.test(d.name); });
     out.forEach(function (d) { d._hasQty = map.qty != null; });
-    return { ok: true, items: out, guessed: !!hd.guessed, cols: cols };
+    var W = Math.max.apply(null, rows.slice(hd.i, hd.i + 40).map(function (r) { return (r || []).length; }).concat([0]));
+    var heads = []; for (var c = 0; c < W; c++) { var t = hd.i >= 0 ? cellText(headRow[c]) : ""; heads.push(t && !hd.guessed ? t : "Colonne " + String.fromCharCode(65 + (c % 26)) + (t ? " (" + t.slice(0, 20) + ")" : "")); }
+    return { ok: true, items: out, guessed: !!hd.guessed, cols: cols, hd: { i: hd.i, map: map, guessed: hd.guessed }, heads: heads };
   }
   // v186 : import Excel en deux temps — on montre ce qui a été compris, puis on importe.
   // Les articles déjà présents (même référence, sinon même nom) voient leur quantité mise à jour (au choix : remplacer ou ajouter).
   var IMP_LABEL = { name: "Article", qty: "Quantité", category: "Domaine", subcategory: "Sous-catégorie", supplier: "Fournisseur", ref: "Référence", location: "Emplacement", unit: "Unité", min: "Seuil", target: "Cible", lot: "Lot", expiry: "Péremption", price: "Prix", description: "Description", tracked: "Suivi" };
-  function importSheets(sheets) {
-    var all = [], bad = 0, cols = [], guessed = false;
-    sheets.forEach(function (sh) {
+  function importSheets(sheets, forced) {
+    var all = [], bad = 0, cols = [], guessed = false, edit = null;
+    sheets.forEach(function (sh, si) {
       var def = normDomain(sh.name);
       if (DOMAINS.indexOf(def) === -1) def = "";
-      var res = itemsFromRows(sh.rows, def);
+      var res = itemsFromRows(sh.rows, def, forced && forced.sheet === si ? forced : null);
       if (!res.ok) { bad++; return; }
-      if (res.items.length && !cols.length) { cols = res.cols || []; guessed = !!res.guessed; }
+      if (res.items.length && !cols.length) { cols = res.cols || []; guessed = !!res.guessed; edit = { sheet: si, i: res.hd.i, map: res.hd.map, heads: res.heads }; }
       all = all.concat(res.items);
     });
     if (!all.length) {
@@ -13058,7 +13069,7 @@ html.is-touch .rxhov { display:none; }
     });
     if (!trackedOk && fresh.some(function (d) { return d.tracked === false; })) { toast("Lancez d'abord le script SQL « ajout-catalogue » dans Supabase."); return; }
     if (!subOk && fresh.some(function (d) { return d.subcategory; })) { toast("Lancez d'abord le script SQL « ajout-sous-categories » dans Supabase."); return; }
-    openImportPreview({ fresh: fresh, exist: exist, cols: cols, guessed: guessed, nLots: nLots, total: all.length });
+    openImportPreview({ fresh: fresh, exist: exist, cols: cols, guessed: guessed, nLots: nLots, total: all.length, sheets: sheets, edit: edit });
   }
   function openImportPreview(o) {
     var d = $("impDlg"); if (!d) { d = h("dialog", { id: "impDlg", class: "wide" }); document.body.append(d); }
@@ -13070,6 +13081,25 @@ html.is-touch .rxhov { display:none; }
     var box = h("div", { class: "dlg" }, h("h2", { text: "📥 Vérifier l'import" }),
       h("div", { class: "sub", text: o.total + " ligne" + (o.total > 1 ? "s" : "") + " lue" + (o.total > 1 ? "s" : "") + " dans le fichier." }),
       h("div", { class: "imp-cols" }, h("b", { text: "Colonnes comprises : " }), colTxt || "—"),
+      o.edit && o.sheets ? (function () {
+        // l'appli s'est trompée de colonne ? on corrige ici, l'aperçu se met à jour
+        var wrap = h("details", { class: "imp-map" }, h("summary", { text: "✎ Corriger les colonnes" }));
+        var grid = h("div", { class: "imp-map-grid" });
+        ["name", "qty", "price", "category", "supplier", "ref", "location", "min", "expiry"].forEach(function (f) {
+          var sel = h("select", { "aria-label": IMP_LABEL[f] });
+          sel.append(h("option", { value: "", text: f === "name" ? "(obligatoire)" : "— aucune —" }));
+          o.edit.heads.forEach(function (t, c) { sel.append(h("option", { value: String(c), text: t || "Colonne " + (c + 1), selected: o.edit.map[f] === c })); });
+          sel.addEventListener("change", function () {
+            var m = Object.assign({}, o.edit.map);
+            Object.keys(m).forEach(function (k) { if (sel.value !== "" && m[k] === Number(sel.value)) delete m[k]; });
+            if (sel.value === "") delete m[f]; else m[f] = Number(sel.value);
+            if (m.name == null) { toast("Choisissez la colonne des noms d'articles."); return; }
+            $("impDlg").close(); importSheets(o.sheets, { sheet: o.edit.sheet, i: o.edit.i, map: m });
+          });
+          grid.append(h("label", { class: "imp-map-f" }, h("span", { text: IMP_LABEL[f] }), sel));
+        });
+        wrap.append(grid); if (o.guessed) wrap.open = true; return wrap;
+      })() : null,
       hasQtyCol ? null : h("div", { class: "dnote", text: "⚠ Je n'ai pas trouvé de colonne de quantité : les nouveaux articles seront créés à 0, et les articles déjà présents ne changeront pas. Ajoutez une colonne « Quantité » au fichier si vous voulez remplir le stock." }));
     var sum = h("div", { class: "imp-sum" });
     sum.append(h("div", { class: "imp-n" }, h("b", { text: String(o.fresh.length) }), h("span", { text: " nouvel" + (o.fresh.length > 1 ? "s" : "") + " article" + (o.fresh.length > 1 ? "s" : "") + " à créer" + (o.nLots ? " (" + o.nLots + " lots)" : "") })));
@@ -13147,6 +13177,9 @@ html.is-touch .rxhov { display:none; }
         return appendLog({ type: "import", itemId: "", item: "Import de fichier", delta: 0, qty: 0, note: fresh.length + " créés, " + (moves.length + upd.length) + " quantités mises à jour" });
       }).then(function () {
         var zeroNew = fresh.filter(function (x) { return !(x.qty > 0); }).length;
+        var ids = new Set(); Array.from(items.values()).forEach(function (it) { if (fresh.some(function (x) { return norm(x.name).trim() === norm(it.name).trim(); })) ids.add(it.id); });
+        moves.forEach(function (m) { ids.add(m.it.id); }); upd.forEach(function (u) { ids.add(u.it.id); }); fill.forEach(function (f) { ids.add(f.it.id); });
+        if (ids.size) updBar("📥 Import terminé : " + ids.size + " article" + (ids.size > 1 ? "s" : "") + " créé" + (ids.size > 1 ? "s" : "") + " ou mis à jour.", "ok", [{ text: "Les voir", fn: function () { state.onlyIds = ids; state.cat = ""; state.q = ""; if (state.tab !== "inventaire") goTab("inventaire"); render(); } }], 20000);
         toast("✓ Import terminé : " + fresh.length + " article" + (fresh.length > 1 ? "s" : "") + " créé" + (fresh.length > 1 ? "s" : "") + (nLots ? " (" + nLots + " lots)" : "") +
           ", " + (moves.length + upd.length) + " quantité" + (moves.length + upd.length > 1 ? "s" : "") + " mise" + (moves.length + upd.length > 1 ? "s" : "") + " à jour" +
           (fill.length ? ", " + fill.length + " fiche" + (fill.length > 1 ? "s" : "") + " complétée" + (fill.length > 1 ? "s" : "") : "") + "." +
@@ -16324,6 +16357,7 @@ html.is-touch .rxhov { display:none; }
     return fetch(location.pathname + "?_=" + Date.now(), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("http"); return r.text(); })
       .then(function (t) { var m = /id="who"><\/span> · v(\d+)/.exec(t); if (!m) throw new Error("version"); return parseInt(m[1], 10); });
   }
+  document.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest(".step"); if (b && !b.disabled) { try { if (navigator.vibrate) navigator.vibrate(8); } catch (x) {} } }, true);
   function updBar(text, kind, actions, autoHide) {
     var b = $("updBar"); b.textContent = ""; b.className = "updbar " + (kind || "");
     b.append(h("span", { text: text }));
