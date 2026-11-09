@@ -2179,7 +2179,7 @@ html.is-touch .rxhov { display:none; }
   html:not([data-space="accueil"]) #secBanner { display:none !important; }
   /* stock : le bouton Scanner est déjà en bas (gros bouton rond) : une rangée de boutons en moins */
   :root .bar #scanBtn { display:none !important; }
-  :root .bar, :root[data-theme^="epure"] .bar { display:grid !important; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; }
+  :root .bar:not(.hidden), :root[data-theme^="epure"] .bar:not(.hidden) { display:grid !important; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; }
   :root .bar .search, :root[data-theme^="epure"] .bar .search { grid-column:1 / -1; }
   :root .bar #addBtn, :root[data-theme^="epure"] .bar #addBtn { grid-column:auto; }
   :root .bar .btn { min-width:0; padding-left:4px !important; padding-right:4px !important; font-size:13.5px !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -2199,8 +2199,43 @@ html.is-touch .rxhov { display:none; }
 .msgauto .linkbtn { font-size:13px; }
 
 /* v183 : en stock seulement */
-#hideZeroBtn[aria-pressed="true"] { background:color-mix(in srgb, #2F67FF 12%, var(--surface, #fff)); color:#2F67FF; border-color:color-mix(in srgb, #2F67FF 30%, transparent); font-weight:600; }
-@media (max-width:760px) { .filters .ftop { display:flex; flex-wrap:wrap; gap:6px; } #hideZeroBtn { white-space:normal; text-align:left; } }
+#hideMenuBtn.on, .fhide .toggle[aria-pressed="true"] { background:color-mix(in srgb, #2F67FF 12%, var(--surface, #fff)); color:#2F67FF; border-color:color-mix(in srgb, #2F67FF 30%, transparent); font-weight:600; }
+.fhide { display:flex; flex-wrap:wrap; gap:6px; align-items:center; flex-basis:100%; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:var(--surface, #fff); }
+.fhide.hidden { display:none; }
+.fh-title { font-size:13px; color:var(--muted); font-weight:600; margin-right:2px; }
+@media (max-width:760px) { .filters .ftop { display:flex; flex-wrap:wrap; gap:6px; } }
+
+/* v184 : reconnaissance par ressemblance, photos des produits */
+.ph-learn { margin:10px 0 0; }
+#shootDlg { width:min(520px, 96vw); }
+.shoot-card { border:1px solid var(--line); border-radius:14px; padding:14px; margin:12px 0; display:flex; flex-direction:column; gap:6px; }
+.shoot-name { font-size:19px; font-weight:600; }
+
+/* v186 : vérifier l'import */
+#impDlg .imp-cols { font-size:13px; margin:8px 0; line-height:1.5; }
+.imp-sum { display:flex; gap:10px; flex-wrap:wrap; margin:10px 0; }
+.imp-n { flex:1 1 160px; border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+.imp-n b { font-size:24px; }
+.imp-mode { display:flex; flex-direction:column; gap:6px; margin:10px 0; padding:10px 12px; border-radius:12px; background:var(--surface-2, #F4F4F4); }
+.imp-opt { display:flex; gap:8px; align-items:flex-start; cursor:pointer; font-size:14px; }
+.imp-opt input { margin-top:3px; }
+.imp-table { border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-top:6px; }
+.imp-row { display:grid; grid-template-columns:minmax(0,2.4fr) 70px minmax(0,1fr) minmax(0,.8fr) minmax(0,1fr); gap:8px; padding:6px 10px; font-size:13px; border-top:1px solid var(--line); align-items:center; }
+.imp-row span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.imp-head { border-top:0; background:var(--surface-2, #F4F4F4); font-weight:600; font-size:12px; }
+.imp-tag { font-size:11px; font-weight:600; border-radius:999px; padding:1px 8px; text-align:center; }
+.imp-tag.new { background:#E3F4EC; color:#0B6B4D; } .imp-tag.old { background:#E6EDFF; color:#2F67FF; }
+@media (max-width:760px) { .imp-row { grid-template-columns:minmax(0,2fr) 62px minmax(0,1fr); } .imp-row span:nth-child(4), .imp-row span:nth-child(5) { display:none; } }
+
+/* v187 : corriger les colonnes, articles importés */
+.imp-map { margin:6px 0 10px; } .imp-map summary { cursor:pointer; font-weight:600; font-size:14px; color:var(--brand); }
+.imp-map-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:8px; margin-top:8px; }
+.imp-map-f { display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--muted); }
+.imp-map-f select { font-size:14px; padding:6px 8px; border-radius:8px; border:1px solid var(--line); background:var(--surface, #fff); color:var(--ink); }
+.imp-only { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; margin:0 0 10px; border-radius:12px; background:color-mix(in srgb, #2F67FF 10%, var(--surface, #fff)); }
+
+/* v188 : plusieurs factures à la suite */
+.pdf-batch { margin:0 0 8px; padding:7px 12px; border-radius:10px; background:color-mix(in srgb, #6B5BFF 12%, var(--surface, #fff)); color:#4A3FC0; font-size:13px; font-weight:600; }
 </style>
 </head>
 <body>
@@ -2297,7 +2332,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v183</div>
+            <div class="menu-who"><span id="who"></span> · v190</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -2487,7 +2522,7 @@ html.is-touch .rxhov { display:none; }
     <button type="button" id="bbMenu"><span>☰</span><span>Menu</span></button>
   </nav>
 
-  <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.txt,.pdf,application/pdf,text/csv,text/plain,text/comma-separated-values,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*,.jpg,.jpeg,.png,.webp" class="hidden">
+  <input type="file" id="importFile" accept=".xlsx,.xls,.xlsm,.xlsb,.ods,.numbers,.csv,.txt,.pdf,application/pdf,text/csv,text/plain,text/comma-separated-values,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*,.jpg,.jpeg,.png,.webp" class="hidden" multiple>
   <div id="banner"></div>
 
   <div class="bar" id="bar">
@@ -2505,13 +2540,17 @@ html.is-touch .rxhov { display:none; }
     <div class="ftop">
       <button class="btn sm" id="filtersToggle" aria-expanded="false">Filtres</button>
       <button class="btn sm" id="optsToggle" aria-expanded="false" aria-controls="fopts" title="Catalogue, doublons, sélection">Options</button>
-      <button class="btn sm toggle" id="hideZeroBtn" type="button" aria-pressed="true" title="N'afficher que ce qui est en stock (les articles à 0 restent trouvables par la recherche et dans « en rupture »)">✓ En stock seulement</button>
+      <button class="btn sm" id="hideMenuBtn" type="button" aria-expanded="false" aria-controls="fhide">👁 Masquer</button>
       <span class="fopts hidden" id="fopts">
-        <button class="btn sm toggle" id="hideCatBtn" aria-pressed="false">Masquer le catalogue déjà commandé</button>
-        <button class="btn sm toggle" id="hideTotalBtn" aria-pressed="true">✓ Catalogue total masqué</button>
-        <button class="btn sm toggle" id="hideDupBtn" aria-pressed="false">Masquer les doublons</button>
         <button class="btn sm toggle" id="selToggle" aria-pressed="false">Sélectionner</button>
         <button class="btn sm" id="lblOptBtn" type="button">🏷 Étiquettes QR</button>
+      </span>
+      <span class="fhide hidden" id="fhide" role="group" aria-label="Ce qu'il faut masquer">
+        <span class="fh-title">Masquer :</span>
+        <button class="btn sm toggle" id="hideZeroBtn" type="button" aria-pressed="true" title="Les articles à 0 restent trouvables par la recherche et dans « en rupture »">Articles à 0</button>
+        <button class="btn sm toggle" id="hideCatBtn" aria-pressed="false" title="Articles du catalogue que vous ne suivez pas en stock">Catalogue (non suivi)</button>
+        <button class="btn sm toggle" id="hideTotalBtn" aria-pressed="true" title="Toutes les références des catalogues fournisseurs">Catalogue total</button>
+        <button class="btn sm toggle" id="hideDupBtn" aria-pressed="false">Doublons</button>
       </span>
       <span class="sub" id="filtersSummary"></span>
     </div>
@@ -2890,6 +2929,7 @@ html.is-touch .rxhov { display:none; }
     <div class="ph-shot" id="photoShot"></div>
     <div id="photoResult"></div>
     <div id="photoReader" class="hidden"></div>
+    <div class="meta ph-learn">Astuce : donnez une photo à vos articles (<button class="linkbtn" id="photoShootBtn" type="button">📸 Photographier mes produits</button>) et l'appli les reconnaîtra rien qu'à leur ressemblance.</div>
     <div class="dlg-actions"><button class="btn" id="photoPickBtn" type="button">🖼 Choisir dans la galerie</button><button class="btn" id="photoAgain" type="button">📷 Reprendre une photo</button><button class="btn" id="photoClose" type="button">Fermer</button></div>
   </div>
 </dialog>
@@ -3366,6 +3406,7 @@ html.is-touch .rxhov { display:none; }
 
 <dialog id="pdfDlg" class="wide">
   <div class="dlg">
+    <div class="pdf-batch hidden" id="pdfBatch"></div>
     <h2>Importer depuis le PDF</h2>
     <div id="pdfInfo"></div>
     <div id="pdfTable" class="pdfscroll"></div>
@@ -5535,7 +5576,7 @@ html.is-touch .rxhov { display:none; }
   };
 
   // ---------- centre d'aide : toutes les fonctions, avec recherche, thèmes et lien direct vers l'écran ----------
-  var AIDE = [{"id": "debut", "cat": "Démarrer", "ic": "👋", "t": "Premiers pas", "k": "debut commencer installer annuler role", "p": ["L'appli est rangée en 5 espaces : Stock, Achats, Matériel (équipements, salles, contrôles), Qualité (stérilisation, implants, affichages obligatoires, journal) et Équipe. On passe de l'un à l'autre avec les grandes tuiles de l'accueil, les icônes du haut ou le menu ☰.", "L'accueil montre « Aujourd'hui » (les 3 points importants, « Voir tout » pour le reste), puis les espaces ; SimSim, les séries et le mois du cabinet sont dans « Plus sur l'accueil ». Le menu « Plus » montre les 6 essentiels ; « 🧰 Tous les outils » ouvre le reste. Le titre « SimSimStock » en haut ramène toujours à l'accueil. « ← Précédent » revient à l'écran d'avant (le bouton retour du téléphone marche aussi).", "Une erreur ? « ↶ Annuler » en haut (ou Ctrl/Cmd + Z) défait la dernière action : jusqu'à 20 actions des 30 dernières minutes.", "Trois rôles : Administrateur, Membre (modifie le stock) et Lecture seule (les boutons de modification sont grisés). Le propriétaire voit en plus l'Administration.", "Pour installer l'appli comme une vraie appli : sur iPad/iPhone, ouvrez-la dans Safari, bouton Partager, « Sur l'écran d'accueil ». Sur Android : menu ⋮, « Installer l'application ».", "Sur téléphone : l'en-tête se range quand vous descendez dans une liste et revient dès que vous remontez. Tout en haut d'un écran, tirez vers le bas pour actualiser (messages, stock, routines)."]}, {"id": "bien-demarrer", "cat": "Démarrer", "ic": "🚀", "t": "Bien démarrer (configuration du cabinet)", "k": "configuration demarrage nouveau cabinet etapes", "p": ["Pour les administrateurs, l'accueil affiche « 🚀 Bien démarrer » avec un pourcentage : articles, seuils, fournisseurs, prix, tiroirs, salles, équipe, statut, routines, stérilisation, e-mail d'un commercial, double authentification.", "Chaque étape a un bouton « Faire → » qui ouvre le bon écran. La carte disparaît à 100 %, ou avec « Masquer »."]}, {"id": "accueil", "cat": "Démarrer", "ic": "🏠", "t": "Accueil", "k": "", "p": ["« Bonjour » avec la date, le cabinet et votre profil.", "La barre « Posez une question à SimSim… » répond à vos questions sur le stock, les dépenses, la stérilisation (gratuit, calculé dans l'appli).", "Le tableau du jour, la carte « Vos séries » et 4 tuiles qui résument chaque espace : ruptures, à commander, contrôles, messages non lus, tâches… ou « Tout est en ordre ».", "Du 1er au 10 du mois, un bandeau propose « Le mois du cabinet »."], "go": {"tab": "accueil"}}, {"id": "stock", "cat": "Stock", "ic": "📦", "t": "Le stock : sortir et ajouter", "k": "moins plus quantite rupture seuil alerte", "p": ["Choisissez un domaine (tuiles), puis « − » sort 1 et « + » ajoute 1. Sur téléphone, balayez une ligne vers la gauche (sortie) ou la droite (entrée).", "Touchez le chiffre pour « Mouvement de stock » : Entrée, Sortie, Déplacer (vers une salle) ou Autre cabinet, avec des quantités rapides (1, 2, 5, 10…), le lot, la péremption et le motif de sortie (utilisé, périmé, cassé, perdu…).", "Couleur du chiffre : rouge = 0, orange = peu, vert = confortable.", "☆ met en favori · ⚑ signale « il n'y en a presque plus » · 🔓 « Ouvert aujourd'hui » pour les produits à durée limitée après ouverture.", "En haut : alertes cliquables (en rupture, sous le seuil, péremption à surveiller, bientôt en rupture…). En bas : la valeur du stock HT et TTC.", "« Filtres » : fournisseur, état, emplacement, tri… · « Options » : masquer le catalogue, sélectionner plusieurs articles, étiquettes QR.", "« ✓ En stock seulement » (sous la recherche, activé par défaut) : seuls les articles que vous avez sont affichés, et les domaines vides disparaissent. Les articles à 0 restent trouvables par la recherche, par « en rupture » et par le filtre Quantité 0. Touchez le bouton pour tout réafficher."], "go": {"tab": "inventaire"}}, {"id": "fiche", "cat": "Stock", "ic": "📝", "t": "Ajouter ou modifier un article", "k": "nouvel article creer fiche lot peremption code-barres", "p": ["« + Ajouter » (ou clic sur le nom d'un article) ouvre sa fiche.", "Pour gagner du temps : collez le lien de la page du produit (GACD…) puis « Remplir ».", "Renseignez domaine, quantité et « Seuil d'alerte » (sous ce seuil, l'article passe dans « À commander »).", "« Plus de détails » : référence, fournisseur, unité, emplacement (tiroir), stock cible, prix HT, code-barres (bouton pour le scanner).", "« Lots et péremptions » pour suivre chaque lot. Photos et documents, historique de l'article, « Mettre à la corbeille »."], "go": {"btn": "addBtn", "tab": "inventaire"}}, {"id": "scanner", "cat": "Stock", "ic": "▦", "t": "Scanner un code-barres", "k": "code barre qr camera scan", "p": ["« Scanner » (ou touche s) ouvre la caméra. Article reconnu : choisissez Entrée ou Sortie, la quantité, puis « Valider ». Le lot et la péremption des codes GS1 sont lus automatiquement.", "Code inconnu : associez-le à un article existant ou « Créer un nouvel article avec ce code ».", "« ⚡ Sortie rapide » : chaque scan retire 1 et le scanner reste ouvert (dans une salle : retire de la salle).", "Le scanner reconnaît aussi les étiquettes SimSimStock : article, tiroir (montre son contenu), kit (retire tout le kit), sachet de stérilisation (ouverture).", "Si la lecture en direct n'accroche pas : « 📷 Photo du code-barres ».", "La première fois, autorisez la caméra. Sur iPad : Réglages → Safari → Caméra → Autoriser."], "go": {"btn": "scanBtn", "tab": "inventaire"}}, {"id": "photo", "cat": "Stock", "ic": "📷", "t": "Bouton Photo : reconnaître un article", "k": "photo reconnaissance image appareil", "p": ["« 📷 Photo » ouvre la caméra dans l'appli. Cadrez de près l'étiquette (nom, référence) ou le code-barres, puis « 📸 Prendre la photo ».", "L'appli cherche d'abord un code-barres ou un QR ; sinon elle lit le texte de la boîte et propose les articles qui correspondent : « sûr » (référence ou code retrouvé), « probable » ou « possible ».", "Touchez le bon article pour faire une entrée ou une sortie.", "Une facture ou un bon de livraison photographié ? Bouton « L'importer comme facture ».", "« 🖼 Choisir dans la galerie » pour une photo déjà prise. Gratuit, sans IA : la photo reste sur l'appareil. Une boîte sans texte lisible ne peut pas être reconnue."], "go": {"btn": "photoBtn", "tab": "inventaire"}}, {"id": "dictee", "cat": "Stock", "ic": "🎤", "t": "Dicter un mouvement au micro", "k": "voix micro parler dictee vocal", "p": ["Touchez 🎤 et parlez. Sorties : « sortie de 2 boîtes de gants M », « j'ai pris 3 compresses », « on a utilisé 4 gobelets ».", "Entrées : « entrée de 10 compresses », « j'ai reçu 5 boîtes de masques », « rajoute 2 aiguilles », « rentrer 3 alginates ».", "Commande : « ajoute les masques à la commande », « il n'y a plus de gants ». Question : « combien de gants M ? ».", "Si la phrase ne dit pas le sens (« 10 boîtes de gants »), les boutons ➖ Sortie / ➕ Entrée le choisissent. Sur la proposition, vous pouvez encore basculer entre sortie et entrée.", "Vérifiez l'« Article compris », puis « ✓ Valider ». Les nombres en lettres sont compris. Sans micro, tapez simplement la phrase.", "Sur iPhone et iPad, la dictée passe par le clavier : le champ s'ouvre tout seul, touchez le 🎤 du clavier et parlez. La phrase est comprise dès que vous vous arrêtez, puis touchez « Valider »."], "go": {"btn": "voiceBtn", "tab": "inventaire"}}, {"id": "favoris", "cat": "Stock", "ic": "⭐", "t": "Favoris", "k": "", "p": ["Vos produits les plus utilisés en grosses cartes avec « − 1 », « + 1 » et « Autre quantité ».", "Pour en ajouter un : touchez l'étoile ☆ à côté de son nom dans le Stock."], "go": {"tab": "favoris"}}, {"id": "comptage", "cat": "Stock", "ic": "🔢", "t": "Comptage et inventaire", "k": "inventaire compter tiroir emplacement", "p": ["Saisissez ce que vous avez compté (« Compté ») et le « Seuil d'alerte », puis « Enregistrer le comptage ». Chaque écart est gardé dans l'Historique.", "« Proposer des seuils d'après ma consommation » calcule des seuils pour 2 semaines, 3 semaines ou 1 mois de stock.", "Inventaire tiroir par tiroir : une puce par emplacement, le tiroir le plus ancien est marqué « À faire ensuite », en orange s'il n'a pas été compté depuis 30 jours. Scanner l'étiquette d'un tiroir puis « 📋 Inventorier ce tiroir » ouvre directement ce tiroir.", "« ✓ Tout est juste » enregistre l'inventaire du tiroir sans correction."], "go": {"tab": "comptage"}}, {"id": "cscan", "cat": "Stock", "ic": "▦", "t": "Compter un tiroir au scan", "k": "scan compter boites tiroir", "p": ["Dans Comptage, choisissez un tiroir puis « ▦ Compter au scan ».", "Passez chaque boîte devant la caméra : chaque bip compte 1. Une petite pause évite de compter deux fois la même boîte ; corrigez avec − et +.", "Un article rangé dans un autre tiroir, suivi par lots ou inconnu est refusé avec un message.", "« Non scannés = 0 » (facultatif, avec confirmation) met à zéro ce qui n'a pas été scanné. « ✓ Terminer » reporte les quantités : vérifiez puis « Enregistrer le comptage ».", "Gratuit et sans internet."], "go": {"tab": "comptage"}}, {"id": "phtiroir", "cat": "Stock", "ic": "🖼", "t": "Photo du tiroir", "k": "photo tiroir preuve ia", "p": ["Dans Comptage, un tiroir choisi : « 📷 Photo du tiroir » puis « Prendre la photo ». La photo est jointe à l'inventaire comme preuve (gratuit) et l'historique note « photo jointe ».", "Les « Photos précédentes de ce tiroir » permettent de comparer.", "« ✨ Compter avec l'IA » est désactivé (« à activer ») : il demanderait une clé payante. Rien n'est payé tant qu'il n'est pas activé."], "go": {"tab": "comptage"}}, {"id": "peremptions", "cat": "Stock", "ic": "⏳", "t": "Calendrier des péremptions", "k": "peremption perime lot date fefo", "p": ["Stock → Vue d'ensemble → « ⏳ Péremptions » (ou menu Plus). Les lots qui périment mois par mois sur 12 mois, avec leur valeur en euros.", "« À utiliser en premier » : les lots déjà périmés (en rouge) puis ceux qui périment le plus tôt, avec leur emplacement. Touchez une barre du calendrier pour voir un mois.", "« Sortir (périmé) » ou « Sortir tous les périmés » : la sortie est enregistrée avec le motif « Périmé » et apparaît dans les Pertes.", "Les dates viennent des lots de la fiche article ou du code-barres GS1 scanné à l'entrée. « 🖨 Imprimer » donne la liste."], "go": {"tab": "inventaire"}}, {"id": "coutacte", "cat": "Stock", "ic": "💶", "t": "Coût des consommables par acte", "k": "cout acte kit prix rentabilite detartrage implant", "p": ["Dans « Kits par acte », chaque kit affiche le coût de ses consommables par acte (quantités × dernier prix HT), et combien de fois il a été utilisé sur 30 jours avec le total.", "Les articles sans prix sont signalés : importez vos factures pour un coût juste."], "go": {"tab": "kits"}}, {"id": "tendances", "cat": "Achats", "ic": "📈", "t": "Tendances de consommation", "k": "consommation tendance gaspillage evolution cout utilise", "p": ["Achats → Vue d'ensemble → « 📈 Tendances de consommation » (ou menu Plus). Sur 30 jours ou 3 mois : le coût total consommé, l'évolution par rapport à la période d'avant, le détail par domaine et les 20 articles les plus coûteux.", "▲ en rouge : un article dont l'usage a augmenté de plus de 20 % (gaspillage, nouveau protocole, plus de patients ?). Les transferts et réassorts de salle ne sont pas comptés."], "go": {"tab": "donnees"}}, {"id": "equilibrage", "cat": "Achats", "ic": "🔁", "t": "Équilibrer le stock entre vos cabinets", "k": "transfert cabinet surplus equilibrer reequilibrage", "p": ["Si vous avez accès à plusieurs cabinets : en haut de « À commander », « 🔁 Disponible dans vos autres cabinets » liste ce qui manque ici mais est en trop ailleurs (au-dessus de son seuil là-bas).", "« 🔁 Transférer » déplace la quantité proposée d'un cabinet à l'autre (les deux historiques sont mis à jour) : un achat en moins."], "go": {"tab": "commande"}}, {"id": "historique", "cat": "Stock", "ic": "🕘", "t": "Historique", "k": "mouvements journal qui", "p": ["Les 300 derniers mouvements : date, heure, article, personne, motif, note, variation et quantité restante. Pratique pour comprendre une différence."], "go": {"tab": "historique"}}, {"id": "kits", "cat": "Stock", "ic": "🧰", "t": "Kits par acte", "k": "kit acte plateau", "p": ["Un kit regroupe ce qu'on utilise pour un acte (ex. extraction). « ＋ Nouveau kit » : icône, nom, articles et quantités.", "« ▶ Utiliser » (ou scanner le QR du kit) retire tout le kit d'un coup, du stock central ou d'une salle. Un avertissement apparaît si le stock est insuffisant.", "« Annuler le kit » juste après en cas d'erreur. « 🖨 QR » imprime le QR à coller sur le plateau."], "go": {"tab": "kits"}}, {"id": "corbeille", "cat": "Stock", "ic": "🗑", "t": "Corbeille", "k": "supprimer restaurer", "p": ["Les articles supprimés : « ♻️ Tout restaurer » les remet tous d'un coup avec leurs domaines (ou « Tout restaurer, stock à 0 » pour repartir d'un comptage), « Restaurer » un seul article, « Vider la corbeille » les efface. Un import ne recrée pas ces articles.", "Pour repartir de zéro sans perdre les fiches ni les domaines : menu Plus → Sécurité → « Vider le stock… » → « Remettre toutes les quantités à 0 » (administrateurs, une sauvegarde est faite avant)."], "go": {"tab": "corbeille"}}, {"id": "etiquettes", "cat": "Stock", "ic": "🏷", "t": "Étiquettes QR (articles et tiroirs)", "k": "etiquette qr imprimer avery tiroir", "p": ["Menu Plus → « 🏷 Étiquettes QR » (ou Stock → Options).", "Une étiquette par article ou une par tiroir. Choisissez les articles (tous, un domaine, un emplacement, la sélection).", "Planches Avery : L7159 (24 par page), L7163 (14) ou L7165 (8). « 🖨 Préparer l'impression ».", "Scanner une étiquette article ouvre l'article ; une étiquette tiroir montre son contenu et propose « Inventorier ce tiroir »."], "go": {"btn": "lblBtn"}}, {"id": "commande", "cat": "Achats", "ic": "🛒", "t": "À commander", "k": "commande fournisseur bon", "p": ["Tous les produits sous leur seuil, regroupés par fournisseur, avec une quantité proposée (réglable avec − et +) et le total HT estimé.", "« 📧 Envoyer au fournisseur » : la première fois, saisissez l'e-mail du commercial (et votre n° client) ; ensuite la commande part en un clic, vous êtes en copie et le commercial peut vous répondre. Les produits passent automatiquement en « commandés » et la commande est gardée dans « Commandes envoyées par e-mail ».", "Autres possibilités : « Copier la commande », « Bon de commande (PDF) » ou « Ma messagerie ».", "« Marquer comme commandé » met de côté pour ne pas recommander. Les commandes en attente apparaissent dessous avec « Reçu » et « Annuler »."], "go": {"tab": "commande"}}, {"id": "reception", "cat": "Achats", "ic": "📦", "t": "Réception d'une livraison", "k": "livraison bon reception colis", "p": ["Choisissez le fournisseur. « 📷 Photographier le bon de livraison » ou « 📄 Choisir un PDF ou une photo » : l'appli lit le bon.", "Sinon, ajustez « Reçu » à la main, ou « ✓ Tout reçu comme commandé ».", "Le tableau montre Commandé / Reçu / Écart. « ✓ Valider la réception » ajoute au stock.", "En cas d'écart : message au fournisseur prêt à copier ou envoyer, et « 📣 Prévenir l'équipe »."], "go": {"tab": "reception"}}, {"id": "import", "cat": "Achats", "ic": "⬆", "t": "Importer une facture ou un fichier", "k": "facture pdf excel csv importer", "p": ["« Importer » accepte une facture PDF (même scannée), une photo, un fichier Excel ou CSV.", "L'appli montre les lignes lues : « Importer » ajoute au stock, « Enregistrer seulement la dépense » ne touche pas au stock.", "« Photo d'une facture » ouvre l'appareil photo directement.", "« Factures importées » liste ce qui a été importé (joindre le PDF, retirer pour réimporter). L'appli prévient si une facture semble déjà importée.", "Menu Plus : « Modèle Excel » (pour préparer un import) et « Exporter en CSV »."], "go": {"btn": "importBar", "tab": "inventaire"}}, {"id": "catalogues", "cat": "Achats", "ic": "📚", "t": "Catalogues fournisseurs", "k": "catalogue reference prix", "p": ["Cochez un ou plusieurs fournisseurs, cherchez un produit, une marque ou une référence.", "« ＋ Ajouter » met le produit dans le stock du cabinet ; « ✓ déjà dans le cabinet » s'il y est.", "Le propriétaire peut charger un catalogue Excel/CSV (demandez-le à votre commercial). Le recharger ne crée pas de doublons."], "go": {"tab": "catalogues"}}, {"id": "depenses", "cat": "Achats", "ic": "📊", "t": "Dépenses et prix", "k": "depenses budget prix rapport", "p": ["Calculé d'après les factures importées : dépenses par mois avec prévision, prochaine commande estimée, répartition par domaine, fournisseur et produit.", "« Pertes » : ce qui a été jeté (périmé, cassé…) et combien ça coûte.", "« Hausses de prix des factures » et « Prix chez vos fournisseurs » pour comparer et économiser.", "« Comparer mes cabinets », « Exporter en Excel », « 📄 Rapport mensuel (PDF) » à télécharger, envoyer ou partager."], "go": {"tab": "donnees"}}, {"id": "valorisation", "cat": "Achats", "ic": "🧮", "t": "Valorisation du stock (comptable)", "k": "valeur bilan comptable inventaire fin annee", "p": ["Achats → Vue d'ensemble → « 🧮 Valorisation du stock » (ou menu Plus). Valeur du stock HT et TTC par domaine, avec quantité × dernier prix HT connu.", "« ⬇ Excel » : un résumé par domaine et le détail article par article. « 🖨 Imprimer / PDF » : un document propre pour le comptable.", "À faire le dernier jour de l'exercice (souvent le 31 décembre au soir), après un comptage si possible. Les articles sans prix sont listés pour être complétés."], "go": {"tab": "donnees"}}, {"id": "agenda", "cat": "Matériel", "ic": "📅", "t": "Agenda des échéances", "k": "agenda calendrier echeance date rappel ics google apple outlook", "p": ["Matériel → Vue d'ensemble → « 📅 Agenda des échéances » (ou menu Plus). Toutes les dates du cabinet : contrôles, maintenances, fins de garantie, dernier jour pour résilier un contrat, affichages à revérifier, retours du labo, péremptions.", "Onglets : En retard, Cette semaine, 30 jours, 3 mois, 12 mois. « Ouvrir » mène à l'écran concerné. L'accueil indique le nombre d'échéances de la semaine.", "« 📲 Ajouter à mon agenda » : un fichier qui ajoute les échéances des 12 prochains mois à Google Agenda, Apple Calendrier ou Outlook, avec un rappel la veille. Refaites-le de temps en temps pour mettre à jour."], "go": {"tab": "equipements"}}, {"id": "equipements", "cat": "Matériel", "ic": "🔧", "t": "Équipements et contrats", "k": "materiel garantie maintenance contrat panne", "p": ["« ＋ Ajouter un équipement » : type, salle, marque, modèle, n° de série, date d'achat, fin de garantie, prochain contrôle, société de maintenance.", "« 📄 Ajouter une facture d'équipement » : l'appli lit la facture et crée les équipements.", "Documents (facture, garantie, contrat, notice, rapports) et « ＋ Noter une intervention » (panne, maintenance, contrôle) avec son coût.", "« Contrats et abonnements » : échéance, préavis, reconduction ; l'appli prévient avant la date limite de résiliation."], "go": {"tab": "equipements"}}, {"id": "salles", "cat": "Matériel", "ic": "🏠", "t": "Salles et réassort", "k": "salle reassort tablette", "p": ["« Créer mes salles », puis « ⚙ Gérer les salles » (administrateur) pour les noms, types et couleurs.", "Pour chaque salle : « ＋ Ajouter des produits » avec une quantité cible.", "Réassort : saisissez ce qui reste (« Compté »), l'appli calcule « À apporter » ; « Valider le réassort » le sort du stock central. « Feuille de réassort (PDF) » pour faire la tournée.", "« 📱 Lien tablette » : ouvre l'appli directement sur la salle, en plein écran.", "Dans le Stock, les puces de salle affichent la salle comme un stock à part ; l'onglet ⇄ déplace du stock vers une salle."], "go": {"tab": "salles"}}, {"id": "controles", "cat": "Matériel", "ic": "✅", "t": "Contrôles (trousse d'urgence, contrôles périodiques)", "k": "trousse urgence controle periodique", "p": ["Trousse d'urgence : chaque élément avec sa quantité et sa péremption. « Contrôle du mois » : cochez, corrigez, « Valider le contrôle » (daté et signé).", "Contrôles périodiques (autoclave, radioprotection, déchets…) : « ＋ Ajouter un contrôle » avec sa fréquence, puis « Marquer comme fait ».", "États : à jour, bientôt, en retard (badge sur l'onglet). Les fréquences proposées sont indicatives."], "go": {"tab": "controles"}}, {"id": "sterilisation", "cat": "Qualité", "ic": "♨️", "t": "Stérilisation", "k": "autoclave cycle bowie dick helix sachet tracabilite", "p": ["Boutons rapides : « ♨️ Cycle », « 🧪 Bowie-Dick OK », « 🧪 Hélix OK », « ⚠ Non conforme… ». Le formulaire : appareil, programme, n° de cycle, contenu, résultat, puis « Enregistrer et signer ».", "Une ligne signée ne se modifie plus (seul un administrateur peut la supprimer en cas d'erreur). On peut antidater jusqu'à 7 jours.", "Filtres par mois et par type, « 📄 Exporter le mois en PDF ».", "Du cycle au patient : « 🏷 Étiquettes de sachets » (QR sur chaque sachet d'un cycle conforme), puis « 📦 Ouverture d'un sachet » : on scanne le sachet et on note le patient et le soin."], "go": {"tab": "sterilisation"}}, {"id": "implants", "cat": "Qualité", "ic": "🦷", "t": "Implants (traçabilité)", "k": "implant dmi lot patient rappel", "p": ["« 📷 Scanner la boîte » : le DataMatrix remplit le lot, le n° de série et la péremption. Ou « ＋ Enregistrer une pose » à la main.", "Patient, dossier, date, dent, praticien, produit, lot (obligatoire)… puis « Enregistrer et signer ». Option pour sortir l'implant du stock.", "Recherche par lot, patient ou produit. En cas de rappel d'un lot : « 📄 Liste pour le rappel (PDF) ».", "« 📦 Stock d'implants » (en haut de l'onglet) : les articles du domaine « Implants » du Stock, avec leurs lots et péremptions. « 🦷 Poser » ouvre la pose avec le produit, la référence et le lot qui périme en premier déjà remplis, et propose de le sortir du stock ; « ＋ Entrée » à la livraison.", "« 🪪 Carte » imprime la carte implant du patient. « Annuler… » garde la ligne barrée avec le motif."], "go": {"tab": "implants"}}, {"id": "affichages", "cat": "Qualité", "ic": "📋", "t": "Affichages obligatoires", "k": "affiche obligatoire imprimer duerp document unique sante travail visite medicale medecine ciamt telecharger pdf affiche page fiche cabinet adresse praticiens tarifs pre-rempli honoraires", "p": ["Une liste de départ (honoraires, médiateur, RGPD, interdiction de fumer, incendie, urgences, radioprotection, DASRI…) à adapter : elle est indicative.", "« ✓ Vérifié » (daté et signé), « ⚠ Problème… », historique, et un rappel pour revérifier.", "« 🖨 Imprimer les affiches » : modèles A4 prêts à imprimer ; complétez les zones jaunes avant d'imprimer.", "Le bloc « 🩺 Santé au travail » en haut regroupe le document unique (DUERP) et les visites médicales : « Outil gratuit INRS » pour faire le DUERP, « 🔗 Ajouter le lien » pour l'ouvrir d'un clic, « ✓ Mis à jour » chaque année. « ＋ Visite médicale d'une salariée » ajoute une personne ; « ✓ Visite faite » enregistre la date de la visite et l'appli prévient avant la suivante.", "Dans la fenêtre des affiches : « ⬇ Télécharger cette page » enregistre une affiche en PDF A4, « ⬇ Tout télécharger (PDF) » les met toutes dans un seul fichier, avec les textes modifiés à l'écran.", "« 🏥 Fiche du cabinet » : remplissez une fois le nom, l'adresse, les praticiens, le téléphone, le médiateur, la PCR, les consignes incendie et vos tarifs (« Charger les tarifs courants 2026 », puis ajustez vos honoraires). Toutes les affiches sont alors pré-remplies ; l'affiche des honoraires calcule le remboursement de la Sécu (60 %) et le reste avant mutuelle."], "go": {"tab": "affichages"}}, {"id": "labo", "cat": "Qualité", "ic": "🧪", "t": "Travaux de laboratoire (prothèses)", "k": "labo laboratoire prothese couronne bridge conformite sur mesure", "p": ["Qualité → « 🧪 Laboratoire » → « ＋ Nouveau travail » : patient, travail (couronne, bridge, gouttière…), dents, teinte, laboratoire, date d'envoi et retour prévu.", "Le travail suit 4 étapes : Envoyé → Reçu → Conformité → Posé. « 📦 Reçu » demande si la déclaration de conformité du labo est jointe (obligatoire pour un dispositif sur mesure, à garder dans le dossier).", "Filtres : En cours, En retard (en rouge, avec un badge sur l'onglet et une alerte sur l'accueil), Reçus à poser, Conformité à réclamer.", "Rien ne se supprime : un travail se termine « posé » ou « annulé » (avec un motif). Réservé aux administrateurs et membres (données patient)."], "go": {"tab": "labo"}}, {"id": "journal", "cat": "Qualité", "ic": "🗂", "t": "Journal qualité", "k": "qualite inspection export", "p": ["Tout ce qui a été signé au même endroit : stérilisation, contrôles, implants, sachets ouverts, affichages.", "Filtres par mois et par type, « 📄 Exporter en PDF » pour une inspection. Rien ne s'y modifie."], "go": {"tab": "journal"}}, {"id": "passation", "cat": "Équipe", "ic": "📝", "t": "Passation de fin de journée", "k": "passation fin de journee transmission demain equipe", "p": ["Le soir : Équipe → « 📝 Passation de fin de journée » (ou sur la carte « L'équipe » de l'accueil). Quatre rubriques : à faire demain, salles et matériel, stock (pré-rempli avec les ruptures), autre.", "Le mot part dans la discussion de l'équipe (avec une notification) et s'affiche en haut de l'accueil de chacun pendant 3 jours.", "Pas de nom de patient ni de donnée de santé."], "go": {"tab": "messages"}}, {"id": "annuaire", "cat": "Équipe", "ic": "📇", "t": "Annuaire du cabinet", "k": "contact telephone numero labo sav technicien urgence", "p": ["Équipe → « 📇 Annuaire » : vos contacts rangés par catégorie (urgences, maintenance / SAV, laboratoires, fournisseurs, administratif).", "« 📞 » appelle directement depuis un téléphone, « ✉️ » écrit un e-mail. Les numéros d'urgence (15, 18, 112, 114) sont toujours là.", "Les commerciaux enregistrés pour les commandes et les sociétés de maintenance de vos équipements apparaissent aussi : « ＋ Enregistrer » pour ajouter leur téléphone.", "Réglage une fois : lancez le script SQL « ajout-annuaire » dans Supabase."], "go": {"tab": "annuaire"}}, {"id": "messages", "cat": "Équipe", "ic": "💬", "t": "Messages", "k": "message discuter equipe reaction emoji pouce coeur tache automatique demande", "p": ["Une conversation d'équipe et une par personne. Joignez un article (📦) ou créez une tâche (☑).", "« ⚡ Demander : » envoie une demande rapide (préparer la salle, stériliser les instruments…), avec une salle si besoin.", "Sur une tâche : « 👍 OK », « ✓ C'est fait », « ↩︎ Rouvrir ».", "Rappel : ni nom de patient, ni information de santé dans les messages.", "« 🔔 Qui reçoit les notifications ? » (dans la messagerie) montre, pour chaque personne, si son téléphone est inscrit. Une personne en rouge ne reçoit rien : sur son téléphone, Plus → Affichage → Notifications → « Activer » (sur iPhone, après avoir ajouté l'appli à l'écran d'accueil). L'appli refait aussi l'inscription toute seule si elle a été perdue.", "Réactions, comme sur WhatsApp : sur téléphone, appui long sur un message ; sur ordinateur, le petit ☺ qui apparaît à côté du message (ou double-clic pour 👍). Choisissez 👍 👎 ❤️ 😂 😮 😢 😠. Une réaction par personne : touchez la même pour l'enlever. La pastille sur le bord du message montre les réactions ; touchez-la pour voir qui a réagi.", "Un message qui ressemble à une demande (« fais pano », « appelle le labo », « tu peux préparer la salle 2 ? », « il faut commander des gants ») part automatiquement comme une tâche : un bandeau « ☑ Sera envoyé comme tâche » l'indique au-dessus du champ. Touchez « Non, simple message » pour l'envoyer normalement. Les réponses (« fait », « ok merci ») et les vraies questions restent des messages."], "go": {"tab": "messages"}}, {"id": "taches", "cat": "Équipe", "ic": "☑", "t": "Tâches", "k": "", "p": ["Trois listes : « À faire », « Demandées par moi, en attente », « Faites récemment ». Cochez quand c'est fait."], "go": {"tab": "taches"}}, {"id": "routines", "cat": "Équipe", "ic": "📋", "t": "Routines", "k": "checklist ouverture fermeture", "p": ["Les listes du jour (ouverture, fermeture, stérilisation…) à cocher étape par étape, avec l'historique des 7 derniers jours.", "Administrateur : « ＋ Nouvelle routine » (fréquence, rappel à une heure donnée, pour qui, étapes) ou « ✨ Ajouter les routines types »."], "go": {"tab": "routines"}}, {"id": "utilisateurs", "cat": "Équipe", "ic": "👥", "t": "Utilisateurs et invitations", "k": "inviter role acces", "p": ["Réservé aux administrateurs. « Inviter une personne » par e-mail, ou créer un lien d'invitation (rôle, durée, nombre de personnes).", "Changer le rôle de quelqu'un, le retirer, lui donner un mot de passe provisoire. Annuler une invitation en attente."], "go": {"tab": "utilisateurs"}}, {"id": "simsim", "cat": "Outils", "ic": "✨", "t": "Demander à SimSim", "k": "question assistant ia", "p": ["Posez une question en français : « Qu'est-ce qui va manquer ? », « Combien a-t-on dépensé par fournisseur ? », « Valeur du stock ? », « Qu'est-ce qui périme bientôt ? », « Les tests d'autoclave sont-ils à jour ? », « Combien d'implants ce mois-ci ? », « Combien de gants ? », « Où sont les compresses ? ».", "Les réponses sont calculées dans l'appli : gratuit, rien ne sort du cabinet. Si la question n'est pas comprise, SimSim liste ce qu'il sait faire."], "go": {"btn": "sympaAsk"}}, {"id": "mural", "cat": "Outils", "ic": "📺", "t": "Écran mural", "k": "tv ecran affichage", "p": ["Menu Plus → « 📺 Écran mural » : un tableau en plein écran pour la salle de stérilisation ou le bureau (autoclave du jour, à surveiller, tâches, messages, séries), mis à jour toutes les 30 secondes.", "« ✕ Quitter » ou la touche Échap pour sortir."], "go": {"btn": "sympaMural"}}, {"id": "mois", "cat": "Outils", "ic": "🎉", "t": "Le mois du cabinet et les séries", "k": "bilan mois serie defi", "p": ["Menu Plus → « 🎉 Le mois du cabinet » : le résumé animé du mois (cycles, produit le plus utilisé, achats, implants, tâches…), à partager à l'équipe.", "« Vos séries » sur l'accueil : jours d'affilée avec les tests d'autoclave faits, les routines cochées, sans rupture, contrôles et affichages à jour."], "go": {"btn": "sympaMois"}}, {"id": "recap", "cat": "Outils", "ic": "📅", "t": "Récap de la semaine", "k": "recap semaine resume", "p": ["Ruptures, seuils, péremptions, commandes en retard, hausses de prix, contrôles, garanties et contrats en un seul écran.", "« Copier » ou « Envoyer par e-mail »."], "go": {"btn": "recapBtn"}}, {"id": "recherche", "cat": "Outils", "ic": "🔎", "t": "Recherche universelle et raccourcis", "k": "raccourci clavier recherche", "p": ["Ctrl + K (ou Cmd + K) cherche partout : articles, écrans et actions.", "Touches : « / » recherche, « n » nouvel article, « s » scanner, « ? » cette aide, Ctrl/Cmd + Z annuler.", "Appui long sur l'icône de l'appli (téléphone/tablette) : raccourcis Scanner, Ouverture d'un sachet, Pose d'implant, Écran mural."]}, {"id": "notifs", "cat": "Compte et réglages", "ic": "🔔", "t": "Notifications sur la tablette ou le téléphone", "k": "notification alerte push", "p": ["Menu Plus → Affichage → « 🔔 Notifications sur cet appareil » → « Activer », puis « Envoyer un essai ».", "Choisissez : Messages, Tâches et réponses, Rappels (routines, péremptions, échéances).", "Sur iPad/iPhone, il faut d'abord ajouter l'appli à l'écran d'accueil depuis Safari, puis l'ouvrir depuis cette icône.", "Rien ne s'affiche ? « Je ne reçois rien ? Voir comment faire » vérifie les réglages un par un."]}, {"id": "affichage", "cat": "Compte et réglages", "ic": "🎨", "t": "Couleurs, prénom et démarrage", "k": "theme couleur design prenom", "p": ["Menu Plus → Affichage : choisissez une couleur (Épuré et ses variantes, Mission, Sombre…). Votre choix est retenu, même sur un autre appareil.", "« 🌓 Automatique » : l'appli passe en sombre quand l'appareil est en mode sombre (souvent le soir). « Mon prénom » et « Mon profil » : Dentiste, Assistante, Assistante référente ⭐ ou Dentiste référent(e) 👑 (un(e) par cabinet). Les deux statuts référents sont donnés par un administrateur.", "« Au démarrage, ouvrir » : l'accueil ou le dernier espace utilisé."]}, {"id": "sauvegardes", "cat": "Compte et réglages", "ic": "💾", "t": "Sauvegardes", "k": "sauvegarde backup restaurer", "p": ["Une sauvegarde automatique le 1er de chaque mois (les 24 dernières sont gardées).", "« Sauvegarder maintenant » (administrateur), « Télécharger (Excel) », « Récupérer ce qui a été supprimé »."], "go": {"btn": "bkBtn"}}, {"id": "securite", "cat": "Compte et réglages", "ic": "🔒", "t": "Sécurité du compte et mot de passe", "k": "mot de passe securite double authentification", "p": ["« Sécurité du compte » : activez la double authentification (code à 6 chiffres avec Google Authenticator ou Authy). Fortement conseillé pour le propriétaire.", "« Changer mon mot de passe » (8 caractères minimum). À la connexion : « Mot de passe oublié ? »."], "go": {"btn": "secBtn"}}, {"id": "verrou", "cat": "Compte et réglages", "ic": "🔐", "t": "Verrouiller une tablette partagée", "k": "code pin verrou securite tablette patient", "p": ["Menu Plus → Sécurité → « Sécurité du compte » → « Verrouillage de cet appareil » : choisissez un code de 4 à 6 chiffres et un délai (2, 5, 10 ou 30 min).", "Après ce délai sans utilisation, ou à la réouverture de l'appli, l'écran se masque et le code est demandé. « 🔒 Verrouiller maintenant » le fait tout de suite.", "Le code reste sur l'appareil (il n'est envoyé nulle part). Après 5 codes faux, le compte est déconnecté : il faut alors le mot de passe.", "« Déconnecter mes autres appareils » : utile si un téléphone est perdu ou si une ancienne tablette est encore connectée."], "go": {"btn": "secBtn"}}, {"id": "cabinets", "cat": "Compte et réglages", "ic": "🏢", "t": "Plusieurs cabinets", "k": "cabinet transfert multi", "p": ["Choisissez le cabinet à la connexion, puis « Changer de cabinet » à tout moment. Chaque cabinet a son stock, ses utilisateurs et ses sauvegardes.", "Transférer du stock : clic sur le chiffre → « Autre cabinet » (les lots suivent).", "« Comparer mes cabinets » dans Dépenses et prix. L'Administration (propriétaire) crée, renomme ou supprime un cabinet."]}, {"id": "horsligne", "cat": "Compte et réglages", "ic": "📴", "t": "Sans connexion internet", "k": "internet reseau wifi hors ligne", "p": ["Plus de connexion ? Continuez à sortir et ajouter du stock normalement (boutons − / +, favoris, scanner, dictée) : chaque saisie est gardée sur l'appareil et un badge « ⏳ N en attente » apparaît en haut.", "Au retour du réseau, tout part tout seul, dans l'ordre, en repartant des vraies quantités du serveur (pas de double comptage). L'historique note « saisi hors connexion le … ».", "Touchez le badge pour voir les saisies en attente, en annuler une ou « Envoyer maintenant ». Ne videz pas les données du navigateur tant que le badge est affiché.", "Les autres actions (fiches, commandes, comptages, stérilisation) demandent toujours une connexion."]}, {"id": "maj", "cat": "Compte et réglages", "ic": "🔄", "t": "Mises à jour de l'appli", "k": "version mise a jour", "p": ["La version est écrite en bas du menu (ex. v150). Menu Plus → « Vérifier les mises à jour ».", "Si une nouveauté n'apparaît pas : fermez complètement l'appli et rouvrez-la."], "go": {"btn": "updBtn"}}];
+  var AIDE = [{"id": "debut", "cat": "Démarrer", "ic": "👋", "t": "Premiers pas", "k": "debut commencer installer annuler role", "p": ["L'appli est rangée en 5 espaces : Stock, Achats, Matériel (équipements, salles, contrôles), Qualité (stérilisation, implants, affichages obligatoires, journal) et Équipe. On passe de l'un à l'autre avec les grandes tuiles de l'accueil, les icônes du haut ou le menu ☰.", "L'accueil montre « Aujourd'hui » (les 3 points importants, « Voir tout » pour le reste), puis les espaces ; SimSim, les séries et le mois du cabinet sont dans « Plus sur l'accueil ». Le menu « Plus » montre les 6 essentiels ; « 🧰 Tous les outils » ouvre le reste. Le titre « SimSimStock » en haut ramène toujours à l'accueil. « ← Précédent » revient à l'écran d'avant (le bouton retour du téléphone marche aussi).", "Une erreur ? « ↶ Annuler » en haut (ou Ctrl/Cmd + Z) défait la dernière action : jusqu'à 20 actions des 30 dernières minutes.", "Trois rôles : Administrateur, Membre (modifie le stock) et Lecture seule (les boutons de modification sont grisés). Le propriétaire voit en plus l'Administration.", "Pour installer l'appli comme une vraie appli : sur iPad/iPhone, ouvrez-la dans Safari, bouton Partager, « Sur l'écran d'accueil ». Sur Android : menu ⋮, « Installer l'application ».", "Sur téléphone : l'en-tête se range quand vous descendez dans une liste et revient dès que vous remontez. Tout en haut d'un écran, tirez vers le bas pour actualiser (messages, stock, routines)."]}, {"id": "bien-demarrer", "cat": "Démarrer", "ic": "🚀", "t": "Bien démarrer (configuration du cabinet)", "k": "configuration demarrage nouveau cabinet etapes", "p": ["Pour les administrateurs, l'accueil affiche « 🚀 Bien démarrer » avec un pourcentage : articles, seuils, fournisseurs, prix, tiroirs, salles, équipe, statut, routines, stérilisation, e-mail d'un commercial, double authentification.", "Chaque étape a un bouton « Faire → » qui ouvre le bon écran. La carte disparaît à 100 %, ou avec « Masquer »."]}, {"id": "accueil", "cat": "Démarrer", "ic": "🏠", "t": "Accueil", "k": "", "p": ["« Bonjour » avec la date, le cabinet et votre profil.", "La barre « Posez une question à SimSim… » répond à vos questions sur le stock, les dépenses, la stérilisation (gratuit, calculé dans l'appli).", "Le tableau du jour, la carte « Vos séries » et 4 tuiles qui résument chaque espace : ruptures, à commander, contrôles, messages non lus, tâches… ou « Tout est en ordre ».", "Du 1er au 10 du mois, un bandeau propose « Le mois du cabinet »."], "go": {"tab": "accueil"}}, {"id": "stock", "cat": "Stock", "ic": "📦", "t": "Le stock : sortir et ajouter", "k": "moins plus quantite rupture seuil alerte", "p": ["Choisissez un domaine (tuiles), puis « − » sort 1 et « + » ajoute 1. Sur téléphone, balayez une ligne vers la gauche (sortie) ou la droite (entrée).", "Touchez le chiffre pour « Mouvement de stock » : Entrée, Sortie, Déplacer (vers une salle) ou Autre cabinet, avec des quantités rapides (1, 2, 5, 10…), le lot, la péremption et le motif de sortie (utilisé, périmé, cassé, perdu…).", "Couleur du chiffre : rouge = 0, orange = peu, vert = confortable.", "☆ met en favori · ⚑ signale « il n'y en a presque plus » · 🔓 « Ouvert aujourd'hui » pour les produits à durée limitée après ouverture.", "En haut : alertes cliquables (en rupture, sous le seuil, péremption à surveiller, bientôt en rupture…). En bas : la valeur du stock HT et TTC.", "« Filtres » : fournisseur, état, emplacement, tri… · « Options » : masquer le catalogue, sélectionner plusieurs articles, étiquettes QR.", "« 👁 Masquer » (sous la recherche) : cochez ce qu'il faut cacher — articles à 0 (coché par défaut), catalogue non suivi, catalogue total, doublons. Les domaines vides disparaissent. Les articles à 0 restent trouvables par la recherche, par « en rupture » et par le filtre Quantité 0."], "go": {"tab": "inventaire"}}, {"id": "fiche", "cat": "Stock", "ic": "📝", "t": "Ajouter ou modifier un article", "k": "nouvel article creer fiche lot peremption code-barres", "p": ["« + Ajouter » (ou clic sur le nom d'un article) ouvre sa fiche.", "Pour gagner du temps : collez le lien de la page du produit (GACD…) puis « Remplir ».", "Renseignez domaine, quantité et « Seuil d'alerte » (sous ce seuil, l'article passe dans « À commander »).", "« Plus de détails » : référence, fournisseur, unité, emplacement (tiroir), stock cible, prix HT, code-barres (bouton pour le scanner).", "« Lots et péremptions » pour suivre chaque lot. Photos et documents, historique de l'article, « Mettre à la corbeille »."], "go": {"btn": "addBtn", "tab": "inventaire"}}, {"id": "scanner", "cat": "Stock", "ic": "▦", "t": "Scanner un code-barres", "k": "code barre qr camera scan", "p": ["« Scanner » (ou touche s) ouvre la caméra. Article reconnu : choisissez Entrée ou Sortie, la quantité, puis « Valider ». Le lot et la péremption des codes GS1 sont lus automatiquement.", "Code inconnu : associez-le à un article existant ou « Créer un nouvel article avec ce code ».", "« ⚡ Sortie rapide » : chaque scan retire 1 et le scanner reste ouvert (dans une salle : retire de la salle).", "Le scanner reconnaît aussi les étiquettes SimSimStock : article, tiroir (montre son contenu), kit (retire tout le kit), sachet de stérilisation (ouverture).", "Si la lecture en direct n'accroche pas : « 📷 Photo du code-barres ».", "La première fois, autorisez la caméra. Sur iPad : Réglages → Safari → Caméra → Autoriser."], "go": {"btn": "scanBtn", "tab": "inventaire"}}, {"id": "photo", "cat": "Stock", "ic": "📷", "t": "Bouton Photo : reconnaître un article", "k": "photo reconnaissance image appareil", "p": ["« 📷 Photo » ouvre la caméra dans l'appli. Cadrez de près l'étiquette (nom, référence) ou le code-barres, puis « 📸 Prendre la photo ».", "L'appli cherche d'abord un code-barres ou un QR ; sinon elle lit le texte de la boîte et propose les articles qui correspondent : « sûr » (référence ou code retrouvé), « probable » ou « possible ».", "Touchez le bon article pour faire une entrée ou une sortie.", "Une facture ou un bon de livraison photographié ? Bouton « L'importer comme facture ».", "« 🖼 Choisir dans la galerie » pour une photo déjà prise. Gratuit, sans IA : la photo reste sur l'appareil. Une boîte sans texte lisible ne peut pas être reconnue.", "Reconnaissance par ressemblance : donnez une photo à vos articles (bouton 📷 Photo → « 📸 Photographier mes produits », qui enchaîne les articles sans photo). Ensuite, une photo prise au cabinet est comparée à ces photos, sur le téléphone, sans rien envoyer : l'appli propose les produits qui ressemblent le plus (sûr, probable, possible). La première fois, le téléphone télécharge un petit module d'environ 6 Mo."], "go": {"btn": "photoBtn", "tab": "inventaire"}}, {"id": "dictee", "cat": "Stock", "ic": "🎤", "t": "Dicter un mouvement au micro", "k": "voix micro parler dictee vocal", "p": ["Touchez 🎤 et parlez. Sorties : « sortie de 2 boîtes de gants M », « j'ai pris 3 compresses », « on a utilisé 4 gobelets ».", "Entrées : « entrée de 10 compresses », « j'ai reçu 5 boîtes de masques », « rajoute 2 aiguilles », « rentrer 3 alginates ».", "Commande : « ajoute les masques à la commande », « il n'y a plus de gants ». Question : « combien de gants M ? ».", "Si la phrase ne dit pas le sens (« 10 boîtes de gants »), les boutons ➖ Sortie / ➕ Entrée le choisissent. Sur la proposition, vous pouvez encore basculer entre sortie et entrée.", "Vérifiez l'« Article compris », puis « ✓ Valider ». Les nombres en lettres sont compris. Sans micro, tapez simplement la phrase.", "Sur iPhone et iPad, la dictée passe par le clavier : le champ s'ouvre tout seul, touchez le 🎤 du clavier et parlez. La phrase est comprise dès que vous vous arrêtez, puis touchez « Valider »."], "go": {"btn": "voiceBtn", "tab": "inventaire"}}, {"id": "favoris", "cat": "Stock", "ic": "⭐", "t": "Favoris", "k": "", "p": ["Vos produits les plus utilisés en grosses cartes avec « − 1 », « + 1 » et « Autre quantité ».", "Pour en ajouter un : touchez l'étoile ☆ à côté de son nom dans le Stock."], "go": {"tab": "favoris"}}, {"id": "comptage", "cat": "Stock", "ic": "🔢", "t": "Comptage et inventaire", "k": "inventaire compter tiroir emplacement", "p": ["Saisissez ce que vous avez compté (« Compté ») et le « Seuil d'alerte », puis « Enregistrer le comptage ». Chaque écart est gardé dans l'Historique.", "« Proposer des seuils d'après ma consommation » calcule des seuils pour 2 semaines, 3 semaines ou 1 mois de stock.", "Inventaire tiroir par tiroir : une puce par emplacement, le tiroir le plus ancien est marqué « À faire ensuite », en orange s'il n'a pas été compté depuis 30 jours. Scanner l'étiquette d'un tiroir puis « 📋 Inventorier ce tiroir » ouvre directement ce tiroir.", "« ✓ Tout est juste » enregistre l'inventaire du tiroir sans correction."], "go": {"tab": "comptage"}}, {"id": "cscan", "cat": "Stock", "ic": "▦", "t": "Compter un tiroir au scan", "k": "scan compter boites tiroir", "p": ["Dans Comptage, choisissez un tiroir puis « ▦ Compter au scan ».", "Passez chaque boîte devant la caméra : chaque bip compte 1. Une petite pause évite de compter deux fois la même boîte ; corrigez avec − et +.", "Un article rangé dans un autre tiroir, suivi par lots ou inconnu est refusé avec un message.", "« Non scannés = 0 » (facultatif, avec confirmation) met à zéro ce qui n'a pas été scanné. « ✓ Terminer » reporte les quantités : vérifiez puis « Enregistrer le comptage ».", "Gratuit et sans internet."], "go": {"tab": "comptage"}}, {"id": "phtiroir", "cat": "Stock", "ic": "🖼", "t": "Photo du tiroir", "k": "photo tiroir preuve ia", "p": ["Dans Comptage, un tiroir choisi : « 📷 Photo du tiroir » puis « Prendre la photo ». La photo est jointe à l'inventaire comme preuve (gratuit) et l'historique note « photo jointe ».", "Les « Photos précédentes de ce tiroir » permettent de comparer.", "« ✨ Compter avec l'IA » est désactivé (« à activer ») : il demanderait une clé payante. Rien n'est payé tant qu'il n'est pas activé.", "Reconnaissance par ressemblance : donnez une photo à vos articles (bouton 📷 Photo → « 📸 Photographier mes produits », qui enchaîne les articles sans photo). Ensuite, une photo prise au cabinet est comparée à ces photos, sur le téléphone, sans rien envoyer : l'appli propose les produits qui ressemblent le plus (sûr, probable, possible). La première fois, le téléphone télécharge un petit module d'environ 6 Mo."], "go": {"tab": "comptage"}}, {"id": "peremptions", "cat": "Stock", "ic": "⏳", "t": "Calendrier des péremptions", "k": "peremption perime lot date fefo", "p": ["Stock → Vue d'ensemble → « ⏳ Péremptions » (ou menu Plus). Les lots qui périment mois par mois sur 12 mois, avec leur valeur en euros.", "« À utiliser en premier » : les lots déjà périmés (en rouge) puis ceux qui périment le plus tôt, avec leur emplacement. Touchez une barre du calendrier pour voir un mois.", "« Sortir (périmé) » ou « Sortir tous les périmés » : la sortie est enregistrée avec le motif « Périmé » et apparaît dans les Pertes.", "Les dates viennent des lots de la fiche article ou du code-barres GS1 scanné à l'entrée. « 🖨 Imprimer » donne la liste."], "go": {"tab": "inventaire"}}, {"id": "coutacte", "cat": "Stock", "ic": "💶", "t": "Coût des consommables par acte", "k": "cout acte kit prix rentabilite detartrage implant", "p": ["Dans « Kits par acte », chaque kit affiche le coût de ses consommables par acte (quantités × dernier prix HT), et combien de fois il a été utilisé sur 30 jours avec le total.", "Les articles sans prix sont signalés : importez vos factures pour un coût juste."], "go": {"tab": "kits"}}, {"id": "tendances", "cat": "Achats", "ic": "📈", "t": "Tendances de consommation", "k": "consommation tendance gaspillage evolution cout utilise", "p": ["Achats → Vue d'ensemble → « 📈 Tendances de consommation » (ou menu Plus). Sur 30 jours ou 3 mois : le coût total consommé, l'évolution par rapport à la période d'avant, le détail par domaine et les 20 articles les plus coûteux.", "▲ en rouge : un article dont l'usage a augmenté de plus de 20 % (gaspillage, nouveau protocole, plus de patients ?). Les transferts et réassorts de salle ne sont pas comptés."], "go": {"tab": "donnees"}}, {"id": "equilibrage", "cat": "Achats", "ic": "🔁", "t": "Équilibrer le stock entre vos cabinets", "k": "transfert cabinet surplus equilibrer reequilibrage", "p": ["Si vous avez accès à plusieurs cabinets : en haut de « À commander », « 🔁 Disponible dans vos autres cabinets » liste ce qui manque ici mais est en trop ailleurs (au-dessus de son seuil là-bas).", "« 🔁 Transférer » déplace la quantité proposée d'un cabinet à l'autre (les deux historiques sont mis à jour) : un achat en moins."], "go": {"tab": "commande"}}, {"id": "historique", "cat": "Stock", "ic": "🕘", "t": "Historique", "k": "mouvements journal qui", "p": ["Les 300 derniers mouvements : date, heure, article, personne, motif, note, variation et quantité restante. Pratique pour comprendre une différence."], "go": {"tab": "historique"}}, {"id": "kits", "cat": "Stock", "ic": "🧰", "t": "Kits par acte", "k": "kit acte plateau", "p": ["Un kit regroupe ce qu'on utilise pour un acte (ex. extraction). « ＋ Nouveau kit » : icône, nom, articles et quantités.", "« ▶ Utiliser » (ou scanner le QR du kit) retire tout le kit d'un coup, du stock central ou d'une salle. Un avertissement apparaît si le stock est insuffisant.", "« Annuler le kit » juste après en cas d'erreur. « 🖨 QR » imprime le QR à coller sur le plateau."], "go": {"tab": "kits"}}, {"id": "corbeille", "cat": "Stock", "ic": "🗑", "t": "Corbeille", "k": "supprimer restaurer", "p": ["Les articles supprimés : « ♻️ Tout restaurer » les remet tous d'un coup avec leurs domaines (ou « Tout restaurer, stock à 0 » pour repartir d'un comptage), « Restaurer » un seul article, « Vider la corbeille » les efface. Un import ne recrée pas ces articles.", "Pour repartir de zéro sans perdre les fiches ni les domaines : menu Plus → Sécurité → « Vider le stock… » → « Remettre toutes les quantités à 0 » (administrateurs, une sauvegarde est faite avant)."], "go": {"tab": "corbeille"}}, {"id": "etiquettes", "cat": "Stock", "ic": "🏷", "t": "Étiquettes QR (articles et tiroirs)", "k": "etiquette qr imprimer avery tiroir", "p": ["Menu Plus → « 🏷 Étiquettes QR » (ou Stock → Options).", "Une étiquette par article ou une par tiroir. Choisissez les articles (tous, un domaine, un emplacement, la sélection).", "Planches Avery : L7159 (24 par page), L7163 (14) ou L7165 (8). « 🖨 Préparer l'impression ».", "Scanner une étiquette article ouvre l'article ; une étiquette tiroir montre son contenu et propose « Inventorier ce tiroir »."], "go": {"btn": "lblBtn"}}, {"id": "commande", "cat": "Achats", "ic": "🛒", "t": "À commander", "k": "commande fournisseur bon", "p": ["Tous les produits sous leur seuil, regroupés par fournisseur, avec une quantité proposée (réglable avec − et +) et le total HT estimé.", "« 📧 Envoyer au fournisseur » : la première fois, saisissez l'e-mail du commercial (et votre n° client) ; ensuite la commande part en un clic, vous êtes en copie et le commercial peut vous répondre. Les produits passent automatiquement en « commandés » et la commande est gardée dans « Commandes envoyées par e-mail ».", "Autres possibilités : « Copier la commande », « Bon de commande (PDF) » ou « Ma messagerie ».", "« Marquer comme commandé » met de côté pour ne pas recommander. Les commandes en attente apparaissent dessous avec « Reçu » et « Annuler »."], "go": {"tab": "commande"}}, {"id": "reception", "cat": "Achats", "ic": "📦", "t": "Réception d'une livraison", "k": "livraison bon reception colis", "p": ["Choisissez le fournisseur. « 📷 Photographier le bon de livraison » ou « 📄 Choisir un PDF ou une photo » : l'appli lit le bon.", "Sinon, ajustez « Reçu » à la main, ou « ✓ Tout reçu comme commandé ».", "Le tableau montre Commandé / Reçu / Écart. « ✓ Valider la réception » ajoute au stock.", "En cas d'écart : message au fournisseur prêt à copier ou envoyer, et « 📣 Prévenir l'équipe »."], "go": {"tab": "reception"}}, {"id": "import", "cat": "Achats", "ic": "⬆", "t": "Importer une facture ou un fichier", "k": "facture pdf excel csv importer", "p": ["« Importer » accepte une facture PDF (même scannée), une photo, un fichier Excel ou CSV.", "L'appli montre les lignes lues : « Importer » ajoute au stock, « Enregistrer seulement la dépense » ne touche pas au stock.", "« Photo d'une facture » ouvre l'appareil photo directement.", "« Factures importées » liste ce qui a été importé (joindre le PDF, retirer pour réimporter). L'appli prévient si une facture semble déjà importée.", "Menu Plus : « Modèle Excel » (pour préparer un import) et « Exporter en CSV ».", "Plusieurs factures d'un coup : dans « Importer », sélectionnez jusqu'à 10 factures PDF ou photos en même temps. Elles s'ouvrent l'une après l'autre (« Facture 2 / 10 »), chacune avec sa vérification ; une facture illisible est passée et signalée à la fin."], "go": {"btn": "importBar", "tab": "inventaire"}}, {"id": "catalogues", "cat": "Achats", "ic": "📚", "t": "Catalogues fournisseurs", "k": "catalogue reference prix", "p": ["Cochez un ou plusieurs fournisseurs, cherchez un produit, une marque ou une référence.", "« ＋ Ajouter » met le produit dans le stock du cabinet ; « ✓ déjà dans le cabinet » s'il y est.", "Le propriétaire peut charger un catalogue Excel/CSV (demandez-le à votre commercial). Le recharger ne crée pas de doublons."], "go": {"tab": "catalogues"}}, {"id": "depenses", "cat": "Achats", "ic": "📊", "t": "Dépenses et prix", "k": "depenses budget prix rapport", "p": ["Calculé d'après les factures importées : dépenses par mois avec prévision, prochaine commande estimée, répartition par domaine, fournisseur et produit.", "« Pertes » : ce qui a été jeté (périmé, cassé…) et combien ça coûte.", "« Hausses de prix des factures » et « Prix chez vos fournisseurs » pour comparer et économiser.", "« Comparer mes cabinets », « Exporter en Excel », « 📄 Rapport mensuel (PDF) » à télécharger, envoyer ou partager."], "go": {"tab": "donnees"}}, {"id": "valorisation", "cat": "Achats", "ic": "🧮", "t": "Valorisation du stock (comptable)", "k": "valeur bilan comptable inventaire fin annee", "p": ["Achats → Vue d'ensemble → « 🧮 Valorisation du stock » (ou menu Plus). Valeur du stock HT et TTC par domaine, avec quantité × dernier prix HT connu.", "« ⬇ Excel » : un résumé par domaine et le détail article par article. « 🖨 Imprimer / PDF » : un document propre pour le comptable.", "À faire le dernier jour de l'exercice (souvent le 31 décembre au soir), après un comptage si possible. Les articles sans prix sont listés pour être complétés."], "go": {"tab": "donnees"}}, {"id": "agenda", "cat": "Matériel", "ic": "📅", "t": "Agenda des échéances", "k": "agenda calendrier echeance date rappel ics google apple outlook", "p": ["Matériel → Vue d'ensemble → « 📅 Agenda des échéances » (ou menu Plus). Toutes les dates du cabinet : contrôles, maintenances, fins de garantie, dernier jour pour résilier un contrat, affichages à revérifier, retours du labo, péremptions.", "Onglets : En retard, Cette semaine, 30 jours, 3 mois, 12 mois. « Ouvrir » mène à l'écran concerné. L'accueil indique le nombre d'échéances de la semaine.", "« 📲 Ajouter à mon agenda » : un fichier qui ajoute les échéances des 12 prochains mois à Google Agenda, Apple Calendrier ou Outlook, avec un rappel la veille. Refaites-le de temps en temps pour mettre à jour."], "go": {"tab": "equipements"}}, {"id": "equipements", "cat": "Matériel", "ic": "🔧", "t": "Équipements et contrats", "k": "materiel garantie maintenance contrat panne", "p": ["« ＋ Ajouter un équipement » : type, salle, marque, modèle, n° de série, date d'achat, fin de garantie, prochain contrôle, société de maintenance.", "« 📄 Ajouter une facture d'équipement » : l'appli lit la facture et crée les équipements.", "Documents (facture, garantie, contrat, notice, rapports) et « ＋ Noter une intervention » (panne, maintenance, contrôle) avec son coût.", "« Contrats et abonnements » : échéance, préavis, reconduction ; l'appli prévient avant la date limite de résiliation."], "go": {"tab": "equipements"}}, {"id": "salles", "cat": "Matériel", "ic": "🏠", "t": "Salles et réassort", "k": "salle reassort tablette", "p": ["« Créer mes salles », puis « ⚙ Gérer les salles » (administrateur) pour les noms, types et couleurs.", "Pour chaque salle : « ＋ Ajouter des produits » avec une quantité cible.", "Réassort : saisissez ce qui reste (« Compté »), l'appli calcule « À apporter » ; « Valider le réassort » le sort du stock central. « Feuille de réassort (PDF) » pour faire la tournée.", "« 📱 Lien tablette » : ouvre l'appli directement sur la salle, en plein écran.", "Dans le Stock, les puces de salle affichent la salle comme un stock à part ; l'onglet ⇄ déplace du stock vers une salle."], "go": {"tab": "salles"}}, {"id": "controles", "cat": "Matériel", "ic": "✅", "t": "Contrôles (trousse d'urgence, contrôles périodiques)", "k": "trousse urgence controle periodique", "p": ["Trousse d'urgence : chaque élément avec sa quantité et sa péremption. « Contrôle du mois » : cochez, corrigez, « Valider le contrôle » (daté et signé).", "Contrôles périodiques (autoclave, radioprotection, déchets…) : « ＋ Ajouter un contrôle » avec sa fréquence, puis « Marquer comme fait ».", "États : à jour, bientôt, en retard (badge sur l'onglet). Les fréquences proposées sont indicatives."], "go": {"tab": "controles"}}, {"id": "sterilisation", "cat": "Qualité", "ic": "♨️", "t": "Stérilisation", "k": "autoclave cycle bowie dick helix sachet tracabilite", "p": ["Boutons rapides : « ♨️ Cycle », « 🧪 Bowie-Dick OK », « 🧪 Hélix OK », « ⚠ Non conforme… ». Le formulaire : appareil, programme, n° de cycle, contenu, résultat, puis « Enregistrer et signer ».", "Une ligne signée ne se modifie plus (seul un administrateur peut la supprimer en cas d'erreur). On peut antidater jusqu'à 7 jours.", "Filtres par mois et par type, « 📄 Exporter le mois en PDF ».", "Du cycle au patient : « 🏷 Étiquettes de sachets » (QR sur chaque sachet d'un cycle conforme), puis « 📦 Ouverture d'un sachet » : on scanne le sachet et on note le patient et le soin."], "go": {"tab": "sterilisation"}}, {"id": "implants", "cat": "Qualité", "ic": "🦷", "t": "Implants (traçabilité)", "k": "implant dmi lot patient rappel", "p": ["« 📷 Scanner la boîte » : le DataMatrix remplit le lot, le n° de série et la péremption. Ou « ＋ Enregistrer une pose » à la main.", "Patient, dossier, date, dent, praticien, produit, lot (obligatoire)… puis « Enregistrer et signer ». Option pour sortir l'implant du stock.", "Recherche par lot, patient ou produit. En cas de rappel d'un lot : « 📄 Liste pour le rappel (PDF) ».", "« 📦 Stock d'implants » (en haut de l'onglet) : les articles du domaine « Implants » du Stock, avec leurs lots et péremptions. « 🦷 Poser » ouvre la pose avec le produit, la référence et le lot qui périme en premier déjà remplis, et propose de le sortir du stock ; « ＋ Entrée » à la livraison.", "« 🪪 Carte » imprime la carte implant du patient. « Annuler… » garde la ligne barrée avec le motif."], "go": {"tab": "implants"}}, {"id": "affichages", "cat": "Qualité", "ic": "📋", "t": "Affichages obligatoires", "k": "affiche obligatoire imprimer duerp document unique sante travail visite medicale medecine ciamt telecharger pdf affiche page fiche cabinet adresse praticiens tarifs pre-rempli honoraires", "p": ["Une liste de départ (honoraires, médiateur, RGPD, interdiction de fumer, incendie, urgences, radioprotection, DASRI…) à adapter : elle est indicative.", "« ✓ Vérifié » (daté et signé), « ⚠ Problème… », historique, et un rappel pour revérifier.", "« 🖨 Imprimer les affiches » : modèles A4 prêts à imprimer ; complétez les zones jaunes avant d'imprimer.", "Le bloc « 🩺 Santé au travail » en haut regroupe le document unique (DUERP) et les visites médicales : « Outil gratuit INRS » pour faire le DUERP, « 🔗 Ajouter le lien » pour l'ouvrir d'un clic, « ✓ Mis à jour » chaque année. « ＋ Visite médicale d'une salariée » ajoute une personne ; « ✓ Visite faite » enregistre la date de la visite et l'appli prévient avant la suivante.", "Dans la fenêtre des affiches : « ⬇ Télécharger cette page » enregistre une affiche en PDF A4, « ⬇ Tout télécharger (PDF) » les met toutes dans un seul fichier, avec les textes modifiés à l'écran.", "« 🏥 Fiche du cabinet » : remplissez une fois le nom, l'adresse, les praticiens, le téléphone, le médiateur, la PCR, les consignes incendie et vos tarifs (« Charger les tarifs courants 2026 », puis ajustez vos honoraires). Toutes les affiches sont alors pré-remplies ; l'affiche des honoraires calcule le remboursement de la Sécu (60 %) et le reste avant mutuelle.", "Obligations envers les salariées (dès la première) : médecine du travail, inspection du travail, horaires collectifs, avis sur le DUERP, convention collective (IDCC 1619), égalité de rémunération, repos et congés, discriminations, harcèlement. « ＋ Ajouter les affichages manquants » les met dans la liste ; chaque ligne a un bouton « ℹ️ Infos » vers la page officielle, et les affiches sont pré-remplies avec la fiche du cabinet (rubrique « Salariées »)."], "go": {"tab": "affichages"}}, {"id": "labo", "cat": "Qualité", "ic": "🧪", "t": "Travaux de laboratoire (prothèses)", "k": "labo laboratoire prothese couronne bridge conformite sur mesure", "p": ["Qualité → « 🧪 Laboratoire » → « ＋ Nouveau travail » : patient, travail (couronne, bridge, gouttière…), dents, teinte, laboratoire, date d'envoi et retour prévu.", "Le travail suit 4 étapes : Envoyé → Reçu → Conformité → Posé. « 📦 Reçu » demande si la déclaration de conformité du labo est jointe (obligatoire pour un dispositif sur mesure, à garder dans le dossier).", "Filtres : En cours, En retard (en rouge, avec un badge sur l'onglet et une alerte sur l'accueil), Reçus à poser, Conformité à réclamer.", "Rien ne se supprime : un travail se termine « posé » ou « annulé » (avec un motif). Réservé aux administrateurs et membres (données patient)."], "go": {"tab": "labo"}}, {"id": "journal", "cat": "Qualité", "ic": "🗂", "t": "Journal qualité", "k": "qualite inspection export", "p": ["Tout ce qui a été signé au même endroit : stérilisation, contrôles, implants, sachets ouverts, affichages.", "Filtres par mois et par type, « 📄 Exporter en PDF » pour une inspection. Rien ne s'y modifie."], "go": {"tab": "journal"}}, {"id": "passation", "cat": "Équipe", "ic": "📝", "t": "Passation de fin de journée", "k": "passation fin de journee transmission demain equipe", "p": ["Le soir : Équipe → « 📝 Passation de fin de journée » (ou sur la carte « L'équipe » de l'accueil). Quatre rubriques : à faire demain, salles et matériel, stock (pré-rempli avec les ruptures), autre.", "Le mot part dans la discussion de l'équipe (avec une notification) et s'affiche en haut de l'accueil de chacun pendant 3 jours.", "Pas de nom de patient ni de donnée de santé."], "go": {"tab": "messages"}}, {"id": "annuaire", "cat": "Équipe", "ic": "📇", "t": "Annuaire du cabinet", "k": "contact telephone numero labo sav technicien urgence", "p": ["Équipe → « 📇 Annuaire » : vos contacts rangés par catégorie (urgences, maintenance / SAV, laboratoires, fournisseurs, administratif).", "« 📞 » appelle directement depuis un téléphone, « ✉️ » écrit un e-mail. Les numéros d'urgence (15, 18, 112, 114) sont toujours là.", "Les commerciaux enregistrés pour les commandes et les sociétés de maintenance de vos équipements apparaissent aussi : « ＋ Enregistrer » pour ajouter leur téléphone.", "Réglage une fois : lancez le script SQL « ajout-annuaire » dans Supabase."], "go": {"tab": "annuaire"}}, {"id": "messages", "cat": "Équipe", "ic": "💬", "t": "Messages", "k": "message discuter equipe reaction emoji pouce coeur tache automatique demande", "p": ["Une conversation d'équipe et une par personne. Joignez un article (📦) ou créez une tâche (☑).", "« ⚡ Demander : » envoie une demande rapide (préparer la salle, stériliser les instruments…), avec une salle si besoin.", "Sur une tâche : « 👍 OK », « ✓ C'est fait », « ↩︎ Rouvrir ».", "Rappel : ni nom de patient, ni information de santé dans les messages.", "« 🔔 Qui reçoit les notifications ? » (dans la messagerie) montre, pour chaque personne, si son téléphone est inscrit. Une personne en rouge ne reçoit rien : sur son téléphone, Plus → Affichage → Notifications → « Activer » (sur iPhone, après avoir ajouté l'appli à l'écran d'accueil). L'appli refait aussi l'inscription toute seule si elle a été perdue.", "Réactions, comme sur WhatsApp : sur téléphone, appui long sur un message ; sur ordinateur, le petit ☺ qui apparaît à côté du message (ou double-clic pour 👍). Choisissez 👍 👎 ❤️ 😂 😮 😢 😠. Une réaction par personne : touchez la même pour l'enlever. La pastille sur le bord du message montre les réactions ; touchez-la pour voir qui a réagi.", "Un message qui ressemble à une demande (« fais pano », « appelle le labo », « tu peux préparer la salle 2 ? », « il faut commander des gants ») part automatiquement comme une tâche : un bandeau « ☑ Sera envoyé comme tâche » l'indique au-dessus du champ. Touchez « Non, simple message » pour l'envoyer normalement. Les réponses (« fait », « ok merci ») et les vraies questions restent des messages."], "go": {"tab": "messages"}}, {"id": "taches", "cat": "Équipe", "ic": "☑", "t": "Tâches", "k": "", "p": ["Trois listes : « À faire », « Demandées par moi, en attente », « Faites récemment ». Cochez quand c'est fait."], "go": {"tab": "taches"}}, {"id": "routines", "cat": "Équipe", "ic": "📋", "t": "Routines", "k": "checklist ouverture fermeture", "p": ["Les listes du jour (ouverture, fermeture, stérilisation…) à cocher étape par étape, avec l'historique des 7 derniers jours.", "Administrateur : « ＋ Nouvelle routine » (fréquence, rappel à une heure donnée, pour qui, étapes) ou « ✨ Ajouter les routines types »."], "go": {"tab": "routines"}}, {"id": "utilisateurs", "cat": "Équipe", "ic": "👥", "t": "Utilisateurs et invitations", "k": "inviter role acces", "p": ["Réservé aux administrateurs. « Inviter une personne » par e-mail, ou créer un lien d'invitation (rôle, durée, nombre de personnes).", "Changer le rôle de quelqu'un, le retirer, lui donner un mot de passe provisoire. Annuler une invitation en attente."], "go": {"tab": "utilisateurs"}}, {"id": "simsim", "cat": "Outils", "ic": "✨", "t": "Demander à SimSim", "k": "question assistant ia", "p": ["Posez une question en français : « Qu'est-ce qui va manquer ? », « Combien a-t-on dépensé par fournisseur ? », « Valeur du stock ? », « Qu'est-ce qui périme bientôt ? », « Les tests d'autoclave sont-ils à jour ? », « Combien d'implants ce mois-ci ? », « Combien de gants ? », « Où sont les compresses ? ».", "Les réponses sont calculées dans l'appli : gratuit, rien ne sort du cabinet. Si la question n'est pas comprise, SimSim liste ce qu'il sait faire."], "go": {"btn": "sympaAsk"}}, {"id": "mural", "cat": "Outils", "ic": "📺", "t": "Écran mural", "k": "tv ecran affichage", "p": ["Menu Plus → « 📺 Écran mural » : un tableau en plein écran pour la salle de stérilisation ou le bureau (autoclave du jour, à surveiller, tâches, messages, séries), mis à jour toutes les 30 secondes.", "« ✕ Quitter » ou la touche Échap pour sortir."], "go": {"btn": "sympaMural"}}, {"id": "mois", "cat": "Outils", "ic": "🎉", "t": "Le mois du cabinet et les séries", "k": "bilan mois serie defi", "p": ["Menu Plus → « 🎉 Le mois du cabinet » : le résumé animé du mois (cycles, produit le plus utilisé, achats, implants, tâches…), à partager à l'équipe.", "« Vos séries » sur l'accueil : jours d'affilée avec les tests d'autoclave faits, les routines cochées, sans rupture, contrôles et affichages à jour."], "go": {"btn": "sympaMois"}}, {"id": "recap", "cat": "Outils", "ic": "📅", "t": "Récap de la semaine", "k": "recap semaine resume", "p": ["Ruptures, seuils, péremptions, commandes en retard, hausses de prix, contrôles, garanties et contrats en un seul écran.", "« Copier » ou « Envoyer par e-mail »."], "go": {"btn": "recapBtn"}}, {"id": "recherche", "cat": "Outils", "ic": "🔎", "t": "Recherche universelle et raccourcis", "k": "raccourci clavier recherche", "p": ["Ctrl + K (ou Cmd + K) cherche partout : articles, écrans et actions.", "Touches : « / » recherche, « n » nouvel article, « s » scanner, « ? » cette aide, Ctrl/Cmd + Z annuler.", "Appui long sur l'icône de l'appli (téléphone/tablette) : raccourcis Scanner, Ouverture d'un sachet, Pose d'implant, Écran mural."]}, {"id": "notifs", "cat": "Compte et réglages", "ic": "🔔", "t": "Notifications sur la tablette ou le téléphone", "k": "notification alerte push", "p": ["Menu Plus → Affichage → « 🔔 Notifications sur cet appareil » → « Activer », puis « Envoyer un essai ».", "Choisissez : Messages, Tâches et réponses, Rappels (routines, péremptions, échéances).", "Sur iPad/iPhone, il faut d'abord ajouter l'appli à l'écran d'accueil depuis Safari, puis l'ouvrir depuis cette icône.", "Rien ne s'affiche ? « Je ne reçois rien ? Voir comment faire » vérifie les réglages un par un."]}, {"id": "affichage", "cat": "Compte et réglages", "ic": "🎨", "t": "Couleurs, prénom et démarrage", "k": "theme couleur design prenom", "p": ["Menu Plus → Affichage : choisissez une couleur (Épuré et ses variantes, Mission, Sombre…). Votre choix est retenu, même sur un autre appareil.", "« 🌓 Automatique » : l'appli passe en sombre quand l'appareil est en mode sombre (souvent le soir). « Mon prénom » et « Mon profil » : Dentiste, Assistante, Assistante référente ⭐ ou Dentiste référent(e) 👑 (un(e) par cabinet). Les deux statuts référents sont donnés par un administrateur.", "« Au démarrage, ouvrir » : l'accueil ou le dernier espace utilisé."]}, {"id": "sauvegardes", "cat": "Compte et réglages", "ic": "💾", "t": "Sauvegardes", "k": "sauvegarde backup restaurer", "p": ["Une sauvegarde automatique le 1er de chaque mois (les 24 dernières sont gardées).", "« Sauvegarder maintenant » (administrateur), « Télécharger (Excel) », « Récupérer ce qui a été supprimé »."], "go": {"btn": "bkBtn"}}, {"id": "securite", "cat": "Compte et réglages", "ic": "🔒", "t": "Sécurité du compte et mot de passe", "k": "mot de passe securite double authentification", "p": ["« Sécurité du compte » : activez la double authentification (code à 6 chiffres avec Google Authenticator ou Authy). Fortement conseillé pour le propriétaire.", "« Changer mon mot de passe » (8 caractères minimum). À la connexion : « Mot de passe oublié ? »."], "go": {"btn": "secBtn"}}, {"id": "verrou", "cat": "Compte et réglages", "ic": "🔐", "t": "Verrouiller une tablette partagée", "k": "code pin verrou securite tablette patient", "p": ["Menu Plus → Sécurité → « Sécurité du compte » → « Verrouillage de cet appareil » : choisissez un code de 4 à 6 chiffres et un délai (2, 5, 10 ou 30 min).", "Après ce délai sans utilisation, ou à la réouverture de l'appli, l'écran se masque et le code est demandé. « 🔒 Verrouiller maintenant » le fait tout de suite.", "Le code reste sur l'appareil (il n'est envoyé nulle part). Après 5 codes faux, le compte est déconnecté : il faut alors le mot de passe.", "« Déconnecter mes autres appareils » : utile si un téléphone est perdu ou si une ancienne tablette est encore connectée."], "go": {"btn": "secBtn"}}, {"id": "cabinets", "cat": "Compte et réglages", "ic": "🏢", "t": "Plusieurs cabinets", "k": "cabinet transfert multi", "p": ["Choisissez le cabinet à la connexion, puis « Changer de cabinet » à tout moment. Chaque cabinet a son stock, ses utilisateurs et ses sauvegardes.", "Transférer du stock : clic sur le chiffre → « Autre cabinet » (les lots suivent).", "« Comparer mes cabinets » dans Dépenses et prix. L'Administration (propriétaire) crée, renomme ou supprime un cabinet."]}, {"id": "horsligne", "cat": "Compte et réglages", "ic": "📴", "t": "Sans connexion internet", "k": "internet reseau wifi hors ligne", "p": ["Plus de connexion ? Continuez à sortir et ajouter du stock normalement (boutons − / +, favoris, scanner, dictée) : chaque saisie est gardée sur l'appareil et un badge « ⏳ N en attente » apparaît en haut.", "Au retour du réseau, tout part tout seul, dans l'ordre, en repartant des vraies quantités du serveur (pas de double comptage). L'historique note « saisi hors connexion le … ».", "Touchez le badge pour voir les saisies en attente, en annuler une ou « Envoyer maintenant ». Ne videz pas les données du navigateur tant que le badge est affiché.", "Les autres actions (fiches, commandes, comptages, stérilisation) demandent toujours une connexion."]}, {"id": "maj", "cat": "Compte et réglages", "ic": "🔄", "t": "Mises à jour de l'appli", "k": "version mise a jour", "p": ["La version est écrite en bas du menu (ex. v150). Menu Plus → « Vérifier les mises à jour ».", "Si une nouveauté n'apparaît pas : fermez complètement l'appli et rouvrez-la."], "go": {"btn": "updBtn"}}];
   var aideCat = "";
   function aideGo(go) {
     $("aideDlg").close();
@@ -6592,7 +6633,6 @@ html.is-touch .rxhov { display:none; }
       if (Number(c.invitations_attente)) al.push(["✉️", "« " + c.name + " » : " + c.invitations_attente + " invitation(s) jamais acceptée(s)."]);
       if (Number(c.articles_suivis) && (adDays(c.derniere_sauvegarde) === null || adDays(c.derniere_sauvegarde) > 35)) al.push(["💾", "« " + c.name + " » : pas de sauvegarde depuis plus d'un mois."]);
     });
-    users.forEach(function (u) { if (u.cabinets && u.cabinets.some(function (x) { return x.role === "admin"; }) && !u.double_auth) al.push(["🔓", u.email + " (administrateur) n'a pas la double authentification."]); });
     var alc = h("div", { class: "ad-card" }, h("h3", { text: "À surveiller" + (al.length ? " (" + al.length + ")" : "") }));
     if (!al.length) alc.append(h("div", { class: "meta", text: "Rien à signaler : tous les cabinets sont utilisés." }));
     else { var ab = h("div", { class: "ad-alerts" }); al.slice(0, 30).forEach(function (a) { ab.append(h("div", { class: "ad-alert" }, h("span", { class: "ic", text: a[0] }), h("span", { text: a[1] }))); }); alc.append(ab); }
@@ -7618,6 +7658,7 @@ html.is-touch .rxhov { display:none; }
   function visibleItems() {
     var q = norm(state.q);
     var arr = Array.from(items.values()).filter(function (it) {
+      if (state.onlyIds) return state.onlyIds.has(it.id);
       var s = statusOf(it);
       if (state.cat && (it.category || "Sans domaine") !== state.cat) return false;
       if (hiddenByToggle(it)) return false;
@@ -7727,18 +7768,20 @@ html.is-touch .rxhov { display:none; }
     var nCatAll = 0; items.forEach(function (it) { if (it.tracked === false) nCatAll++; });
     var nDup = dupHiddenIds().size;
     $("hideCatBtn").setAttribute("aria-pressed", state.hideCat ? "true" : "false");
-    $("hideCatBtn").textContent = state.hideCat ? "✓ Catalogue déjà commandé masqué (" + nCatAll + ")" : "Masquer le catalogue déjà commandé" + (nCatAll ? " (" + nCatAll + ")" : "");
+    $("hideCatBtn").textContent = (state.hideCat ? "✓ " : "") + "Catalogue (non suivi)" + (nCatAll ? " · " + nCatAll : "");
     var nTot = TOTAL.ok ? TOTAL.entries.length : 0;
     $("hideTotalBtn").setAttribute("aria-pressed", state.hideTotal ? "true" : "false");
-    $("hideTotalBtn").textContent = state.hideTotal ? "✓ Catalogue total masqué" + (nTot ? " (" + nTot.toLocaleString("fr-FR") + ")" : "") : "Masquer le catalogue total" + (nTot ? " (" + nTot.toLocaleString("fr-FR") + ")" : "");
+    $("hideTotalBtn").textContent = (state.hideTotal ? "✓ " : "") + "Catalogue total" + (nTot ? " · " + nTot.toLocaleString("fr-FR") : "");
     $("hideCatBtn").disabled = !nCatAll && !state.hideCat;
     $("hideDupBtn").setAttribute("aria-pressed", state.hideDup ? "true" : "false");
-    $("hideDupBtn").textContent = state.hideDup ? "✓ Doublons masqués (" + nDup + ")" : "Masquer les doublons" + (nDup ? " (" + nDup + ")" : "");
+    $("hideDupBtn").textContent = (state.hideDup ? "✓ " : "") + "Doublons" + (nDup ? " · " + nDup : "");
     $("hideDupBtn").disabled = !nDup && !state.hideDup;
     var nZero = zeroCount();
     $("hideZeroBtn").setAttribute("aria-pressed", state.hideZero ? "true" : "false");
-    $("hideZeroBtn").textContent = state.hideZero ? "✓ En stock seulement" + (nZero && !zeroShowAll() ? " (" + nZero + " à 0 masqués)" : "") : "Masquer les articles à 0" + (nZero ? " (" + nZero + ")" : "");
-    $("hideZeroBtn").classList.toggle("hidden", !nZero && !state.hideZero);
+    $("hideZeroBtn").textContent = (state.hideZero ? "✓ " : "") + "Articles à 0" + (nZero ? " · " + nZero : "");
+    var nHide = (state.hideZero ? 1 : 0) + (state.hideCat ? 1 : 0) + (state.hideTotal ? 1 : 0) + (state.hideDup ? 1 : 0);
+    $("hideMenuBtn").textContent = "👁 Masquer" + (nHide ? " (" + nHide + ")" : "");
+    $("hideMenuBtn").classList.toggle("on", nHide > 0);
     $("selToggle").setAttribute("aria-pressed", state.select ? "true" : "false");
     $("selToggle").textContent = state.select ? "✓ Sélection en cours" : "Sélectionner";
     var panel = $("fpanel"); panel.textContent = "";
@@ -7763,7 +7806,7 @@ html.is-touch .rxhov { display:none; }
     panel.append(field("Trier par", "sort", [["", "Ordre habituel"], ["nom", "Nom A → Z"], ["nom-desc", "Nom Z → A"], ["qty-asc", "Quantité croissante"], ["qty-desc", "Quantité décroissante"], ["prix-asc", "Prix croissant"], ["prix-desc", "Prix décroissant"], ["exp", "Péremption la plus proche"], ["autonomie", "Durée de stock restante"]]));
     panel.append(h("button", { class: "btn sm fclear", disabled: !n, onclick: function () { clearFilters(); render(); }, text: "Tout effacer" }));
   }
-  function isHome() { return !state.cat && state.filter === "all" && !state.q && !filtersActive(); }
+  function isHome() { return !state.cat && state.filter === "all" && !state.q && !filtersActive() && !state.onlyIds; }
 
   function renderAlerts() {
     var all = Array.from(items.values());
@@ -9580,6 +9623,7 @@ html.is-touch .rxhov { display:none; }
       return;
     }
     if (isHome()) { renderTiles(box); return; }
+    if (state.onlyIds) box.append(h("div", { class: "imp-only" }, h("b", { text: "📥 Articles du dernier import (" + state.onlyIds.size + ")" }), h("button", { class: "btn sm", type: "button", text: "✕ Tout le stock", onclick: function () { state.onlyIds = null; render(); } })));
     var list = visibleItems(), totalNode = totalSection();
     if (!list.length && totalNode) { box.append(totalNode); return; }
     if (!list.length) {
@@ -9761,8 +9805,42 @@ html.is-touch .rxhov { display:none; }
     ["Contrat d'élimination des DASRI et bordereaux de suivi", "Hygiène", 12, ""],
     ["Document unique d'évaluation des risques (DUERP)", "Employeur", 12, "À mettre à jour au moins une fois par an."],
     ["Attestation d'assurance responsabilité civile professionnelle", "Administratif", 12, ""],
-    ["Formation de l'équipe aux gestes d'urgence", "Équipe", 48, ""]
+    ["Formation de l'équipe aux gestes d'urgence", "Équipe", 48, ""],
+    ["Coordonnées de la médecine du travail", "Salariés", 12, "Nom, adresse et téléphone du service de santé au travail. À afficher."],
+    ["Coordonnées de l'inspection du travail", "Salariés", 12, "Adresse, téléphone et nom de l'inspecteur compétent. À afficher."],
+    ["Horaires collectifs de travail", "Salariés", 12, "Horaires de l'équipe et pauses, datés et signés. À afficher."],
+    ["Avis sur le document unique (DUERP)", "Salariés", 12, "Où le DUERP est rangé et comment le consulter. À afficher."],
+    ["Convention collective des cabinets dentaires (IDCC 1619)", "Salariés", 12, "Intitulé de la convention et où la consulter. À communiquer."],
+    ["Égalité de rémunération femmes-hommes", "Salariés", 12, "Articles L3221-1 à L3221-7 du Code du travail. À communiquer."],
+    ["Repos hebdomadaire et congés payés", "Salariés", 12, "Jour de repos, période des congés et ordre des départs. À communiquer."],
+    ["Lutte contre les discriminations", "Salariés", 12, "Articles 225-1 à 225-4 du Code pénal, recours possibles. À communiquer."],
+    ["Lutte contre le harcèlement moral et sexuel", "Salariés", 12, "Article 222-33 du Code pénal, recours et numéros utiles. À communiquer."],
+    ["Registre public d'accessibilité", "Locaux", 12, "Document à tenir à disposition des patients (accueil des personnes handicapées)."]
   ];
+  // liens officiels pour chaque élément (bouton « ℹ️ Infos ») : rien à saisir
+  var AFF_INFO = [
+    [/honoraires|tarifs/i, "https://www.economie.gouv.fr/dgccrf/les-fiches-pratiques/dentiste"],
+    [/médiateur/i, "https://www.economie.gouv.fr/mediation-conso"],
+    [/données|rgpd/i, "https://www.cnil.fr/fr/rgpd-par-ou-commencer"],
+    [/radiolog|radioprotection|signalisation des zones/i, "https://www.asn.fr/"],
+    [/DUERP|document unique/i, "https://www.inrs.fr/metiers/sante-aide-personne/cabinet-dentaire/des-solutions-pour-agir.html"],
+    [/médecine du travail/i, "https://www.ciamt.org/"],
+    [/inspection du travail/i, "https://idf.drieets.gouv.fr/"],
+    [/horaires collectifs|fumer|incendie|extincteurs/i, "https://entreprendre.service-public.fr/vosdroits/F23106"],
+    [/convention collective/i, "https://code.travail.gouv.fr/convention-collective/1619-cabinets-dentaires"],
+    [/égalité de rémunération/i, "https://entreprendre.service-public.fr/vosdroits/F23106"],
+    [/repos hebdomadaire|congés/i, "https://www.service-public.fr/particuliers/vosdroits/F2258"],
+    [/discrimination/i, "https://code.travail.gouv.fr/fiche-service-public/discrimination-au-travail"],
+    [/harcèlement/i, "https://code.travail.gouv.fr/fiche-service-public/harcelement-sexuel"],
+    [/accessibilité/i, "https://entreprendre.service-public.fr/vosdroits/F32873"]
+  ];
+  function affInfo(a) { var m = AFF_INFO.filter(function (x) { return x[0].test(a.titre || ""); })[0]; return m ? m[1] : ""; }
+  function affMissing() { var have = qAff.filter(function (a) { return !a.archived; }).map(function (a) { return norm(a.titre).replace(/[^a-z0-9]+/g, " ").trim(); }); return AFF_MODELES.filter(function (m) { var k = norm(m[0]).replace(/[^a-z0-9]+/g, " ").trim(); return have.indexOf(k) === -1; }); }
+  function affAddMissing() {
+    var miss = affMissing(); if (!miss.length || readOnly) return;
+    var rows = miss.map(function (m, i) { return { cabinet_id: cabinetId, titre: m[0], categorie: m[1], frequence_mois: m[2], detail: m[3], position: qAff.length + i + 1 }; });
+    sb.from("affichages").insert(rows).select().then(function (r) { if (r.error) { toast(qErr(r)); return; } qAff = qAff.concat(r.data || []); render(); toast("✓ " + rows.length + " affichage" + (rows.length > 1 ? "s" : "") + " ajouté" + (rows.length > 1 ? "s" : "") + " à la liste."); }, function () { toast("Connexion impossible."); });
+  }
   var Q_TYPES = [["", "Tout"], ["ster", "Stérilisation"], ["ctl", "Contrôles"], ["imp", "Implants"], ["sac", "Sachets ouverts"], ["aff", "Affichages"]];
   function qCanPatients() { return !readOnly; }
   function loadQualite() {
@@ -10025,7 +10103,8 @@ html.is-touch .rxhov { display:none; }
     box.append(h("div", { class: "eqbar" },
       printable.length ? h("button", { class: "btn primary", type: "button", text: "🖨 Imprimer les affiches (" + printable.length + ")", title: "Toutes les affiches prêtes à imprimer, modifiables avant impression", onclick: function () { printAffiches(printable); } }) : null,
       h("button", { class: "btn", type: "button", text: "🏥 Fiche du cabinet" + (ficheFilled() ? " ✓" : ""), title: "Adresse, praticiens, tarifs, médiateur… : les affiches se remplissent toutes seules", onclick: function () { openFiche(); } }),
-      readOnly ? null : h("button", { class: "btn", type: "button", text: "＋ Ajouter un affichage ou un document", onclick: function () { openAffForm(null); } })));
+      readOnly ? null : h("button", { class: "btn", type: "button", text: "＋ Ajouter un affichage ou un document", onclick: function () { openAffForm(null); } }),
+      !readOnly && affMissing().length ? h("button", { class: "btn primary", type: "button", text: "＋ Ajouter les affichages manquants (" + affMissing().length + ")", title: affMissing().map(function (m) { return m[0]; }).join("\n"), onclick: affAddMissing }) : null));
     if (!ficheFilled()) box.append(h("div", { class: "dnote fiche-hint" }, "💡 Remplissez une fois la ", h("button", { class: "linkbtn", type: "button", text: "fiche du cabinet", onclick: function () { openFiche(); } }), " : adresse, praticiens, tarifs, médiateur… Toutes les affiches seront pré-remplies."));
     var cats = []; live.forEach(function (a) { if (cats.indexOf(a.categorie || "Autre") === -1) cats.push(a.categorie || "Autre"); });
     var tb = h("div", { class: "table q-table" });
@@ -10040,6 +10119,7 @@ html.is-touch .rxhov { display:none; }
           h("span", { class: "q-acts" }, readOnly ? null : h("button", { class: "btn sm primary", type: "button", text: "✓ Vérifié", title: "En place et à jour aujourd'hui", onclick: function () { affVerif(a, true, ""); } }),
             readOnly ? null : h("button", { class: "btn sm", type: "button", text: "⚠ Problème…", onclick: function () { openAffVerif(a); } }),
             affLink(a) ? h("a", { class: "btn sm", href: affLink(a), target: "_blank", rel: "noopener", text: "🔗 Ouvrir", title: "Ouvrir le document enregistré" }) : null,
+            affInfo(a) ? h("a", { class: "btn sm", href: affInfo(a), target: "_blank", rel: "noopener", text: "ℹ️ Infos", title: "Page officielle : ce qu'il faut afficher et comment" }) : null,
             affAffiche(a) ? h("button", { class: "btn sm", type: "button", text: "🖨 Affiche", title: "Affiche prête à imprimer, modifiable avant impression", onclick: function () { printAffiches([affAffiche(a)]); } }) : null,
             h("button", { class: "btn sm", type: "button", text: "Historique", onclick: function () { affHistory(a); } }),
             readOnly ? null : h("button", { class: "btn sm", type: "button", text: "Modifier", onclick: function () { openAffForm(a); } }))));
@@ -10163,6 +10243,13 @@ html.is-touch .rxhov { display:none; }
     ["pcr", "Personne compétente en radioprotection (PCR)", "Alara, 01 …"], ["zone", "Zone radiologique", "surveillée"],
     ["extincteur", "Extincteur situé", "à l'accueil"], ["sortie", "Sortie d'évacuation", "la sortie principale"], ["rassemblement", "Point de rassemblement", "devant l'immeuble"],
     ["antipoison", "Centre antipoison de la région", "01 40 05 48 48"],
+    ["Salariées (affiches pour l'équipe)"],
+    ["medtrav", "Service de santé au travail", "nom du service, adresse, téléphone"],
+    ["inspection", "Inspection du travail", "unité départementale DREETS, adresse, téléphone"],
+    ["horaires", "Horaires de l'équipe", "lundi au vendredi 9 h – 13 h / 14 h – 19 h"],
+    ["repos", "Jour(s) de repos hebdomadaire", "samedi et dimanche"],
+    ["conges", "Période des congés payés", "du 1er mai au 31 octobre ; départs fixés par l'employeur"],
+    ["duerp_lieu", "Où consulter le DUERP", "classeur Qualité, au secrétariat"],
     ["Données des patients (RGPD)"],
     ["rgpd", "Pour exercer ses droits (e-mail ou adresse)", "contact@cabinet.fr"]
   ];
@@ -10199,6 +10286,14 @@ html.is-touch .rxhov { display:none; }
     return '<table class="tarifs t5"><tr><th>Acte</th><th class="r">Honoraires</th><th class="r">Base de remboursement</th><th class="r">Remboursé par la Sécu (60 %)</th><th class="r">Reste avant mutuelle</th></tr>' + rows + '</table>';
   }
   var AFF_AFFICHES = [
+    { re: /médecine du travail|inspection du travail/i, titre: "Contacts utiles des salariées", corps: function () { return '<h1>Contacts utiles</h1><table class="nums"><tr><th style="font-weight:700">Médecine du travail</th><td style="font-size:15pt;font-weight:400">' + fv("medtrav", "nom, adresse, téléphone") + '</td></tr><tr><th style="font-weight:700">Inspection du travail</th><td style="font-size:15pt;font-weight:400">' + fv("inspection", "adresse, téléphone, inspecteur") + '</td></tr><tr><th style="font-weight:700">Défenseur des droits</th><td style="font-size:15pt;font-weight:400">09 69 39 00 00 · defenseurdesdroits.fr</td></tr><tr><th style="font-weight:700">Urgences</th><td style="font-size:15pt;font-weight:400">15 · 18 · 112</td></tr></table>'; } },
+    { re: /horaires collectifs/i, titre: "Horaires collectifs de travail", corps: function () { return '<h1>Horaires collectifs de travail</h1><p class="big">' + fv("horaires", "lundi au vendredi : … h – … h / … h – … h") + '</p><p>Repos hebdomadaire : ' + fv("repos", "samedi et dimanche") + '</p><p>Durée hebdomadaire : ' + affFill("35 heures") + '</p><p class="ref">Articles L3171-1 et D3171-1 du Code du travail. Horaires datés et signés par l\'employeur ; une copie est adressée à l\'inspection du travail.</p><p>Fait le ' + affFill(new Date().toLocaleDateString("fr-FR")) + ', signature :</p>'; } },
+    { re: /avis sur le document unique/i, titre: "Avis : document unique", corps: function () { return '<h1>Document unique d\'évaluation des risques</h1><p class="big">Le document unique (DUERP) du cabinet est à votre disposition.</p><p><b>Où le consulter :</b> ' + fv("duerp_lieu", "classeur Qualité, au secrétariat") + '</p><p>Il peut aussi être consulté par la médecine du travail et l\'inspection du travail.</p><p class="ref">Article R4121-4 du Code du travail.</p>'; } },
+    { re: /convention collective/i, titre: "Convention collective", corps: function () { return '<h1>Convention collective applicable</h1><p class="big">Convention collective nationale des cabinets dentaires (IDCC 1619)</p><p>Un exemplaire est consultable : ' + affFill("au secrétariat") + '</p><p>Texte en ligne : code.travail.gouv.fr/convention-collective/1619-cabinets-dentaires</p><p class="ref">Article R2262-3 du Code du travail.</p>'; } },
+    { re: /égalité de rémunération/i, titre: "Égalité de rémunération", corps: function () { return '<h1>Égalité de rémunération entre les femmes et les hommes</h1><p class="big">Tout employeur assure, pour un même travail ou un travail de valeur égale, l\'égalité de rémunération entre les femmes et les hommes.</p><p>Les articles L3221-1 à L3221-7 du Code du travail sont consultables ' + affFill("au secrétariat") + ' et sur legifrance.gouv.fr.</p><p>En cas de difficulté : inspection du travail · ' + fv("inspection", "coordonnées") + '</p>'; } },
+    { re: /repos hebdomadaire|congés payés/i, titre: "Repos et congés", corps: function () { return '<h1>Repos hebdomadaire et congés payés</h1><p class="big">Repos hebdomadaire : ' + fv("repos", "samedi et dimanche") + '</p><p><b>Période de prise des congés :</b> ' + fv("conges", "du 1er mai au 31 octobre") + '</p><p><b>Ordre des départs :</b> ' + affFill("affiché au plus tard un mois avant les départs") + '</p><p class="ref">Articles L3132-1 et suivants, L3141-13 et D3141-6 du Code du travail.</p>'; } },
+    { re: /discriminations?/i, titre: "Lutte contre les discriminations", corps: function () { return '<h1>Lutte contre les discriminations</h1><p class="big">Aucune personne ne peut être écartée d\'un recrutement, sanctionnée ou licenciée en raison de son origine, de son sexe, de son âge, de son handicap, de son état de santé, de sa religion, de son orientation sexuelle ou de toute autre caractéristique protégée par la loi.</p><p>Articles 225-1 à 225-4 du Code pénal : consultables ' + affFill("au secrétariat") + ' et sur legifrance.gouv.fr.</p><p><b>Défenseur des droits :</b> 09 69 39 00 00 · defenseurdesdroits.fr</p>'; } },
+    { re: /harcèlement/i, titre: "Harcèlement moral et sexuel", corps: function () { return '<h1>Harcèlement moral et sexuel : tolérance zéro</h1><p class="big">Le harcèlement moral et le harcèlement sexuel sont interdits et punis par la loi.</p><ul class="steps"><li>Harcèlement sexuel : article 222-33 du Code pénal, jusqu\'à 2 ans de prison et 30 000 € d\'amende.</li><li>Harcèlement moral : article 222-33-2 du Code pénal et articles L1152-1 et suivants du Code du travail.</li><li>Personne ne peut être sanctionné pour avoir subi, refusé ou dénoncé ces faits.</li></ul><p><b>Vous pouvez contacter :</b> l\'employeur · la médecine du travail (' + fv("medtrav", "coordonnées") + ') · l\'inspection du travail (' + fv("inspection", "coordonnées") + ') · le Défenseur des droits (09 69 39 00 00) · Violences femmes info : 3919</p>'; } },
     { re: /fumer|vapoter/i, titre: "Interdiction de fumer", corps: function () { return '<div class="sign">🚭</div><h1>Il est interdit<br>de fumer et de vapoter</h1><p class="big">dans l\'ensemble des locaux du cabinet.</p><p class="ref">Décret n° 2006-1386 du 15 novembre 2006 · Décret n° 2017-633 du 25 avril 2017</p>'; } },
     { re: /numéros d'urgence/i, titre: "Numéros d'urgence", corps: function () { return '<h1>Numéros d\'urgence</h1><table class="nums"><tr><td>15</td><th>SAMU · urgence médicale</th></tr><tr><td>18</td><th>Pompiers · incendie, accident</th></tr><tr><td>17</td><th>Police · gendarmerie</th></tr><tr><td>112</td><th>Numéro d\'urgence européen</th></tr><tr><td>114</td><th>Urgence pour les personnes sourdes ou malentendantes (SMS)</th></tr><tr><td>' + fv("antipoison", "01 40 05 48 48") + '</td><th>Centre antipoison de votre région</th></tr></table><p>Adresse du cabinet à donner aux secours :<br><b>' + (fiche.adresse ? escHtml(ficheNom()) + ", " + escHtml(fiche.adresse) + (fiche.acces ? " · " + escHtml(fiche.acces) : "") + (fiche.tel ? "<br>Tél. " + escHtml(fiche.tel) : "") : affFill(escHtml(cabinetName) + ", adresse complète, étage, code d'accès")) + '</b></p>'; } },
     { re: /incendie|évacuation/i, titre: "Consignes en cas d'incendie", corps: function () { return '<div class="sign">🔥</div><h1>En cas d\'incendie</h1><ol class="steps"><li>Gardez votre calme et donnez l\'alerte autour de vous.</li><li>Appelez le <b>18</b> (ou le 112).</li><li>Si c\'est possible sans danger, attaquez le feu avec l\'extincteur situé ' + fv("extincteur", "à l'accueil") + '.</li><li>Évacuez par ' + fv("sortie", "la sortie principale") + ' en fermant les portes derrière vous.</li><li>N\'utilisez pas l\'ascenseur.</li><li>Rejoignez le point de rassemblement : ' + fv("rassemblement", "devant l'immeuble") + '.</li></ol><p class="ref">Plan d\'évacuation : à afficher à côté de cette consigne.</p>'; } },
@@ -11329,8 +11424,7 @@ html.is-touch .rxhov { display:none; }
       ["🦷", "Choisir son statut (dentiste, assistante…)", !!myProfil(), go(function () { $("moreBtn").click(); var t = document.querySelector('.mtab[data-mtab="affichage"]'); if (t) t.click(); })],
       ["📋", "Mettre en place les routines", routinesOk && routinesList().length > 0, go(function () { goTab("routines"); })],
       ["♨️", "Enregistrer un premier cycle de stérilisation", sterOk && ster.length > 0, go(function () { goTab("sterilisation"); })],
-      ["📧", "Enregistrer l'e-mail d'un commercial (commande en un clic)", Object.keys(cmdC.contacts || {}).length > 0, go(function () { goTab("commande"); })],
-      ["🔒", "Activer la double authentification", !!mfaOn, go(function () { openSec(); })]
+      ["📧", "Enregistrer l'e-mail d'un commercial (commande en un clic)", Object.keys(cmdC.contacts || {}).length > 0, go(function () { goTab("commande"); })]
     ];
   }
   function bdCard() {
@@ -12920,16 +13014,54 @@ html.is-touch .rxhov { display:none; }
     var n = norm(v).trim();
     return !(n === "non" || n === "n" || n === "no" || n === "0" || n === "false" || n === "faux" || n === "catalogue");
   }
-  function itemsFromRows(rows, defaultCat) {
-    if (!rows || rows.length < 2) return { ok: false, items: [] };
-    var heads = (rows[0] || []).map(function (c) { return norm(cellText(c)).trim(); });
-    var map = {};
-    Object.keys(SYN).forEach(function (f) {
-      var idx = heads.findIndex(function (hd) { return SYN[f].indexOf(hd) !== -1; });
-      if (idx !== -1) map[f] = idx;
+  // v185 : l'en-tête peut être sur n'importe laquelle des 15 premières lignes (titre, logo, lignes vides au-dessus),
+  // et les intitulés sont reconnus même approximatifs (« Désignation produit », « Qté en stock », « Prix unitaire HT € »…)
+  function headNorm(c) { return norm(cellText(c)).replace(/[^a-z0-9'° -]+/g, " ").replace(/\s+/g, " ").trim(); }
+  function mapHeads(heads) {
+    var map = {}, used = {};
+    [2, 1].forEach(function (level) {
+      Object.keys(SYN).forEach(function (f) {
+        if (map[f] != null) return;
+        var idx = heads.findIndex(function (hd, i) {
+          if (used[i] || !hd) return false;
+          if (level === 2) return SYN[f].indexOf(hd) !== -1;
+          return hd.length <= 40 && SYN[f].some(function (sy) { return sy.length >= 3 && (" " + hd + " ").indexOf(" " + sy + " ") !== -1; });
+        });
+        if (idx !== -1) { map[f] = idx; used[idx] = 1; }
+      });
     });
-    if (map.name == null) return { ok: false, items: [] };
-    var out = rows.slice(1).map(function (r) {
+    return map;
+  }
+  function findHeader(rows) {
+    var best = null;
+    for (var i = 0; i < Math.min(15, rows.length - 1); i++) {
+      var map = mapHeads((rows[i] || []).map(headNorm)), n = Object.keys(map).length;
+      if (map.name != null && (!best || n > best.n)) best = { i: i, map: map, n: n };
+    }
+    if (best) return best;
+    // aucun intitulé reconnu : on devine la colonne du nom (la plus « textuelle ») et celle de la quantité (la plus numérique)
+    var start = rows.findIndex(function (r) { return (r || []).filter(function (c) { return cellText(c) !== ""; }).length >= 2; });
+    if (start < 0) return null;
+    var body = rows.slice(start + 1, start + 60), W = Math.max.apply(null, rows.slice(start, start + 60).map(function (r) { return (r || []).length; }));
+    var txt = [], nb = [];
+    for (var c = 0; c < W; c++) {
+      txt[c] = 0; nb[c] = 0;
+      body.forEach(function (r) { var v = cellText((r || [])[c]); if (!v) return; if (/^-?\d+([.,]\d+)?$/.test(v.replace(/\s|€/g, ""))) nb[c]++; else if (v.length > 2) txt[c] += Math.min(v.length, 40); });
+    }
+    var nameC = txt.indexOf(Math.max.apply(null, txt)); if (!(txt[nameC] > 0)) return null;
+    // si la première ligne ressemble déjà à des données (pas d'en-tête du tout), on la garde
+    var first = (rows[start] || []).map(function (c) { return cellText(c); }), headerLike = first.every(function (v) { return !/^-?\d+([.,]\d+)?$/.test(v.replace(/\s|€/g, "")); });
+    var map2 = { name: nameC }, qC = nb.reduce(function (b, v, i) { return i !== nameC && v > (nb[b] || 0) ? i : b; }, -1);
+    if (qC >= 0 && nb[qC] >= body.length / 3) map2.qty = qC;
+    return { i: headerLike ? start : start - 1, map: map2, n: 1, guessed: true };
+  }
+  function itemsFromRows(rows, defaultCat, forced) {
+    if (!rows || rows.length < 2) return { ok: false, items: [] };
+    var hd = forced || findHeader(rows);
+    if (!hd) return { ok: false, items: [] };
+    var map = hd.map, headRow = rows[hd.i] || [];
+    var cols = Object.keys(map).map(function (f) { return { f: f, h: hd.guessed ? "(deviné)" : cellText(headRow[map[f]]) }; });
+    var out = rows.slice(hd.i + 1).map(function (r) {
       var get = function (f) { return map[f] != null ? cellText(r[map[f]]) : ""; };
       var exp = get("expiry");
       var m = exp.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
@@ -12941,67 +13073,139 @@ html.is-touch .rxhov { display:none; }
         target: Math.max(0, num(get("target"))), lot: get("lot"), expiry: exp, price: Math.max(0, num(get("price"))),
         tracked: parseTracked(get("tracked")), subcategory: get("subcategory")
       };
-    }).filter(function (d) { return d.name; });
-    return { ok: true, items: out };
+    }).filter(function (d) { return d.name && !/^(total|sous-total|sous total)\b/i.test(d.name); });
+    out.forEach(function (d) { d._hasQty = map.qty != null; });
+    var W = Math.max.apply(null, rows.slice(hd.i, hd.i + 40).map(function (r) { return (r || []).length; }).concat([0]));
+    var heads = []; for (var c = 0; c < W; c++) { var t = hd.i >= 0 ? cellText(headRow[c]) : ""; heads.push(t && !hd.guessed ? t : "Colonne " + String.fromCharCode(65 + (c % 26)) + (t ? " (" + t.slice(0, 20) + ")" : "")); }
+    return { ok: true, items: out, guessed: !!hd.guessed, cols: cols, hd: { i: hd.i, map: map, guessed: hd.guessed }, heads: heads };
   }
-  function importSheets(sheets) {
-    var all = [], bad = 0;
-    sheets.forEach(function (sh) {
+  // v186 : import Excel en deux temps — on montre ce qui a été compris, puis on importe.
+  // Les articles déjà présents (même référence, sinon même nom) voient leur quantité mise à jour (au choix : remplacer ou ajouter).
+  var IMP_LABEL = { name: "Article", qty: "Quantité", category: "Domaine", subcategory: "Sous-catégorie", supplier: "Fournisseur", ref: "Référence", location: "Emplacement", unit: "Unité", min: "Seuil", target: "Cible", lot: "Lot", expiry: "Péremption", price: "Prix", description: "Description", tracked: "Suivi" };
+  function importSheets(sheets, forced) {
+    var all = [], bad = 0, cols = [], guessed = false, edit = null;
+    sheets.forEach(function (sh, si) {
       var def = normDomain(sh.name);
       if (DOMAINS.indexOf(def) === -1) def = "";
-      var res = itemsFromRows(sh.rows, def);
+      var res = itemsFromRows(sh.rows, def, forced && forced.sheet === si ? forced : null);
       if (!res.ok) { bad++; return; }
+      if (res.items.length && !cols.length) { cols = res.cols || []; guessed = !!res.guessed; edit = { sheet: si, i: res.hd.i, map: res.hd.map, heads: res.heads }; }
       all = all.concat(res.items);
     });
     if (!all.length) {
-      toast(bad ? "Colonne « Article » introuvable. Ajoutez-la en première ligne du fichier." : "Aucune ligne exploitable dans le fichier.");
+      toast(bad ? "Je n'ai pas trouvé la colonne des noms d'articles. Ajoutez une colonne « Article » (ou « Désignation ») au-dessus de la liste, puis réessayez." : "Aucune ligne exploitable dans le fichier : vérifiez qu'il contient bien une liste d'articles.");
       return;
     }
-    var have = new Map();
-    trash.forEach(function (it) { have.set(norm(it.name).trim(), it); });
-    items.forEach(function (it) { have.set(norm(it.name).trim(), it); });
+    // on retrouve les articles déjà présents : par référence d'abord, sinon par nom
+    var byName = new Map(), byRef = new Map();
+    [trash, items].forEach(function (src) { src.forEach(function (it) { byName.set(norm(it.name).trim(), it); var r = norm(it.ref || "").trim(); if (r) byRef.set(r, it); }); });
     var groups = new Map(), order = [];
     all.forEach(function (d) {
-      var k = norm(d.name).trim();
-      if (!groups.has(k)) { groups.set(k, []); order.push(k); }
-      groups.get(k).push(d);
+      var r = norm(d.ref || "").trim(), ex = (r && byRef.get(r)) || byName.get(norm(d.name).trim()) || null;
+      var k = ex ? "id:" + ex.id : "n:" + norm(d.name).trim();
+      if (!groups.has(k)) { groups.set(k, { ex: ex, rows: [] }); order.push(k); }
+      groups.get(k).rows.push(d);
     });
-    // Plusieurs lignes pour le même article = plusieurs lots (une ligne par lot : Lot, Péremption, Quantité).
-    var fresh = [], upd = [], dup = 0, nLots = 0;
+    var fresh = [], exist = [], nLots = 0;
     order.forEach(function (k) {
-      var g = groups.get(k), exist = have.get(k);
-      var lots = [];
-      if (lotsOk && g.some(function (d) { return d.lot || d.expiry; })) {
-        g.forEach(function (d) {
+      var g = groups.get(k), rows = g.rows, lots = [];
+      if (lotsOk && rows.some(function (d) { return d.lot || d.expiry; })) {
+        rows.forEach(function (d) {
           if (!(d.qty > 0)) return;
           var m = lots.find(function (l) { return (l.lot || "") === (d.lot || "") && (l.expiry || "") === (d.expiry || ""); });
           if (m) m.qty = r2(m.qty + d.qty); else lots.push({ lot: d.lot || "", expiry: d.expiry || null, qty: d.qty });
         });
       }
-      if (exist) {
-        if (exist.archived) { dup++; return; }
-        if (lots.length) upd.push({ it: exist, lots: lots }); else dup++;
-        return;
-      }
-      var base = Object.assign({}, g[0]);
-      if (lots.length) {
-        var dv = deriveFromLots(lots);
-        base.qty = dv.qty; base.expiry = dv.expiry; base.lot = dv.lot; base._lots = lots; nLots += lots.length;
-      } else if (g.length > 1) dup += g.length - 1;
+      var qty = r2(rows.reduce(function (a, d) { return a + (Number(d.qty) || 0); }, 0));
+      if (g.ex) { exist.push({ it: g.ex, d: rows[0], qty: qty, hasQty: rows.some(function (d) { return d._hasQty; }), lots: lots }); return; }
+      var base = Object.assign({}, rows[0]); base.qty = qty;
+      if (lots.length) { var dv = deriveFromLots(lots); base.qty = dv.qty; base.expiry = dv.expiry; base.lot = dv.lot; base._lots = lots; nLots += lots.length; }
       fresh.push(base);
     });
     if (!trackedOk && fresh.some(function (d) { return d.tracked === false; })) { toast("Lancez d'abord le script SQL « ajout-catalogue » dans Supabase."); return; }
     if (!subOk && fresh.some(function (d) { return d.subcategory; })) { toast("Lancez d'abord le script SQL « ajout-sous-categories » dans Supabase."); return; }
-    var capped = fresh.length > 500;
-    if (capped) fresh = fresh.slice(0, 500);
-    var doUpd = false;
-    if (upd.length) {
-      doUpd = window.confirm(upd.length + " article" + (upd.length > 1 ? "s" : "") + " déjà présent" + (upd.length > 1 ? "s" : "") + " ont des lots dans ce fichier.\n\nOK : remplacer leurs lots et leur quantité par ceux du fichier.\nAnnuler : les laisser tels quels.");
-      if (!doUpd) dup += upd.length;
+    openImportPreview({ fresh: fresh, exist: exist, cols: cols, guessed: guessed, nLots: nLots, total: all.length, sheets: sheets, edit: edit });
+  }
+  function openImportPreview(o) {
+    var d = $("impDlg"); if (!d) { d = h("dialog", { id: "impDlg", class: "wide" }); document.body.append(d); }
+    d.textContent = "";
+    var withQty = o.exist.filter(function (x) { return x.hasQty; });
+    var mode = withQty.length ? "replace" : "skip";
+    var colTxt = o.cols.map(function (c) { return (IMP_LABEL[c.f] || c.f) + (c.h && c.h !== "(deviné)" ? " ← « " + c.h + " »" : " (deviné)"); }).join(" · ");
+    var hasQtyCol = o.cols.some(function (c) { return c.f === "qty"; });
+    var box = h("div", { class: "dlg" }, h("h2", { text: "📥 Vérifier l'import" }),
+      h("div", { class: "sub", text: o.total + " ligne" + (o.total > 1 ? "s" : "") + " lue" + (o.total > 1 ? "s" : "") + " dans le fichier." }),
+      h("div", { class: "imp-cols" }, h("b", { text: "Colonnes comprises : " }), colTxt || "—"),
+      o.edit && o.sheets ? (function () {
+        // l'appli s'est trompée de colonne ? on corrige ici, l'aperçu se met à jour
+        var wrap = h("details", { class: "imp-map" }, h("summary", { text: "✎ Corriger les colonnes" }));
+        var grid = h("div", { class: "imp-map-grid" });
+        ["name", "qty", "price", "category", "supplier", "ref", "location", "min", "expiry"].forEach(function (f) {
+          var sel = h("select", { "aria-label": IMP_LABEL[f] });
+          sel.append(h("option", { value: "", text: f === "name" ? "(obligatoire)" : "— aucune —" }));
+          o.edit.heads.forEach(function (t, c) { sel.append(h("option", { value: String(c), text: t || "Colonne " + (c + 1), selected: o.edit.map[f] === c })); });
+          sel.addEventListener("change", function () {
+            var m = Object.assign({}, o.edit.map);
+            Object.keys(m).forEach(function (k) { if (sel.value !== "" && m[k] === Number(sel.value)) delete m[k]; });
+            if (sel.value === "") delete m[f]; else m[f] = Number(sel.value);
+            if (m.name == null) { toast("Choisissez la colonne des noms d'articles."); return; }
+            $("impDlg").close(); importSheets(o.sheets, { sheet: o.edit.sheet, i: o.edit.i, map: m });
+          });
+          grid.append(h("label", { class: "imp-map-f" }, h("span", { text: IMP_LABEL[f] }), sel));
+        });
+        wrap.append(grid); if (o.guessed) wrap.open = true; return wrap;
+      })() : null,
+      hasQtyCol ? null : h("div", { class: "dnote", text: "⚠ Je n'ai pas trouvé de colonne de quantité : les nouveaux articles seront créés à 0, et les articles déjà présents ne changeront pas. Ajoutez une colonne « Quantité » au fichier si vous voulez remplir le stock." }));
+    var sum = h("div", { class: "imp-sum" });
+    sum.append(h("div", { class: "imp-n" }, h("b", { text: String(o.fresh.length) }), h("span", { text: " nouvel" + (o.fresh.length > 1 ? "s" : "") + " article" + (o.fresh.length > 1 ? "s" : "") + " à créer" + (o.nLots ? " (" + o.nLots + " lots)" : "") })));
+    sum.append(h("div", { class: "imp-n" }, h("b", { text: String(o.exist.length) }), h("span", { text: " déjà dans votre stock" + (withQty.length && withQty.length !== o.exist.length ? " (" + withQty.length + " avec une quantité)" : "") })));
+    box.append(sum);
+    if (withQty.length) {
+      var opts = [["replace", "Remplacer leur quantité par celle du fichier", "idéal pour un inventaire : le stock devient exactement celui du fichier"], ["add", "Ajouter la quantité du fichier à leur stock", "idéal pour une livraison"], ["skip", "Ne pas toucher aux articles déjà présents", ""]];
+      var grp = h("div", { class: "imp-mode", role: "radiogroup", "aria-label": "Articles déjà présents" }, h("div", { class: "meta", text: "Pour les articles déjà présents :" }));
+      opts.forEach(function (op) {
+        var r = h("input", { type: "radio", name: "impMode", value: op[0] }); r.checked = op[0] === mode;
+        r.addEventListener("change", function () { if (r.checked) { mode = op[0]; drawEx(); } });
+        grp.append(h("label", { class: "imp-opt" }, r, h("span", {}, h("b", { text: op[1] }), op[2] ? h("span", { class: "meta", text: " · " + op[2] }) : null)));
+      });
+      box.append(grp);
     }
-    if (!fresh.length && !doUpd) { toast("Tous les articles du fichier existent déjà (" + dup + " ignorés)."); return; }
-    var chunks = [];
-    for (var i = 0; i < fresh.length; i += 100) chunks.push(fresh.slice(i, i + 100));
+    // aperçu
+    var prev = h("div", { class: "imp-prev" });
+    var drawEx = function () {
+      prev.textContent = "";
+      var rows = o.fresh.slice(0, 5).map(function (x) { return [x.name, "nouveau", fmt(x.qty || 0), x.price ? money(x.price) : "", x.category || ""]; })
+        .concat(withQty.slice(0, 5).map(function (x) { var cur = Number(x.it.qty) || 0, nv = mode === "replace" ? x.qty : mode === "add" ? r2(cur + x.qty) : cur; return [x.it.name, "déjà là", fmt(cur) + (nv !== cur ? " → " + fmt(nv) : ""), x.d.price ? money(x.d.price) : "", x.it.category || ""]; }));
+      var t = h("div", { class: "imp-table" }, h("div", { class: "imp-row imp-head" }, ["Article", "", "Quantité", "Prix", "Domaine"].map(function (c) { return h("span", { text: c }); })));
+      rows.forEach(function (r) { t.append(h("div", { class: "imp-row" }, r.map(function (c, i) { return h("span", { class: i === 1 ? "imp-tag " + (c === "nouveau" ? "new" : "old") : "", text: c }); }))); });
+      prev.append(h("div", { class: "meta", text: "Aperçu (premières lignes) :" }), t);
+    };
+    drawEx(); box.append(prev);
+    var go = h("button", { class: "btn primary", type: "button", text: "Importer" });
+    go.addEventListener("click", function () { d.close(); runImport(o, mode); });
+    box.append(h("div", { class: "dlg-actions" }, h("span", { class: "spacer" }), h("button", { class: "btn", type: "button", text: "Annuler", onclick: function () { d.close(); } }), go));
+    d.append(box); d.showModal();
+  }
+  function runImport(o, mode) {
+    var fresh = o.fresh, nLots = o.nLots, upd = [], moves = [], fill = [];
+    o.exist.forEach(function (x) {
+      var it = x.it;
+      // champs vides de la fiche complétés par le fichier (prix, fournisseur, référence…), sans rien écraser
+      var patch = {};
+      ["supplier", "ref", "location", "unit"].forEach(function (f) { if (!it[f] && x.d[f]) patch[f] = x.d[f]; });
+      if (!(Number(it.price) > 0) && x.d.price > 0) patch.price = x.d.price;
+      if (!(Number(it.min) > 0) && x.d.min > 0) patch.min = x.d.min;
+      if (it.archived) patch.archived = false;
+      if (Object.keys(patch).length) fill.push({ it: it, patch: patch });
+      if (mode === "skip" || !x.hasQty) return;
+      if (x.lots.length && mode === "replace") { upd.push({ it: it, lots: x.lots }); return; }
+      var cur = Number(it.qty) || 0, target = mode === "replace" ? x.qty : r2(cur + x.qty), delta = r2(target - cur);
+      if (delta !== 0) moves.push({ it: it, delta: delta });
+    });
+    if (!fresh.length && !moves.length && !upd.length && !fill.length) { toast("Rien à changer : le stock est déjà à jour avec ce fichier."); return; }
+    var chunks = []; for (var i = 0; i < fresh.length; i += 100) chunks.push(fresh.slice(i, i + 100));
+    var busy = moves.length + fill.length + upd.length > 20;
+    if (busy) toast("Import en cours… (" + (fresh.length + moves.length) + " articles)");
     enqueue(function () {
       return chunks.reduce(function (p, chunk) {
         return p.then(function () {
@@ -13013,23 +13217,28 @@ html.is-touch .rxhov { display:none; }
               if (src && src._lots) src._lots.forEach(function (l) { lotRows.push({ cabinet_id: cabinetId, item_id: r.id, lot: l.lot, expiry: l.expiry || null, qty: l.qty }); });
             });
             if (!lotRows.length) return null;
-            return sb.from("lots").insert(lotRows).select().then(function (r3) {
-              (check(r3) || []).forEach(function (l) { (lotsByItem[l.item_id] = lotsByItem[l.item_id] || []).push(l); });
-            });
+            return sb.from("lots").insert(lotRows).select().then(function (r3) { (check(r3) || []).forEach(function (l) { (lotsByItem[l.item_id] = lotsByItem[l.item_id] || []).push(l); }); });
           });
         });
       }, Promise.resolve()).then(function () {
-        if (!doUpd) return null;
+        return fill.reduce(function (p, f) { return p.then(function () { return sb.from("items").update(Object.assign({ updated_at: new Date().toISOString() }, f.patch)).eq("id", f.it.id).then(function (r) { if (!r.error) { var c = items.get(f.it.id) || trash.get(f.it.id); if (c) { Object.assign(c, f.patch); if (f.patch.archived === false && trash.has(c.id)) { trash.delete(c.id); items.set(c.id, c); } } } }); }); }, Promise.resolve());
+      }).then(function () {
         return upd.reduce(function (p, u) { return p.then(function () { return persistLots(u.it, u.lots); }); }, Promise.resolve());
       }).then(function () {
-        render();
-        return appendLog({ type: "import", itemId: "", item: "Import de fichier", delta: 0, qty: 0, note: fresh.length + " articles importés" + (nLots ? ", " + nLots + " lots" : "") + (doUpd ? ", lots de " + upd.length + " articles mis à jour" : "") });
+        // les changements de quantité passent par le journal (annulables, visibles dans l'historique)
+        return moves.reduce(function (p, m) { return p.then(function () { return doAdjust(m.it.id, m.delta, mode === "replace" ? "Inventaire (import Excel)" : "Entrée (import Excel)").catch(function () {}); }); }, Promise.resolve());
       }).then(function () {
-        toast(fresh.length + " article" + (fresh.length > 1 ? "s" : "") + " ajouté" + (fresh.length > 1 ? "s" : "") +
-          (nLots ? " (" + nLots + " lots)" : "") +
-          (doUpd ? ", " + upd.length + " mis à jour avec leurs lots" : "") +
-          (dup ? ", " + dup + " déjà présent" + (dup > 1 ? "s" : "") + " ignoré" + (dup > 1 ? "s" : "") : "") +
-          (capped ? " (500 premiers seulement)" : "") + ".");
+        render();
+        return appendLog({ type: "import", itemId: "", item: "Import de fichier", delta: 0, qty: 0, note: fresh.length + " créés, " + (moves.length + upd.length) + " quantités mises à jour" });
+      }).then(function () {
+        var zeroNew = fresh.filter(function (x) { return !(x.qty > 0); }).length;
+        var ids = new Set(); Array.from(items.values()).forEach(function (it) { if (fresh.some(function (x) { return norm(x.name).trim() === norm(it.name).trim(); })) ids.add(it.id); });
+        moves.forEach(function (m) { ids.add(m.it.id); }); upd.forEach(function (u) { ids.add(u.it.id); }); fill.forEach(function (f) { ids.add(f.it.id); });
+        if (ids.size) updBar("📥 Import terminé : " + ids.size + " article" + (ids.size > 1 ? "s" : "") + " créé" + (ids.size > 1 ? "s" : "") + " ou mis à jour.", "ok", [{ text: "Les voir", fn: function () { state.onlyIds = ids; state.cat = ""; state.q = ""; if (state.tab !== "inventaire") goTab("inventaire"); render(); } }], 20000);
+        toast("✓ Import terminé : " + fresh.length + " article" + (fresh.length > 1 ? "s" : "") + " créé" + (fresh.length > 1 ? "s" : "") + (nLots ? " (" + nLots + " lots)" : "") +
+          ", " + (moves.length + upd.length) + " quantité" + (moves.length + upd.length > 1 ? "s" : "") + " mise" + (moves.length + upd.length > 1 ? "s" : "") + " à jour" +
+          (fill.length ? ", " + fill.length + " fiche" + (fill.length > 1 ? "s" : "") + " complétée" + (fill.length > 1 ? "s" : "") : "") + "." +
+          (zeroNew && state.hideZero ? " " + zeroNew + " article" + (zeroNew > 1 ? "s" : "") + " à 0 sont masqués (👁 Masquer)." : ""));
       });
     });
   }
@@ -13044,7 +13253,7 @@ html.is-touch .rxhov { display:none; }
       ["Seule la colonne « Article » est obligatoire. Toutes les autres sont facultatives."],
       ["Domaine : Endodontie, Chirurgie, Implants, Anesthésie, Composites, Colles et adhésifs, Scellement et ciments, Prothèse et empreintes, Gants et protection, Désinfection et hygiène, Radiologie ou Consommables."],
       ["Vous pouvez aussi créer une feuille par domaine (nommée Endodontie, Chirurgie…), sans colonne Domaine."],
-      ["Un article dont le nom existe déjà dans l'appli est ignoré : l'import n'écrase rien."],
+      ["Un article déjà présent dans l'appli (même référence, sinon même nom) n'est pas recréé : l'appli vous propose de remplacer sa quantité par celle du fichier, ou de l'ajouter."],
       ["Suivi : « oui » par défaut. Mettez « non » pour un simple catalogue de produits, sans alertes ni stock."],
       ["Lots : une ligne par lot pour un même article (colonnes Lot, Péremption et Quantité). Pour un article déjà présent, le fichier remplace ses lots et sa quantité après confirmation."],
       ["Péremption : jj/mm/aaaa. Supprimez cette feuille d'aide si vous voulez, elle est ignorée à l'import."]
@@ -13440,7 +13649,7 @@ html.is-touch .rxhov { display:none; }
     return ln;
   }
   function ocrFail(e) {
-    recvHook = null; ocrStatus("");
+    recvHook = null; ocrStatus(""); batchFail();
     toast(e && e.message === "chargement" ? "Le lecteur de scans n'a pas pu être chargé : vérifiez votre accès à internet." : "Ce scan n'a pas pu être lu : reprenez-le bien à plat, bien éclairé, ou utilisez un fichier Excel.");
   }
   // lit les pages d'un PDF scanné (une image par page)
@@ -13556,8 +13765,8 @@ html.is-touch .rxhov { display:none; }
     return "Remise globale de " + Math.round((1 - k) * 100) + " % (code promo) : elle est répartie sur les lignes, les prix affichés sont les prix nets payés.";
   }
   function importPdf(file) {
-    if (!window.pdfjsLib) { toast("Impossible de lire un PDF : vérifiez votre accès à internet."); return; }
-    toast("Lecture du PDF…");
+    if (!window.pdfjsLib) { toast("Impossible de lire un PDF : vérifiez votre accès à internet."); batchFail(); return; }
+    toast(batch ? "Lecture de " + batchLabel() + "…" : "Lecture du PDF…");
     var r = new FileReader(), tried = false;
     r.onload = function () {
       window.pdfjsLib.getDocument({ data: new Uint8Array(r.result) }).promise.then(function (pdf) {
@@ -13579,7 +13788,7 @@ html.is-touch .rxhov { display:none; }
         var docs = splitDocuments(res.pages);
         if (docs.length > 1) showMultiDocs(file.name, docs, file); else showPdfPreview(file.name, res.all, { file: file, page: 1 });
       })
-        .catch(function (e) { if (tried) { ocrFail(e); return; } toast("Ce PDF n'a pas pu être lu."); });
+        .catch(function (e) { if (tried) { ocrFail(e); return; } toast("Ce PDF n'a pas pu être lu."); batchFail(); });
     };
     r.readAsArrayBuffer(file);
   }
@@ -13963,6 +14172,7 @@ html.is-touch .rxhov { display:none; }
       toast(/Conditions g[ée]n[ée]rales de vente/i.test(allText) ? "Ce document contient les conditions générales de vente : il n'y a rien à importer."
         : (isKomet(lines) && /Total\s*Quantit|[àa]\s*reporter|Tot\s*Net/i.test(allText)) ? "Cette page ne contient que les totaux de la facture (aucun article) : rien à importer. Importez la page qui porte les articles."
         : "Aucune ligne d'article reconnue : mise en page non prise en charge. Utilisez plutôt un fichier Excel.");
+      batchFail();
       return;
     }
     var head = lines.slice(0, 80).join(" ");
@@ -14634,6 +14844,123 @@ html.is-touch .rxhov { display:none; }
     $("scanPanel").textContent = ""; $("scanDlg").showModal(); showScanItem(it, null);
   }
   function phLooksInvoice(lines) { var t = lines.join(" "); return lines.length >= 12 && /(facture|bon de livraison|total\s*(ht|ttc)|tva|montant)/i.test(t); }
+  // ---------- reconnaissance par ressemblance avec les photos des articles (sur l'appareil, gratuit, rien n'est envoyé) ----------
+  // Modèle MobileNet (≈ 6 Mo, téléchargé une fois puis gardé sur l'appareil) : chaque photo devient une « empreinte » de 512 nombres.
+  var VIS_TF = ["https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js", "sha384-vE8hbVJ4lezako5rlvE7bY0BVzWlFhZncPlckrqNwcUQpVtgbENTgZ8TBbnPjZre"];
+  var VIS_MODEL = "https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.50_224/model.json", VIS_IDB = "indexeddb://simsim-vis-mnv1-050";
+  var VIS = { model: null, loading: null, emb: {}, mean: null, meanKey: "" };
+  function visCount() { var n = 0; items.forEach(function (it) { if (it.photo && !it.archived) n++; }); return n; }
+  function visLoad() {
+    if (VIS.model) return Promise.resolve(VIS.model);
+    if (VIS.loading) return VIS.loading;
+    VIS.loading = new Promise(function (resolve, reject) {
+      if (window.tf) { resolve(); return; }
+      var sc = document.createElement("script"); sc.src = VIS_TF[0]; sc.integrity = VIS_TF[1]; sc.crossOrigin = "anonymous";
+      sc.onload = function () { resolve(); }; sc.onerror = function () { reject(new Error("chargement")); }; document.head.appendChild(sc);
+    }).then(function () {
+      var tf = window.tf;
+      return tf.loadLayersModel(VIS_IDB).catch(function () {
+        return tf.loadLayersModel(VIS_MODEL).then(function (m) { m.save(VIS_IDB).catch(function () {}); return m; });
+      }).then(function (m) { VIS.model = tf.model({ inputs: m.inputs, outputs: m.getLayer("conv_pw_13_relu").output }); return VIS.model; });
+    }).catch(function (e) { VIS.loading = null; throw e; });
+    return VIS.loading;
+  }
+  function visImg(src) { return new Promise(function (ok, ko) { var im = new Image(); im.onload = function () { ok(im); }; im.onerror = ko; im.src = src; }); }
+  function visEmbed(img) {
+    var tf = window.tf;
+    return tf.tidy(function () {
+      var x = tf.image.resizeBilinear(tf.browser.fromPixels(img).toFloat(), [224, 224]).div(127.5).sub(1).expandDims(0);
+      var v = VIS.model.predict(x).mean([1, 2]).squeeze();
+      return Array.from(v.div(v.norm().add(1e-6)).dataSync());
+    });
+  }
+  function visKey(p) { var h = 0; for (var i = 0; i < p.length; i += Math.max(1, Math.floor(p.length / 400))) h = (h * 31 + p.charCodeAt(i)) | 0; return p.length + ":" + h; }
+  function visStore() { return "simsim_vis_" + (cabinetId || ""); }
+  function visCacheLoad() { if (VIS.cab === cabinetId) return; VIS.cab = cabinetId; VIS.emb = {}; try { VIS.emb = JSON.parse(localStorage.getItem(visStore()) || "{}") || {}; } catch (e) { VIS.emb = {}; } }
+  function visCacheSave() { try { localStorage.setItem(visStore(), JSON.stringify(VIS.emb)); } catch (e) {} }
+  // empreintes des photos des articles (calculées une fois, gardées sur l'appareil)
+  function visCatalog(progress) {
+    visCacheLoad();
+    var list = Array.from(items.values()).filter(function (it) { return it.photo && !it.archived; }), todo = [];
+    list.forEach(function (it) { var k = visKey(it.photo), e = VIS.emb[it.id]; if (!e || e.k !== k) todo.push(it); });
+    var keep = {}; list.forEach(function (it) { keep[it.id] = 1; }); Object.keys(VIS.emb).forEach(function (id) { if (!keep[id]) delete VIS.emb[id]; });
+    var i = 0, changed = false;
+    function next() {
+      if (i >= todo.length) { if (changed) visCacheSave(); return Promise.resolve(list); }
+      var it = todo[i++]; if (progress) progress(i, todo.length);
+      return visImg(it.photo).then(function (img) { VIS.emb[it.id] = { k: visKey(it.photo), v: visEmbed(img).map(function (x) { return Math.round(x * 1e4) / 1e4; }) }; changed = true; }, function () {}).then(function () { return new Promise(function (r) { setTimeout(r, 0); }); }).then(next);
+    }
+    return next();
+  }
+  function visThumb(file) { return makeThumb(file); }   // même cadrage carré que les photos des fiches
+  function visMatchFile(file) {
+    if (!visCount()) return Promise.resolve([]);
+    return visLoad().then(function () { return visCatalog(function (i, n) { if (n > 3) $("photoState").textContent = "Je prépare vos photos d'articles (une seule fois) : " + i + " / " + n + "…"; }); }).then(function (list) {
+      return visThumb(file).then(visImg).then(function (img) {
+        var q = visEmbed(img), ids = list.map(function (it) { return it.id; }).filter(function (id) { return VIS.emb[id]; });
+        if (!ids.length) return [];
+        // on retire ce que toutes les photos ont en commun (fond, éclairage) : la comparaison porte sur ce qui distingue les produits
+        var D = q.length, mean = new Array(D).fill(0);
+        ids.forEach(function (id) { var v = VIS.emb[id].v; for (var d = 0; d < D; d++) mean[d] += v[d] / ids.length; });
+        var cen = function (v) { var o = new Array(D), n = 0; for (var d = 0; d < D; d++) { o[d] = v[d] - (ids.length > 2 ? mean[d] : 0); n += o[d] * o[d]; } n = Math.sqrt(n) || 1; for (d = 0; d < D; d++) o[d] /= n; return o; };
+        var qc = cen(q), raw = function (a, b) { var s2 = 0; for (var d = 0; d < D; d++) s2 += a[d] * b[d]; return s2; };
+        var sc = ids.map(function (id) { var v = VIS.emb[id].v; return { it: items.get(id), cos: raw(qc, cen(v)), sim: raw(q, v) }; })
+          .filter(function (x) { return x.it; }).sort(function (a, b) { return b.cos - a.cos; });
+        var top = sc[0], second = sc[1];
+        return sc.slice(0, 3).filter(function (x, i) { return x.sim >= 0.55 && x.cos >= 0.2 && (i === 0 || x.cos >= top.cos - 0.15); }).map(function (x, i) {
+          var gap = i === 0 && second ? x.cos - second.cos : 1;
+          // « sûr » : la photo ressemble nettement plus à cet article qu'au suivant ; « probable » : un peu plus ; sinon « possible »
+          var sure = i === 0 && x.cos >= 0.4 && gap >= 0.2 && x.sim >= 0.7, prob = x.cos >= 0.25 && gap >= 0.1;
+          return { it: x.it, pct: Math.round(Math.max(0, Math.min(1, x.sim)) * 100), sure: sure, prob: prob, tip: "ressemblance " + x.sim.toFixed(2) + " · distinctive " + x.cos.toFixed(2) + " · écart " + (gap === 1 ? "-" : gap.toFixed(2)) };
+        });
+      });
+    });
+  }
+  // la ressemblance s'ajoute au code-barres et au texte lu : un article trouvé des deux façons est « sûr »
+  function visMerge(cands, vis) {
+    var by = {}; cands.forEach(function (c) { by[c.it.id] = c; });
+    (vis || []).forEach(function (v) {
+      var c = by[v.it.id];
+      if (c) { c.why += " · ressemble à sa photo"; c.sure = c.sure || v.prob || v.sure; c.sc = Math.max(c.sc || 0, 8); }
+      else { c = { it: v.it, why: "ressemble à sa photo (" + v.pct + " %)", sure: v.sure, sc: v.sure ? 8 : v.prob ? 6 : 3, vis: true }; cands.push(c); by[v.it.id] = c; }
+      c.tip = v.tip;
+    });
+    return cands.sort(function (a, b) { return (b.sure ? 1 : 0) - (a.sure ? 1 : 0) || (b.sc || 0) - (a.sc || 0); }).slice(0, 6);
+  }
+  // ----- « Photographier mes produits » : une photo par article, à la chaîne -----
+  var shootQ = [], shootI = 0;
+  function openShoot() {
+    if (readOnly || !db) { toast("Réservé aux comptes qui peuvent modifier le stock."); return; }
+    if (!photoOk) { toast("Les photos d'articles ne sont pas encore activées dans la base."); return; }
+    shootQ = Array.from(items.values()).filter(function (it) { return !it.archived && !it.photo && it.tracked !== false; })
+      .sort(function (a, b) { return ((Number(b.qty) || 0) > 0) - ((Number(a.qty) || 0) > 0) || norm(a.category || "").localeCompare(norm(b.category || "")) || norm(a.name).localeCompare(norm(b.name)); });
+    shootI = 0;
+    var d = $("shootDlg"); if (!d) { d = h("dialog", { id: "shootDlg" }); document.body.append(d); }
+    drawShoot(); d.showModal();
+  }
+  function drawShoot() {
+    var d = $("shootDlg"); d.textContent = "";
+    var done = visCount(), it = shootQ[shootI];
+    var inp = h("input", { type: "file", accept: "image/*", capture: "environment", class: "hidden" });
+    var box = h("div", { class: "dlg" }, h("h2", { text: "📸 Photographier mes produits" }),
+      h("div", { class: "sub", text: "Une photo par article, de face, l'étiquette bien visible. Ensuite, le bouton 📷 Photo reconnaîtra le produit rien qu'à sa ressemblance. " + done + " article" + (done > 1 ? "s ont" : " a") + " déjà une photo." }));
+    if (!it) box.append(h("div", { class: "empty", text: shootQ.length ? "🎉 Terminé : tous les articles de la liste ont une photo." : "🎉 Tous vos articles suivis ont déjà une photo." }));
+    else box.append(h("div", { class: "shoot-card" }, h("div", { class: "meta", text: (shootI + 1) + " / " + shootQ.length + (it.category ? " · " + it.category : "") }), h("div", { class: "shoot-name", text: labelOf(it) }),
+      h("div", { class: "meta", text: "Stock " + fmt(it.qty || 0) + (it.unit ? " " + it.unit : "") + (it.location ? " · " + it.location : "") + (it.ref ? " · réf. " + it.ref : "") }),
+      h("div", { class: "eqbar" }, h("button", { class: "btn primary", type: "button", text: "📷 Prendre la photo", onclick: function () { inp.value = ""; inp.click(); } }),
+        h("button", { class: "btn", type: "button", text: "Passer →", onclick: function () { shootI++; drawShoot(); } }))));
+    inp.addEventListener("change", function () {
+      var f = inp.files && inp.files[0]; if (!f || !it) return;
+      makeThumb(f).then(function (t) {
+        return sb.from("items").update({ photo: t, updated_at: new Date().toISOString() }).eq("id", it.id).then(function (r) {
+          if (r.error) { toast("La photo n'a pas pu être enregistrée."); return; }
+          var cur = items.get(it.id); if (cur) cur.photo = t; toast("✓ Photo enregistrée : " + it.name); shootI++; drawShoot(); render();
+        });
+      }, function () { toast("Cette image n'a pas pu être lue."); });
+    });
+    box.append(inp, h("div", { class: "dlg-actions" }, h("span", { class: "spacer" }), h("button", { class: "btn", type: "button", text: "Fermer", onclick: function () { $("shootDlg").close(); } })));
+    d.append(box);
+  }
   function photoChosen(file) {
     var st = $("photoState"), res = $("photoResult"); res.textContent = ""; $("photoShot").textContent = "";
     var url = URL.createObjectURL(file); $("photoShot").append(h("img", { src: url, alt: "Photo envoyée", onload: function () { setTimeout(function () { URL.revokeObjectURL(url); }, 1000); } }));
@@ -14641,10 +14968,13 @@ html.is-touch .rxhov { display:none; }
     st.textContent = "Je cherche un code-barres ou un QR code…";
     phCode(file).then(function (code) {
       if (code) { feedback(false); phToScan(code); return; }
-      st.textContent = "Pas de code lisible : je lis le texte de la boîte… (quelques secondes)";
-      return Promise.all([loadOcr(), shrinkImage(file, 2000)]).then(function (a) { ocrStatus.pre = "Lecture de la photo"; return a[0].recognize(a[1]); }).then(function (r) {
-        ocrStatus("");
-        var lines = ocrLines(r.data), cands = phMatch(lines), inv = phLooksInvoice(lines);
+      st.textContent = "Pas de code lisible : je lis le texte de la boîte" + (visCount() ? " et je compare avec vos photos" : "") + "… (quelques secondes)";
+      var visP = visMatchFile(file).catch(function () { return []; });
+      return Promise.all([loadOcr(), shrinkImage(file, 2000)]).then(function (a) { ocrStatus.pre = "Lecture de la photo"; return a[0].recognize(a[1]); }, function (e) { return visP.then(function (v) { if (v.length) return { data: null }; throw e; }); }).then(function (r) {
+        return visP.then(function (vis) { return { r: r, vis: vis }; });
+      }).then(function (o) {
+        var r = o.r; ocrStatus("");
+        var lines = r.data ? ocrLines(r.data) : [], cands = visMerge(phMatch(lines), o.vis), inv = phLooksInvoice(lines);
         if (inv) {
           res.append(h("div", { class: "tir-note" }, h("b", { text: "On dirait une facture ou un bon de livraison. " }),
             h("button", { class: "btn sm primary", type: "button", text: "L'importer comme facture", onclick: function () { $("photoDlg").close(); importImage(file); } })));
@@ -14653,7 +14983,7 @@ html.is-touch .rxhov { display:none; }
           st.textContent = inv ? "Pour ajouter tout le document au stock, importez-le comme facture. Sinon, touchez un article." : cands.length === 1 ? "J'ai reconnu cet article : touchez-le pour faire une entrée ou une sortie." : "C'est peut-être l'un de ces articles : touchez le bon.";
           var box = h("div", { class: "ph-cands" });
           cands.forEach(function (c) {
-            box.append(h("button", { class: "ph-cand", type: "button", onclick: function () { phItem(c.it); } },
+            box.append(h("button", { class: "ph-cand", type: "button", title: c.tip || "", onclick: function () { phItem(c.it); } },
               h("div", null, h("div", { class: "item-name", text: labelOf(c.it) }), h("div", { class: "meta", text: c.why + " · stock " + fmt(c.it.qty) + (c.it.unit ? " " + c.it.unit : "") })),
               h("span", { class: "tir-conf " + (c.sure ? "haute" : c.sc >= 5 ? "moyenne" : "basse"), text: c.sure ? "sûr" : c.sc >= 5 ? "probable" : "possible" })));
           });
@@ -14675,6 +15005,7 @@ html.is-touch .rxhov { display:none; }
     $("photoSnap").addEventListener("click", phSnap);
     $("photoDlg").addEventListener("close", phStop);
     $("photoClose").addEventListener("click", function () { $("photoDlg").close(); });
+    $("photoShootBtn").addEventListener("click", function () { $("photoDlg").close(); openShoot(); });
   }
   function onScan(text) {
     var now = Date.now();
@@ -14842,12 +15173,21 @@ html.is-touch .rxhov { display:none; }
   $("importBar").addEventListener("click", function () { $("importFile").click(); });
   $("exportBtn").addEventListener("click", exportCsv);
   // Choix d'un fichier (téléphone ou ordinateur) : on reconnaît le type par le nom OU par le type annoncé par l'appareil
+  var xlsxP = null;
+  function xlsxLoad() {
+    if (window.XLSX) return Promise.resolve();
+    if (xlsxP) return xlsxP;
+    xlsxP = new Promise(function (ok, ko) { var sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; sc.integrity = "sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw"; sc.crossOrigin = "anonymous"; sc.onload = function () { window.XLSX ? ok() : ko(); }; sc.onerror = function () { xlsxP = null; ko(); }; document.head.appendChild(sc); });
+    return xlsxP;
+  }
   function importFileChosen(f) {
     var name = String(f.name || ""), type = String(f.type || "").toLowerCase();
     if (!f.size) { toast("Le fichier est vide ou n'a pas pu être lu. Sur téléphone, téléchargez-le d'abord sur l'appareil (pas seulement dans un nuage ou un e-mail), puis réessayez."); return; }
     var isPdf = /\.pdf$/i.test(name) || type === "application/pdf";
     var isCsv = /\.(csv|txt)$/i.test(name) || /^text\//.test(type) || /csv/.test(type);
-    var isXls = !isCsv && (/\.xlsx?$/i.test(name) || /spreadsheetml|ms-excel/.test(type));
+    var isXls = !isCsv && (/\.(xlsx|xlsm|xlsb|xls|ods|numbers)$/i.test(name) || /spreadsheet|ms-excel|opendocument/.test(type));
+    // fichier sans extension ni type reconnu (envoyé par WhatsApp, un e-mail…) : on tente quand même de le lire comme un tableur
+    if (!isCsv && !isXls && !/\.(pdf|jpe?g|png|webp|heic|heif|tiff?)$/i.test(name) && !/^image\/|pdf/.test(type)) isXls = true;
     var isImg = /^image\//.test(type) || /\.(jpe?g|png|webp|heic|heif|tiff?)$/i.test(name);
     if (isPdf) { importPdf(f); return; }
     if (isImg) { importImage(f); return; }
@@ -14855,7 +15195,7 @@ html.is-touch .rxhov { display:none; }
     var r = new FileReader();
     r.onerror = function () { toast("Le fichier n'a pas pu être lu. Sur téléphone, téléchargez-le d'abord sur l'appareil, puis réessayez."); };
     if (isXls) {
-      if (!window.XLSX) { toast("Impossible de lire un fichier Excel : vérifiez votre accès à internet."); return; }
+      if (!window.XLSX) { toast("Chargement du lecteur Excel…"); xlsxLoad().then(function () { importFileChosen(f); }, function () { toast("Impossible de lire un fichier Excel : vérifiez votre accès à internet, ou enregistrez le fichier en CSV."); }); return; }
       r.onload = function () {
         try {
           var wb = window.XLSX.read(new Uint8Array(r.result), { type: "array", cellDates: true });
@@ -14863,7 +15203,7 @@ html.is-touch .rxhov { display:none; }
             return { name: n, rows: window.XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: "" }) };
           });
           importSheets(sheets);
-        } catch (err) { toast("Ce fichier Excel n'a pas pu être lu."); }
+        } catch (err) { toast(/password|encrypt|protected/i.test(String(err && err.message)) ? "Ce fichier Excel est protégé par un mot de passe : enregistrez-en une copie sans mot de passe, puis réessayez." : "Ce fichier n'a pas pu être lu comme un tableur. Ouvrez-le dans Excel et enregistrez-le en .xlsx ou en .csv, puis réessayez."); }
       };
       r.readAsArrayBuffer(f);
     } else {
@@ -14881,10 +15221,46 @@ html.is-touch .rxhov { display:none; }
       r.readAsText(f, "utf-8");
     }
   }
+  // ---------- plusieurs factures d'un coup (jusqu'à 10) : une fenêtre de vérification par facture, à la suite ----------
+  var batch = null;
+  function batchStart(files) {
+    var docs = files.filter(function (f) { return /\.pdf$/i.test(f.name || "") || /pdf|^image\//i.test(f.type || "") || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name || ""); });
+    var other = files.length - docs.length;
+    if (!docs.length) { toast("Pour importer plusieurs fichiers à la fois, choisissez des factures en PDF ou en photo (un fichier Excel s'importe seul)."); return; }
+    if (docs.length > 10) { toast("10 factures au maximum à la fois : les 10 premières sont importées."); docs = docs.slice(0, 10); }
+    if (other) toast(other + " fichier" + (other > 1 ? "s" : "") + " qui n'" + (other > 1 ? "étaient" : "était") + " pas une facture PDF ou photo " + (other > 1 ? "ont été ignorés" : "a été ignoré") + ".");
+    batch = { files: docs, i: -1, done: [], failed: [] };
+    batchNext();
+  }
+  function batchLabel() { return batch ? "Facture " + (batch.i + 1) + " / " + batch.files.length + " · " + batch.files[batch.i].name : ""; }
+  function batchNext(failed) {
+    if (!batch) return;
+    clearInterval(batch.watch);
+    if (batch.i >= 0) (failed ? batch.failed : batch.done).push(batch.files[batch.i].name);
+    batch.i++;
+    if (batch.i >= batch.files.length) {
+      var b = batch; batch = null; $("pdfBatch").classList.add("hidden");
+      updBar("📄 " + b.files.length + " facture" + (b.files.length > 1 ? "s" : "") + " traitée" + (b.files.length > 1 ? "s" : "") + (b.failed.length ? " · " + b.failed.length + " non lue" + (b.failed.length > 1 ? "s" : "") + " : " + b.failed.join(", ") : "") + ".", b.failed.length ? "warn" : "ok", [], 15000);
+      return;
+    }
+    var f = batch.files[batch.i], seen = false, shut = 0, t0 = Date.now(), me = batch;
+    toast(batchLabel());
+    $("pdfBatch").textContent = "📄 " + batchLabel() + (batch.i + 1 < batch.files.length ? " — la suivante s'ouvrira ensuite" : " — dernière facture"); $("pdfBatch").classList.remove("hidden");
+    // on passe à la suivante quand la fenêtre de cette facture est fermée, ou si la facture n'a pas pu être lue
+    batch.watch = setInterval(function () {
+      if (batch !== me) { clearInterval(me.watch); return; }
+      var open = $("pdfDlg").open || $("multiDlg").open;
+      if (open) { seen = true; shut = 0; $("pdfBatch").textContent = "📄 " + batchLabel() + (batch.i + 1 < batch.files.length ? " — la suivante s'ouvrira ensuite" : " — dernière facture"); $("pdfBatch").classList.remove("hidden"); return; }
+      if (seen) { if (++shut >= 2) batchNext(false); return; }   // fermée depuis plus d'une seconde (et pas rouverte, ex. liste de plusieurs factures d'un même PDF)
+      if (Date.now() - t0 > 150000) batchNext(true);   // rien ne s'est ouvert après 2 min 30 : facture illisible, on continue
+    }, 700);
+    importFileChosen(f);
+  }
+  function batchFail() { if (batch) setTimeout(function () { if (batch && !$("pdfDlg").open && !$("multiDlg").open) batchNext(true); }, 300); }
   $("importFile").addEventListener("change", function (e) {
-    var f = e.target.files && e.target.files[0];
+    var fl = Array.prototype.slice.call(e.target.files || []);
     e.target.value = "";
-    if (f) importFileChosen(f);
+    if (fl.length > 1) batchStart(fl); else if (fl[0]) importFileChosen(fl[0]);
   });
   $("tplBtn").addEventListener("click", downloadTemplate);
   $("pdfCancel").addEventListener("click", function () { $("pdfDlg").close(); });
@@ -14950,6 +15326,7 @@ html.is-touch .rxhov { display:none; }
   document.addEventListener("visibilitychange", function () { if (!document.hidden && db && Date.now() - consoAt > 300000) loadConso(); });
   setInterval(function () { if (db && !document.hidden && Date.now() - consoAt > 900000) loadConso(); }, 60000);
   function setHideZero(on) { state.hideZero = !!on; try { localStorage.setItem("simsim_hidezero", on ? "1" : "0"); } catch (e) {} render(); }
+  $("hideMenuBtn").addEventListener("click", function () { var p = $("fhide"), on = p.classList.contains("hidden"); p.classList.toggle("hidden", !on); $("hideMenuBtn").setAttribute("aria-expanded", on ? "true" : "false"); });
   $("hideZeroBtn").addEventListener("click", function () { setHideZero(!state.hideZero); toast(state.hideZero ? "Seuls les articles en stock sont affichés." : "Tous les articles sont affichés, y compris ceux à 0."); });
   $("hideTotalBtn").addEventListener("click", function () {
     state.hideTotal = !state.hideTotal;
@@ -15379,7 +15756,7 @@ html.is-touch .rxhov { display:none; }
     try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () { applyTheme(cur()); }); } catch (e) {}
   })();
   try { var ts = localStorage.getItem("simsim_tilesort"); if (ts) state.tileSort = ts; } catch (e) {}
-  try { state.hideCat = localStorage.getItem("simsim_hidecat") === "1"; state.hideDup = localStorage.getItem("simsim_hidedup") === "1"; state.hideTotal = localStorage.getItem("simsim_hidetotal") !== "0"; state.hideZero = localStorage.getItem("simsim_hidezero") !== "0"; } catch (e) { state.hideZero = true; }
+  try { if (!localStorage.getItem("simsim_hidecat_v189")) { localStorage.setItem("simsim_hidecat", "1"); localStorage.setItem("simsim_hidecat_v189", "1"); } state.hideCat = localStorage.getItem("simsim_hidecat") !== "0"; state.hideDup = localStorage.getItem("simsim_hidedup") === "1"; state.hideTotal = localStorage.getItem("simsim_hidetotal") !== "0"; state.hideZero = localStorage.getItem("simsim_hidezero") !== "0"; } catch (e) { state.hideZero = true; state.hideCat = true; }
   function closeMenu() { $("moreMenu").classList.add("hidden"); $("moreBtn").setAttribute("aria-expanded", "false"); }
   // Menu Plus en onglets : un onglet n'apparaît que si au moins un de ses boutons est disponible pour cette personne ; seul l'onglet choisi est affiché
   var menuTab = "essentiel";
@@ -16072,6 +16449,7 @@ html.is-touch .rxhov { display:none; }
     return fetch(location.pathname + "?_=" + Date.now(), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("http"); return r.text(); })
       .then(function (t) { var m = /id="who"><\/span> · v(\d+)/.exec(t); if (!m) throw new Error("version"); return parseInt(m[1], 10); });
   }
+  document.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest(".step"); if (b && !b.disabled) { try { if (navigator.vibrate) navigator.vibrate(8); } catch (x) {} } }, true);
   function updBar(text, kind, actions, autoHide) {
     var b = $("updBar"); b.textContent = ""; b.className = "updbar " + (kind || "");
     b.append(h("span", { text: text }));
@@ -16218,7 +16596,7 @@ html.is-touch .rxhov { display:none; }
   var mfaDone = null, mfaOn = false, mfaChecked = false, secFactorId = "";
   function hasMfa() { return !!(sb && sb.auth && sb.auth.mfa); }
   function updateSecBanner() {
-    var on = (ownerOk || isAdmin) && mfaChecked && !mfaOn;
+    var on = false;   // v184 : plus de rappel « compte non protégé » (la double authentification reste possible dans Plus → Sécurité)
     $("secBannerTxt").textContent = "🔒 Votre compte " + (ownerOk ? "propriétaire" : "administrateur") + " n'est pas protégé par un code de sécurité : avec votre seul mot de passe, quelqu'un pourrait voir les données des patients (implants, sachets).";
     var later = 0; try { later = Number(localStorage.getItem("simsim_seclater_" + (sessionUser || "")) || 0); } catch (e) {}
     $("secBanner").classList.toggle("hidden", !on || Date.now() - later < 7 * 86400000);

@@ -1,6 +1,6 @@
 // SimSimStock - service worker : notifications + ouverture hors connexion.
 // A placer a cote de index.html, a la racine du site. Changer VERSION a chaque nouvelle version de l'appli.
-var VERSION = "v183";
+var VERSION = "v190";
 var SHELL = "simsim-shell-" + VERSION, LIBS = "simsim-libs", DATA = "simsim-data";
 var PRECACHE = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "apple-touch-icon.png",
   "vendor.js", "vendor-pdf-worker.js"];
@@ -18,7 +18,11 @@ function timeout(ms) { return new Promise(function (_r, rej) { setTimeout(functi
 function store(name, req, res) { if (res && (res.ok || res.type === "opaque")) { var copy = res.clone(); caches.open(name).then(function (c) { c.put(req, copy); }).catch(function () {}); } return res; }
 function networkFirst(req, name, key, ms, revalidate) {
   // revalidate : pour la page de l'appli, on demande toujours au serveur s'il y a une version plus récente (sinon le navigateur peut garder l'ancienne 10 minutes)
-  return Promise.race([revalidate ? fetch(req.url, { cache: "no-cache", credentials: "same-origin" }) : fetch(req), timeout(ms || 6000)]).then(function (res) { return store(name, key || req, res); }, function () {
+  return Promise.race([revalidate ? fetch(req.url, { cache: "no-cache", credentials: "same-origin" }) : fetch(req), timeout(ms || 6000)]).then(function (res) {
+    // hébergeur en panne (404, 500…) : on ouvre la dernière version gardée de l'appli plutôt qu'une page d'erreur
+    if (revalidate && res && res.status >= 400) return caches.open(name).then(function (c) { return c.match(key || req, { ignoreSearch: !!key }); }).then(function (hit) { return hit || res; });
+    return store(name, key || req, res);
+  }, function () {
     return caches.open(name).then(function (c) { return c.match(key || req, { ignoreSearch: !!key }); }).then(function (hit) { if (hit) return hit; throw new Error("hors-ligne"); });
   });
 }
