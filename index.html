@@ -2210,6 +2210,22 @@ html.is-touch .rxhov { display:none; }
 #shootDlg { width:min(520px, 96vw); }
 .shoot-card { border:1px solid var(--line); border-radius:14px; padding:14px; margin:12px 0; display:flex; flex-direction:column; gap:6px; }
 .shoot-name { font-size:19px; font-weight:600; }
+
+/* v186 : vérifier l'import */
+#impDlg .imp-cols { font-size:13px; margin:8px 0; line-height:1.5; }
+.imp-sum { display:flex; gap:10px; flex-wrap:wrap; margin:10px 0; }
+.imp-n { flex:1 1 160px; border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+.imp-n b { font-size:24px; }
+.imp-mode { display:flex; flex-direction:column; gap:6px; margin:10px 0; padding:10px 12px; border-radius:12px; background:var(--surface-2, #F4F4F4); }
+.imp-opt { display:flex; gap:8px; align-items:flex-start; cursor:pointer; font-size:14px; }
+.imp-opt input { margin-top:3px; }
+.imp-table { border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-top:6px; }
+.imp-row { display:grid; grid-template-columns:minmax(0,2.4fr) 70px minmax(0,1fr) minmax(0,.8fr) minmax(0,1fr); gap:8px; padding:6px 10px; font-size:13px; border-top:1px solid var(--line); align-items:center; }
+.imp-row span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.imp-head { border-top:0; background:var(--surface-2, #F4F4F4); font-weight:600; font-size:12px; }
+.imp-tag { font-size:11px; font-weight:600; border-radius:999px; padding:1px 8px; text-align:center; }
+.imp-tag.new { background:#E3F4EC; color:#0B6B4D; } .imp-tag.old { background:#E6EDFF; color:#2F67FF; }
+@media (max-width:760px) { .imp-row { grid-template-columns:minmax(0,2fr) 62px minmax(0,1fr); } .imp-row span:nth-child(4), .imp-row span:nth-child(5) { display:none; } }
 </style>
 </head>
 <body>
@@ -2306,7 +2322,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v185</div>
+            <div class="menu-who"><span id="who"></span> · v186</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -12979,7 +12995,8 @@ html.is-touch .rxhov { display:none; }
     if (!rows || rows.length < 2) return { ok: false, items: [] };
     var hd = findHeader(rows);
     if (!hd) return { ok: false, items: [] };
-    var map = hd.map;
+    var map = hd.map, headRow = rows[hd.i] || [];
+    var cols = Object.keys(map).map(function (f) { return { f: f, h: hd.guessed ? "(deviné)" : cellText(headRow[map[f]]) }; });
     var out = rows.slice(hd.i + 1).map(function (r) {
       var get = function (f) { return map[f] != null ? cellText(r[map[f]]) : ""; };
       var exp = get("expiry");
@@ -12993,66 +13010,117 @@ html.is-touch .rxhov { display:none; }
         tracked: parseTracked(get("tracked")), subcategory: get("subcategory")
       };
     }).filter(function (d) { return d.name && !/^(total|sous-total|sous total)\b/i.test(d.name); });
-    return { ok: true, items: out, guessed: !!hd.guessed };
+    out.forEach(function (d) { d._hasQty = map.qty != null; });
+    return { ok: true, items: out, guessed: !!hd.guessed, cols: cols };
   }
+  // v186 : import Excel en deux temps — on montre ce qui a été compris, puis on importe.
+  // Les articles déjà présents (même référence, sinon même nom) voient leur quantité mise à jour (au choix : remplacer ou ajouter).
+  var IMP_LABEL = { name: "Article", qty: "Quantité", category: "Domaine", subcategory: "Sous-catégorie", supplier: "Fournisseur", ref: "Référence", location: "Emplacement", unit: "Unité", min: "Seuil", target: "Cible", lot: "Lot", expiry: "Péremption", price: "Prix", description: "Description", tracked: "Suivi" };
   function importSheets(sheets) {
-    var all = [], bad = 0;
+    var all = [], bad = 0, cols = [], guessed = false;
     sheets.forEach(function (sh) {
       var def = normDomain(sh.name);
       if (DOMAINS.indexOf(def) === -1) def = "";
       var res = itemsFromRows(sh.rows, def);
       if (!res.ok) { bad++; return; }
+      if (res.items.length && !cols.length) { cols = res.cols || []; guessed = !!res.guessed; }
       all = all.concat(res.items);
     });
     if (!all.length) {
       toast(bad ? "Je n'ai pas trouvé la colonne des noms d'articles. Ajoutez une colonne « Article » (ou « Désignation ») au-dessus de la liste, puis réessayez." : "Aucune ligne exploitable dans le fichier : vérifiez qu'il contient bien une liste d'articles.");
       return;
     }
-    var have = new Map();
-    trash.forEach(function (it) { have.set(norm(it.name).trim(), it); });
-    items.forEach(function (it) { have.set(norm(it.name).trim(), it); });
+    // on retrouve les articles déjà présents : par référence d'abord, sinon par nom
+    var byName = new Map(), byRef = new Map();
+    [trash, items].forEach(function (src) { src.forEach(function (it) { byName.set(norm(it.name).trim(), it); var r = norm(it.ref || "").trim(); if (r) byRef.set(r, it); }); });
     var groups = new Map(), order = [];
     all.forEach(function (d) {
-      var k = norm(d.name).trim();
-      if (!groups.has(k)) { groups.set(k, []); order.push(k); }
-      groups.get(k).push(d);
+      var r = norm(d.ref || "").trim(), ex = (r && byRef.get(r)) || byName.get(norm(d.name).trim()) || null;
+      var k = ex ? "id:" + ex.id : "n:" + norm(d.name).trim();
+      if (!groups.has(k)) { groups.set(k, { ex: ex, rows: [] }); order.push(k); }
+      groups.get(k).rows.push(d);
     });
-    // Plusieurs lignes pour le même article = plusieurs lots (une ligne par lot : Lot, Péremption, Quantité).
-    var fresh = [], upd = [], dup = 0, nLots = 0;
+    var fresh = [], exist = [], nLots = 0;
     order.forEach(function (k) {
-      var g = groups.get(k), exist = have.get(k);
-      var lots = [];
-      if (lotsOk && g.some(function (d) { return d.lot || d.expiry; })) {
-        g.forEach(function (d) {
+      var g = groups.get(k), rows = g.rows, lots = [];
+      if (lotsOk && rows.some(function (d) { return d.lot || d.expiry; })) {
+        rows.forEach(function (d) {
           if (!(d.qty > 0)) return;
           var m = lots.find(function (l) { return (l.lot || "") === (d.lot || "") && (l.expiry || "") === (d.expiry || ""); });
           if (m) m.qty = r2(m.qty + d.qty); else lots.push({ lot: d.lot || "", expiry: d.expiry || null, qty: d.qty });
         });
       }
-      if (exist) {
-        if (exist.archived) { dup++; return; }
-        if (lots.length) upd.push({ it: exist, lots: lots }); else dup++;
-        return;
-      }
-      var base = Object.assign({}, g[0]);
-      if (lots.length) {
-        var dv = deriveFromLots(lots);
-        base.qty = dv.qty; base.expiry = dv.expiry; base.lot = dv.lot; base._lots = lots; nLots += lots.length;
-      } else if (g.length > 1) dup += g.length - 1;
+      var qty = r2(rows.reduce(function (a, d) { return a + (Number(d.qty) || 0); }, 0));
+      if (g.ex) { exist.push({ it: g.ex, d: rows[0], qty: qty, hasQty: rows.some(function (d) { return d._hasQty; }), lots: lots }); return; }
+      var base = Object.assign({}, rows[0]); base.qty = qty;
+      if (lots.length) { var dv = deriveFromLots(lots); base.qty = dv.qty; base.expiry = dv.expiry; base.lot = dv.lot; base._lots = lots; nLots += lots.length; }
       fresh.push(base);
     });
     if (!trackedOk && fresh.some(function (d) { return d.tracked === false; })) { toast("Lancez d'abord le script SQL « ajout-catalogue » dans Supabase."); return; }
     if (!subOk && fresh.some(function (d) { return d.subcategory; })) { toast("Lancez d'abord le script SQL « ajout-sous-categories » dans Supabase."); return; }
-    var capped = fresh.length > 500;
-    if (capped) fresh = fresh.slice(0, 500);
-    var doUpd = false;
-    if (upd.length) {
-      doUpd = window.confirm(upd.length + " article" + (upd.length > 1 ? "s" : "") + " déjà présent" + (upd.length > 1 ? "s" : "") + " ont des lots dans ce fichier.\n\nOK : remplacer leurs lots et leur quantité par ceux du fichier.\nAnnuler : les laisser tels quels.");
-      if (!doUpd) dup += upd.length;
+    openImportPreview({ fresh: fresh, exist: exist, cols: cols, guessed: guessed, nLots: nLots, total: all.length });
+  }
+  function openImportPreview(o) {
+    var d = $("impDlg"); if (!d) { d = h("dialog", { id: "impDlg", class: "wide" }); document.body.append(d); }
+    d.textContent = "";
+    var withQty = o.exist.filter(function (x) { return x.hasQty; });
+    var mode = withQty.length ? "replace" : "skip";
+    var colTxt = o.cols.map(function (c) { return (IMP_LABEL[c.f] || c.f) + (c.h && c.h !== "(deviné)" ? " ← « " + c.h + " »" : " (deviné)"); }).join(" · ");
+    var hasQtyCol = o.cols.some(function (c) { return c.f === "qty"; });
+    var box = h("div", { class: "dlg" }, h("h2", { text: "📥 Vérifier l'import" }),
+      h("div", { class: "sub", text: o.total + " ligne" + (o.total > 1 ? "s" : "") + " lue" + (o.total > 1 ? "s" : "") + " dans le fichier." }),
+      h("div", { class: "imp-cols" }, h("b", { text: "Colonnes comprises : " }), colTxt || "—"),
+      hasQtyCol ? null : h("div", { class: "dnote", text: "⚠ Je n'ai pas trouvé de colonne de quantité : les nouveaux articles seront créés à 0, et les articles déjà présents ne changeront pas. Ajoutez une colonne « Quantité » au fichier si vous voulez remplir le stock." }));
+    var sum = h("div", { class: "imp-sum" });
+    sum.append(h("div", { class: "imp-n" }, h("b", { text: String(o.fresh.length) }), h("span", { text: " nouvel" + (o.fresh.length > 1 ? "s" : "") + " article" + (o.fresh.length > 1 ? "s" : "") + " à créer" + (o.nLots ? " (" + o.nLots + " lots)" : "") })));
+    sum.append(h("div", { class: "imp-n" }, h("b", { text: String(o.exist.length) }), h("span", { text: " déjà dans votre stock" + (withQty.length && withQty.length !== o.exist.length ? " (" + withQty.length + " avec une quantité)" : "") })));
+    box.append(sum);
+    if (withQty.length) {
+      var opts = [["replace", "Remplacer leur quantité par celle du fichier", "idéal pour un inventaire : le stock devient exactement celui du fichier"], ["add", "Ajouter la quantité du fichier à leur stock", "idéal pour une livraison"], ["skip", "Ne pas toucher aux articles déjà présents", ""]];
+      var grp = h("div", { class: "imp-mode", role: "radiogroup", "aria-label": "Articles déjà présents" }, h("div", { class: "meta", text: "Pour les articles déjà présents :" }));
+      opts.forEach(function (op) {
+        var r = h("input", { type: "radio", name: "impMode", value: op[0] }); r.checked = op[0] === mode;
+        r.addEventListener("change", function () { if (r.checked) { mode = op[0]; drawEx(); } });
+        grp.append(h("label", { class: "imp-opt" }, r, h("span", {}, h("b", { text: op[1] }), op[2] ? h("span", { class: "meta", text: " · " + op[2] }) : null)));
+      });
+      box.append(grp);
     }
-    if (!fresh.length && !doUpd) { toast("Tous les articles du fichier existent déjà (" + dup + " ignorés)."); return; }
-    var chunks = [];
-    for (var i = 0; i < fresh.length; i += 100) chunks.push(fresh.slice(i, i + 100));
+    // aperçu
+    var prev = h("div", { class: "imp-prev" });
+    var drawEx = function () {
+      prev.textContent = "";
+      var rows = o.fresh.slice(0, 5).map(function (x) { return [x.name, "nouveau", fmt(x.qty || 0), x.price ? money(x.price) : "", x.category || ""]; })
+        .concat(withQty.slice(0, 5).map(function (x) { var cur = Number(x.it.qty) || 0, nv = mode === "replace" ? x.qty : mode === "add" ? r2(cur + x.qty) : cur; return [x.it.name, "déjà là", fmt(cur) + (nv !== cur ? " → " + fmt(nv) : ""), x.d.price ? money(x.d.price) : "", x.it.category || ""]; }));
+      var t = h("div", { class: "imp-table" }, h("div", { class: "imp-row imp-head" }, ["Article", "", "Quantité", "Prix", "Domaine"].map(function (c) { return h("span", { text: c }); })));
+      rows.forEach(function (r) { t.append(h("div", { class: "imp-row" }, r.map(function (c, i) { return h("span", { class: i === 1 ? "imp-tag " + (c === "nouveau" ? "new" : "old") : "", text: c }); }))); });
+      prev.append(h("div", { class: "meta", text: "Aperçu (premières lignes) :" }), t);
+    };
+    drawEx(); box.append(prev);
+    var go = h("button", { class: "btn primary", type: "button", text: "Importer" });
+    go.addEventListener("click", function () { d.close(); runImport(o, mode); });
+    box.append(h("div", { class: "dlg-actions" }, h("span", { class: "spacer" }), h("button", { class: "btn", type: "button", text: "Annuler", onclick: function () { d.close(); } }), go));
+    d.append(box); d.showModal();
+  }
+  function runImport(o, mode) {
+    var fresh = o.fresh, nLots = o.nLots, upd = [], moves = [], fill = [];
+    o.exist.forEach(function (x) {
+      var it = x.it;
+      // champs vides de la fiche complétés par le fichier (prix, fournisseur, référence…), sans rien écraser
+      var patch = {};
+      ["supplier", "ref", "location", "unit"].forEach(function (f) { if (!it[f] && x.d[f]) patch[f] = x.d[f]; });
+      if (!(Number(it.price) > 0) && x.d.price > 0) patch.price = x.d.price;
+      if (!(Number(it.min) > 0) && x.d.min > 0) patch.min = x.d.min;
+      if (it.archived) patch.archived = false;
+      if (Object.keys(patch).length) fill.push({ it: it, patch: patch });
+      if (mode === "skip" || !x.hasQty) return;
+      if (x.lots.length && mode === "replace") { upd.push({ it: it, lots: x.lots }); return; }
+      var cur = Number(it.qty) || 0, target = mode === "replace" ? x.qty : r2(cur + x.qty), delta = r2(target - cur);
+      if (delta !== 0) moves.push({ it: it, delta: delta });
+    });
+    if (!fresh.length && !moves.length && !upd.length && !fill.length) { toast("Rien à changer : le stock est déjà à jour avec ce fichier."); return; }
+    var chunks = []; for (var i = 0; i < fresh.length; i += 100) chunks.push(fresh.slice(i, i + 100));
+    var busy = moves.length + fill.length + upd.length > 20;
+    if (busy) toast("Import en cours… (" + (fresh.length + moves.length) + " articles)");
     enqueue(function () {
       return chunks.reduce(function (p, chunk) {
         return p.then(function () {
@@ -13064,23 +13132,25 @@ html.is-touch .rxhov { display:none; }
               if (src && src._lots) src._lots.forEach(function (l) { lotRows.push({ cabinet_id: cabinetId, item_id: r.id, lot: l.lot, expiry: l.expiry || null, qty: l.qty }); });
             });
             if (!lotRows.length) return null;
-            return sb.from("lots").insert(lotRows).select().then(function (r3) {
-              (check(r3) || []).forEach(function (l) { (lotsByItem[l.item_id] = lotsByItem[l.item_id] || []).push(l); });
-            });
+            return sb.from("lots").insert(lotRows).select().then(function (r3) { (check(r3) || []).forEach(function (l) { (lotsByItem[l.item_id] = lotsByItem[l.item_id] || []).push(l); }); });
           });
         });
       }, Promise.resolve()).then(function () {
-        if (!doUpd) return null;
+        return fill.reduce(function (p, f) { return p.then(function () { return sb.from("items").update(Object.assign({ updated_at: new Date().toISOString() }, f.patch)).eq("id", f.it.id).then(function (r) { if (!r.error) { var c = items.get(f.it.id) || trash.get(f.it.id); if (c) { Object.assign(c, f.patch); if (f.patch.archived === false && trash.has(c.id)) { trash.delete(c.id); items.set(c.id, c); } } } }); }); }, Promise.resolve());
+      }).then(function () {
         return upd.reduce(function (p, u) { return p.then(function () { return persistLots(u.it, u.lots); }); }, Promise.resolve());
       }).then(function () {
-        render();
-        return appendLog({ type: "import", itemId: "", item: "Import de fichier", delta: 0, qty: 0, note: fresh.length + " articles importés" + (nLots ? ", " + nLots + " lots" : "") + (doUpd ? ", lots de " + upd.length + " articles mis à jour" : "") });
+        // les changements de quantité passent par le journal (annulables, visibles dans l'historique)
+        return moves.reduce(function (p, m) { return p.then(function () { return doAdjust(m.it.id, m.delta, mode === "replace" ? "Inventaire (import Excel)" : "Entrée (import Excel)").catch(function () {}); }); }, Promise.resolve());
       }).then(function () {
-        toast(fresh.length + " article" + (fresh.length > 1 ? "s" : "") + " ajouté" + (fresh.length > 1 ? "s" : "") +
-          (nLots ? " (" + nLots + " lots)" : "") +
-          (doUpd ? ", " + upd.length + " mis à jour avec leurs lots" : "") +
-          (dup ? ", " + dup + " déjà présent" + (dup > 1 ? "s" : "") + " ignoré" + (dup > 1 ? "s" : "") : "") +
-          (capped ? " (500 premiers seulement)" : "") + ".");
+        render();
+        return appendLog({ type: "import", itemId: "", item: "Import de fichier", delta: 0, qty: 0, note: fresh.length + " créés, " + (moves.length + upd.length) + " quantités mises à jour" });
+      }).then(function () {
+        var zeroNew = fresh.filter(function (x) { return !(x.qty > 0); }).length;
+        toast("✓ Import terminé : " + fresh.length + " article" + (fresh.length > 1 ? "s" : "") + " créé" + (fresh.length > 1 ? "s" : "") + (nLots ? " (" + nLots + " lots)" : "") +
+          ", " + (moves.length + upd.length) + " quantité" + (moves.length + upd.length > 1 ? "s" : "") + " mise" + (moves.length + upd.length > 1 ? "s" : "") + " à jour" +
+          (fill.length ? ", " + fill.length + " fiche" + (fill.length > 1 ? "s" : "") + " complétée" + (fill.length > 1 ? "s" : "") : "") + "." +
+          (zeroNew && state.hideZero ? " " + zeroNew + " article" + (zeroNew > 1 ? "s" : "") + " à 0 sont masqués (👁 Masquer)." : ""));
       });
     });
   }
@@ -13095,7 +13165,7 @@ html.is-touch .rxhov { display:none; }
       ["Seule la colonne « Article » est obligatoire. Toutes les autres sont facultatives."],
       ["Domaine : Endodontie, Chirurgie, Implants, Anesthésie, Composites, Colles et adhésifs, Scellement et ciments, Prothèse et empreintes, Gants et protection, Désinfection et hygiène, Radiologie ou Consommables."],
       ["Vous pouvez aussi créer une feuille par domaine (nommée Endodontie, Chirurgie…), sans colonne Domaine."],
-      ["Un article dont le nom existe déjà dans l'appli est ignoré : l'import n'écrase rien."],
+      ["Un article déjà présent dans l'appli (même référence, sinon même nom) n'est pas recréé : l'appli vous propose de remplacer sa quantité par celle du fichier, ou de l'ajouter."],
       ["Suivi : « oui » par défaut. Mettez « non » pour un simple catalogue de produits, sans alertes ni stock."],
       ["Lots : une ligne par lot pour un même article (colonnes Lot, Péremption et Quantité). Pour un article déjà présent, le fichier remplace ses lots et sa quantité après confirmation."],
       ["Péremption : jj/mm/aaaa. Supprimez cette feuille d'aide si vous voulez, elle est ignorée à l'import."]
