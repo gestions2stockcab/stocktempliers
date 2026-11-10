@@ -2254,6 +2254,12 @@ html.is-touch .rxhov { display:none; }
 .hs-cd.on { background:#A05BFF; color:#fff; border-color:#A05BFF; } .hs-cd.on small { color:#fff; }
 .hs-legend { margin-top:6px; font-size:12px; }
 .hs-modes { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+.hs-people { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+.hs-pp { border:1px solid var(--line); background:var(--surface, #fff); color:var(--ink); border-radius:999px; padding:8px 14px; font:inherit; font-size:15px; cursor:pointer; }
+.hs-pp.on { background:#A05BFF; border-color:#A05BFF; color:#fff; font-weight:600; }
+.hs-pp.add { border-style:dashed; color:#7B3FD0; }
+.hs-whosel { display:none; } .hs-whosel:has(input:not(.hidden)) { display:flex; }
+.hs-manage summary { cursor:pointer; font-size:13px; color:var(--muted); } .hs-mrow { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-top:1px solid var(--line); font-size:14px; }
 .hs-modes .toggle[aria-pressed="true"] { background:#A05BFF; color:#fff; border-color:#A05BFF; font-weight:600; }
 .hs-card .f, .hs-card .hs-row > * { min-width:0; } .hs-card select, .hs-card input[type="text"] { max-width:100%; width:100%; box-sizing:border-box; }
 .hs-card .hs-total { width:150px; }
@@ -2366,7 +2372,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v193</div>
+            <div class="menu-who"><span id="who"></span> · v194</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -11544,6 +11550,14 @@ html.is-touch .rxhov { display:none; }
   }
   function hsMonthKey(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1); }
   function hsFmt(min) { min = Math.round(min || 0); var hh = Math.floor(min / 60), mm = min % 60; return hh ? hh + " h" + (mm ? " " + pad2(mm) : "") : mm + " min"; }
+  function hsTeamNames() { var l = (fiche && Array.isArray(fiche.equipe)) ? fiche.equipe.slice() : []; hs.rows.forEach(function (x) { if (!x.user_id && x.nom && l.indexOf(x.nom) === -1) l.push(x.nom); }); return l.sort(function (a, b) { return a.localeCompare(b); }); }
+  function hsSaveTeam(list) {
+    var data = Object.assign({}, fiche || {}, { equipe: list });
+    var done = function () { fiche = data; render(); };
+    try { localStorage.setItem(ficheKey(), JSON.stringify(data)); } catch (e) {}
+    if (!ficheOk) { done(); return; }
+    sb.from("cabinet_fiche").upsert({ cabinet_id: cabinetId, data: data }, { onConflict: "cabinet_id" }).then(function (r) { if (r.error) { toast("La liste n'a pas pu être enregistrée."); return; } done(); }, function () { toast("Connexion impossible."); });
+  }
   function hsWho(x) { return x.user_id ? personLabel(x.user_id) : (x.nom || "?"); }
   function hsKey(x) { return x.user_id || "nom:" + norm(x.nom || ""); }
   function hsMine(month) { return hs.rows.filter(function (x) { return x.user_id === sessionUser && (!month || String(x.jour).slice(0, 7) === month); }); }
@@ -11602,6 +11616,7 @@ html.is-touch .rxhov { display:none; }
   }
   function renderHeures(box) {
     loadHeures();
+    if (!ficheLoaded && cabinetId) loadFiche(cabinetId);
     if (!hs.month) hs.month = hsMonthKey(new Date());
     var mk = hs.month, d0 = new Date(mk + "-01T12:00:00"), mLabel = d0.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
     box.append(h("div", { class: "rcv-intro" }, h("h3", { text: "⏱ Heures supplémentaires" }), h("div", { class: "meta", text: isAdmin ? "Chacune déclare ses heures sup ; vous pouvez aussi les saisir vous-même pour quelqu'un (« Pour qui »), elles sont alors validées directement. Fin de mois : export Excel pour le comptable." : "Déclarez vos heures sup le jour même ; un administrateur du cabinet les valide." })));
@@ -11619,14 +11634,27 @@ html.is-touch .rxhov { display:none; }
         who.append(h("option", { value: "me", text: "Moi (" + personLabel(sessionUser, myEmail) + ")" }));
         msgPeople.filter(function (p) { return p.user_id !== sessionUser; }).sort(function (a, b) { return personLabel(a.user_id, a.email).localeCompare(personLabel(b.user_id, b.email)); })
           .forEach(function (p) { who.append(h("option", { value: "u:" + p.user_id, text: personLabel(p.user_id, p.email) + (profilBadge(p.user_id) ? " " + profilBadge(p.user_id) : "") })); });
-        var names = []; hs.rows.forEach(function (x) { if (!x.user_id && x.nom && names.indexOf(x.nom) === -1) names.push(x.nom); });
-        names.sort().forEach(function (n) { who.append(h("option", { value: "n:" + n, text: n + " (sans compte)" })); });
+        hsTeamNames().forEach(function (n) { who.append(h("option", { value: "n:" + n, text: n })); });
         who.append(h("option", { value: "autre", text: "＋ Autre personne (sans compte dans l'appli)…" }));
         if (hs.who) who.value = hs.who;
         who.addEventListener("change", function () { hs.who = who.value; whoName.classList.toggle("hidden", who.value !== "autre"); draw(); if (who.value === "autre") setTimeout(function () { whoName.focus(); }, 0); });
         whoName.classList.toggle("hidden", who.value !== "autre");
         whoName.addEventListener("input", function () { hs.whoName = whoName.value; });
-        card.append(h("div", { class: "hs-row" }, h("label", { class: "f hs-grow" }, "Pour qui", who), whoName));
+        // un toucher pour choisir la personne ; la liste se gère ici (ajout / retrait)
+        var quick = h("div", { class: "hs-people" });
+        var pick = function (v) { who.value = v; who.dispatchEvent(new Event("change")); Array.prototype.forEach.call(quick.querySelectorAll(".hs-pp[data-v]"), function (b) { b.classList.toggle("on", b.getAttribute("data-v") === v); }); };
+        var chip = function (v, t) { quick.append(h("button", { class: "hs-pp" + (who.value === v ? " on" : ""), type: "button", "data-v": v, text: t, onclick: function () { pick(v); } })); };
+        chip("me", "Moi");
+        msgPeople.filter(function (p) { return p.user_id !== sessionUser; }).forEach(function (p) { chip("u:" + p.user_id, personLabel(p.user_id, p.email)); });
+        hsTeamNames().forEach(function (n) { chip("n:" + n, n); });
+        var addP = h("button", { class: "hs-pp add", type: "button", text: "＋ Personne", title: "Ajouter une personne de l'équipe qui n'a pas de compte dans l'appli", onclick: function () {
+          var n = (window.prompt("Prénom et nom de la personne (ex. Carole Steiner) :") || "").replace(/\s+/g, " ").trim(); if (n.length < 2) return;
+          var l = (fiche && Array.isArray(fiche.equipe)) ? fiche.equipe.slice() : []; if (l.indexOf(n) === -1) l.push(n); hs.who = "n:" + n; hsSaveTeam(l); toast("« " + n + " » ajoutée à l'équipe."); } });
+        quick.append(addP);
+        var manage = h("details", { class: "hs-manage" }, h("summary", { text: "Gérer la liste" }));
+        ((fiche && fiche.equipe) || []).forEach(function (n) { manage.append(h("div", { class: "hs-mrow" }, h("span", { text: n }), h("button", { class: "btn sm", type: "button", text: "Retirer", onclick: function () { if (!window.confirm("Retirer « " + n + " » de la liste ? (ses heures déjà déclarées sont gardées)")) return; hsSaveTeam(fiche.equipe.filter(function (x) { return x !== n; })); if (hs.who === "n:" + n) hs.who = "me"; } }))); });
+        if (!((fiche && fiche.equipe) || []).length) manage.append(h("div", { class: "meta", text: "Ajoutez les personnes sans compte (ex. Carole Steiner, Mariana Lunga) avec « ＋ Personne »." }));
+        card.append(h("div", { class: "f" }, h("span", { class: "meta", text: "Pour qui" }), quick), manage, h("div", { class: "hs-row hs-whosel" }, who, whoName));
       }
       var target = function () {   // la personne concernée, pour montrer ses jours déjà déclarés
         if (!who || who.value === "me") return function (x) { return x.user_id === sessionUser; };
@@ -11730,6 +11758,7 @@ html.is-touch .rxhov { display:none; }
       var all = hs.rows.filter(function (x) { return String(x.jour).slice(0, 7) === mk; }), pend = all.filter(function (x) { return x.statut === "en_attente"; });
       var ac = h("section", { class: "hs-sec" }, h("h3", { text: "Toute l'équipe" }));
       var by = {}; all.forEach(function (x) { (by[hsKey(x)] = by[hsKey(x)] || []).push(x); });
+      hsTeamNames().forEach(function (n) { var k = "nom:" + norm(n); if (!by[k]) by[k] = [{ user_id: null, nom: n, minutes: 0, statut: "_vide" }]; });
       var tb = h("div", { class: "hs-team" }, h("div", { class: "hs-trow hs-thead" }, h("span", { text: "Personne" }), h("span", { text: "Validées" }), h("span", { text: "En attente" })));
       Object.keys(by).sort(function (a, b) { return hsWho(by[a][0]).localeCompare(hsWho(by[b][0])); }).forEach(function (u) { tb.append(h("div", { class: "hs-trow" }, h("span", { text: hsWho(by[u][0]) }), h("b", { text: hsFmt(sum(by[u], "validee")) }), h("span", { text: hsFmt(sum(by[u], "en_attente")) }))); });
       if (!all.length) ac.append(h("div", { class: "meta", text: "Personne n'a déclaré d'heures sup ce mois-ci." })); else ac.append(tb);
