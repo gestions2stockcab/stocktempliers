@@ -19,6 +19,11 @@ create table if not exists public.heures_sup (
   constraint heures_sup_tailles check (length(motif) <= 80 and length(note) <= 300)
 );
 create index if not exists heures_sup_cab on public.heures_sup (cabinet_id, jour desc);
+-- v192 : un administrateur peut saisir pour une autre personne de l'équipe, ou pour quelqu'un sans compte (nom écrit)
+alter table public.heures_sup add column if not exists nom text not null default '';
+alter table public.heures_sup alter column user_id drop not null;
+alter table public.heures_sup drop constraint if exists heures_sup_personne;
+alter table public.heures_sup add constraint heures_sup_personne check (user_id is not null or length(trim(nom)) between 2 and 60);
 
 -- administrateur du cabinet ?
 create or replace function public.hs_admin(p_cabinet uuid) returns boolean
@@ -31,10 +36,19 @@ create or replace function public.heures_sup_controle() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
   if tg_op = 'INSERT' then
-    new.user_id := auth.uid(); new.statut := 'en_attente'; new.valide_par := ''; new.valide_le := null; new.created_at := now();
+    new.created_at := now();
+    if public.hs_admin(new.cabinet_id) then
+      -- saisie par un administrateur : pour lui-même, pour un membre du cabinet, ou pour une personne sans compte ; validée d'office
+      if new.user_id is not null and not exists (select 1 from public.members where cabinet_id = new.cabinet_id and user_id = new.user_id) then raise exception 'personne_inconnue'; end if;
+      if new.user_id is null and coalesce(trim(new.nom), '') = '' then new.user_id := auth.uid(); end if;
+      if new.user_id is not null then new.nom := ''; end if;
+      new.statut := 'validee'; new.valide_par := coalesce((select email from auth.users where id = auth.uid()), ''); new.valide_le := now();
+    else
+      new.user_id := auth.uid(); new.nom := ''; new.statut := 'en_attente'; new.valide_par := ''; new.valide_le := null;
+    end if;
     return new;
   end if;
-  new.cabinet_id := old.cabinet_id; new.user_id := old.user_id; new.created_at := old.created_at;
+  new.cabinet_id := old.cabinet_id; new.user_id := old.user_id; new.nom := old.nom; new.created_at := old.created_at;
   if new.statut is distinct from old.statut then
     if not public.hs_admin(old.cabinet_id) then raise exception 'validation_reservee'; end if;
     new.valide_par := coalesce((select email from auth.users where id = auth.uid()), '');
