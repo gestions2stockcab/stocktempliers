@@ -2276,6 +2276,9 @@ html.is-touch .rxhov { display:none; }
 .hs-team { border:1px solid var(--line); border-radius:10px; overflow:hidden; margin:6px 0 10px; }
 .hs-trow { display:grid; grid-template-columns:minmax(0,2fr) 1fr 1fr; gap:8px; padding:7px 12px; border-top:1px solid var(--line); font-size:14px; } .hs-thead { border-top:0; background:var(--surface-2, #F4F4F4); font-weight:600; font-size:12px; }
 .hs-sub { margin-top:10px; } .hs-done { margin-top:8px; } .hs-done summary { cursor:pointer; font-weight:600; font-size:14px; }
+
+/* v195 : quantité 0 = pas cette fois */
+.line.oskip { opacity:.5; } .line.oskip .num:last-child { font-size:12px; font-style:italic; }
 </style>
 </head>
 <body>
@@ -2372,7 +2375,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v194</div>
+            <div class="menu-who"><span id="who"></span> · v195</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -9758,9 +9761,11 @@ html.is-touch .rxhov { display:none; }
   function orderKey() { return "simsim_orderqty_" + (cabinetId || ""); }
   function loadOrderQty() { try { orderQty = JSON.parse(localStorage.getItem(orderKey()) || "{}") || {}; } catch (e) { orderQty = {}; } }
   function saveOrderQty() { try { localStorage.setItem(orderKey(), JSON.stringify(orderQty)); } catch (e) {} }
-  function orderQtyOf(it) { var v = Number(orderQty[it.id]); return v >= 1 ? v : suggestedQty(it); }
+  // 0 = « pas cette fois » : l'article reste dans la liste (grisé) mais n'est ni copié, ni envoyé, ni marqué commandé
+  function orderQtyOf(it) { if (orderQty[it.id] === 0) return 0; var v = Number(orderQty[it.id]); return v >= 1 ? v : suggestedQty(it); }
   function setOrderQty(it, n) {
     var pk = packOf(it);
+    if (!(Math.round(Number(n) || 0) > 0)) { orderQty[it.id] = 0; saveOrderQty(); render(); return; }
     n = Math.max(pk, Math.ceil(Math.max(1, Math.round(Number(n) || 0)) / pk) * pk);
     if (n === suggestedQty(it)) delete orderQty[it.id]; else orderQty[it.id] = n;
     saveOrderQty(); render();
@@ -11870,7 +11875,7 @@ html.is-touch .rxhov { display:none; }
         var amount = it.price > 0 ? q * it.price : null;
         if (amount !== null) { total += amount; hasPrice = true; }
         var dlo = daysLeft(it);
-        lines.append(h("div", { class: "line" },
+        lines.append(h("div", { class: "line" + (q === 0 ? " oskip" : "") },
           h("div", null, h("div", { text: labelOf(it) }), h("div", { class: "meta", text: [it.ref ? "réf. " + it.ref : "", dlo !== null && dlo > 0 ? "≈ " + fmtDays(dlo) + " de stock" : "", priceNote(it), Number(it.pack) > 1 ? "par lots de " + fmt(it.pack) : "", it.flag_at ? "⚑ signalé" + (it.flag_by ? " par " + it.flag_by.split("@")[0] : "") + " le " + new Date(it.flag_at).toLocaleDateString("fr-FR") : ""].filter(Boolean).join(" · ") }),
             readOnly ? null : h("div", { class: "lineact" },
               h("button", { class: "btn sm", onclick: function () { openOrdDlg(it); }, text: "Marquer comme commandé" }),
@@ -11880,11 +11885,13 @@ html.is-touch .rxhov { display:none; }
               }, "Plus d'actions pour " + it.name))),
           h("div", { class: "num", text: fmt(it.qty) }),
           readOnly ? h("div", { class: "num", text: fmt(q) + (it.unit ? " " + it.unit : "") }) : h("div", { class: "num ostep" },
-            h("button", { class: "step", type: "button", "aria-label": "Commander une unité de moins : " + it.name, disabled: q <= packOf(it), onclick: function () { setOrderQty(it, q - packOf(it)); }, text: "−" }),
-            h("input", { class: "oqty", type: "number", min: String(packOf(it)), step: String(packOf(it)), inputmode: "numeric", value: String(q), title: it.unit ? "en " + it.unit : "", "aria-label": "Quantité à commander : " + it.name, onchange: function (e) { setOrderQty(it, e.target.value); } }),
+            h("button", { class: "step", type: "button", "aria-label": "Commander une unité de moins : " + it.name, disabled: q <= 0, onclick: function () { setOrderQty(it, q - packOf(it)); }, text: "−" }),
+            h("input", { class: "oqty", type: "number", min: "0", step: String(packOf(it)), inputmode: "numeric", value: String(q), title: it.unit ? "en " + it.unit : "", "aria-label": "Quantité à commander : " + it.name, onchange: function (e) { setOrderQty(it, e.target.value); } }),
             h("button", { class: "step", type: "button", "aria-label": "Commander une unité de plus : " + it.name, onclick: function () { setOrderQty(it, q + packOf(it)); }, text: "+" })),
-          h("div", { class: "num", text: amount !== null ? money(amount) : "—" })));
+          h("div", { class: "num", text: q === 0 ? "pas cette fois" : amount !== null ? money(amount) : "—" })));
       });
+      // les articles mis à 0 ne partent pas dans la commande
+      var full = arr; arr = arr.filter(function (it) { return orderQtyOf(it) > 0; });
       var text = "Commande " + sup + "\n" + arr.map(function (it) {
         return "- " + orderQtyOf(it) + (it.unit ? " " + it.unit : "") + " × " + labelOf(it) + (it.ref ? " (réf. " + it.ref + ")" : "");
       }).join("\n");
@@ -11896,8 +11903,13 @@ html.is-touch .rxhov { display:none; }
             }, "Plus d'actions pour les produits sans fournisseur") : null),
           h("div", { class: "qty" },
             hasPrice ? h("span", { class: "meta", text: "Total estimé " + money(total) }) : null,
-            arr.some(function (it) { return orderQty[it.id]; }) ? h("button", { class: "btn sm", type: "button", onclick: function () { arr.forEach(function (it) { delete orderQty[it.id]; }); saveOrderQty(); render(); }, text: "↺ Quantités proposées" }) : null,
+            full.some(function (it) { return orderQty[it.id] != null; }) ? h("button", { class: "btn sm", type: "button", onclick: function () { full.forEach(function (it) { delete orderQty[it.id]; }); saveOrderQty(); render(); }, text: "↺ Quantités proposées" }) : null,
             h("button", { class: "btn sm", onclick: function () { copyText(text); }, text: "Copier la commande" }),
+            h("button", { class: "btn sm", type: "button", title: "Copie « référence + quantité », une ligne par article, à coller dans la commande rapide du site du fournisseur", onclick: function () {
+              var withRef = arr.filter(function (it) { return it.ref; }), noRef = arr.length - withRef.length;
+              if (!withRef.length) { toast("Aucun article de cette commande n'a de référence fournisseur : ajoutez les références dans les fiches."); return; }
+              copyText(withRef.map(function (it) { return it.ref + "\t" + orderQtyOf(it); }).join("\n"), "📋 " + withRef.length + " ligne" + (withRef.length > 1 ? "s" : "") + " copiée" + (withRef.length > 1 ? "s" : "") + " (référence + quantité) : collez-les dans la commande rapide du site." + (noRef ? " " + noRef + " article" + (noRef > 1 ? "s" : "") + " sans référence non copié" + (noRef > 1 ? "s" : "") + "." : ""));
+            }, text: "📋 Copier pour le site" }),
             h("button", { class: "btn sm", onclick: function () { orderPdf(sup, arr); }, text: "Bon de commande (PDF)" }),
             (sup !== "Sans fournisseur" && !readOnly && db) ? h("button", { class: "btn sm primary", type: "button", title: cmdC.contacts[sup] && cmdC.contacts[sup].email ? "Envoyer à " + cmdC.contacts[sup].email : "Enregistrer l'adresse du commercial et envoyer", onclick: function () { openCmd(sup, arr); }, text: "📧 Envoyer au fournisseur" }) : null,
             h("a", { class: "btn sm", href: "mailto:" + (cmdC.contacts[sup] ? encodeURIComponent(cmdC.contacts[sup].email || "") : "") + "?subject=" + encodeURIComponent("Commande " + cabinetName + " : " + sup) + "&body=" + encodeURIComponent(text + "\n\nCordialement,\n" + cabinetName), text: "Ma messagerie" }),
@@ -11933,8 +11945,8 @@ html.is-touch .rxhov { display:none; }
     }
     if (hs) box.append(hs);
   }
-  function copyText(text) {
-    var done = function () { toast("Commande copiée dans le presse-papiers."); };
+  function copyText(text, msg) {
+    var done = function () { toast(msg || "Commande copiée dans le presse-papiers."); };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
     } else { fallbackCopy(text); done(); }
