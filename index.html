@@ -2279,6 +2279,17 @@ html.is-touch .rxhov { display:none; }
 
 /* v195 : quantité 0 = pas cette fois */
 .line.oskip { opacity:.5; } .line.oskip .num:last-child { font-size:12px; font-style:italic; }
+
+/* v197 : copie référence par référence */
+#siteCopyDlg { width:min(560px, 96vw); }
+.sc-top { display:flex; justify-content:space-between; align-items:center; margin:8px 0; }
+.sc-list { display:flex; flex-direction:column; gap:6px; max-height:56vh; overflow:auto; }
+.sc-row { display:grid; grid-template-columns:26px minmax(0,1fr) 46px auto; gap:10px; align-items:center; padding:9px 10px; border:1px solid var(--line); border-radius:12px; }
+.sc-row.next { border-color:#6B5BFF; box-shadow:0 0 0 2px color-mix(in srgb, #6B5BFF 25%, transparent); }
+.sc-row.ok { opacity:.5; }
+.sc-n { font-size:12px; color:var(--muted); text-align:center; } .sc-ref { font-size:17px; font-family:ui-monospace, Menlo, monospace; letter-spacing:.02em; }
+.sc-main .meta { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .sc-q { display:flex; flex-direction:column; align-items:center; } .sc-q b { font-size:18px; }
+.sc-tip { margin-top:10px; }
 </style>
 </head>
 <body>
@@ -2375,7 +2386,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v196</div>
+            <div class="menu-who"><span id="who"></span> · v197</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -11905,11 +11916,7 @@ html.is-touch .rxhov { display:none; }
             hasPrice ? h("span", { class: "meta", text: "Total estimé " + money(total) }) : null,
             full.some(function (it) { return orderQty[it.id] != null; }) ? h("button", { class: "btn sm", type: "button", onclick: function () { full.forEach(function (it) { delete orderQty[it.id]; }); saveOrderQty(); render(); }, text: "↺ Quantités proposées" }) : null,
             h("button", { class: "btn sm", onclick: function () { copyText(text); }, text: "Copier la commande" }),
-            h("button", { class: "btn sm", type: "button", title: "Copie « référence + quantité », une ligne par article, à coller dans la commande rapide du site du fournisseur", onclick: function () {
-              var withRef = arr.filter(function (it) { return it.ref; }), noRef = arr.length - withRef.length;
-              if (!withRef.length) { toast("Aucun article de cette commande n'a de référence fournisseur : ajoutez les références dans les fiches."); return; }
-              copyText(withRef.map(function (it) { return it.ref + "\t" + orderQtyOf(it); }).join("\n"), "📋 " + withRef.length + " ligne" + (withRef.length > 1 ? "s" : "") + " copiée" + (withRef.length > 1 ? "s" : "") + " (référence + quantité) : collez-les dans la commande rapide du site." + (noRef ? " " + noRef + " article" + (noRef > 1 ? "s" : "") + " sans référence non copié" + (noRef > 1 ? "s" : "") + "." : ""));
-            }, text: "📋 Copier pour le site" }),
+            h("button", { class: "btn sm", type: "button", title: "Une référence à la fois, à coller dans la saisie par référence du site du fournisseur", onclick: function () { openSiteCopy(sup, arr); }, text: "📋 Copier pour le site" }),
             h("button", { class: "btn sm", type: "button", title: "Fichier Excel « Référence / Quantité » à importer dans la saisie par fichier du site du fournisseur (GACD : Commande rapide → Saisie par référence ou par fichier)", onclick: function () {
               var withRef = arr.filter(function (it) { return it.ref; }), noRef = arr.length - withRef.length;
               if (!withRef.length) { toast("Aucun article de cette commande n'a de référence fournisseur : ajoutez les références dans les fiches."); return; }
@@ -11955,6 +11962,38 @@ html.is-touch .rxhov { display:none; }
       box.append(sec);
     }
     if (hs) box.append(hs);
+  }
+  // ---------- copie pour le site du fournisseur : une référence à la fois (la saisie par référence de GACD prend une case par référence) ----------
+  function openSiteCopy(sup, arr) {
+    var withRef = arr.filter(function (it) { return it.ref; }), noRef = arr.filter(function (it) { return !it.ref; });
+    if (!withRef.length) { toast("Aucun article de cette commande n'a de référence fournisseur : ajoutez les références dans les fiches."); return; }
+    var d = $("siteCopyDlg"); if (!d) { d = h("dialog", { id: "siteCopyDlg" }); document.body.append(d); }
+    d.textContent = "";
+    var done = {}, list = h("div", { class: "sc-list" }), left = h("b");
+    var copy = function (t) { try { if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t); } catch (e) {} fallbackCopy(t); return Promise.resolve(); };
+    var draw = function () {
+      list.textContent = ""; var n = withRef.filter(function (it) { return !done[it.id]; }).length;
+      left.textContent = n ? n + " référence" + (n > 1 ? "s" : "") + " à saisir" : "✓ Tout est saisi";
+      withRef.forEach(function (it, i) {
+        var q = orderQtyOf(it), ok = !!done[it.id], nextOne = !ok && withRef.slice(0, i).every(function (x) { return done[x.id]; });
+        list.append(h("div", { class: "sc-row" + (ok ? " ok" : "") + (nextOne ? " next" : "") },
+          h("span", { class: "sc-n", text: String(i + 1) }),
+          h("div", { class: "sc-main" }, h("b", { class: "sc-ref", text: it.ref }), h("div", { class: "meta", text: labelOf(it) })),
+          h("div", { class: "sc-q" }, h("span", { class: "meta", text: "Qté" }), h("b", { text: fmt(q) })),
+          h("button", { class: "btn sm" + (ok ? "" : " primary"), type: "button", text: ok ? "✓ Copiée" : "Copier la réf.", onclick: function () {
+            copy(it.ref).then(function () { done[it.id] = true; draw(); toast("Référence " + it.ref + " copiée : collez-la, puis quantité " + fmt(q) + "."); });
+          } })));
+      });
+    };
+    draw();
+    d.append(h("div", { class: "dlg" }, h("h2", { text: "📋 Commande " + sup + " : référence par référence" }),
+      h("div", { class: "sub", text: "Sur le site : Commande rapide → Saisie par référence. Pour chaque ligne, touchez « Copier la réf. », collez-la dans une case du site, tapez la quantité, puis passez à la suivante." }),
+      h("div", { class: "sc-top" }, left, h("button", { class: "btn sm", type: "button", text: "Tout recommencer", onclick: function () { done = {}; draw(); } })),
+      list,
+      noRef.length ? h("div", { class: "dnote", text: noRef.length + " article" + (noRef.length > 1 ? "s" : "") + " sans référence (à ajouter dans la fiche) : " + noRef.map(function (it) { return it.name; }).join(", ") + "." } ) : null,
+      h("div", { class: "meta sc-tip", text: "Plus rapide : « ⬇ Fichier pour le site », puis sur le site « Saisie par fichier » importe toute la liste d'un coup." }),
+      h("div", { class: "dlg-actions" }, h("span", { class: "spacer" }), h("button", { class: "btn primary", type: "button", text: "Fermer", onclick: function () { d.close(); } }))));
+    d.showModal();
   }
   function copyText(text, msg) {
     var done = function () { toast(msg || "Commande copiée dans le presse-papiers."); };
