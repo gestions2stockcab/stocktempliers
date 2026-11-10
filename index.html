@@ -2375,7 +2375,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v195</div>
+            <div class="menu-who"><span id="who"></span> · v196</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -11910,6 +11910,17 @@ html.is-touch .rxhov { display:none; }
               if (!withRef.length) { toast("Aucun article de cette commande n'a de référence fournisseur : ajoutez les références dans les fiches."); return; }
               copyText(withRef.map(function (it) { return it.ref + "\t" + orderQtyOf(it); }).join("\n"), "📋 " + withRef.length + " ligne" + (withRef.length > 1 ? "s" : "") + " copiée" + (withRef.length > 1 ? "s" : "") + " (référence + quantité) : collez-les dans la commande rapide du site." + (noRef ? " " + noRef + " article" + (noRef > 1 ? "s" : "") + " sans référence non copié" + (noRef > 1 ? "s" : "") + "." : ""));
             }, text: "📋 Copier pour le site" }),
+            h("button", { class: "btn sm", type: "button", title: "Fichier Excel « Référence / Quantité » à importer dans la saisie par fichier du site du fournisseur (GACD : Commande rapide → Saisie par référence ou par fichier)", onclick: function () {
+              var withRef = arr.filter(function (it) { return it.ref; }), noRef = arr.length - withRef.length;
+              if (!withRef.length) { toast("Aucun article de cette commande n'a de référence fournisseur : ajoutez les références dans les fiches."); return; }
+              if (!window.XLSX) { toast("Le fichier n'a pas pu être créé : vérifiez votre accès à internet."); return; }
+              var X = window.XLSX, ws = X.utils.aoa_to_sheet([["Référence", "Quantité"]].concat(withRef.map(function (it) { return [String(it.ref), orderQtyOf(it)]; })));
+              // références gardées en texte (sinon Excel retire les zéros du début ou transforme 1-101 en date)
+              withRef.forEach(function (it, i) { var c = ws["A" + (i + 2)]; if (c) { c.t = "s"; c.z = "@"; } });
+              var wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, "Commande");
+              X.writeFile(wb, "commande-" + bkSlug(sup) + "-" + localIso() + ".xlsx");
+              toast("⬇ Fichier téléchargé (" + withRef.length + " ligne" + (withRef.length > 1 ? "s" : "") + ") : importez-le sur le site du fournisseur." + (noRef ? " " + noRef + " article" + (noRef > 1 ? "s" : "") + " sans référence non inclus." : ""));
+            }, text: "⬇ Fichier pour le site" }),
             h("button", { class: "btn sm", onclick: function () { orderPdf(sup, arr); }, text: "Bon de commande (PDF)" }),
             (sup !== "Sans fournisseur" && !readOnly && db) ? h("button", { class: "btn sm primary", type: "button", title: cmdC.contacts[sup] && cmdC.contacts[sup].email ? "Envoyer à " + cmdC.contacts[sup].email : "Enregistrer l'adresse du commercial et envoyer", onclick: function () { openCmd(sup, arr); }, text: "📧 Envoyer au fournisseur" }) : null,
             h("a", { class: "btn sm", href: "mailto:" + (cmdC.contacts[sup] ? encodeURIComponent(cmdC.contacts[sup].email || "") : "") + "?subject=" + encodeURIComponent("Commande " + cabinetName + " : " + sup) + "&body=" + encodeURIComponent(text + "\n\nCordialement,\n" + cabinetName), text: "Ma messagerie" }),
