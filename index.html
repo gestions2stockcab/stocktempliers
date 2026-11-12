@@ -2307,6 +2307,9 @@ html.is-touch .rxhov { display:none; }
 .dz-row { display:grid; grid-template-columns:minmax(0,1fr) auto 80px; gap:10px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:10px; }
 .dz-row.dz-has { opacity:.55; } .dz-l input { flex:none; width:18px; height:18px; } .dz-l { display:flex; gap:8px; align-items:center; cursor:pointer; font-size:14px; } .dz-q { width:80px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font:inherit; text-align:right; }
 .tile.tile-add { border-style:dashed; border-color:#ca8a04; }
+.dz-add { width:100%; min-height:48px; margin:0 0 12px; font-size:16px; }
+.dz-free { min-width:0; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font:inherit; }
+@media (max-width: 600px) { #dasriDlg { max-height:calc(100dvh - 16px); overflow:auto; } #dasriDlg .dlg-actions { position:sticky; bottom:0; background:var(--surface); padding-bottom:10px; } .dz-q, .dz-free { font-size:16px; } }
 </style>
 </head>
 <body>
@@ -2403,7 +2406,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v199</div>
+            <div class="menu-who"><span id="who"></span> · v200</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -7945,8 +7948,9 @@ html.is-touch .rxhov { display:none; }
   }
   // ---------- DASRI : les articles habituels, à créer d'un coup avec leurs quantités ----------
   var DASRI_MODELES = [
-    ["Collecteur à aiguilles 1,8 L (boîte jaune)", "unité", 2], ["Collecteur à aiguilles 3 L (boîte jaune)", "unité", 2], ["Collecteur à aiguilles 5 L", "unité", 1],
-    ["Sacs jaunes DASRI 30 L", "rouleau", 1], ["Sacs jaunes DASRI 50 L", "rouleau", 1], ["Cartons DASRI 50 L avec sac", "carton", 2], ["Fût DASRI 30 L", "unité", 1]
+    ["Carton DASRI 50 L (C50L)", "carton", 2], ["Boîte à piquants 3 L (BP3L)", "unité", 2],
+    ["Collecteur à aiguilles 1,8 L (boîte jaune)", "unité", 2], ["Collecteur à aiguilles 5 L", "unité", 1],
+    ["Sacs jaunes DASRI 30 L", "rouleau", 1], ["Sacs jaunes DASRI 50 L", "rouleau", 1], ["Fût DASRI 30 L", "unité", 1]
   ];
   function openDasri() {
     if (readOnly || !db) { toast("Réservé aux comptes qui peuvent modifier le stock."); return; }
@@ -7960,9 +7964,12 @@ html.is-touch .rxhov { display:none; }
       q.addEventListener("input", function () { if (Number(q.value) > 0) cb.checked = true; });
       return { m: m, cb: cb, q: q, exists: exists, el: h("div", { class: "dz-row" + (exists ? " dz-has" : "") }, h("label", { class: "dz-l" }, cb, h("span", { text: m[0] + (exists ? " · déjà dans le stock" : "") })), h("span", { class: "meta", text: "En stock" }), q) };
     });
+    var freeN = h("input", { type: "text", class: "dz-free", placeholder: "Autre article (ex. sac DASRI 110 L)", "aria-label": "Autre article DASRI" });
+    var freeQ = h("input", { type: "number", min: "0", value: "0", inputmode: "numeric", class: "dz-q", "aria-label": "Quantité en stock de l'autre article" });
     var go = h("button", { class: "btn primary", type: "button", text: "Ajouter au stock" });
     go.addEventListener("click", function () {
       var list = rows.filter(function (r) { return !r.exists && r.cb.checked; }).map(function (r) { return { name: r.m[0], category: "DASRI et déchets", unit: r.m[1], qty: Math.max(0, Number(r.q.value) || 0), min: r.m[2], target: r.m[2] * 2, tracked: true }; });
+      var fn = freeN.value.trim(); if (fn) list.push({ name: fn, category: "DASRI et déchets", unit: "unité", qty: Math.max(0, Number(freeQ.value) || 0), min: 1, target: 2, tracked: true });
       if (!list.length) { toast("Cochez au moins un article."); return; }
       go.disabled = true;
       enqueue(function () {
@@ -7977,9 +7984,10 @@ html.is-touch .rxhov { display:none; }
     });
     d.append(h("div", { class: "dlg" }, h("h2", { text: "🟨 Articles DASRI" }),
       h("div", { class: "sub", text: "Déchets d'activités de soins à risque infectieux. Cochez ce que vous utilisez et indiquez ce que vous avez en stock : le seuil d'alerte est prérempli, vous pourrez tout modifier ensuite dans chaque fiche." }),
-      h("div", { class: "dz-list" }, rows.map(function (r) { return r.el; })),
+      h("div", { class: "dz-list" }, rows.map(function (r) { return r.el; }), h("div", { class: "dz-row" }, freeN, h("span", { class: "meta", text: "En stock" }), freeQ)),
       h("div", { class: "dlg-actions" }, h("span", { class: "spacer" }), h("button", { class: "btn", type: "button", text: "Annuler", onclick: function () { d.close(); } }), go)));
-    d.showModal();
+    try { d.showModal(); } catch (e) { d.setAttribute("open", ""); }
+    try { d.scrollTop = 0; } catch (e) {}
   }
   function renderTiles(box) {
     var stats = domainStats();
@@ -8010,7 +8018,7 @@ html.is-touch .rxhov { display:none; }
     order.forEach(function (c) {
       var o = stats[c] || { n: 0, sum: {}, bas: 0, rupt: 0, exp: 0, cat: 0, hid: 0 };
       var isDasri = c === "DASRI et déchets", dasriEmpty = isDasri && !Array.from(items.values()).some(function (it) { return !it.archived && it.category === c; });
-      if (!o.n && !o.cat && (o.hid > 0 || (state.hideZero && !zeroShowAll())) && !dasriEmpty) return;
+      if (!o.n && !o.cat && (o.hid > 0 || (state.hideZero && !zeroShowAll())) && !isDasri) return;
       if (dasriEmpty && !readOnly && !roomScope()) { grid.append(h("button", { class: "tile tile-add", type: "button", "aria-label": "Ajouter les articles DASRI", onclick: openDasri }, h("span", { class: "tile-name", text: c }), h("span", { class: "tile-num q-none", text: "＋" }), h("span", { class: "tile-unit", text: "Ajouter les articles DASRI (collecteurs, sacs jaunes, cartons…)" }))); return; }
       var us = Object.keys(o.sum), big, label;
       if (!o.n) { big = "0"; label = o.cat ? "aucun article suivi" : "aucun article"; }
@@ -9737,6 +9745,7 @@ html.is-touch .rxhov { display:none; }
       return;
     }
     if (isHome()) { renderTiles(box); return; }
+    if (state.cat === "DASRI et déchets" && !readOnly && !rsc) box.append(h("button", { class: "btn primary dz-add", type: "button", text: "＋ Ajouter des articles DASRI", onclick: openDasri }));
     if (state.onlyIds) box.append(h("div", { class: "imp-only" }, h("b", { text: "📥 Articles du dernier import (" + state.onlyIds.size + ")" }), h("button", { class: "btn sm", type: "button", text: "✕ Tout le stock", onclick: function () { state.onlyIds = null; render(); } })));
     var list = visibleItems(), totalNode = totalSection();
     if (!list.length && totalNode) { box.append(totalNode); return; }
