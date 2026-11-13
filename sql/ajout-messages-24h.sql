@@ -1,5 +1,5 @@
 -- SimSimStock · les conversations internes s'effacent après 24 heures
--- Les tâches (kind = 'tache') ne sont PAS effacées. Les réactions des messages effacés partent avec eux (on delete cascade).
+-- Tout est effacé : messages, tâches et alertes automatiques. Les réactions partent avec (on delete cascade).
 -- À lancer une fois dans Supabase > SQL Editor. Nécessite pg_cron (déjà utilisé pour le bilan du lundi).
 create extension if not exists pg_cron;
 
@@ -7,8 +7,7 @@ create or replace function public.purger_messages_24h() returns integer
 language sql security definer set search_path = public as $$
   with d as (
     delete from public.messages
-    where coalesce(kind, 'message') <> 'tache'
-      and created_at < now() - interval '24 hours'
+    where created_at < now() - interval '24 hours'
     returning 1
   ) select count(*)::int from d;
 $$;

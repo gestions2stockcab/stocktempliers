@@ -8293,9 +8293,9 @@ html.is-touch .rxhov { display:none; }
     var now = new Date().toISOString(); msgReads[t] = now; updateMsgBadge();
     sb.from("message_lus").upsert({ user_id: sessionUser, cabinet_id: cabinetId, thread: t, lu_at: now }, { onConflict: "user_id,cabinet_id,thread" }).then(function () {}, function () {});
   }
-  // les conversations s'effacent après 24 h (les tâches restent jusqu'à ce qu'elles soient faites) ; le serveur les supprime aussi chaque heure
+  // toutes les communications internes (messages, tâches, alertes) s'effacent après 24 h ; le serveur les supprime aussi chaque heure
   var MSG_TTL = 24 * 3600 * 1000;
-  function msgAlive(m) { if (!m || m.kind === "tache") return true; var t = new Date(m.created_at).getTime(); return !t || Date.now() - t < MSG_TTL; }
+  function msgAlive(m) { if (!m) return true; var t = new Date(m.created_at).getTime(); return !t || Date.now() - t < MSG_TTL; }
   setInterval(function () { var n = msgs.length; msgs = msgs.filter(msgAlive); if (msgs.length !== n) { updateMsgBadge(); if (state.tab === "messages") render(); } }, 5 * 60 * 1000);
   function addMessage(m, mine) {
     if (!msgAlive(m)) return;
