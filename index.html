@@ -2410,7 +2410,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v204</div>
+            <div class="menu-who"><span id="who"></span> · v205</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -8212,7 +8212,7 @@ html.is-touch .rxhov { display:none; }
     ]).then(function (rs) {
       if (cid !== cabinetId) return;
       if (rs[0].error) { msgOk = false; updateMsgBadge(); if (state.tab === "messages") render(); return; }
-      msgOk = true; msgPeopleAt = Date.now(); msgs = (rs[0].data || []).slice().reverse(); msgPeople = rs[1].error ? [] : (rs[1].data || []);
+      msgOk = true; msgPeopleAt = Date.now(); msgs = (rs[0].data || []).slice().reverse().filter(msgAlive); msgPeople = rs[1].error ? [] : (rs[1].data || []);
       msgReads = {}; (rs[2].data || []).forEach(function (r) { msgReads[r.thread] = r.lu_at; });
       updateMsgBadge(); if (state.tab === "messages") render();
       loadReactions(cid);
@@ -8293,7 +8293,12 @@ html.is-touch .rxhov { display:none; }
     var now = new Date().toISOString(); msgReads[t] = now; updateMsgBadge();
     sb.from("message_lus").upsert({ user_id: sessionUser, cabinet_id: cabinetId, thread: t, lu_at: now }, { onConflict: "user_id,cabinet_id,thread" }).then(function () {}, function () {});
   }
+  // les conversations s'effacent après 24 h (les tâches restent jusqu'à ce qu'elles soient faites) ; le serveur les supprime aussi chaque heure
+  var MSG_TTL = 24 * 3600 * 1000;
+  function msgAlive(m) { if (!m || m.kind === "tache") return true; var t = new Date(m.created_at).getTime(); return !t || Date.now() - t < MSG_TTL; }
+  setInterval(function () { var n = msgs.length; msgs = msgs.filter(msgAlive); if (msgs.length !== n) { updateMsgBadge(); if (state.tab === "messages") render(); } }, 5 * 60 * 1000);
   function addMessage(m, mine) {
+    if (!msgAlive(m)) return;
     if (msgs.some(function (x) { return x.id === m.id; })) return;
     msgs.push(m); msgs.sort(function (a, b) { return a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0; });
     var t = msgThreadOf(m), viewing = state.tab === "messages" && state.msgThread === t && (state.msgView === "thread" || window.innerWidth > 760);
@@ -8494,7 +8499,7 @@ html.is-touch .rxhov { display:none; }
     var list = h("div", { class: "msglist", role: "navigation", "aria-label": "Conversations" });
     var head = h("div", { class: "msghead" });
     var scroll = h("div", { class: "msgs", role: "log", "aria-live": "polite" });
-    var ta = h("textarea", { class: "msgta", rows: "2", maxlength: "2000", placeholder: "Écrire un message…", "aria-label": "Votre message" });
+    var ta = h("textarea", { class: "msgta", rows: "2", maxlength: "2000", placeholder: "Écrire un message… (effacé après 24 h)", "aria-label": "Votre message (les messages s'effacent après 24 heures)" });
     var attachRow = h("div", { class: "msgattach hidden" }), pick = h("div", { class: "msgpick hidden" });
     var btnItem = h("button", { class: "btn sm", type: "button", text: "📦 Article" });
     var btnTask = h("button", { class: "btn sm toggle", type: "button", "aria-pressed": "false", text: "☑ Tâche" });
