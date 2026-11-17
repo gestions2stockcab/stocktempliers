@@ -1,6 +1,8 @@
 // SimSimStock - « Compter avec l'IA » : estime, sur la photo d'un tiroir, la quantité visible de chaque article
 // attendu dans ce tiroir et signale les emballages abîmés ou ouverts. L'équipe vérifie avant d'enregistrer.
 // Fonction Supabase appelée par l'appli avec la session de la personne connectée.
+// Mode « produit » (body.mode = "produit") : lit l'étiquette d'UN produit photographié (marque, nom, références,
+// taille/teinte) et dit s'il correspond à un article du stock. Sert quand la lecture sur l'appareil n'est pas sûre.
 // Secret à définir dans Supabase : ANTHROPIC_API_KEY. Sans ce secret, la fonction répond « cle_manquante » et rien n'est facturé.
 
 import Anthropic from "npm:@anthropic-ai/sdk@^1.3.0";
@@ -51,7 +53,37 @@ const SCHEMA = {
   },
 };
 
-type Article = { id: string; nom: string; unite?: string; quantite?: number };
+type Article = { id: string; nom: string; unite?: string; quantite?: number; ref?: string; fournisseur?: string };
+
+const SYSTEM_PRODUIT = `Tu aides l'équipe d'un cabinet dentaire à reconnaître un produit (consommable, instrument, matériel) photographié, pour la gestion du stock.
+1. Lis l'étiquette : marque, nom du produit, variante (taille, teinte, diamètre, longueur, contenance, conditionnement), toutes les références (REF, réf., code article fournisseur comme GACD « 107-09404 »), et les chiffres d'un code-barres s'ils sont imprimés en clair. Recopie les références exactement, sans les inventer : si une partie est illisible, ne la mets pas.
+2. On te donne la liste des articles du stock (id, nom, ref, fournisseur). Si le produit photographié est le MÊME article (même produit ET même variante : une taille M n'est pas une taille L, une teinte A2 n'est pas A3), mets son id dans "article_id". Sinon mets "".
+3. "confiance" : "haute" si la référence ou le nom complet avec la variante concordent clairement, "moyenne" si c'est très probable, "basse" si tu hésites entre plusieurs articles ou si l'étiquette est peu lisible.
+4. Si la photo est floue, trop sombre, ou ne montre pas de produit, mets "photo_exploitable" à false.
+Réponds en français, sans rien inventer.`;
+
+const SCHEMA_PRODUIT = {
+  type: "object",
+  additionalProperties: false,
+  required: ["photo_exploitable", "produit", "article_id", "confiance"],
+  properties: {
+    photo_exploitable: { type: "boolean" },
+    produit: {
+      type: "object",
+      additionalProperties: false,
+      required: ["marque", "nom", "variante", "references", "codes_barres"],
+      properties: {
+        marque: { type: "string" },
+        nom: { type: "string" },
+        variante: { type: "string" },
+        references: { type: "array", items: { type: "string" } },
+        codes_barres: { type: "array", items: { type: "string" } },
+      },
+    },
+    article_id: { type: "string" },
+    confiance: { type: "string", enum: ["haute", "moyenne", "basse"] },
+  },
+};
 
 // la personne doit être connectée : sans cela, la clé publique suffirait pour faire payer des analyses
 async function sessionValide(token: string): Promise<boolean> {
@@ -69,30 +101,37 @@ if (typeof Deno !== "undefined" && Deno.serve) {
     const key = Deno.env.get("ANTHROPIC_API_KEY") || "";
     if (!key) return json({ ok: false, error: "cle_manquante" });
     if (!(await sessionValide(req.headers.get("x-user-token") || ""))) return json({ ok: false, error: "non_connecte" }, 401);
-    let body: { image?: string; media_type?: string; emplacement?: string; articles?: Article[] } = {};
+    let body: { mode?: string; image?: string; media_type?: string; emplacement?: string; articles?: Article[] } = {};
     try { body = await req.json(); } catch (_e) { return json({ ok: false, error: "corps_invalide" }, 400); }
     const image = String(body.image || "");
     const mediaType = TYPES.indexOf(String(body.media_type)) !== -1 ? String(body.media_type) : "image/jpeg";
     if (!image || image.length > MAX_IMAGE_B64) return json({ ok: false, error: "image_invalide" }, 400);
-    const articles = (Array.isArray(body.articles) ? body.articles : []).slice(0, 200)
-      .map((a) => ({ id: String(a.id || "").slice(0, 40), nom: String(a.nom || "").slice(0, 160), unite: String(a.unite || "").slice(0, 30), quantite: Number(a.quantite) || 0 }))
+    const produit = body.mode === "produit";
+    if (body.mode && !produit) return json({ ok: false, error: "mode_inconnu" }, 400);
+    const articles = (Array.isArray(body.articles) ? body.articles : []).slice(0, produit ? 400 : 200)
+      .map((a) => produit
+        ? { id: String(a.id || "").slice(0, 40), nom: String(a.nom || "").slice(0, 160), ref: String(a.ref || "").slice(0, 40), fournisseur: String(a.fournisseur || "").slice(0, 40) }
+        : { id: String(a.id || "").slice(0, 40), nom: String(a.nom || "").slice(0, 160), unite: String(a.unite || "").slice(0, 30), quantite: Number(a.quantite) || 0 })
       .filter((a) => a.id && a.nom);
-    if (!articles.length) return json({ ok: false, error: "liste_vide" }, 400);
+    if (!articles.length && !produit) return json({ ok: false, error: "liste_vide" }, 400);
 
     const client = new Anthropic({ apiKey: key });
     // « fallbacks: default » : si le modèle décline, l'API reprend la même requête sur un modèle de secours
     const params: Record<string, unknown> = {
       model: MODEL,
       max_tokens: 16000,
-      output_config: { effort: "medium", format: { type: "json_schema", schema: SCHEMA } },
+      // lire une étiquette demande peu de réflexion : effort bas = réponse en quelques secondes
+      output_config: produit ? { effort: "low", format: { type: "json_schema", schema: SCHEMA_PRODUIT } } : { effort: "medium", format: { type: "json_schema", schema: SCHEMA } },
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
-      system: SYSTEM,
+      system: produit ? SYSTEM_PRODUIT : SYSTEM,
       messages: [{
         role: "user",
         content: [
           { type: "image", source: { type: "base64", media_type: mediaType, data: image } },
-          { type: "text", text: "Tiroir : " + String(body.emplacement || "").slice(0, 120) + "\nArticles attendus (JSON) :\n" + JSON.stringify(articles) },
+          { type: "text", text: produit
+            ? "Articles du stock (JSON) :\n" + JSON.stringify(articles)
+            : "Tiroir : " + String(body.emplacement || "").slice(0, 120) + "\nArticles attendus (JSON) :\n" + JSON.stringify(articles) },
         ],
       }],
     };

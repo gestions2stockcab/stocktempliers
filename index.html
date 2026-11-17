@@ -2410,7 +2410,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v206</div>
+            <div class="menu-who"><span id="who"></span> · v207</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -15443,11 +15443,91 @@ html.is-touch .rxhov { display:none; }
     box.append(inp, h("div", { class: "dlg-actions" }, h("span", { class: "spacer" }), h("button", { class: "btn", type: "button", text: "Fermer", onclick: function () { $("shootDlg").close(); } })));
     d.append(box);
   }
+  // ---------- regroupe ce qui a été lu (texte, photos, catalogue) en propositions ----------
+  function phResolve(lines, vis, ai) {
+    var cands = visMerge(phMatch(lines), vis), inv = !ai && phLooksInvoice(lines), catNew = [];
+    // l'IA a reconnu un article du stock : il passe en tête
+    if (ai && ai.it) {
+      var c0 = cands.filter(function (x) { return x.it.id === ai.it.id; })[0];
+      var sureAi = ai.conf === "haute" || ai.conf === "moyenne";
+      if (c0) { c0.why = "lu par l'IA · " + c0.why; c0.sure = c0.sure || sureAi; c0.sc = Math.max(c0.sc || 0, sureAi ? 12 : 6); }
+      else cands.push({ it: ai.it, sc: sureAi ? 12 : 6, sure: sureAi, why: "lu par l'IA sur l'étiquette" });
+    }
+    // catalogue fournisseur : soit il confirme un article du stock, soit il propose un produit qu'on n'a pas encore
+    if (!inv) phCatMatch(lines).forEach(function (m) {
+      var it = phCatToStock(m.e);
+      if (it) {
+        var c = cands.filter(function (x) { return x.it.id === it.id; })[0];
+        if (c) { if (c.why.indexOf("catalogue") === -1) c.why += " · catalogue " + m.e.supplier; c.sure = c.sure || m.sure; c.sc = Math.max(c.sc || 0, m.sc); }
+        else cands.push({ it: it, sc: m.sc, sure: m.sure, why: m.why + " (catalogue " + m.e.supplier + ")" });
+      } else catNew.push(m);
+    });
+    cands.sort(function (a, b) { return (b.sure ? 1 : 0) - (a.sure ? 1 : 0) || (b.sc || 0) - (a.sc || 0); }); cands = cands.slice(0, 6);
+    if (cands.some(function (c) { return c.sure; }) || catNew.some(function (m) { return m.sure; })) catNew = catNew.filter(function (m) { return m.sure; });
+    return { cands: cands, catNew: catNew, inv: inv };
+  }
+  function phRender(file, o, lines, aiTxt) {
+    var st = $("photoState"), res = $("photoResult"); res.textContent = "";
+    var cands = o.cands, catNew = o.catNew, inv = o.inv;
+    if (inv) {
+      res.append(h("div", { class: "tir-note" }, h("b", { text: "On dirait une facture ou un bon de livraison. " }),
+        h("button", { class: "btn sm primary", type: "button", text: "L'importer comme facture", onclick: function () { $("photoDlg").close(); importImage(file); } })));
+    }
+    if (cands.length) {
+      st.textContent = inv ? "Pour ajouter tout le document au stock, importez-le comme facture. Sinon, touchez un article." : cands.length === 1 ? "J'ai reconnu cet article : touchez-le pour faire une entrée ou une sortie." : "C'est peut-être l'un de ces articles : touchez le bon.";
+      var box = h("div", { class: "ph-cands" });
+      cands.forEach(function (c) {
+        box.append(h("button", { class: "ph-cand", type: "button", title: c.tip || "", onclick: function () { phItem(c.it); } },
+          h("div", null, h("div", { class: "item-name", text: labelOf(c.it) }), h("div", { class: "meta", text: c.why + " · stock " + fmt(c.it.qty) + (c.it.unit ? " " + c.it.unit : "") })),
+          h("span", { class: "tir-conf " + (c.sure ? "haute" : c.sc >= 5 ? "moyenne" : "basse"), text: c.sure ? "sûr" : c.sc >= 5 ? "probable" : "possible" })));
+      });
+      res.append(box);
+    } else if (!catNew.length) {
+      st.textContent = "Je n'ai pas reconnu d'article. Photographiez de près l'étiquette avec le nom ou la référence, ou le code-barres, bien à plat et éclairé.";
+    }
+    if (catNew.length) {
+      if (!cands.length) st.textContent = "Ce produit n'est pas encore dans votre stock, mais je l'ai trouvé dans le catalogue fournisseur : touchez-le pour l'ajouter.";
+      var cbox = h("div", { class: "ph-cands" }, h("div", { class: "meta", text: "📚 Dans le catalogue fournisseur (pas encore dans votre stock)" }));
+      catNew.forEach(function (m) {
+        cbox.append(h("button", { class: "ph-cand", type: "button", onclick: function () { phAddFromCat(m.e); } },
+          h("div", null, h("div", { class: "item-name", text: phCatName(m.e) }), h("div", { class: "meta", text: m.e.supplier + (m.e.ref ? " · réf. " + m.e.ref : "") + (m.e.price_ht != null ? " · " + fmt(m.e.price_ht) + " € HT" : "") + " · " + m.why })),
+          h("span", { class: "tir-conf " + (m.sure ? "haute" : m.sc >= 7 ? "moyenne" : "basse"), text: "＋ Ajouter" })));
+      });
+      res.append(cbox);
+    }
+    if (aiTxt) res.append(h("div", { class: "meta", text: "🔎 Lu par l'IA : " + aiTxt }));
+    var txt = lines.join("\n").trim();
+    if (txt) res.append(h("details", null, h("summary", { class: "meta", text: "Texte lu sur la photo" }), h("div", { class: "ph-read", text: txt.slice(0, 1500) })));
+  }
+  // ---------- lecture de l'étiquette par l'IA (fonction « tiroir », mode produit) : seulement si la lecture locale n'est pas sûre ----------
+  var PHAI = { off: false };
+  function phB64(file) {
+    return shrinkImage(file, 1568).then(function (c) {
+      if (c && c.toDataURL) return c.toDataURL("image/jpeg", 0.85).replace(/^data:[^,]*,/, "");
+      return new Promise(function (ok, ko) { var fr = new FileReader(); fr.onload = function () { ok(String(fr.result).replace(/^data:[^,]*,/, "")); }; fr.onerror = ko; fr.readAsDataURL(c instanceof Blob ? c : file); });
+    });
+  }
+  function phAsk(file) {
+    if (PHAI.off || !db || typeof invokeAuthed !== "function") return Promise.resolve(null);
+    var arts = Array.from(items.values()).filter(function (it) { return !it.archived; })
+      .sort(function (a, b) { return ((Number(b.qty) || 0) > 0) - ((Number(a.qty) || 0) > 0); }).slice(0, 400)
+      .map(function (it) { return { id: it.id, nom: labelOf(it), ref: it.ref || "", fournisseur: it.supplier || "" }; });
+    return phB64(file).then(function (b64) {
+      if (!b64 || b64.length > 5500000) return null;
+      return invokeAuthed(String(settings.tiroir_fn || "tiroir").trim(), { mode: "produit", image: b64, media_type: "image/jpeg", articles: arts });
+    }).then(function (res) {
+      var d = res && res.data;
+      if (!d || res.error || (!d.ok && (d.error === "cle_manquante" || d.error === "mode_inconnu" || d.error === "liste_vide"))) { PHAI.off = true; return null; }
+      if (!d.ok) return null;
+      return d.analyse || null;
+    }, function () { return null; });
+  }
   function photoChosen(file) {
     var st = $("photoState"), res = $("photoResult"); res.textContent = ""; $("photoShot").textContent = "";
     var url = URL.createObjectURL(file); $("photoShot").append(h("img", { src: url, alt: "Photo envoyée", onload: function () { setTimeout(function () { URL.revokeObjectURL(url); }, 1000); } }));
     if (!$("photoDlg").open) $("photoDlg").showModal();
     st.textContent = "Je cherche un code-barres ou un QR code…";
+    var token = (photoChosen.n = (photoChosen.n || 0) + 1);
     phCode(file).then(function (code) {
       if (code) { feedback(false); phToScan(code); return; }
       st.textContent = "Pas de code lisible : je lis le texte de la boîte" + (visCount() ? " et je compare avec vos photos" : "") + "… (quelques secondes)";
@@ -15456,47 +15536,25 @@ html.is-touch .rxhov { display:none; }
         return Promise.all([visP, catP]).then(function (a) { return { r: r, vis: a[0] }; });
       }).then(function (o) {
         var r = o.r; ocrStatus("");
-        var lines = r.data ? ocrLines(r.data) : [], cands = visMerge(phMatch(lines), o.vis), inv = phLooksInvoice(lines);
-        // catalogue fournisseur : soit il confirme un article du stock, soit il propose un produit qu'on n'a pas encore
-        var catNew = [];
-        if (!inv) phCatMatch(lines).forEach(function (m) {
-          var it = phCatToStock(m.e);
-          if (it) {
-            var c = cands.filter(function (x) { return x.it.id === it.id; })[0];
-            if (c) { if (c.why.indexOf("catalogue") === -1) c.why += " · catalogue " + m.e.supplier; c.sure = c.sure || m.sure; c.sc = Math.max(c.sc || 0, m.sc); }
-            else cands.push({ it: it, sc: m.sc, sure: m.sure, why: m.why + " (catalogue " + m.e.supplier + ")" });
-          } else catNew.push(m);
+        var lines = r.data ? ocrLines(r.data) : [], out = phResolve(lines, o.vis, null);
+        phRender(file, out, lines, "");
+        var sure = out.cands.some(function (c) { return c.sure; }) || out.catNew.some(function (m) { return m.sure; });
+        if (sure || out.inv || PHAI.off || !db) return;
+        res.append(h("div", { class: "meta", text: "🔎 Lecture précise de l'étiquette par l'IA… (5 à 15 secondes)" }));
+        return phAsk(file).then(function (a) {
+          if (token !== photoChosen.n || !$("photoDlg").open) return;
+          if (!a) {
+            phRender(file, out, lines, "");
+            if (PHAI.off && !out.cands.length && !out.catNew.length) $("photoResult").prepend(h("div", { class: "tir-note" }, h("b", { text: "Astuce : " }), h("span", { text: "la lecture des étiquettes par l'IA n'est pas encore activée dans Supabase (fonction « tiroir » et clé Anthropic). Activée, elle reconnaît bien mieux les boîtes : demandez-le à Claude." })));
+            return;
+          }
+          if (a.photo_exploitable === false) { phRender(file, out, lines, "photo floue ou étiquette illisible, reprenez-la de plus près"); return; }
+          var p = a.produit || {}, refs = (p.references || []).concat(p.codes_barres || []);
+          var aiLines = [p.marque, p.nom, p.variante].concat(refs).filter(Boolean).map(String);
+          var it = a.article_id ? items.get(a.article_id) : null;
+          var out2 = phResolve(aiLines.concat(lines), o.vis, it ? { it: it, conf: a.confiance } : null);
+          phRender(file, out2, lines, [p.marque, p.nom, p.variante].filter(Boolean).join(" · ") + (refs.length ? " · réf. " + refs.join(", ") : ""));
         });
-        cands.sort(function (a, b) { return (b.sure ? 1 : 0) - (a.sure ? 1 : 0) || (b.sc || 0) - (a.sc || 0); }); cands = cands.slice(0, 6);
-        if (cands.some(function (c) { return c.sure; })) catNew = catNew.filter(function (m) { return m.sure; });
-        if (inv) {
-          res.append(h("div", { class: "tir-note" }, h("b", { text: "On dirait une facture ou un bon de livraison. " }),
-            h("button", { class: "btn sm primary", type: "button", text: "L'importer comme facture", onclick: function () { $("photoDlg").close(); importImage(file); } })));
-        }
-        if (cands.length) {
-          st.textContent = inv ? "Pour ajouter tout le document au stock, importez-le comme facture. Sinon, touchez un article." : cands.length === 1 ? "J'ai reconnu cet article : touchez-le pour faire une entrée ou une sortie." : "C'est peut-être l'un de ces articles : touchez le bon.";
-          var box = h("div", { class: "ph-cands" });
-          cands.forEach(function (c) {
-            box.append(h("button", { class: "ph-cand", type: "button", title: c.tip || "", onclick: function () { phItem(c.it); } },
-              h("div", null, h("div", { class: "item-name", text: labelOf(c.it) }), h("div", { class: "meta", text: c.why + " · stock " + fmt(c.it.qty) + (c.it.unit ? " " + c.it.unit : "") })),
-              h("span", { class: "tir-conf " + (c.sure ? "haute" : c.sc >= 5 ? "moyenne" : "basse"), text: c.sure ? "sûr" : c.sc >= 5 ? "probable" : "possible" })));
-          });
-          res.append(box);
-        } else if (!catNew.length) {
-          st.textContent = "Je n'ai pas reconnu d'article. Photographiez de près l'étiquette avec le nom ou la référence, ou le code-barres, bien à plat et éclairé.";
-        }
-        if (catNew.length) {
-          if (!cands.length) st.textContent = "Ce produit n'est pas encore dans votre stock, mais je l'ai trouvé dans le catalogue fournisseur : touchez-le pour l'ajouter.";
-          var cbox = h("div", { class: "ph-cands" }, h("div", { class: "meta", text: "📚 Dans le catalogue fournisseur (pas encore dans votre stock)" }));
-          catNew.forEach(function (m) {
-            cbox.append(h("button", { class: "ph-cand", type: "button", onclick: function () { phAddFromCat(m.e); } },
-              h("div", null, h("div", { class: "item-name", text: phCatName(m.e) }), h("div", { class: "meta", text: m.e.supplier + (m.e.ref ? " · réf. " + m.e.ref : "") + (m.e.price_ht != null ? " · " + fmt(m.e.price_ht) + " € HT" : "") + " · " + m.why })),
-              h("span", { class: "tir-conf " + (m.sure ? "haute" : m.sc >= 7 ? "moyenne" : "basse"), text: "＋ Ajouter" })));
-          });
-          res.append(cbox);
-        }
-        var txt = lines.join("\n").trim();
-        if (txt) res.append(h("details", null, h("summary", { class: "meta", text: "Texte lu sur la photo" }), h("div", { class: "ph-read", text: txt.slice(0, 1500) })));
       });
     }).catch(function (e) { ocrStatus(""); st.textContent = e && e.message === "chargement" ? "Le lecteur n'a pas pu être chargé : vérifiez votre accès à internet." : "La photo n'a pas pu être lue. Réessayez, bien éclairée et nette."; });
   }
