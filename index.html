@@ -15468,10 +15468,11 @@ html.is-touch .rxhov { display:none; }
   }
   // ---------- lecture de l'étiquette en plusieurs essais (sur l'appareil, gratuit) ----------
   // gris + contraste étiré + netteté, puis, si le texte lu ne ressemble à rien, la photo tournée d'un quart de tour (boîtes écrites à la verticale)
-  function phPrep(src, deg) {
+  function phPrep(src, deg, raw) {
     var w = src.width, hh = src.height, rot = deg === 90 || deg === 270, c = document.createElement("canvas");
     c.width = rot ? hh : w; c.height = rot ? w : hh;
     var x = c.getContext("2d"); x.save(); x.translate(c.width / 2, c.height / 2); x.rotate(deg * Math.PI / 180); x.drawImage(src, -w / 2, -hh / 2); x.restore();
+    if (raw) return c;
     try {
       var im = x.getImageData(0, 0, c.width, c.height), d = im.data, n = d.length / 4, g = new Uint8ClampedArray(n), hist = new Uint32Array(256), i;
       for (i = 0; i < n; i++) { var v = (d[i * 4] * 299 + d[i * 4 + 1] * 587 + d[i * 4 + 2] * 114) / 1000 | 0; g[i] = v; hist[v]++; }
@@ -15480,7 +15481,6 @@ html.is-touch .rxhov { display:none; }
       for (i = 0; i < n; i++) g[i] = (g[i] - lo) * k;
       for (i = 0; i < n; i++) {
         var col = i % W, v2 = g[i];
-        if (col > 0 && col < W - 1 && i > W && i < n - W) v2 = 5 * g[i] - g[i - 1] - g[i + 1] - g[i - W] - g[i + W];   // netteté
         v2 = v2 < 0 ? 0 : v2 > 255 ? 255 : v2; d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = v2;
       }
       x.putImageData(im, 0, 0);
@@ -15503,9 +15503,10 @@ html.is-touch .rxhov { display:none; }
     return Promise.all([loadOcr(), shrinkImage(file, 2000), phTotalReady()]).then(function (a) {
       var w = a[0], base = a[1], best = null, keep = [];
       var sureOf = function (lines) { return phMatch(lines).some(function (c) { return c.sure; }) || phCatMatch(lines).some(function (m) { return m.sure; }); };
-      var pass = function (deg) {
-        ocrStatus.pre = "Lecture de la photo" + (deg ? " (tournée)" : "");
-        return w.setParameters({ tessedit_pageseg_mode: "11" }).then(function () { return w.recognize(phPrep(base, deg)); }).then(function (r) {
+      // essai = { deg: rotation, prep: contraste renforcé, psm: mode de lecture de Tesseract (6 = bloc de texte, 11 = texte épars) }
+      var pass = function (t) {
+        ocrStatus.pre = "Lecture de la photo" + (t.n ? " (essai " + (t.n + 1) + ")" : "");
+        return w.setParameters({ tessedit_pageseg_mode: t.psm }).then(function () { return w.recognize(t.deg || t.prep ? phPrep(base, t.deg, !t.prep) : base); }).then(function (r) {
           var lines = ocrLines(r.data), q = phQuality(lines), sure = sureOf(lines);
           var o = { lines: lines, q: q + (sure ? 1 : 0), sure: sure };
           if (!best || o.q > best.q) best = o; if (q >= 0.3 || sure) keep.push(o);
@@ -15517,10 +15518,15 @@ html.is-touch .rxhov { display:none; }
         var lines = []; (keep.length ? keep : [best]).forEach(function (o) { lines = lines.concat(o.lines); });
         return { data: { text: lines.join("\n") } };
       }); };
-      return pass(0).then(function (o) {
-        if (o.sure || o.q >= 0.6) return done();
-        return pass(90).then(function (o2) { if (o2.sure || o2.q >= 0.6) return done(); return pass(270).then(done); });
-      }).catch(function (e) { return w.setParameters({ tessedit_pageseg_mode: "6" }).then(function () { throw e; }); });
+      // 1er essai = la lecture habituelle ; les suivants seulement si ce n'est pas sûr
+      var plan = [{ deg: 0, prep: false, psm: "6" }, { deg: 0, prep: true, psm: "11" }, { deg: 90, prep: false, psm: "6" }, { deg: 270, prep: false, psm: "6" }];
+      var step = function (i) {
+        if (i >= plan.length) return done();
+        if (i >= 2 && best && best.q >= 0.3) return done();   // texte déjà lisible à l'endroit : pas besoin de tourner
+        plan[i].n = i;
+        return pass(plan[i]).then(function (o) { return o.sure ? done() : step(i + 1); });
+      };
+      return step(0).catch(function (e) { return w.setParameters({ tessedit_pageseg_mode: "6" }).then(function () { throw e; }); });
     });
   }
   // ---------- regroupe ce qui a été lu (texte, photos, catalogue) en propositions ----------
@@ -15554,6 +15560,7 @@ html.is-touch .rxhov { display:none; }
         h("button", { class: "btn sm primary", type: "button", text: "L'importer comme facture", onclick: function () { $("photoDlg").close(); importImage(file); } })));
     }
     var catFirst = catNew.length && catNew[0].sure && !(cands[0] && cands[0].sure), catBox = null;
+    if (catFirst && !cands.length) st.textContent = "Ce produit n'est pas encore dans votre stock, mais je l'ai trouvé dans le catalogue fournisseur : touchez-le pour l'ajouter.";
     if (catNew.length) {
       catBox = h("div", { class: "ph-cands" }, h("div", { class: "meta", text: "📚 Dans le catalogue fournisseur (pas encore dans votre stock)" }));
       catNew.forEach(function (m) {
