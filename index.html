@@ -15282,7 +15282,7 @@ html.is-touch .rxhov { display:none; }
       var longName = hit >= 5 && ratio >= 0.75;
       if (sc >= 5) out.push({ e: x.e, sc: sc, sure: sc >= 10 || (refNear && ratio >= 0.5) || longName, why: why.join(" · ") });
     });
-    out.sort(function (a, b) { return b.sc - a.sc || a.e.name.length - b.e.name.length; });
+    out.sort(function (a, b) { return b.sc - a.sc || phCatName(a.e).length - phCatName(b.e).length; });
     // trop de produits presque pareils (teintes, tailles) et aucune référence lue : on garde les 5 meilleurs
     return out.slice(0, 5);
   }
