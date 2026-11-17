@@ -15203,6 +15203,9 @@ html.is-touch .rxhov { display:none; }
   function phWords(t) { return norm(t).replace(/[^a-z0-9]+/g, " ").split(" ").filter(function (w) { return w.length >= 3 && !PH_STOP[w]; }); }
   function phMatch(lines) {
     var text = lines.join(" "), flat = norm(text).replace(/[^a-z0-9]/g, ""), digits = text.replace(/\D/g, "");
+    var rtok = {}; phRefTokens(text).forEach(function (t) { rtok[t] = 1; });
+    // une référence faite de chiffres doit être lue comme un nombre entier (pas un morceau du n° de lot)
+    var refSeen = function (r) { return /^\d+$/.test(r) ? !!rtok[r] : r.length >= 5 && flat.indexOf(r) !== -1; };
     var words = phWords(text), set = {}; words.forEach(function (w) { set[w] = 1; });
     var near = function (w) { if (set[w]) return 1; if (w.length < 5) return 0; var p = w.slice(0, 5); return words.some(function (x) { return x.slice(0, 5) === p; }) ? 0.7 : 0; };
     var out = [];
@@ -15210,7 +15213,7 @@ html.is-touch .rxhov { display:none; }
       if (it.archived) return;
       var sc = 0, why = [];
       var ref = norm(it.ref || "").replace(/[^a-z0-9]/g, "");
-      if (ref.length >= 4 && flat.indexOf(ref) !== -1) { sc += 10; why.push("référence " + it.ref); }
+      if (ref.length >= 4 && refSeen(ref)) { sc += 10; why.push("référence " + it.ref); }
       var bc = String(it.barcode || "").replace(/\D/g, "");
       if (bc.length >= 8 && digits.indexOf(bc) !== -1) { sc += 10; why.push("code " + it.barcode); }
       var nw = phWords(labelOf(it)); if (nw.length) {
@@ -15253,7 +15256,8 @@ html.is-touch .rxhov { display:none; }
   }
   function phCatMatch(lines) {
     if (!TOTAL.ok || !TOTAL.entries.length) return [];
-    var text = lines.join(" "), flat = norm(text).replace(/[^a-z0-9]/g, ""), toks = phRefTokens(text);
+    var text = lines.join(" "), flat = norm(text).replace(/[^a-z0-9]/g, ""), toks = phRefTokens(text), tokSet = {};
+    toks.forEach(function (t) { tokSet[t] = 1; });
     // une référence presque lisible qui ne ressemble qu'à UN seul produit du catalogue compte même sans le nom
     var near1 = {}; toks.forEach(function (t) { if (t.length < 5) return; var hits = phCatIndex().filter(function (x) { return x.r && x.r.length >= 5 && phLev1(t, x.r); }); if (hits.length === 1) near1[hits[0].r] = 1; });
     var words = phWords(text); if (!words.length && flat.length < 5) return [];
@@ -15262,7 +15266,7 @@ html.is-touch .rxhov { display:none; }
     var out = [];
     phCatIndex().forEach(function (x) {
       var sc = 0, why = [];
-      var refHit = x.r && flat.indexOf(x.r) !== -1, refNear = false;
+      var refHit = x.r && (/^\d+$/.test(x.r) ? !!tokSet[x.r] : flat.indexOf(x.r) !== -1), refNear = false;
       if (refHit) { sc += 10; why.push("réf. " + x.e.ref + " lue sur la boîte"); }
       else if (x.r && x.r.length >= 5) for (var t = 0; t < toks.length; t++) {
         // un chiffre de différence, ou la fin de la référence (le début coupé ou illisible)
