@@ -2410,7 +2410,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v205</div>
+            <div class="menu-who"><span id="who"></span> · v206</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -15221,6 +15221,55 @@ html.is-touch .rxhov { display:none; }
     });
     return out.sort(function (a, b) { return b.sc - a.sc; }).slice(0, 6);
   }
+  // ---------- texte lu sur la boîte → catalogue fournisseur (GACD, Méga Dental) : 8 000+ produits avec leur référence ----------
+  var PHCAT = { idx: null, n: 0 };
+  function phCatIndex() {
+    if (PHCAT.idx && PHCAT.n === TOTAL.entries.length) return PHCAT.idx;
+    var idx = TOTAL.entries.map(function (e) {
+      var r = norm(e.ref || "").replace(/[^a-z0-9]/g, "");
+      return { e: e, r: r.length >= 5 && /\d/.test(r) ? r : "", w: phWords(String(e.name).replace(/\(cat\.?\s*p\.?\s*\d+\)/ig, "")).filter(function (w) { return !/^\d+$/.test(w) || w.length >= 3; }) };
+    });
+    PHCAT.idx = idx; PHCAT.n = TOTAL.entries.length; return idx;
+  }
+  function phCatMatch(lines) {
+    if (!TOTAL.ok || !TOTAL.entries.length) return [];
+    var text = lines.join(" "), flat = norm(text).replace(/[^a-z0-9]/g, "");
+    var words = phWords(text); if (!words.length && flat.length < 5) return [];
+    var set = {}, pre = {}; words.forEach(function (w) { set[w] = 1; if (w.length >= 5) pre[w.slice(0, 5)] = 1; });
+    var near = function (w) { return set[w] ? 1 : (w.length >= 5 && pre[w.slice(0, 5)] ? 0.7 : 0); };
+    var out = [];
+    phCatIndex().forEach(function (x) {
+      var sc = 0, why = [];
+      if (x.r && flat.indexOf(x.r) !== -1) { sc += 10; why.push("réf. " + x.e.ref + " lue sur la boîte"); }
+      if (x.w.length) {
+        var hit = 0, got = []; x.w.forEach(function (w) { var k = near(w); hit += k; if (k) got.push(w); });
+        var ratio = hit / x.w.length;
+        if (hit >= 2 && ratio >= 0.6) { sc += 7 * ratio + Math.min(2, hit * 0.4); why.push("mots : " + got.slice(0, 4).join(", ")); }
+      }
+      if (sc >= 5) out.push({ e: x.e, sc: sc, sure: sc >= 10, why: why.join(" · ") });
+    });
+    out.sort(function (a, b) { return b.sc - a.sc || a.e.name.length - b.e.name.length; });
+    // trop de produits presque pareils (teintes, tailles) et aucune référence lue : on garde les 5 meilleurs
+    return out.slice(0, 5);
+  }
+  // un produit du catalogue déjà dans le stock (même référence ou même nom) → c'est cet article
+  function phCatToStock(e) {
+    var r = norm(e.ref || "").replace(/[^a-z0-9]/g, ""), n = norm(e.name).trim(), hit = null;
+    items.forEach(function (it) { if (hit || it.archived) return; var ir = norm(it.ref || "").replace(/[^a-z0-9]/g, ""); if ((r && ir === r) || norm(it.name).trim() === n) hit = it; });
+    return hit;
+  }
+  function phCatName(e) { return String(e.name || "").replace(/\s*\(cat\.?\s*p\.?\s*\d+\)/ig, "").trim(); }
+  function phAddFromCat(e) {
+    if (readOnly || !db) { toast("Réservé aux comptes qui peuvent modifier le stock."); return; }
+    $("photoDlg").close();
+    openItem(null);
+    try { fillDomainSelect(e.domain || guessDomain(e.name)); } catch (x) {}
+    $("f_name").value = phCatName(e); $("f_ref").value = e.ref || ""; $("f_supplier").value = e.supplier || "";
+    if (e.price_ht != null && isFinite(e.price_ht)) $("f_price").value = e.price_ht;
+    try { $("f_qty").focus(); $("f_qty").select(); } catch (x) {}
+    toast("Fiche préremplie depuis le catalogue " + e.supplier + " : indiquez la quantité puis enregistrez.");
+  }
+  function phTotalReady() { return new Promise(function (ok) { if (TOTAL.ok || TOTAL.failed) { ok(); return; } var t = setTimeout(ok, 8000); loadTotal(function () { clearTimeout(t); ok(); }); }); }
   // la caméra s'ouvre dans l'appli (comme le scanner) : marche même quand le navigateur ignore « ouvrir l'appareil photo »
   var phStream = null;
   function phStop() { if (phStream) { phStream.getTracks().forEach(function (t) { try { t.stop(); } catch (e) {} }); phStream = null; } try { $("photoVideo").srcObject = null; } catch (e) {} $("photoCam").classList.add("hidden"); }
@@ -15402,12 +15451,24 @@ html.is-touch .rxhov { display:none; }
     phCode(file).then(function (code) {
       if (code) { feedback(false); phToScan(code); return; }
       st.textContent = "Pas de code lisible : je lis le texte de la boîte" + (visCount() ? " et je compare avec vos photos" : "") + "… (quelques secondes)";
-      var visP = visMatchFile(file).catch(function () { return []; });
+      var visP = visMatchFile(file).catch(function () { return []; }), catP = phTotalReady();
       return Promise.all([loadOcr(), shrinkImage(file, 2000)]).then(function (a) { ocrStatus.pre = "Lecture de la photo"; return a[0].recognize(a[1]); }, function (e) { return visP.then(function (v) { if (v.length) return { data: null }; throw e; }); }).then(function (r) {
-        return visP.then(function (vis) { return { r: r, vis: vis }; });
+        return Promise.all([visP, catP]).then(function (a) { return { r: r, vis: a[0] }; });
       }).then(function (o) {
         var r = o.r; ocrStatus("");
         var lines = r.data ? ocrLines(r.data) : [], cands = visMerge(phMatch(lines), o.vis), inv = phLooksInvoice(lines);
+        // catalogue fournisseur : soit il confirme un article du stock, soit il propose un produit qu'on n'a pas encore
+        var catNew = [];
+        if (!inv) phCatMatch(lines).forEach(function (m) {
+          var it = phCatToStock(m.e);
+          if (it) {
+            var c = cands.filter(function (x) { return x.it.id === it.id; })[0];
+            if (c) { if (c.why.indexOf("catalogue") === -1) c.why += " · catalogue " + m.e.supplier; c.sure = c.sure || m.sure; c.sc = Math.max(c.sc || 0, m.sc); }
+            else cands.push({ it: it, sc: m.sc, sure: m.sure, why: m.why + " (catalogue " + m.e.supplier + ")" });
+          } else catNew.push(m);
+        });
+        cands.sort(function (a, b) { return (b.sure ? 1 : 0) - (a.sure ? 1 : 0) || (b.sc || 0) - (a.sc || 0); }); cands = cands.slice(0, 6);
+        if (cands.some(function (c) { return c.sure; })) catNew = catNew.filter(function (m) { return m.sure; });
         if (inv) {
           res.append(h("div", { class: "tir-note" }, h("b", { text: "On dirait une facture ou un bon de livraison. " }),
             h("button", { class: "btn sm primary", type: "button", text: "L'importer comme facture", onclick: function () { $("photoDlg").close(); importImage(file); } })));
@@ -15421,8 +15482,18 @@ html.is-touch .rxhov { display:none; }
               h("span", { class: "tir-conf " + (c.sure ? "haute" : c.sc >= 5 ? "moyenne" : "basse"), text: c.sure ? "sûr" : c.sc >= 5 ? "probable" : "possible" })));
           });
           res.append(box);
-        } else {
+        } else if (!catNew.length) {
           st.textContent = "Je n'ai pas reconnu d'article. Photographiez de près l'étiquette avec le nom ou la référence, ou le code-barres, bien à plat et éclairé.";
+        }
+        if (catNew.length) {
+          if (!cands.length) st.textContent = "Ce produit n'est pas encore dans votre stock, mais je l'ai trouvé dans le catalogue fournisseur : touchez-le pour l'ajouter.";
+          var cbox = h("div", { class: "ph-cands" }, h("div", { class: "meta", text: "📚 Dans le catalogue fournisseur (pas encore dans votre stock)" }));
+          catNew.forEach(function (m) {
+            cbox.append(h("button", { class: "ph-cand", type: "button", onclick: function () { phAddFromCat(m.e); } },
+              h("div", null, h("div", { class: "item-name", text: phCatName(m.e) }), h("div", { class: "meta", text: m.e.supplier + (m.e.ref ? " · réf. " + m.e.ref : "") + (m.e.price_ht != null ? " · " + fmt(m.e.price_ht) + " € HT" : "") + " · " + m.why })),
+              h("span", { class: "tir-conf " + (m.sure ? "haute" : m.sc >= 7 ? "moyenne" : "basse"), text: "＋ Ajouter" })));
+          });
+          res.append(cbox);
         }
         var txt = lines.join("\n").trim();
         if (txt) res.append(h("details", null, h("summary", { class: "meta", text: "Texte lu sur la photo" }), h("div", { class: "ph-read", text: txt.slice(0, 1500) })));
