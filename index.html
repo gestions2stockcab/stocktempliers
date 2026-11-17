@@ -15251,6 +15251,8 @@ html.is-touch .rxhov { display:none; }
   function phCatMatch(lines) {
     if (!TOTAL.ok || !TOTAL.entries.length) return [];
     var text = lines.join(" "), flat = norm(text).replace(/[^a-z0-9]/g, ""), toks = phRefTokens(text);
+    // une référence presque lisible qui ne ressemble qu'à UN seul produit du catalogue compte même sans le nom
+    var near1 = {}; toks.forEach(function (t) { if (t.length < 5) return; var hits = phCatIndex().filter(function (x) { return x.r && x.r.length >= 5 && phLev1(t, x.r); }); if (hits.length === 1) near1[hits[0].r] = 1; });
     var words = phWords(text); if (!words.length && flat.length < 5) return [];
     var set = {}, pre = {}; words.forEach(function (w) { set[w] = 1; if (w.length >= 5) pre[w.slice(0, 5)] = 1; });
     var near = function (w) { return set[w] ? 1 : (w.length >= 5 && pre[w.slice(0, 5)] ? 0.7 : 0); };
@@ -15259,7 +15261,10 @@ html.is-touch .rxhov { display:none; }
       var sc = 0, why = [];
       var refHit = x.r && flat.indexOf(x.r) !== -1, refNear = false;
       if (refHit) { sc += 10; why.push("réf. " + x.e.ref + " lue sur la boîte"); }
-      else if (x.r && x.r.length >= 5) for (var t = 0; t < toks.length; t++) { if (phLev1(toks[t], x.r)) { refNear = true; break; } }
+      else if (x.r && x.r.length >= 5) for (var t = 0; t < toks.length; t++) {
+        // un chiffre de différence, ou la fin de la référence (le début coupé ou illisible)
+        if (phLev1(toks[t], x.r) || (toks[t].length >= 4 && toks[t].length < x.r.length && x.r.slice(-toks[t].length) === toks[t])) { refNear = true; break; }
+      }
       var hit = 0, ratio = 0, got = [];
       if (x.w.length) {
         x.w.forEach(function (w) { var k = near(w); hit += k; if (k) got.push(w); });
@@ -15269,7 +15274,10 @@ html.is-touch .rxhov { display:none; }
       }
       // référence presque lisible (un chiffre de différence) : compte seulement si des mots du nom concordent aussi
       if (refNear && hit >= 1) { sc += ratio >= 0.5 ? 9 : 5; why.unshift("réf. " + x.e.ref + " (presque lisible)"); }
-      if (sc >= 5) out.push({ e: x.e, sc: sc, sure: sc >= 10 || (refNear && ratio >= 0.5), why: why.join(" · ") });
+      else if (!refHit && near1[x.r]) { sc += 7; why.unshift("réf. " + x.e.ref + " (presque lisible)"); }
+      // nom long presque entièrement lu : assez distinctif pour être sûr
+      var longName = hit >= 5 && ratio >= 0.75;
+      if (sc >= 5) out.push({ e: x.e, sc: sc, sure: sc >= 10 || (refNear && ratio >= 0.5) || longName, why: why.join(" · ") });
     });
     out.sort(function (a, b) { return b.sc - a.sc || a.e.name.length - b.e.name.length; });
     // trop de produits presque pareils (teintes, tailles) et aucune référence lue : on garde les 5 meilleurs
@@ -15468,7 +15476,7 @@ html.is-touch .rxhov { display:none; }
   }
   // ---------- lecture de l'étiquette en plusieurs essais (sur l'appareil, gratuit) ----------
   // gris + contraste étiré + netteté, puis, si le texte lu ne ressemble à rien, la photo tournée d'un quart de tour (boîtes écrites à la verticale)
-  function phPrep(src, deg, raw) {
+  function phPrep(src, deg, raw, sharp) {
     var w = src.width, hh = src.height, rot = deg === 90 || deg === 270, c = document.createElement("canvas");
     c.width = rot ? hh : w; c.height = rot ? w : hh;
     var x = c.getContext("2d"); x.save(); x.translate(c.width / 2, c.height / 2); x.rotate(deg * Math.PI / 180); x.drawImage(src, -w / 2, -hh / 2); x.restore();
@@ -15481,6 +15489,7 @@ html.is-touch .rxhov { display:none; }
       for (i = 0; i < n; i++) g[i] = (g[i] - lo) * k;
       for (i = 0; i < n; i++) {
         var col = i % W, v2 = g[i];
+        if (sharp && col > 0 && col < W - 1 && i > W && i < n - W) v2 = 5 * g[i] - g[i - 1] - g[i + 1] - g[i - W] - g[i + W];   // netteté (photos floues)
         v2 = v2 < 0 ? 0 : v2 > 255 ? 255 : v2; d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = v2;
       }
       x.putImageData(im, 0, 0);
@@ -15506,7 +15515,7 @@ html.is-touch .rxhov { display:none; }
       // essai = { deg: rotation, prep: contraste renforcé, psm: mode de lecture de Tesseract (6 = bloc de texte, 11 = texte épars) }
       var pass = function (t) {
         ocrStatus.pre = "Lecture de la photo" + (t.n ? " (essai " + (t.n + 1) + ")" : "");
-        return w.setParameters({ tessedit_pageseg_mode: t.psm }).then(function () { return w.recognize(t.deg || t.prep ? phPrep(base, t.deg, !t.prep) : base); }).then(function (r) {
+        return w.setParameters({ tessedit_pageseg_mode: t.psm }).then(function () { return w.recognize(t.deg || t.prep ? phPrep(base, t.deg, !t.prep, t.prep) : base); }).then(function (r) {
           var lines = ocrLines(r.data), q = phQuality(lines), sure = sureOf(lines);
           var o = { lines: lines, q: q + (sure ? 1 : 0), sure: sure };
           if (!best || o.q > best.q) best = o; if (q >= 0.3 || sure) keep.push(o);
@@ -15559,7 +15568,7 @@ html.is-touch .rxhov { display:none; }
       res.append(h("div", { class: "tir-note" }, h("b", { text: "On dirait une facture ou un bon de livraison. " }),
         h("button", { class: "btn sm primary", type: "button", text: "L'importer comme facture", onclick: function () { $("photoDlg").close(); importImage(file); } })));
     }
-    var catFirst = catNew.length && catNew[0].sure && !(cands[0] && cands[0].sure), catBox = null;
+    var catFirst = catNew.length && !(cands[0] && cands[0].sure) && (catNew[0].sure || !cands.length || catNew[0].sc > (cands[0].sc || 0) + 1), catBox = null;
     if (catFirst && !cands.length) st.textContent = "Ce produit n'est pas encore dans votre stock, mais je l'ai trouvé dans le catalogue fournisseur : touchez-le pour l'ajouter.";
     if (catNew.length) {
       catBox = h("div", { class: "ph-cands" }, h("div", { class: "meta", text: "📚 Dans le catalogue fournisseur (pas encore dans votre stock)" }));
