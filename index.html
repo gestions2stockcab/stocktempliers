@@ -2419,7 +2419,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v209</div>
+            <div class="menu-who"><span id="who"></span> · v210</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -14130,9 +14130,18 @@ html.is-touch .rxhov { display:none; }
   }
   function importImage(file) {
     toast("Lecture de la photo…"); ocrStatus("Chargement du lecteur de scans…");
-    Promise.all([loadOcr(), shrinkImage(file, 2400)]).then(function (a) {
+    var srcP = new Promise(function (ok, ko) { var u = URL.createObjectURL(file), im = new Image(); im.onload = function () { URL.revokeObjectURL(u); ok(im); }; im.onerror = function () { URL.revokeObjectURL(u); ko(new Error("image")); }; im.src = u; });
+    Promise.all([loadOcr(), srcP, phTotalReady()]).then(function (a) {
       ocrStatus.pre = "Lecture de la photo";
-      return a[0].recognize(a[1]);
+      var c; try { c = docPrep(a[1], 2400); } catch (e) { c = null; }
+      if (!c) return shrinkImage(file, 2400).then(function (cv) { return a[0].recognize(cv); });
+      // photo recadrée sur la feuille ; si rien n'est reconnu, on relit la photo telle quelle
+      COLISQ = {};
+      return a[0].recognize(c, {}, { text: true, blocks: true }).then(function (r) {
+        if (!isColisGacd(ocrLines(r.data))) return r;
+        ocrStatus.pre = "Lecture des quantités";
+        return colisQtyRead(a[0], c, r.data).then(function (m) { COLISQ = m; return r; }, function () { return r; });
+      }).then(function (r) { if (parseAny(ocrLines(r.data)).length) return r; return shrinkImage(file, 2400).then(function (cv) { return a[0].recognize(cv); }).then(function (r2) { return parseAny(ocrLines(r2.data)).length ? r2 : r; }); });
     }).then(function (r) {
       ocrStatus("");
       showPdfPreview(file.name, ocrLines(r.data), { file: file, page: 1 });
@@ -14596,7 +14605,166 @@ html.is-touch .rxhov { display:none; }
     var diff = r2(sum - dm.total);
     return { sum: sum, total: dm.total, diff: diff, ok: Math.abs(diff) <= Math.max(1, dm.total * 0.01) };
   }
+  // ---------- photo d'un document (facture, bon, liste de colisage) : recadrage sur la feuille + noir et blanc net ----------
+  function docPrep(img, maxSide) {
+    var k = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+    var W = Math.round((img.naturalWidth || img.width) * k), H = Math.round((img.naturalHeight || img.height) * k);
+    var c = document.createElement('canvas'); c.width = W; c.height = H; var x = c.getContext('2d'); x.drawImage(img, 0, 0, W, H);
+    var d = x.getImageData(0, 0, W, H).data, g = new Float32Array(W * H), i, j;
+    for (i = 0; i < W * H; i++) g[i] = (d[i * 4] * 299 + d[i * 4 + 1] * 587 + d[i * 4 + 2] * 114) / 1000;
+    // la feuille : pixels clairs et peu colorés
+    var white = new Uint8Array(W * H);
+    for (i = 0; i < W * H; i++) { var r = d[i * 4], gg = d[i * 4 + 1], b = d[i * 4 + 2], mx = Math.max(r, gg, b), mn = Math.min(r, gg, b); white[i] = (mx > 150 && mx - mn < 45) ? 1 : 0; }
+    var rows = [], cols = [];
+    for (j = 0; j < H; j++) { var s = 0; for (i = 0; i < W; i++) s += white[j * W + i]; rows.push(s / W); }
+    for (i = 0; i < W; i++) { var s2 = 0; for (j = 0; j < H; j++) s2 += white[j * W + i]; cols.push(s2 / H); }
+    var span = function (a, t) { var lo = 0, hi = a.length - 1; while (lo < a.length && a[lo] < t) lo++; while (hi > 0 && a[hi] < t) hi--; return hi > lo ? [lo, hi] : [0, a.length - 1]; };
+    var ry = span(rows, 0.35), rx = span(cols, 0.35);
+    var x0 = Math.max(0, rx[0] - 4), y0 = Math.max(0, ry[0] - 4), cw = Math.min(W, rx[1] + 5) - x0, ch = Math.min(H, ry[1] + 5) - y0;
+    // agrandit le recadrage pour que l'écriture fasse ~30 px de haut
+    var up = Math.min(2.2, 2600 / Math.max(cw, ch)); if (up < 1) up = 1;
+    var o = document.createElement('canvas'); o.width = Math.round(cw * up); o.height = Math.round(ch * up);
+    var ox = o.getContext('2d'); ox.imageSmoothingQuality = 'high'; ox.drawImage(c, x0, y0, cw, ch, 0, 0, o.width, o.height);
+    // redressement : on cherche l'angle (−6° à +6°) qui aligne le mieux les lignes de texte (profil horizontal le plus contrasté)
+    var ang = docSkew(o);
+    if (Math.abs(ang) > 0.15) {
+      var rc = document.createElement('canvas'); rc.width = o.width; rc.height = o.height; var rx2 = rc.getContext('2d');
+      rx2.fillStyle = '#fff'; rx2.fillRect(0, 0, rc.width, rc.height); rx2.translate(rc.width / 2, rc.height / 2); rx2.rotate(-ang * Math.PI / 180); rx2.drawImage(o, -o.width / 2, -o.height / 2);
+      o = rc; ox = rc.getContext('2d');
+    }
+    var OW = o.width, OH = o.height, od = ox.getImageData(0, 0, OW, OH), p = od.data, G = new Float32Array(OW * OH);
+    for (i = 0; i < OW * OH; i++) G[i] = (p[i * 4] * 299 + p[i * 4 + 1] * 587 + p[i * 4 + 2] * 114) / 1000;
+    // seuil adaptatif (moyenne locale) via image intégrale
+    var I = new Float64Array((OW + 1) * (OH + 1));
+    for (j = 1; j <= OH; j++) { var rs = 0; for (i = 1; i <= OW; i++) { rs += G[(j - 1) * OW + i - 1]; I[j * (OW + 1) + i] = I[(j - 1) * (OW + 1) + i] + rs; } }
+    var R = Math.max(8, Math.round(Math.min(OW, OH) / 40));
+    for (j = 0; j < OH; j++) for (i = 0; i < OW; i++) {
+      var a0 = Math.max(0, i - R), a1 = Math.min(OW, i + R + 1), b0 = Math.max(0, j - R), b1 = Math.min(OH, j + R + 1);
+      var sum = I[b1 * (OW + 1) + a1] - I[b0 * (OW + 1) + a1] - I[b1 * (OW + 1) + a0] + I[b0 * (OW + 1) + a0], mean = sum / ((a1 - a0) * (b1 - b0));
+      var v = G[j * OW + i] < mean * 0.86 ? 0 : 255; p[(j * OW + i) * 4] = p[(j * OW + i) * 4 + 1] = p[(j * OW + i) * 4 + 2] = v;
+    }
+    ox.putImageData(od, 0, 0);
+    return o;
+  }
+  function docSkew(src) {
+    var k = Math.min(1, 700 / Math.max(src.width, src.height)), w = Math.round(src.width * k), hh = Math.round(src.height * k);
+    var c = document.createElement('canvas'); c.width = w; c.height = hh; var x = c.getContext('2d'); x.drawImage(src, 0, 0, w, hh);
+    var d = x.getImageData(0, 0, w, hh).data, dark = [], i, j, sum = 0;
+    for (i = 0; i < w * hh; i++) sum += d[i * 4 + 1]; var mean = sum / (w * hh);
+    for (j = 0; j < hh; j++) for (i = 0; i < w; i++) if (d[(j * w + i) * 4 + 1] < mean * 0.7) dark.push(i - w / 2, j - hh / 2);
+    if (dark.length < 200) return 0;
+    var best = 0, bestV = -1;
+    for (var a = -6; a <= 6.001; a += 0.25) {
+      var t = Math.tan(a * Math.PI / 180), bins = new Float32Array(hh * 2);
+      for (i = 0; i < dark.length; i += 2) { var yy = Math.round(dark[i + 1] - dark[i] * t + hh); if (yy >= 0 && yy < bins.length) bins[yy]++; }
+      var v = 0; for (j = 1; j < bins.length; j++) { var df = bins[j] - bins[j - 1]; v += df * df; }
+      if (v > bestV) { bestV = v; best = a; }
+    }
+    return best;
+  }
+  window.__docPrep = docPrep;   // utilisé par les tests
+  // ---------- liste de colisage : lecture de la colonne « Quantité » case par case ----------
+  // les chiffres y sont petits et collés au quadrillage : on découpe chaque case, on ne garde que la tache de la taille d'un chiffre, puis on la lit seule
+  var COLISQ = {};
+  function colisKey(t) { return String(t || "").replace(/\s+/g, ""); }
+  function colisQtyRead(w, c, data) {
+    var lines = []; (data.blocks || []).forEach(function (b) { (b.paragraphs || []).forEach(function (p) { (p.lines || []).forEach(function (l) { lines.push(l); }); }); });
+    var words = []; lines.forEach(function (l) { (l.words || []).forEach(function (x) { words.push(x); }); });
+    var se = words.filter(function (x) { return /^s[ée]rie/i.test(x.text); })[0]; if (!se) return Promise.resolve({});
+    var po = words.filter(function (x) { return /^poids/i.test(x.text) && x.bbox.x0 > se.bbox.x1 && Math.abs(x.bbox.y0 - se.bbox.y0) < 80; })[0];
+    var X0 = se.bbox.x1 + 8, X1 = po ? po.bbox.x0 - 4 : se.bbox.x1 + Math.round((se.bbox.x1 - se.bbox.x0) * 2.2);
+    var lotLines = lines.filter(function (l) { return /\bL[O0]T\b/i.test(l.text) && (l.bbox.y0 + l.bbox.y1) / 2 > se.bbox.y1; }).sort(function (a, b) { return a.bbox.y0 - b.bbox.y0; }), out = { _seq: [] };
+    lotLines.forEach(function (l, i) { out._seq[i] = 0; l._i = i; });
+    var one = function (l) {
+      var y0 = Math.max(0, l.bbox.y0 - 18), y1 = Math.min(c.height, l.bbox.y1 + 16), L = Math.max(0, X0), R = Math.min(c.width - 1, X1);
+      if (R - L < 10 || y1 - y0 < 10) return Promise.resolve();
+      var sc = document.createElement("canvas"); sc.width = (R - L) * 2; sc.height = (y1 - y0) * 2; var sx = sc.getContext("2d");
+      sx.fillStyle = "#fff"; sx.fillRect(0, 0, sc.width, sc.height); sx.drawImage(c, L, y0, R - L, y1 - y0, 0, 0, sc.width, sc.height);
+      var SW = sc.width, SH = sc.height, dd = sx.getImageData(0, 0, SW, SH).data, lab = new Int32Array(SW * SH), comps = [], nl = 0;
+      for (var st = 0; st < SW * SH; st++) {
+        if (lab[st] || dd[st * 4] >= 128) continue;
+        nl++; var stack = [st], px = [], k = { n: 0, x0: SW, x1: 0, y0: SH, y1: 0, px: px }; lab[st] = nl;
+        while (stack.length) {
+          var q = stack.pop(), qx = q % SW, qy = (q / SW) | 0; k.n++; px.push(q);
+          if (qx < k.x0) k.x0 = qx; if (qx > k.x1) k.x1 = qx; if (qy < k.y0) k.y0 = qy; if (qy > k.y1) k.y1 = qy;
+          if (qx > 0 && !lab[q - 1] && dd[(q - 1) * 4] < 128) { lab[q - 1] = nl; stack.push(q - 1); }
+          if (qx < SW - 1 && !lab[q + 1] && dd[(q + 1) * 4] < 128) { lab[q + 1] = nl; stack.push(q + 1); }
+          if (qy > 0 && !lab[q - SW] && dd[(q - SW) * 4] < 128) { lab[q - SW] = nl; stack.push(q - SW); }
+          if (qy < SH - 1 && !lab[q + SW] && dd[(q + SW) * 4] < 128) { lab[q + SW] = nl; stack.push(q + SW); }
+        }
+        comps.push(k);
+      }
+      var dg = comps.filter(function (k) { var hh = k.y1 - k.y0 + 1, ww = k.x1 - k.x0 + 1; return hh >= SH * 0.15 && hh <= SH * 0.75 && ww <= SW * 0.4 && ww >= 2 && k.x0 > 2 && k.x1 < SW - 3 && k.n >= hh * 1.2; });
+      if (!dg.length || dg.length > 3) return Promise.resolve();
+      var key = colisKey(l.text);
+      // un « 1 » est une tache étroite : inutile de le lire
+      if (dg.length === 1 && (dg[0].x1 - dg[0].x0 + 1) / (dg[0].y1 - dg[0].y0 + 1) < 0.53) { out[key] = 1; out._seq[l._i] = 1; return Promise.resolve(); }
+      var gx0 = SW, gx1 = 0, gy0 = SH, gy1 = 0; dg.forEach(function (k) { gx0 = Math.min(gx0, k.x0); gx1 = Math.max(gx1, k.x1); gy0 = Math.min(gy0, k.y0); gy1 = Math.max(gy1, k.y1); });
+      var pad = 30, tg = document.createElement("canvas"); tg.width = Math.max(60, gx1 - gx0 + 1 + pad * 2); tg.height = Math.max(60, gy1 - gy0 + 1 + pad * 2);
+      var tx = tg.getContext("2d"), ti = tx.createImageData(tg.width, tg.height); ti.data.fill(255);
+      dg.forEach(function (k) { k.px.forEach(function (q) { var o = (((q / SW) | 0) - gy0 + pad) * tg.width + (q % SW - gx0 + pad); ti.data[o * 4] = ti.data[o * 4 + 1] = ti.data[o * 4 + 2] = 0; }); });
+      tx.putImageData(ti, 0, 0);
+      return w.recognize(tg).then(function (r) { var v = String(r.data.text || "").replace(/\D/g, ""); if (/^[1-9]\d?$/.test(v)) { out[key] = Number(v); out._seq[l._i] = Number(v); } }, function () {});
+    };
+    return w.setParameters({ tessedit_pageseg_mode: "7", tessedit_char_whitelist: "0123456789" }).then(function () {
+      return lotLines.reduce(function (pr, l) { return pr.then(function () { return one(l); }); }, Promise.resolve());
+    }).then(function () { return w.setParameters({ tessedit_pageseg_mode: "6", tessedit_char_whitelist: "" }); }, function () { return w.setParameters({ tessedit_pageseg_mode: "6", tessedit_char_whitelist: "" }); }).then(function () { return out; });
+  }
+  // ---------- liste de colisage GACD : Article (code + désignation) | Référence | Traçabilité (LOT, DLC) | N° série | Quantité | Poids ----------
+  function isColisGacd(lines) { var t = lines.slice(0, 60).join(" "); return /colisage|colis\s*n[°o]/i.test(t) || (/tra[çc]abilit/i.test(t) && /gacd/i.test(t)); }
+  function parseColisGacd(lines) {
+    var rows = [], cur = null, t = lines.join(" "), lotN = 0;
+    var seq = COLISQ._seq || [], nLot = lines.filter(function (l) { return /\bL[O0]T\b/i.test(l); }).length;
+    var flush = function () {
+      if (!cur) return;
+      var block = cur.block.join(" "), dm = /DLC\s*:?\s*(\d{2})[\/.](\d{2})[\/.](\d{4})/i.exec(block) || /(\d{2})\/(\d{2})\/(20\d{2})/.exec(block);
+      if (dm) cur.expiry = dm[3] + "-" + dm[2] + "-" + dm[1];
+      var name = cur.names.join(" ").replace(/DLC\s*:?[\s\d\/.]*/ig, " ").replace(/[|\[\]{}«»“”"_=<>©®*]+/g, " ").replace(/^\W+/, "").replace(/^(?:[a-z]{1,2}|\W)\s+/, "").replace(/\s+/g, " ").trim();
+      cur.name = name || ("Réf. " + cur.ref);
+      if (cur.ref || cur.code) rows.push(cur);
+      cur = null;
+    };
+    lines.forEach(function (l) {
+      var lotM = /\bL[O0]T\b\s*[:.]?\s*([A-Z0-9][A-Z0-9.\-]{2,15})?/i.exec(l);
+      if (lotM) {
+        flush();
+        var before = l.slice(0, lotM.index), after = l.slice(lotM.index + lotM[0].length);
+        var code = (/\b(\d{7})\b/.exec(before) || [])[1] || "";
+        var refM = /(\d{1,3})\s?[-–]\s?(\d{3,5})\s*[|\[(]?\s*$/.exec(before) || /\b(\d{2,3})(\d{3})\s*[|\[(]?\s*$/.exec(before);
+        var ref = refM ? refM[1] + "-" + refM[2] : "";
+        // quantité : un petit nombre entier seul après le lot (le poids, lui, a une virgule ou un point)
+        var qty = (seq.length === nLot ? seq[lotN] : 0) || COLISQ[colisKey(l)] || 0; lotN++;
+        if (!qty) after.split(/\s+/).some(function (w) { w = w.replace(/[|\[\]();:]/g, ""); if (/^[1-9]\d?$/.test(w)) { qty = Number(w); return true; } return false; });
+        var namePart = (refM ? before.slice(0, refM.index) : before).replace(/\b\d{7}\b/, " ");
+        var lotV = (lotM[1] || "").replace(/\.$/, ""); if (/^\d[.,]\d{3}$/.test(lotV) || /^DLC$/i.test(lotV)) lotV = "";
+        cur = { code: code, ref: ref, lot: lotV, qty: qty, price: 0, names: [], block: [l] };
+        namePart = namePart.replace(/[\d\-–|\[\]():;!.,'‘’*\/\\]+$/g, "").trim();
+        if (/[A-Za-z]{3,}/.test(namePart)) cur.names.push(namePart);
+        return;
+      }
+      if (!cur) return;
+      if (/Nb\s*de|Poids|Volume|Article|R[ée]f[ée]rence|Page\s*\d/i.test(l)) return;
+      cur.block.push(l);
+      if (/^\W*\d{7}\b/.test(l)) { flush(); return; }
+      var txt = l.replace(/DLC\s*:?\s*[\d\/.]*/i, " ");
+      if (/[A-Za-z]{3,}/.test(txt) && cur.names.length < 3) cur.names.push(txt.replace(/\s{3,}.*$/, ""));
+    });
+    flush();
+    var nr = /Nb\s*de\s*r[ée]f[ée]rences?\s*:?\s*(\d+)/i.exec(t), nq = /Nb\s*de\s*quantit[ée]s?\s*:?\s*(\d+)/i.exec(t);
+    var pg = /Page\s*(\d)\s*\/\s*(\d)/i.exec(t);
+    rows._colis = { refs: nr ? Number(nr[1]) : 0, qty: nq ? Number(nq[1]) : 0, page: pg ? Number(pg[1]) : 0, pages: pg ? Number(pg[2]) : 0 };
+    // la référence est corrigée avec le catalogue GACD (un chiffre mal lu) et vérifiée avec le nom
+    rows.forEach(function (r) {
+      r.qtyGuess = !(r.qty > 0); if (r.qtyGuess) r.qty = 1;
+      if (!TOTAL.ok) return;
+      var m = phCatMatch([r.name, r.ref ? "Réf. " + r.ref : ""]).filter(function (x) { return /gacd/i.test(x.e.supplier); })[0];
+      if (m && (m.sure || m.sc >= 7)) { r.ref = m.e.ref; r.catName = phCatName(m.e); if ((r.name.match(/(?:^|\s)\S{1,2}(?=\s|$)/g) || []).length >= 3) r.name = r.catName; if (m.e.price_ht != null) r.price = Number(m.e.price_ht) || 0; }
+    });
+    rows._fmt = "COLIS";
+    return rows;
+  }
   function parseAny(lines) {
+    if (isColisGacd(lines)) { var cr = parseColisGacd(lines); if (cr.length) return cr; }
     var rows = isKomet(lines) ? parseLinesH(lines) : [];
     if (!rows.length) rows = parseDocLines(lines);
     if (!rows.length) rows = parseLinesB(lines);
@@ -14630,7 +14798,7 @@ html.is-touch .rxhov { display:none; }
     items.forEach(function (it) { if (it.ref) byRef[norm(it.ref).trim()] = it; byName[norm(it.name).trim()] = it; });
     rows.forEach(function (r) {
       r.qty0 = r.qty; r.price0 = r.price;
-      r.match = byRef[norm(r.ref).trim()] || byName[norm(r.name).trim()] || null;
+      r.match = byRef[norm(r.ref).trim()] || (r.code && byRef[norm(r.code).trim()]) || byName[norm(r.name).trim()] || (r.catName && byName[norm(r.catName).trim()]) || null;
       r.on = !isCredit && !seenBefore && rows._fmt !== "E" && !r.service;
       r.domain = r.match ? (r.match.category || "") : (r.service ? "Services" : guessDomain(r.name));
     });
@@ -14639,6 +14807,10 @@ html.is-touch .rxhov { display:none; }
     info.append(h("div", { class: "sub", text: rows.length + " ligne" + (rows.length > 1 ? "s" : "") + " reconnue" + (rows.length > 1 ? "s" : "") + " dans « " + fileName + " ». Vérifiez et corrigez si besoin. Les articles déjà présents reçoivent une entrée de stock, les autres sont créés." }));
     warns.forEach(function (t) { info.append(h("div", { class: "banner bad", text: t })); });
     if (kNote) info.append(h("div", { class: "banner", text: kNote }));
+    if (rows._fmt === "COLIS") {
+      var cx = rows._colis || {}, sumQ = rows.reduce(function (a, r) { return a + (Number(r.qty) || 0); }, 0), nG = rows.filter(function (r) { return r.qtyGuess; }).length;
+      info.append(h("div", { class: "banner" + ((!(cx.pages > 1) && ((cx.refs && cx.refs !== rows.length) || (cx.qty && cx.qty !== sumQ))) || nG ? " bad" : " ok"), role: "status", text: "📦 Liste de colisage GACD : " + rows.length + " ligne" + (rows.length > 1 ? "s" : "") + " lue" + (rows.length > 1 ? "s" : "") + (cx.refs ? " sur " + cx.refs + " annoncée" + (cx.refs > 1 ? "s" : "") : "") + " · " + sumQ + " article" + (sumQ > 1 ? "s" : "") + (cx.qty ? " sur " + cx.qty + " annoncés" : "") + "." + (nG ? " ⚠ Quantité illisible sur " + nG + " ligne" + (nG > 1 ? "s" : "") + " (mise à 1) : vérifiez la colonne « Quantité » du bon." : "") + (cx.pages > 1 ? " C'est la page " + cx.page + " sur " + cx.pages + " : les totaux annoncés couvrent tout le colis, importez aussi l'autre page." : cx.refs && cx.refs > rows.length ? " Il manque des lignes : reprenez la photo bien à plat, ou ajoutez-les à la main." : "") }));
+    }
     if (rows.some(function (r) { return r.service; })) info.append(h("div", { class: "banner", text: "Les lignes de service (déplacement, main d'œuvre, livraison) sont décochées : ce n'est pas du stock. Elles restent comptées dans la dépense de la facture." }));
     if (rows._fmt === "E") info.append(h("div", { class: "banner bad", text: "Format de facture inconnu : les lignes ont été devinées à partir des nombres (quantité × prix = montant). Elles sont décochées : vérifiez chaque ligne, cochez celles qui sont justes, puis importez. Si cette facture revient souvent, transmettez-la à la personne qui gère l'outil pour qu'elle soit lue automatiquement." }));
     var chk = totalCheck(rows, dm);
@@ -15403,7 +15575,7 @@ html.is-touch .rxhov { display:none; }
     $("scanTitle").textContent = "Article reconnu"; $("scanStatus").className = "sub"; $("scanStatus").textContent = "";
     $("scanPanel").textContent = ""; $("scanDlg").showModal(); showScanItem(it, null);
   }
-  function phLooksInvoice(lines) { var t = lines.join(" "); return lines.length >= 12 && /(facture|bon de livraison|total\s*(ht|ttc)|tva|montant)/i.test(t); }
+  function phLooksInvoice(lines) { var t = lines.join(" "); return (lines.length >= 12 && /(facture|bon de livraison|total\s*(ht|ttc)|tva|montant)/i.test(t)) || (lines.length >= 6 && /(colisage|colis\s*n[°o]|tra[çc]abilit|BL\s*n[°o])/i.test(t)); }
   // ---------- reconnaissance par ressemblance avec les photos des articles (sur l'appareil, gratuit, rien n'est envoyé) ----------
   // Modèle MobileNet (≈ 6 Mo, téléchargé une fois puis gardé sur l'appareil) : chaque photo devient une « empreinte » de 512 nombres.
   var VIS_TF = ["https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js", "sha384-vE8hbVJ4lezako5rlvE7bY0BVzWlFhZncPlckrqNwcUQpVtgbENTgZ8TBbnPjZre"];
@@ -15616,8 +15788,8 @@ html.is-touch .rxhov { display:none; }
     var st = $("photoState"), res = $("photoResult"); res.textContent = "";
     var cands = o.cands, catNew = o.catNew, inv = o.inv;
     if (inv) {
-      res.append(h("div", { class: "tir-note" }, h("b", { text: "On dirait une facture ou un bon de livraison. " }),
-        h("button", { class: "btn sm primary", type: "button", text: "L'importer comme facture", onclick: function () { $("photoDlg").close(); importImage(file); } })));
+      res.append(h("div", { class: "tir-note" }, h("b", { text: "📦 C'est un bon de livraison, une liste de colisage ou une facture. " }),
+        h("button", { class: "btn primary", type: "button", text: "Ajouter les produits de ce bon au stock", onclick: function () { $("photoDlg").close(); importImage(file); } })));
     }
     var catFirst = catNew.length && !(cands[0] && cands[0].sure) && (catNew[0].sure || !cands.length || catNew[0].sc > (cands[0].sc || 0) + 1), catBox = null;
     if (catFirst && !cands.length) st.textContent = "Ce produit n'est pas encore dans votre stock, mais je l'ai trouvé dans le catalogue fournisseur : touchez-le pour l'ajouter.";
@@ -15631,7 +15803,7 @@ html.is-touch .rxhov { display:none; }
       if (catFirst) res.append(catBox);
     }
     if (cands.length) {
-      st.textContent = catFirst ? "Ce produit n'est pas encore dans votre stock : je l'ai trouvé dans le catalogue fournisseur. Touchez-le pour l'ajouter." : inv ? "Pour ajouter tout le document au stock, importez-le comme facture. Sinon, touchez un article." : cands.length === 1 ? "J'ai reconnu cet article : touchez-le pour faire une entrée ou une sortie." : "C'est peut-être l'un de ces articles : touchez le bon.";
+      st.textContent = catFirst ? "Ce produit n'est pas encore dans votre stock : je l'ai trouvé dans le catalogue fournisseur. Touchez-le pour l'ajouter." : inv ? "Pour ajouter tous les produits du bon au stock, touchez le bouton bleu. Sinon, touchez un article." : cands.length === 1 ? "J'ai reconnu cet article : touchez-le pour faire une entrée ou une sortie." : "C'est peut-être l'un de ces articles : touchez le bon.";
       var box = h("div", { class: "ph-cands" });
       cands.forEach(function (c) {
         box.append(h("button", { class: "ph-cand", type: "button", title: c.tip || "", onclick: function () { phItem(c.it); } },
