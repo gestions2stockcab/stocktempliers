@@ -3498,7 +3498,7 @@ html.is-touch .rxhov { display:none; }
 <dialog id="pdfDlg" class="wide">
   <div class="dlg">
     <div class="pdf-batch hidden" id="pdfBatch"></div>
-    <h2>Importer depuis le PDF</h2>
+    <h2 id="pdfTitle">Importer depuis le PDF</h2>
     <div id="pdfInfo"></div>
     <div id="pdfTable" class="pdfscroll"></div>
     <div class="dlg-actions">
@@ -14803,6 +14803,7 @@ html.is-touch .rxhov { display:none; }
       r.domain = r.match ? (r.match.category || "") : (r.service ? "Services" : guessDomain(r.name));
     });
     var info = $("pdfInfo"), box = $("pdfTable"), okBtn = $("pdfOk");
+    $("pdfTitle").textContent = rows._fmt === "COLIS" ? "📦 Réception du colis GACD" : /\.(jpe?g|png|heic|webp)$/i.test(fileName || "") ? "Importer depuis la photo" : "Importer depuis le PDF";
     info.textContent = ""; box.textContent = "";
     info.append(h("div", { class: "sub", text: rows.length + " ligne" + (rows.length > 1 ? "s" : "") + " reconnue" + (rows.length > 1 ? "s" : "") + " dans « " + fileName + " ». Vérifiez et corrigez si besoin. Les articles déjà présents reçoivent une entrée de stock, les autres sont créés." }));
     warns.forEach(function (t) { info.append(h("div", { class: "banner bad", text: t })); });
@@ -15811,6 +15812,8 @@ html.is-touch .rxhov { display:none; }
           h("span", { class: "tir-conf " + (c.sure ? "haute" : c.sc >= 5 ? "moyenne" : "basse"), text: c.sure ? "sûr" : c.sc >= 5 ? "probable" : "possible" })));
       });
       res.append(box);
+    } else if (!catNew.length && inv) {
+      st.textContent = "C'est un bon de livraison ou une liste de colisage : touchez le bouton bleu pour ajouter tous ses produits au stock.";
     } else if (!catNew.length) {
       st.textContent = "Je n'ai pas reconnu d'article. Photographiez de près l'étiquette avec le nom ou la référence, ou le code-barres, bien à plat et éclairé.";
     }
