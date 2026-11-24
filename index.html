@@ -14163,6 +14163,7 @@ html.is-touch .rxhov { display:none; }
     Promise.all([loadOcr(), srcP, phTotalReady()]).then(function (a) {
       ocrStatus.pre = "Lecture de la photo";
       var c; try { c = docPrep(a[1], 2400); } catch (e) { c = null; }
+      try { PHOTO_SHARP = docSharp(a[1]); } catch (e) { PHOTO_SHARP = null; }
       if (!c) return shrinkImage(file, 2400).then(function (cv) { return a[0].recognize(cv); });
       // photo recadrée sur la feuille ; si rien n'est reconnu, on relit la photo telle quelle
       COLISQ = {};
@@ -14703,7 +14704,7 @@ html.is-touch .rxhov { display:none; }
     var b0 = best; for (var a2 = b0 - 0.3; a2 <= b0 + 0.301; a2 += 0.05) { var v2 = score(a2); if (v2 > bestV) { bestV = v2; best = a2; } }
     return best;
   }
-  window.__docPrep = docPrep;   // utilisé par les tests
+  window.__docPrep = docPrep; window.__colisGrid = function (c) { return colisGrid(c); };   // utilisé par les tests
   // ---------- liste de colisage : repérage du quadrillage, puis lecture case par case ----------
   // repère le quadrillage d'un tableau sur une image noir et blanc (redressée) : lignes horizontales, puis séparateurs verticaux dans chaque bande
   function colisGrid(c) {
@@ -14714,14 +14715,16 @@ html.is-touch .rxhov { display:none; }
     for (y = 0; y < H; y++) { var run = 0, best = 0, gap = 0; for (x = 0; x < W; x++) { var on = 0; for (var dy = -3; dy <= 3 && !on; dy++) { var yy = y + dy; if (yy >= 0 && yy < H && B[yy * W + x]) on = 1; } if (on) { run++; gap = 0; if (run > best) best = run; } else if (++gap > 6) { run = 0; } } hp[y] = best; }
     var hl = [], inL = false, s0 = 0;
     for (y = 0; y <= H; y++) { var isL = y < H && hp[y] > W * 0.3; if (isL && !inL) { s0 = y; inL = true; } else if (!isL && inL) { hl.push(Math.round((s0 + y - 1) / 2)); inL = false; } }
+    // un même trait un peu en pente peut être vu deux fois : on regroupe les traits très proches (haut et bas du trait)
+    var grp = []; hl.forEach(function (yv) { var gl = grp[grp.length - 1]; if (gl && yv - gl.b <= H * 0.009) gl.b = yv; else grp.push({ a: yv, b: yv }); });
     var bands = [];
-    for (i = 0; i + 1 < hl.length; i++) {
-      var y0 = hl[i] + 4, y1 = hl[i + 1] - 4, bh = y1 - y0; if (bh < H * 0.012) continue;
+    for (i = 0; i + 1 < grp.length; i++) {
+      var y0 = grp[i].a + 2, y1 = grp[i + 1].b - 2, bh = y1 - y0; if (bh < H * 0.012) continue;
       var vp = new Float32Array(W);
       for (x = 0; x < W; x++) { var n = 0; for (y = y0; y < y1; y++) if (B[y * W + x] || (x > 0 && B[y * W + x - 1]) || (x < W - 1 && B[y * W + x + 1])) n++; vp[x] = n; }
       var seps = [], inS = false, sx = 0;
       for (x = 0; x <= W; x++) { var isS = x < W && vp[x] > bh * 0.75; if (isS && !inS) { sx = x; inS = true; } else if (!isS && inS) { if (x - sx < W * 0.02) seps.push(Math.round((sx + x - 1) / 2)); inS = false; } }
-      bands.push({ y0: hl[i], y1: hl[i + 1], seps: seps });
+      bands.push({ y0: grp[i].a, y1: grp[i + 1].b, seps: seps });
     }
     return { hl: hl, bands: bands };
   }
@@ -14783,7 +14786,17 @@ html.is-touch .rxhov { display:none; }
   }
 
   function colisRowCols(b, cols, W) { var tl = W * 0.02; return cols.map(function (x) { var nb = x, nd = tl; b.seps.forEach(function (sx) { var d = Math.abs(sx - x); if (d < nd) { nd = d; nb = sx; } }); return nb; }); }
-  var COLISGRID = null;
+  var COLISGRID = null, PHOTO_SHARP = null;
+  // netteté d'une photo (rapportée à son contraste) : sous 0,45 elle est floue et la lecture sera mauvaise
+  function docSharp(img) {
+    var k = Math.min(1, 800 / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height)), w = Math.round((img.naturalWidth || img.width) * k), hh = Math.round((img.naturalHeight || img.height) * k);
+    var c = document.createElement("canvas"); c.width = w; c.height = hh; var x = c.getContext("2d"); x.drawImage(img, 0, 0, w, hh);
+    var d = x.getImageData(0, 0, w, hh).data, G = function (i, j) { var o = (j * w + i) * 4; return (d[o] * 299 + d[o + 1] * 587 + d[o + 2] * 114) / 1000; };
+    var s1 = 0, s2 = 0, g1 = 0, g2 = 0, n = 0;
+    for (var j = 1; j < hh - 1; j += 2) for (var i = 1; i < w - 1; i += 2) { var v = G(i, j), l = 4 * v - G(i - 1, j) - G(i + 1, j) - G(i, j - 1) - G(i, j + 1); s1 += l; s2 += l * l; g1 += v; g2 += v * v; n++; }
+    if (!n) return 1; var lv = s2 / n - (s1 / n) * (s1 / n), gv = g2 / n - (g1 / n) * (g1 / n);
+    return gv > 1 ? lv / gv : 1;
+  }
   function colisReadGrid(w, c) {
     var G = colisGrid(c), C = colisColumns(G, c.width); if (!C || C.rows.length < 2) return Promise.resolve(null);
     var cell = function (x0, x1, y0, y1, psm, wl) {
@@ -14794,7 +14807,7 @@ html.is-touch .rxhov { display:none; }
     };
     var out = [];
     var one = function (b) {
-      var cols = colisRowCols(b, C.cols, c.width), pad = 6, y0 = b.y0 + pad, y1 = b.y1 - pad, row = {};
+      var cols = colisRowCols(b, C.cols, c.width), pad = 6, y0 = b.y0 + 3, y1 = b.y1 - 3, row = {};
       return cell(cols[0] + pad, cols[1] - pad, y0, y1, "6").then(function (t) { row.art = t; return cell(cols[1] + pad, cols[2] - pad, y0, y1, "6", "0123456789-"); })
         .then(function (t) { row.ref = t; return cell(cols[2] + pad, cols[3] - pad, y0, y1, "6"); })
         .then(function (t) {
@@ -14993,6 +15006,7 @@ html.is-touch .rxhov { display:none; }
     info.append(h("div", { class: "sub", text: rows.length + " ligne" + (rows.length > 1 ? "s" : "") + " reconnue" + (rows.length > 1 ? "s" : "") + " dans « " + fileName + " ». Vérifiez et corrigez si besoin. Les articles déjà présents reçoivent une entrée de stock, les autres sont créés." }));
     warns.forEach(function (t) { info.append(h("div", { class: "banner bad", text: t })); });
     if (kNote) info.append(h("div", { class: "banner", text: kNote }));
+    if (PHOTO_SHARP != null && PHOTO_SHARP < 0.45 && fileCtx && fileCtx.file && /^image\//.test(fileCtx.file.type || "image/")) info.append(h("div", { class: "banner bad", role: "alert", text: "📷 La photo est floue : des lignes et des quantités risquent d'être fausses. Reprenez-la bien nette (appuyez sur l'écran pour faire la mise au point), à plat et de face." }));
     if (rows._fmt === "COLIS") {
       var cx = rows._colis || {}, sumQ = rows.reduce(function (a, r) { return a + (Number(r.qty) || 0); }, 0), nG = rows.filter(function (r) { return r.qtyGuess; }).length;
       info.append(h("div", { class: "banner" + ((!(cx.pages > 1) && ((cx.refs && cx.refs !== rows.length) || (cx.qty && cx.qty !== sumQ))) || nG ? " bad" : " ok"), role: "status", text: "📦 Liste de colisage GACD : " + rows.length + " ligne" + (rows.length > 1 ? "s" : "") + " lue" + (rows.length > 1 ? "s" : "") + (cx.refs ? " sur " + cx.refs + " annoncée" + (cx.refs > 1 ? "s" : "") : "") + " · " + sumQ + " article" + (sumQ > 1 ? "s" : "") + (cx.qty ? " sur " + cx.qty + " annoncés" : "") + "." + (nG ? " ⚠ Quantité illisible sur " + nG + " ligne" + (nG > 1 ? "s" : "") + " (mise à 1) : vérifiez la colonne « Quantité » du bon." : "") + (cx.pages > 1 ? " C'est la page " + cx.page + " sur " + cx.pages + " : les totaux annoncés couvrent tout le colis, importez aussi l'autre page." : cx.refs && cx.refs > rows.length ? " Il manque des lignes : reprenez la photo bien à plat, ou ajoutez-les à la main." : "") }));
