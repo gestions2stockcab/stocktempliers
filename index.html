@@ -2419,7 +2419,7 @@ html.is-touch .rxhov { display:none; }
         <div class="menuwrap">
           <button class="btn sm" id="moreBtn" aria-haspopup="true" aria-expanded="false">Plus</button>
           <div class="menu hidden" id="moreMenu">
-            <div class="menu-who"><span id="who"></span> · v212</div>
+            <div class="menu-who"><span id="who"></span> · v213</div>
             <div class="menu-group" data-mtab="essentiel" id="menuEss">
               <button class="mi" type="button" data-proxy="importBtn">⬆ Importer une facture ou un fichier</button>
               <button class="mi" type="button" data-proxy="lblBtn">🏷 Étiquettes QR</button>
@@ -14829,15 +14829,17 @@ html.is-touch .rxhov { display:none; }
     for (var i = 0; i < gacd.length; i++) if (gacd[i].ref.replace(/\D/g, "") === d) return gacd[i];
     // un chiffre de différence : accepté seulement si le nom du produit concorde (sinon on garde la référence lue)
     var nw = {}; phWords(name || "").forEach(function (w) { nw[w] = 1; if (w.length >= 5) nw["#" + w.slice(0, 5)] = 1; });
-    var wellFormed = /^\s*\d{1,3}-\d{3,5}\s*$/.test(String(raw || "")), best = null;
+    var cands = [];
     gacd.forEach(function (e) {
       var r = e.ref.replace(/\D/g, ""); if (!phLev1(d, r)) return;
       var ws = phWords(phCatName(e)).filter(function (w) { return !/^\d+$/.test(w); }); if (!ws.length) return;
       var hit = ws.filter(function (w) { return nw[w] || (w.length >= 5 && nw["#" + w.slice(0, 5)]); }).length, ratio = hit / ws.length;
-      var ok = wellFormed ? (hit >= 2 && ratio >= 0.5) : (hit >= 1 && ratio >= 0.34);
-      if (ok && (!best || hit > best.hit)) best = { e: e, hit: hit };
+      if (hit >= 2 && ratio >= 0.5) cands.push({ e: e, hit: hit });
     });
-    return best ? best.e : null;
+    // un seul produit voisin qui concorde nettement par le nom ; sinon on garde la référence lue
+    cands.sort(function (a, b) { return b.hit - a.hit; });
+    if (cands.length && (cands.length === 1 || cands[0].hit > cands[1].hit)) return cands[0].e;
+    return null;
   }
   // ---------- liste de colisage : lecture de la colonne « Quantité » case par case ----------
   // les chiffres y sont petits et collés au quadrillage : on découpe chaque case, on ne garde que la tache de la taille d'un chiffre, puis on la lit seule
@@ -14896,7 +14898,9 @@ html.is-touch .rxhov { display:none; }
       var tra = String(g.tra || ""), lot = (/L[O0]T\s*[:.]?\s*([A-Z0-9][A-Z0-9 .\-]{1,16})/i.exec(tra) || [])[1] || "";
       lot = lot.split(/\n/)[0].replace(/\s+/g, "").replace(/\.$/, ""); if (/^DLC/i.test(lot)) lot = "";
       var dm = /(\d{2})[\/.](\d{2})[\/.](\d{4})/.exec(tra);
-      var ref = String(g.ref || "").replace(/\s+/g, ""); var rm = /(\d{1,3})-(\d{3,5})/.exec(ref); ref = rm ? rm[1] + "-" + rm[2] : ref.replace(/-/g, "");
+      var ref = String(g.ref || "").replace(/\s+/g, ""); var rm = /(\d{1,3})-(\d{3,5})/.exec(ref);
+      if (rm) ref = rm[1] + "-" + rm[2];
+      else { var dd = ref.replace(/\D/g, ""); ref = dd.length >= 4 && dd.length <= 6 ? dd.slice(0, dd.length - 3) + "-" + dd.slice(-3) : dd; }
       if (!code && !name && !ref) return;
       rows.push({ code: code, ref: ref, refRaw: g.ref, name: name || ("Réf. " + ref), lot: lot, expiry: dm ? dm[3] + "-" + dm[2] + "-" + dm[1] : "", qty: g.qty || 0, price: 0 });
     });
@@ -15952,7 +15956,7 @@ html.is-touch .rxhov { display:none; }
         if (i >= plan.length) return done();
         if (i >= 2 && best && best.q >= 0.3) return done();   // texte déjà lisible à l'endroit : pas besoin de tourner
         plan[i].n = i;
-        return pass(plan[i]).then(function (o) { return o.sure ? done() : step(i + 1); });
+        return pass(plan[i]).then(function (o) { return o.sure || phLooksInvoice(o.lines) ? done() : step(i + 1); });
       };
       return step(0).catch(function (e) { return w.setParameters({ tessedit_pageseg_mode: "6" }).then(function () { throw e; }); });
     });
@@ -16038,7 +16042,14 @@ html.is-touch .rxhov { display:none; }
         return Promise.all([visP, catP]).then(function (a) { return { r: r, vis: a[0] }; });
       }).then(function (o) {
         var r = o.r; ocrStatus("");
-        var lines = r.data ? ocrLines(r.data) : [], out = phResolve(lines, o.vis, null);
+        var lines = r.data ? ocrLines(r.data) : [];
+        if (phLooksInvoice(lines)) {
+          // c'est un bon (colisage, livraison, facture) : la lecture complète du tableau se fait dans l'import, pas ici
+          st.textContent = "📦 C'est un bon : je lis tout le tableau, case par case… (quelques secondes)";
+          setTimeout(function () { $("photoDlg").close(); importImage(file); }, 600);
+          return;
+        }
+        var out = phResolve(lines, o.vis, null);
         phRender(file, out, lines, "");
       });
     }).catch(function (e) { ocrStatus(""); st.textContent = e && e.message === "chargement" ? "Le lecteur n'a pas pu être chargé : vérifiez votre accès à internet." : "La photo n'a pas pu être lue. Réessayez, bien éclairée et nette."; });
