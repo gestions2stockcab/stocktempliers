@@ -2314,6 +2314,8 @@ html.is-touch .rxhov { display:none; }
   .fab-find:active { transform:scale(.94); }
   html.chat-open .fab-find, html.search-on .fab-find { display:none !important; }
 }
+.ph-not { margin-top:12px; } .ph-not summary { cursor:pointer; font-weight:600; color:var(--brand, #2f67ff); padding:6px 0; }
+.ph-q { width:100%; min-width:0; padding:10px 12px; border:1px solid var(--line); border-radius:10px; font:inherit; font-size:16px; margin:6px 0; }
 .sb-foot { margin-top:14px; padding-top:10px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:4px; }
 .sb-fbtn { display:flex; align-items:center; gap:10px; width:100%; min-height:44px; padding:8px 12px; border:0; border-radius:10px; background:transparent; color:var(--ink); font:inherit; font-size:15px; text-align:left; cursor:pointer; }
 .sb-fbtn:hover { background:var(--surface-2, rgba(0,0,0,.05)); } .sb-fbtn .ti { width:24px; text-align:center; } .sb-fbtn small { color:var(--muted); font-weight:600; }
@@ -15226,7 +15228,8 @@ html.is-touch .rxhov { display:none; }
       if (bc.length >= 8 && digits.indexOf(bc) !== -1) { sc += 10; why.push("code " + it.barcode); }
       var nw = phWords(labelOf(it)); if (nw.length) {
         var hit = 0, got = []; nw.forEach(function (w) { var k = near(w); hit += k; if (k) got.push(w); });
-        var ratio = hit / nw.length; if (ratio >= 0.34 && hit >= 1) { sc += 6 * ratio + Math.min(2, hit * 0.5); why.push("mots : " + got.slice(0, 4).join(", ")); }
+        // au moins 2 mots du nom (ou le seul mot, s'il est long et précis) : un mot courant comme « seringue » ne suffit pas
+        var ratio = hit / nw.length; if ((hit >= 2 && ratio >= 0.5) || (nw.length === 1 && hit === 1 && nw[0].length >= 6)) { sc += 6 * ratio + Math.min(2, hit * 0.5); why.push("mots : " + got.slice(0, 4).join(", ")); }
       }
       if (sc >= 2) out.push({ it: it, sc: sc, sure: sc >= 10, why: why.join(" · ") });
     });
@@ -15285,7 +15288,7 @@ html.is-touch .rxhov { display:none; }
         x.w.forEach(function (w) { var k = near(w); hit += k; if (k) got.push(w); });
         ratio = hit / x.w.length;
         // plus il y a de mots en commun, plus c'est sûr (un nom long bien lu bat un nom court générique)
-        if (hit >= 2 && ratio >= 0.6) { sc += 5 * ratio + Math.min(5, hit * 0.6); why.push("mots : " + got.slice(0, 4).join(", ")); }
+        if (hit >= 2 && ratio >= 0.75) { sc += 5 * ratio + Math.min(5, hit * 0.6); why.push("mots : " + got.slice(0, 4).join(", ")); }
       }
       // référence presque lisible (un chiffre de différence) : compte seulement si des mots du nom concordent aussi
       if (refNear && hit >= 1) { sc += ratio >= 0.5 ? 6 : 4; why.unshift("réf. " + x.e.ref + " (presque lisible)"); }
@@ -15364,7 +15367,36 @@ html.is-touch .rxhov { display:none; }
     var it = tagHit ? items.get(tagHit[1]) : Array.from(items.values()).find(function (x) { return x.barcode && x.barcode === key; });
     if (it) showScanItem(it, info); else if (tagHit) { $("scanStatus").textContent = "Cette étiquette correspond à un article d'un autre cabinet ou supprimé."; } else showScanUnknown(key, info);
   }
+  // ---------- « Ce n'est pas ça ? » : on choisit le bon article, et l'appli garde la photo pour le reconnaître la prochaine fois ----------
+  var PHF = { file: null };
+  function phLearn(it) {
+    var f = PHF.file; if (!it || !f || it.photo || !photoOk || readOnly || !db) return;
+    makeThumb(f).then(function (t) {
+      return sb.from("items").update({ photo: t, updated_at: new Date().toISOString() }).eq("id", it.id).then(function (r) {
+        if (r.error) return; var cur = items.get(it.id); if (cur) cur.photo = t;
+        toast("📸 Photo gardée pour « " + it.name + " » : la prochaine fois, je le reconnaîtrai à la ressemblance.");
+      });
+    }, function () {});
+  }
+  function phNotThis(lines) {
+    var v = phVocab(), guess = phWords(lines.join(" ")).filter(function (w) { return w.length >= 4 && v[w]; }).slice(0, 2).join(" ");
+    var q = h("input", { type: "search", class: "ph-q", placeholder: "Nom ou référence de l'article", autocomplete: "off", "aria-label": "Chercher l'article dans le stock" });
+    var list = h("div", { class: "ph-cands" });
+    var fill = function () {
+      list.textContent = ""; var qs = norm(q.value).replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(Boolean); if (!qs.length) return;
+      Array.from(items.values()).filter(function (it) { if (it.archived) return false; var t = norm(labelOf(it) + " " + (it.ref || "")); return qs.every(function (w) { return t.indexOf(w) !== -1; }); })
+        .sort(function (a, b) { return norm(a.name).localeCompare(norm(b.name)); }).slice(0, 6).forEach(function (it) {
+          list.append(h("button", { class: "ph-cand", type: "button", onclick: function () { phItem(it); } },
+            h("div", null, h("div", { class: "item-name", text: labelOf(it) }), h("div", { class: "meta", text: (it.ref ? "réf. " + it.ref + " · " : "") + "stock " + fmt(it.qty) + (it.unit ? " " + it.unit : "") + (it.photo ? "" : " · la photo lui sera ajoutée") }))));
+        });
+      if (!list.childNodes.length) list.append(h("div", { class: "meta", text: "Aucun article du stock ne correspond. Essayez un autre mot, ou ajoutez-le avec « ＋ Ajouter » dans Stock." }));
+    };
+    q.addEventListener("input", fill);
+    q.value = guess; if (guess) fill();
+    return h("details", { class: "ph-not" }, h("summary", { text: "Ce n'est pas ça ? Chercher le bon article" }), q, list);
+  }
   function phItem(it) {
+    phLearn(it);
     $("photoDlg").close();
     scanMode = "stock"; lastCode = ""; scanBusy = true;
     $("scanFastRow").classList.add("hidden"); updateScanButtons();
@@ -15572,8 +15604,12 @@ html.is-touch .rxhov { display:none; }
         else cands.push({ it: it, sc: m.sc, sure: m.sure, why: m.why + " (catalogue " + m.e.supplier + ")" });
       } else catNew.push(m);
     });
-    cands.sort(function (a, b) { return (b.sure ? 1 : 0) - (a.sure ? 1 : 0) || (b.sc || 0) - (a.sc || 0); }); cands = cands.slice(0, 6);
+    cands.sort(function (a, b) { return (b.sure ? 1 : 0) - (a.sure ? 1 : 0) || (b.sc || 0) - (a.sc || 0); });
+    // mieux vaut ne rien proposer que proposer un mauvais article : on garde les propositions solides, 3 au plus
+    var topSc = cands.length ? (cands[0].sc || 0) : 0;
+    cands = cands.filter(function (c, i) { return c.sure || ((c.sc || 0) >= 4 && (i === 0 || (c.sc || 0) >= topSc - 3)); }).slice(0, 3);
     if (cands.some(function (c) { return c.sure; }) || catNew.some(function (m) { return m.sure; })) catNew = catNew.filter(function (m) { return m.sure; });
+    catNew = catNew.slice(0, 3);
     return { cands: cands, catNew: catNew, inv: inv };
   }
   function phRender(file, o, lines, aiTxt) {
@@ -15610,11 +15646,12 @@ html.is-touch .rxhov { display:none; }
       if (!cands.length) st.textContent = "Ce produit n'est pas encore dans votre stock, mais je l'ai trouvé dans le catalogue fournisseur : touchez-le pour l'ajouter.";
       res.append(catBox);
     }
-    if (aiTxt) res.append(h("div", { class: "meta", text: "🔎 Lu par l'IA : " + aiTxt }));
+    res.append(phNotThis(lines));
     var txt = lines.join("\n").trim();
     if (txt) res.append(h("details", null, h("summary", { class: "meta", text: "Texte lu sur la photo" }), h("div", { class: "ph-read", text: txt.slice(0, 1500) })));
   }
   function photoChosen(file) {
+    PHF.file = file;
     var st = $("photoState"), res = $("photoResult"); res.textContent = ""; $("photoShot").textContent = "";
     var url = URL.createObjectURL(file); $("photoShot").append(h("img", { src: url, alt: "Photo envoyée", onload: function () { setTimeout(function () { URL.revokeObjectURL(url); }, 1000); } }));
     if (!$("photoDlg").open) $("photoDlg").showModal();
